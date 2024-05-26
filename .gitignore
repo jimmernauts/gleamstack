@@ -1,0 +1,7 @@
+*.beam
+*.ez
+/client/build
+erl_crash.dump
+/client/_license
+node_modules
+/build

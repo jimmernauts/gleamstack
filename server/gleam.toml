@@ -1,0 +1,13 @@
+name = "mealstack_server"
+version = "0.0.1"
+description = "A server for Mealstack. Built on Wisp."
+gleam = ">= 0.32.0"
+
+[dependencies]
+gleam_stdlib = "~> 0.30"
+wisp = { path = "../.." }
+gleam_erlang = "~> 0.23"
+mist = "~> 0.14"
+
+[dev-dependencies]
+gleeunit = "~> 1.0"

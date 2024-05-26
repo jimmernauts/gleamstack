@@ -1,0 +1,13 @@
+{
+  "name": "mealstack_client",
+  "version": "0.0.1",
+  "type": "module",
+  "dependencies": {
+    "@vlcn.io/crsqlite-wasm": "^0.16.0",
+    "esbuild-plugin-wasm": "^1.1.0",
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.3"
+  }
+}
