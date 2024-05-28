@@ -629,6 +629,11 @@ fieldset {
   margin-right: 0.5rem;
 }
 
+.my-1 {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
 .my-6 {
   margin-top: 1.5rem;
   margin-bottom: 1.5rem;
@@ -640,6 +645,10 @@ fieldset {
 
 .ml-1 {
   margin-left: 0.25rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
 }
 
 .mr-2 {
@@ -660,6 +669,10 @@ fieldset {
 
 .grid {
   display: grid;
+}
+
+.contents {
+  display: contents;
 }
 
 .max-h-\[140px\] {
@@ -686,12 +699,20 @@ fieldset {
   grid-template-columns: [start full-start main-start] 100% [main-end full-end end];
 }
 
+.grid-rows-\[fit-content\(100px\)_fit-content\(100px\)_1fr\] {
+  grid-template-rows: fit-content(100px) fit-content(100px) 1fr;
+}
+
 .flex-col {
   flex-direction: column;
 }
 
 .flex-wrap {
   flex-wrap: wrap;
+}
+
+.flex-nowrap {
+  flex-wrap: nowrap;
 }
 
 .items-center {
@@ -708,6 +729,10 @@ fieldset {
 
 .justify-between {
   justify-content: space-between;
+}
+
+.gap-1 {
+  gap: 0.25rem;
 }
 
 .gap-2 {
@@ -760,9 +785,19 @@ fieldset {
   color: rgb(47 40 27 / var(--tw-text-opacity));
 }
 
+.text-sm {
+  font-size: clamp(1rem, calc(1rem + ((1.0416666666666667 - 1) * ((100vw - 20rem) / (96 - 20)))), 1.0416666666666667rem);
+  line-height: 1.6;
+}
+
 .text-base {
   font-size: clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem);
   line-height: 1.6;
+}
+
+.text-xl {
+  font-size: clamp(1.423828125rem, calc(1.423828125rem + ((1.7999999999999998 - 1.423828125) * ((100vw - 20rem) / (96 - 20)))), 1.7999999999999998rem);
+  line-height: 1.2;
 }
 
 .text-5xl {
@@ -823,6 +858,10 @@ fieldset {
 }
 
 @media (min-width: 768px) {
+  .md\:grid-cols-\[\[start_full-start\]_1fr_\[main-start\]_85ch_\[main-end\]_1fr_\[full-end_end\]\] {
+    grid-template-columns: [start full-start] 1fr [main-start] 85ch [main-end] 1fr [full-end end];
+  }
+
   .md\:text-lg {
     font-size: clamp(1.265625rem, calc(1.265625rem + ((1.5 - 1.265625) * ((100vw - 20rem) / (96 - 20)))), 1.5rem);
     line-height: 1.6;
@@ -832,5 +871,17 @@ fieldset {
 @media (min-width: 1024px) {
   .lg\:grid-cols-\[\[start\]_1fr_\[full-start\]_3fr_\[main-start\]_85ch_\[main-end\]_3fr_\[full-end\]_1fr_\[end\]\] {
     grid-template-columns: [start] 1fr [full-start] 3fr [main-start] 85ch [main-end] 3fr [full-end] 1fr [end];
+  }
+}
+
+@media (min-width: 1280px) {
+  .xl\:grid-cols-\[\[start\]_1fr_\[full-start\]_3fr_\[main-start\]_95ch_\[main-end\]_3fr_\[full-end\]_1fr_\[end\]\] {
+    grid-template-columns: [start] 1fr [full-start] 3fr [main-start] 95ch [main-end] 3fr [full-end] 1fr [end];
+  }
+}
+
+@media (min-width: 1536px) {
+  .\32xl\:grid-cols-\[\[start\]_1fr_\[full-start\]_3fr_\[main-start\]_105ch_\[main-end\]_3fr_\[full-end\]_1fr_\[end\]\] {
+    grid-template-columns: [start] 1fr [full-start] 3fr [main-start] 105ch [main-end] 3fr [full-end] 1fr [end];
   }
 }

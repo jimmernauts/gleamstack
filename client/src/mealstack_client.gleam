@@ -1,21 +1,37 @@
-import gleam/int
+import gleam/int.{floor_divide, to_string}
+import gleam/javascript/array.{type Array}
 import gleam/javascript/promise.{type Promise}
+import gleam/list
 import gleam/option.{type Option}
-import gleam/string
+import gleam/result.{unwrap}
+import gleam/string.{append}
 import gleam/uri.{type Uri}
 import lustre
 import lustre/attribute.{class, href, id}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{a, button, div, h1, nav, p, section, span}
-import lustre/event
 import modem
+import tardis
 
 // MAIN ------------------------------------------------------------------------
 
+// WITHOUT DEBUGGER
+
+// pub fn main() {
+//  let app = lustre.application(init, update, view)
+//  let assert Ok(_) = lustre.start(app, "#app", Nil)
+// }
+
+// WITH
+
 pub fn main() {
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
+  let assert Ok(main) = tardis.single("main")
+
+  lustre.application(init, update, view)
+  |> tardis.wrap(with: main)
+  |> lustre.start("#app", Nil)
+  |> tardis.activate(with: main)
 }
 
 fn init(_flags) -> #(Model, Effect(Msg)) {
@@ -39,7 +55,7 @@ type Route {
 
 type Recipe {
   Recipe(
-    id: Option(Int),
+    id: Option(String),
     title: String,
     slug: String,
     cook_time: Int,
@@ -92,15 +108,17 @@ fn on_route_change(uri: Uri) -> Msg {
 
 fn get_recipes() -> Effect(Msg) {
   use dispatch <- effect.from
-  do_get_recipes()
-  |> promise.map(CacheUpdatedMessage)
-  |> promise.tap(dispatch)
-
-  Nil
+  {
+    do_get_recipes()
+    |> promise.map(array.to_list)
+    |> promise.map(CacheUpdatedMessage)
+    |> promise.tap(dispatch)
+    Nil
+  }
 }
 
 @external(javascript, "./db.ts", "do_get_recipes")
-fn do_get_recipes() -> Promise(List(Recipe))
+fn do_get_recipes() -> Promise(Array(Recipe))
 
 // VIEW ------------------------------------------------------------------------
 
@@ -120,7 +138,10 @@ fn view_base(children) {
     [
       class(
         "grid ml-1 mr-2 gap-2
+    2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_105ch_[main-end]_3fr_[full-end]_1fr_[end]]
+    xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95ch_[main-end]_3fr_[full-end]_1fr_[end]]
     lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_85ch_[main-end]_3fr_[full-end]_1fr_[end]]
+    md:grid-cols-[[start_full-start]_1fr_[main-start]_85ch_[main-end]_1fr_[full-end_end]]
     grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
     min-h-[90vh]",
       ),
@@ -218,18 +239,57 @@ fn view_title(model: Model, styles: String) {
 }
 
 fn view_recipe_book(model: Model) {
-  section([class("grid-cols-12 col-start-[main-start]")], [
-    view_title(model, "underline-green"),
-    nav(
-      [
-        class(
-          "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
-        ),
-      ],
-      [a([href("/"), class("text-center")], [text("🏠")])],
-    ),
-    // div([class("col-span-full flex flex-wrap items-center justify-start gap-3")],[
-  // TODO: Group By tag buttons go here
-  //])
-  ])
+  section(
+    [
+      class(
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr]",
+      ),
+    ],
+    [
+      view_title(model, "underline-green"),
+      nav(
+        [
+          class(
+            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
+          ),
+        ],
+        [a([href("/"), class("text-center")], [text("🏠")])],
+      ),
+      // div([class("col-span-full flex flex-wrap items-center justify-start gap-3")],[
+      // TODO: Group By tag buttons go here
+      //])
+      div([class("contents")], list.map(model.recipes, view_recipe_summary)),
+    ],
+  )
+}
+
+fn view_recipe_summary(recipe: Recipe) {
+  div(
+    [
+      class(
+        "col-span-full flex flex-wrap items-baseline justify-start my-1 text-base",
+      ),
+    ],
+    [
+      div([class("text-xl flex flex-nowrap gap-1 my-1 ml-2 items-baseline")], [
+        a([href(append("/recipes/", recipe.slug))], [
+          span([], [text(recipe.title)]),
+          span([class("text-sm")], [
+            text(" • "),
+            text(
+              floor_divide({ recipe.prep_time + recipe.cook_time }, 60)
+              |> unwrap(0)
+              |> to_string(),
+            ),
+            text("h"),
+            text(
+              { recipe.prep_time + recipe.cook_time }
+              |> to_string(),
+            ),
+            text("m"),
+          ]),
+        ]),
+      ]),
+    ],
+  )
 }

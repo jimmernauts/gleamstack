@@ -76,19 +76,25 @@ const RecipeSeed = [{
 }];
 
 export async function seedDb() {
+  console.log("beginning seedDb")
   const preparetables = await prepareTables();
 	const tagoptions = await listTagOptions();
+  console.log(tagoptions[0])
 	const recipes = await listRecipes();
-	if (tagoptions.length === 0) {
+  console.log(recipes[0])
+  console.log("tagoptions.length: ",tagoptions[0].length)
+	if (tagoptions[0].length === 0) {
 		for (const item of TagOptionSeed) {
 			const res = await addTagOption(item);
 		}
 	}
-	if (recipes.length === 0) {
+  console.log("recipes.length: ",recipes[0].length)
+	if (recipes[0].length === 0) {
 		for (const item of RecipeSeed) {
 			await addOrUpdateRecipe(item);
 		}
 	}
+  console.log("finishing seedDb")
 }
 
 export async function forceSeedTags() {
