@@ -57,16 +57,16 @@ const RecipeSeed = [{
     { units: "g", quantity: "15", name: "Flat - leaf parsley" },
   ],
   method_steps: [{
-    stepText:
+    step_text:
       "Boil the potatoes in salted water for 10 minutes, until they are just cooked through, then drain and rinse under running cold water to cool.",
   }, {
-    stepText:
+    step_text:
       "While the potatoes are cooking, shred the cabbage, deseed the pomegranate (or open the packet), and drain and rinse the beans.",
   }, {
-    stepText:
+    step_text:
       "In a bowl, mix the mayonnaise, yoghurt, lemon juice, oil, a teaspoon of flaky sea salt and plenty of pepper, then taste and adjust the seasoning accordingly.",
   }, {
-    stepText:
+    step_text:
       "Put the cooled, drained potatoes, red cabbage, pomegranate, beans and the dressing in a large bowl, then taste and adjust the seasoning if necessary. Arrange on a large plate, scatter over the parsley and serve at room temperature.",
   }],
   tags: [{ name: "Cuisine", value: "Australian" }, {
@@ -88,8 +88,8 @@ export async function seedDb() {
 			const res = await addTagOption(item);
 		}
 	}
-  console.log("recipes.length: ",recipes[0].length)
-	if (recipes[0].length === 0) {
+  console.log("recipes.length: ",recipes.length)
+	if (recipes.length === 0) {
 		for (const item of RecipeSeed) {
 			await addOrUpdateRecipe(item);
 		}

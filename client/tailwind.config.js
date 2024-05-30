@@ -1,5 +1,5 @@
 export default {
-    content: ['./src/**/*.{astro,gleam,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
+    content: ['./src/**/*.{astro,gleam,html,js,jsx,md,mdx,svelte,ts,tsx,vue}','./index.html'],
     theme: {
         extend: {
             screens:{

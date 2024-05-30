@@ -79,8 +79,15 @@ export async function listRecipes() {
 	if (!exists) {
 		return new Ok([]);
 	}
-	const result = await db.execO("SELECT * FROM recipes");
-	return result;
+	const result = await db.execO("SELECT id, title, slug, prep_time, cook_time, serves, tags, ingredients, method_steps FROM recipes")
+	const mapped = result.map(recipe=>{
+		recipe.tags = JSON.parse(recipe.tags)
+		recipe.ingredients = JSON.parse(recipe.ingredients)
+		recipe.method_steps = JSON.parse(recipe.method_steps)
+		return recipe
+	})
+	console.log("mapped: ",mapped)
+	return mapped
 }
 
 export async function addOrUpdateRecipe(recipe: Recipe) {

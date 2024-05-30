@@ -548,6 +548,10 @@ video {
   font-family: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif;
 }
 
+.font-old-style {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif;
+}
+
 .font-mono {
   font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
 }
@@ -608,6 +612,10 @@ fieldset {
   grid-column: span 11 / span 11;
 }
 
+.col-span-6 {
+  grid-column: span 6 / span 6;
+}
+
 .col-span-full {
   grid-column: 1 / -1;
 }
@@ -624,9 +632,23 @@ fieldset {
   grid-column-start: main-start;
 }
 
+.row-start-2 {
+  grid-row-start: 2;
+}
+
+.mx-1 {
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+}
+
 .mx-2 {
   margin-left: 0.5rem;
   margin-right: 0.5rem;
+}
+
+.mx-4 {
+  margin-left: 1rem;
+  margin-right: 1rem;
 }
 
 .my-1 {
@@ -634,13 +656,26 @@ fieldset {
   margin-bottom: 0.25rem;
 }
 
+.my-2 {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .my-6 {
   margin-top: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
+.mb-1 {
+  margin-bottom: 0.25rem;
+}
+
 .mb-2 {
   margin-bottom: 0.5rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
 }
 
 .ml-1 {
@@ -651,8 +686,16 @@ fieldset {
   margin-left: 0.5rem;
 }
 
+.mr-1 {
+  margin-right: 0.25rem;
+}
+
 .mr-2 {
   margin-right: 0.5rem;
+}
+
+.mt-0 {
+  margin-top: 0px;
 }
 
 .mt-4 {
@@ -689,6 +732,14 @@ fieldset {
 
 .w-full {
   width: 100%;
+}
+
+.flex-grow-\[2\] {
+  flex-grow: 2;
+}
+
+.list-decimal {
+  list-style-type: decimal;
 }
 
 .grid-cols-12 {
@@ -743,12 +794,52 @@ fieldset {
   gap: 0.75rem;
 }
 
+.gap-x-3 {
+  -moz-column-gap: 0.75rem;
+       column-gap: 0.75rem;
+}
+
 .gap-y-12 {
   row-gap: 3rem;
 }
 
+.justify-self-start {
+  justify-self: start;
+}
+
 .overflow-hidden {
   overflow: hidden;
+}
+
+.rounded-\[1px\] {
+  border-radius: 1px;
+}
+
+.border {
+  border-width: 1px;
+}
+
+.border-\[1px\] {
+  border-width: 1px;
+}
+
+.border-l-0 {
+  border-left-width: 0px;
+}
+
+.border-ecru-white-950 {
+  --tw-border-opacity: 1;
+  border-color: rgb(47 40 27 / var(--tw-border-opacity));
+}
+
+.bg-ecru-white-100 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(241 241 227 / var(--tw-bg-opacity));
+}
+
+.bg-ecru-white-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(253 253 251 / var(--tw-bg-opacity));
 }
 
 .px-0 {
@@ -756,12 +847,46 @@ fieldset {
   padding-right: 0px;
 }
 
+.px-1 {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+.px-2 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
 .pb-1 {
   padding-bottom: 0.25rem;
 }
 
+.pb-2 {
+  padding-bottom: 0.5rem;
+}
+
+.pl-1 {
+  padding-left: 0.25rem;
+}
+
+.pl-2 {
+  padding-left: 0.5rem;
+}
+
+.pr-1 {
+  padding-right: 0.25rem;
+}
+
 .pr-4 {
   padding-right: 1rem;
+}
+
+.pt-1 {
+  padding-top: 0.25rem;
+}
+
+.text-left {
+  text-align: left;
 }
 
 .text-center {
@@ -780,9 +905,18 @@ fieldset {
   font-style: italic;
 }
 
+.leading-snug {
+  line-height: 1.375;
+}
+
 .text-ecru-white-950 {
   --tw-text-opacity: 1;
   color: rgb(47 40 27 / var(--tw-text-opacity));
+}
+
+.text-xs {
+  font-size: clamp(0.8680555555555557rem, calc(0.8680555555555557rem + ((0.8888888888888888 - 0.8680555555555557) * ((100vw - 20rem) / (96 - 20)))), 0.8888888888888888rem);
+  line-height: 1.6;
 }
 
 .text-sm {
@@ -792,6 +926,11 @@ fieldset {
 
 .text-base {
   font-size: clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem);
+  line-height: 1.6;
+}
+
+.text-lg {
+  font-size: clamp(1.265625rem, calc(1.265625rem + ((1.5 - 1.265625) * ((100vw - 20rem) / (96 - 20)))), 1.5rem);
   line-height: 1.6;
 }
 
@@ -820,6 +959,10 @@ fieldset {
   line-height: 1;
 }
 
+.\[box-shadow\:1px_1px_0_\#a3d2ab\] {
+  box-shadow: 1px 1px 0 #a3d2ab;
+}
+
 .placeholder\:underline-pink::-moz-placeholder {
   text-decoration: underline solid 6px #fce7f8;
 }
@@ -829,6 +972,16 @@ fieldset {
           text-decoration: underline solid 6px #fce7f8;
 }
 
+.marker\:text-base *::marker {
+  font-size: clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem);
+  line-height: 1.6;
+}
+
+.marker\:text-base::marker {
+  font-size: clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem);
+  line-height: 1.6;
+}
+
 @media (min-width: 380px) {
   .xxs\:col-span-11 {
     grid-column: span 11 / span 11;
@@ -836,6 +989,10 @@ fieldset {
 }
 
 @media (min-width: 640px) {
+  .sm\:col-span-3 {
+    grid-column: span 3 / span 3;
+  }
+
   .sm\:col-span-6 {
     grid-column: span 6 / span 6;
   }
@@ -848,12 +1005,41 @@ fieldset {
     grid-column-start: 1;
   }
 
+  .sm\:col-start-9 {
+    grid-column-start: 9;
+  }
+
+  .sm\:row-span-2 {
+    grid-row: span 2 / span 2;
+  }
+
+  .sm\:row-start-1 {
+    grid-row-start: 1;
+  }
+
+  .sm\:mx-0 {
+    margin-left: 0px;
+    margin-right: 0px;
+  }
+
   .sm\:mb-4 {
     margin-bottom: 1rem;
   }
 
+  .sm\:mt-4 {
+    margin-top: 1rem;
+  }
+
   .sm\:max-h-\[170px\] {
     max-height: 170px;
+  }
+
+  .sm\:flex-wrap {
+    flex-wrap: wrap;
+  }
+
+  .sm\:justify-between {
+    justify-content: space-between;
   }
 }
 

@@ -2,7 +2,7 @@
 var CustomType = class {
   withFields(fields) {
     let properties = Object.keys(this).map(
-      (label) => label in fields ? fields[label] : this[label]
+      (label2) => label2 in fields ? fields[label2] : this[label2]
     );
     return new this.constructor(...properties);
   }
@@ -277,6 +277,14 @@ function to_result(option2, e) {
     return new Ok2(a2);
   } else {
     return new Error2(e);
+  }
+}
+function from_result(result) {
+  if (result.isOk()) {
+    let a2 = result[0];
+    return new Some(a2);
+  } else {
+    return new None();
   }
 }
 function unwrap(option2, default$) {
@@ -1129,6 +1137,27 @@ function decode_string(data) {
 function decode_int(data) {
   return Number.isInteger(data) ? new Ok2(data) : decoder_error("Int", data);
 }
+function decode_bool(data) {
+  return typeof data === "boolean" ? new Ok2(data) : decoder_error("Bool", data);
+}
+function decode_list(data) {
+  if (Array.isArray(data)) {
+    return new Ok2(List.fromArray(data));
+  }
+  return data instanceof List ? new Ok2(data) : decoder_error("List", data);
+}
+function decode_option(data, decoder) {
+  if (data === null || data === void 0 || data instanceof None)
+    return new Ok2(new None());
+  if (data instanceof Some)
+    data = data[0];
+  const result = decoder(data);
+  if (result.isOk()) {
+    return new Ok2(new Some(result[0]));
+  } else {
+    return result;
+  }
+}
 function decode_field(value4, name) {
   const not_a_map_error = () => decoder_error("Dict", value4);
   if (value4 instanceof Dict || value4 instanceof WeakMap || value4 instanceof Map) {
@@ -1211,14 +1240,14 @@ function inspectObject(v) {
   return `//js(${head}{${body3}})`;
 }
 function inspectCustomType(record) {
-  const props = Object.keys(record).map((label) => {
-    const value4 = inspect(record[label]);
-    return isNaN(parseInt(label)) ? `${label}: ${value4}` : value4;
+  const props = Object.keys(record).map((label2) => {
+    const value4 = inspect(record[label2]);
+    return isNaN(parseInt(label2)) ? `${label2}: ${value4}` : value4;
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
-function inspectList(list) {
-  return `[${list.toArray().map(inspect).join(", ")}]`;
+function inspectList(list2) {
+  return `[${list2.toArray().map(inspect).join(", ")}]`;
 }
 function inspectBitArray(bits) {
   return `<<${Array.from(bits.buffer).join(", ")}>>`;
@@ -1284,27 +1313,27 @@ function do_reverse(loop$remaining, loop$accumulator) {
 function reverse(xs) {
   return do_reverse(xs, toList([]));
 }
-function is_empty(list) {
-  return isEqual(list, toList([]));
+function is_empty(list2) {
+  return isEqual(list2, toList([]));
 }
-function first2(list) {
-  if (list.hasLength(0)) {
+function first2(list2) {
+  if (list2.hasLength(0)) {
     return new Error2(void 0);
   } else {
-    let x = list.head;
+    let x = list2.head;
     return new Ok2(x);
   }
 }
 function do_filter(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list = loop$list;
+    let list2 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list.hasLength(0)) {
+    if (list2.hasLength(0)) {
       return reverse(acc);
     } else {
-      let x = list.head;
-      let xs = list.tail;
+      let x = list2.head;
+      let xs = list2.tail;
       let new_acc = (() => {
         let $ = fun(x);
         if ($) {
@@ -1319,19 +1348,19 @@ function do_filter(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function filter(list, predicate) {
-  return do_filter(list, predicate, toList([]));
+function filter(list2, predicate) {
+  return do_filter(list2, predicate, toList([]));
 }
 function do_filter_map(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list = loop$list;
+    let list2 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list.hasLength(0)) {
+    if (list2.hasLength(0)) {
       return reverse(acc);
     } else {
-      let x = list.head;
-      let xs = list.tail;
+      let x = list2.head;
+      let xs = list2.tail;
       let new_acc = (() => {
         let $ = fun(x);
         if ($.isOk()) {
@@ -1347,39 +1376,39 @@ function do_filter_map(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function filter_map(list, fun) {
-  return do_filter_map(list, fun, toList([]));
+function filter_map(list2, fun) {
+  return do_filter_map(list2, fun, toList([]));
 }
 function do_map(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list = loop$list;
+    let list2 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list.hasLength(0)) {
+    if (list2.hasLength(0)) {
       return reverse(acc);
     } else {
-      let x = list.head;
-      let xs = list.tail;
+      let x = list2.head;
+      let xs = list2.tail;
       loop$list = xs;
       loop$fun = fun;
       loop$acc = prepend(fun(x), acc);
     }
   }
 }
-function map3(list, fun) {
-  return do_map(list, fun, toList([]));
+function map3(list2, fun) {
+  return do_map(list2, fun, toList([]));
 }
 function do_index_map(loop$list, loop$fun, loop$index, loop$acc) {
   while (true) {
-    let list = loop$list;
+    let list2 = loop$list;
     let fun = loop$fun;
     let index3 = loop$index;
     let acc = loop$acc;
-    if (list.hasLength(0)) {
+    if (list2.hasLength(0)) {
       return reverse(acc);
     } else {
-      let x = list.head;
-      let xs = list.tail;
+      let x = list2.head;
+      let xs = list2.tail;
       let acc$1 = prepend(fun(x, index3), acc);
       loop$list = xs;
       loop$fun = fun;
@@ -1388,23 +1417,49 @@ function do_index_map(loop$list, loop$fun, loop$index, loop$acc) {
     }
   }
 }
-function index_map(list, fun) {
-  return do_index_map(list, fun, 0, toList([]));
+function index_map(list2, fun) {
+  return do_index_map(list2, fun, 0, toList([]));
+}
+function do_try_map(loop$list, loop$fun, loop$acc) {
+  while (true) {
+    let list2 = loop$list;
+    let fun = loop$fun;
+    let acc = loop$acc;
+    if (list2.hasLength(0)) {
+      return new Ok2(reverse(acc));
+    } else {
+      let x = list2.head;
+      let xs = list2.tail;
+      let $ = fun(x);
+      if ($.isOk()) {
+        let y = $[0];
+        loop$list = xs;
+        loop$fun = fun;
+        loop$acc = prepend(y, acc);
+      } else {
+        let error = $[0];
+        return new Error2(error);
+      }
+    }
+  }
+}
+function try_map(list2, fun) {
+  return do_try_map(list2, fun, toList([]));
 }
 function do_take(loop$list, loop$n, loop$acc) {
   while (true) {
-    let list = loop$list;
+    let list2 = loop$list;
     let n = loop$n;
     let acc = loop$acc;
     let $ = n <= 0;
     if ($) {
       return reverse(acc);
     } else {
-      if (list.hasLength(0)) {
+      if (list2.hasLength(0)) {
         return reverse(acc);
       } else {
-        let x = list.head;
-        let xs = list.tail;
+        let x = list2.head;
+        let xs = list2.tail;
         loop$list = xs;
         loop$n = n - 1;
         loop$acc = prepend(x, acc);
@@ -1412,8 +1467,8 @@ function do_take(loop$list, loop$n, loop$acc) {
     }
   }
 }
-function take(list, n) {
-  return do_take(list, n, toList([]));
+function take(list2, n) {
+  return do_take(list2, n, toList([]));
 }
 function do_append(loop$first, loop$second) {
   while (true) {
@@ -1432,8 +1487,8 @@ function do_append(loop$first, loop$second) {
 function append(first3, second2) {
   return do_append(reverse(first3), second2);
 }
-function prepend2(list, item) {
-  return prepend(item, list);
+function prepend2(list2, item) {
+  return prepend(item, list2);
 }
 function reverse_and_prepend(loop$prefix, loop$suffix) {
   while (true) {
@@ -1456,42 +1511,42 @@ function do_concat(loop$lists, loop$acc) {
     if (lists.hasLength(0)) {
       return reverse(acc);
     } else {
-      let list = lists.head;
+      let list2 = lists.head;
       let further_lists = lists.tail;
       loop$lists = further_lists;
-      loop$acc = reverse_and_prepend(list, acc);
+      loop$acc = reverse_and_prepend(list2, acc);
     }
   }
 }
 function concat2(lists) {
   return do_concat(lists, toList([]));
 }
-function flat_map(list, fun) {
-  let _pipe = map3(list, fun);
+function flat_map(list2, fun) {
+  let _pipe = map3(list2, fun);
   return concat2(_pipe);
 }
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
-    let list = loop$list;
+    let list2 = loop$list;
     let initial = loop$initial;
     let fun = loop$fun;
-    if (list.hasLength(0)) {
+    if (list2.hasLength(0)) {
       return initial;
     } else {
-      let x = list.head;
-      let rest$1 = list.tail;
+      let x = list2.head;
+      let rest$1 = list2.tail;
       loop$list = rest$1;
       loop$initial = fun(initial, x);
       loop$fun = fun;
     }
   }
 }
-function fold_right(list, initial, fun) {
-  if (list.hasLength(0)) {
+function fold_right(list2, initial, fun) {
+  if (list2.hasLength(0)) {
     return initial;
   } else {
-    let x = list.head;
-    let rest$1 = list.tail;
+    let x = list2.head;
+    let rest$1 = list2.tail;
     return fun(fold_right(rest$1, initial, fun), x);
   }
 }
@@ -1514,16 +1569,16 @@ function find2(loop$haystack, loop$is_desired) {
     }
   }
 }
-function key_set(list, key2, value4) {
-  if (list.hasLength(0)) {
+function key_set(list2, key2, value4) {
+  if (list2.hasLength(0)) {
     return toList([[key2, value4]]);
-  } else if (list.atLeastLength(1) && isEqual(list.head[0], key2)) {
-    let k = list.head[0];
-    let rest$1 = list.tail;
+  } else if (list2.atLeastLength(1) && isEqual(list2.head[0], key2)) {
+    let k = list2.head[0];
+    let rest$1 = list2.tail;
     return prepend([key2, value4], rest$1);
   } else {
-    let first$1 = list.head;
-    let rest$1 = list.tail;
+    let first$1 = list2.head;
+    let rest$1 = list2.tail;
     return prepend(first$1, key_set(rest$1, key2, value4));
   }
 }
@@ -1563,6 +1618,11 @@ function unwrap2(result, default$) {
   } else {
     return default$;
   }
+}
+function all(results) {
+  return try_map(results, (x) => {
+    return x;
+  });
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/string_builder.mjs
@@ -1609,6 +1669,12 @@ function classify(data) {
 function int(data) {
   return decode_int(data);
 }
+function bool(data) {
+  return decode_bool(data);
+}
+function shallow_list(value4) {
+  return decode_list(value4);
+}
 function any(decoders) {
   return (data) => {
     if (decoders.hasLength(0)) {
@@ -1625,6 +1691,26 @@ function any(decoders) {
       } else {
         return any(decoders$1)(data);
       }
+    }
+  };
+}
+function all_errors(result) {
+  if (result.isOk()) {
+    return toList([]);
+  } else {
+    let errors = result[0];
+    return errors;
+  }
+}
+function decode1(constructor, t1) {
+  return (value4) => {
+    let $ = t1(value4);
+    if ($.isOk()) {
+      let a2 = $[0];
+      return new Ok2(constructor(a2));
+    } else {
+      let a2 = $;
+      return new Error2(all_errors(a2));
     }
   };
 }
@@ -1647,6 +1733,23 @@ function push_path(error, name) {
     }
   })();
   return error.withFields({ path: prepend(name$2, error.path) });
+}
+function list(decoder_type) {
+  return (dynamic2) => {
+    return try$(
+      shallow_list(dynamic2),
+      (list2) => {
+        let _pipe = list2;
+        let _pipe$1 = try_map(_pipe, decoder_type);
+        return map_errors(
+          _pipe$1,
+          (_capture) => {
+            return push_path(_capture, "*");
+          }
+        );
+      }
+    );
+  };
 }
 function map_errors(result, f) {
   return map_error(
@@ -1673,6 +1776,118 @@ function field(name, inner_type) {
         );
       }
     );
+  };
+}
+function optional_field(name, inner_type) {
+  return (value4) => {
+    return try$(
+      decode_field(value4, name),
+      (maybe_inner) => {
+        if (maybe_inner instanceof None) {
+          return new Ok2(new None());
+        } else {
+          let dynamic_inner = maybe_inner[0];
+          let _pipe = dynamic_inner;
+          let _pipe$1 = decode_option(_pipe, inner_type);
+          return map_errors(
+            _pipe$1,
+            (_capture) => {
+              return push_path(_capture, name);
+            }
+          );
+        }
+      }
+    );
+  };
+}
+function decode2(constructor, t1, t2) {
+  return (value4) => {
+    let $ = t1(value4);
+    let $1 = t2(value4);
+    if ($.isOk() && $1.isOk()) {
+      let a2 = $[0];
+      let b = $1[0];
+      return new Ok2(constructor(a2, b));
+    } else {
+      let a2 = $;
+      let b = $1;
+      return new Error2(concat2(toList([all_errors(a2), all_errors(b)])));
+    }
+  };
+}
+function decode4(constructor, t1, t2, t3, t4) {
+  return (x) => {
+    let $ = t1(x);
+    let $1 = t2(x);
+    let $2 = t3(x);
+    let $3 = t4(x);
+    if ($.isOk() && $1.isOk() && $2.isOk() && $3.isOk()) {
+      let a2 = $[0];
+      let b = $1[0];
+      let c = $2[0];
+      let d = $3[0];
+      return new Ok2(constructor(a2, b, c, d));
+    } else {
+      let a2 = $;
+      let b = $1;
+      let c = $2;
+      let d = $3;
+      return new Error2(
+        concat2(
+          toList([all_errors(a2), all_errors(b), all_errors(c), all_errors(d)])
+        )
+      );
+    }
+  };
+}
+function decode9(constructor, t1, t2, t3, t4, t5, t6, t7, t8, t9) {
+  return (x) => {
+    let $ = t1(x);
+    let $1 = t2(x);
+    let $2 = t3(x);
+    let $3 = t4(x);
+    let $4 = t5(x);
+    let $5 = t6(x);
+    let $6 = t7(x);
+    let $7 = t8(x);
+    let $8 = t9(x);
+    if ($.isOk() && $1.isOk() && $2.isOk() && $3.isOk() && $4.isOk() && $5.isOk() && $6.isOk() && $7.isOk() && $8.isOk()) {
+      let a2 = $[0];
+      let b = $1[0];
+      let c = $2[0];
+      let d = $3[0];
+      let e = $4[0];
+      let f = $5[0];
+      let g = $6[0];
+      let h = $7[0];
+      let i = $8[0];
+      return new Ok2(constructor(a2, b, c, d, e, f, g, h, i));
+    } else {
+      let a2 = $;
+      let b = $1;
+      let c = $2;
+      let d = $3;
+      let e = $4;
+      let f = $5;
+      let g = $6;
+      let h = $7;
+      let i = $8;
+      return new Error2(
+        concat2(
+          toList([
+            all_errors(a2),
+            all_errors(b),
+            all_errors(c),
+            all_errors(d),
+            all_errors(e),
+            all_errors(f),
+            all_errors(g),
+            all_errors(h),
+            all_errors(i)
+          ])
+        )
+      );
+    }
   };
 }
 
@@ -1835,9 +2050,17 @@ function inspect2(term) {
   return to_string4(_pipe);
 }
 
+// build/dev/javascript/gleam_stdlib/gleam/io.mjs
+function debug(term) {
+  let _pipe = term;
+  let _pipe$1 = inspect2(_pipe);
+  print_debug(_pipe$1);
+  return term;
+}
+
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
 var Uri = class extends CustomType {
-  constructor(scheme, userinfo, host, port, path, query, fragment) {
+  constructor(scheme, userinfo, host, port, path, query, fragment2) {
     super();
     this.scheme = scheme;
     this.userinfo = userinfo;
@@ -1845,7 +2068,7 @@ var Uri = class extends CustomType {
     this.port = port;
     this.path = path;
     this.query = query;
-    this.fragment = fragment;
+    this.fragment = fragment2;
   }
 };
 function do_remove_dot_segments(loop$input, loop$accumulator) {
@@ -1898,9 +2121,9 @@ function guard(requirement, consequence, alternative) {
 
 // build/dev/javascript/lustre/lustre/effect.mjs
 var Effect = class extends CustomType {
-  constructor(all) {
+  constructor(all2) {
     super();
-    this.all = all;
+    this.all = all2;
   }
 };
 function from2(effect) {
@@ -2017,6 +2240,9 @@ function value(val) {
 function selected(is_selected) {
   return property("selected", is_selected);
 }
+function for$(id2) {
+  return attribute("for", id2);
+}
 function href(uri) {
   return attribute("href", uri);
 }
@@ -2121,13 +2347,24 @@ function text(content) {
 function none3() {
   return new Text("");
 }
-
-// build/dev/javascript/gleam_stdlib/gleam/io.mjs
-function debug(term) {
-  let _pipe = term;
-  let _pipe$1 = inspect2(_pipe);
-  print_debug(_pipe$1);
-  return term;
+function flatten_fragment_elements(elements) {
+  return fold_right(
+    elements,
+    toList([]),
+    (new_elements, element2) => {
+      if (element2 instanceof Fragment) {
+        let fr_elements = element2.elements;
+        return append(fr_elements, new_elements);
+      } else {
+        let el2 = element2;
+        return prepend(el2, new_elements);
+      }
+    }
+  );
+}
+function fragment(elements) {
+  let _pipe = flatten_fragment_elements(elements);
+  return new Fragment(_pipe, "");
 }
 
 // build/dev/javascript/lustre/lustre/internals/runtime.mjs
@@ -2607,6 +2844,12 @@ function section(attrs, children) {
 function div(attrs, children) {
   return element("div", attrs, children);
 }
+function li(attrs, children) {
+  return element("li", attrs, children);
+}
+function ol(attrs, children) {
+  return element("ol", attrs, children);
+}
 function a(attrs, children) {
   return element("a", attrs, children);
 }
@@ -2616,8 +2859,17 @@ function span(attrs, children) {
 function button(attrs, children) {
   return element("button", attrs, children);
 }
-function option(attrs, label) {
-  return element("option", attrs, toList([text(label)]));
+function fieldset(attrs, children) {
+  return element("fieldset", attrs, children);
+}
+function label(attrs, children) {
+  return element("label", attrs, children);
+}
+function legend(attrs, children) {
+  return element("legend", attrs, children);
+}
+function option(attrs, label2) {
+  return element("option", attrs, toList([text(label2)]));
 }
 function select(attrs, children) {
   return element("select", attrs, children);
@@ -3209,12 +3461,12 @@ function handle_property(props, style2) {
 function wrap_pseudo_selectors(id2, indent2, pseudo_selectors) {
   return map3(
     pseudo_selectors,
-    (p2) => {
+    (p) => {
       return wrap_class(
         id2,
-        p2.properties,
+        p.properties,
         indent2,
-        new Some(p2.pseudo_selector)
+        new Some(p.pseudo_selector)
       );
     }
   );
@@ -3321,8 +3573,8 @@ function handle_pseudo_selector(props, style2) {
     return prepend2(computed_props.pseudo_selectors, _capture);
   })(_pipe);
   let _pipe$2 = append(_pipe$1, props.pseudo_selectors);
-  return ((p2) => {
-    return props.withFields({ pseudo_selectors: p2 });
+  return ((p) => {
+    return props.withFields({ pseudo_selectors: p });
   })(_pipe$2);
 }
 
@@ -4311,15 +4563,15 @@ function inspectObject2(v) {
 }
 function inspectCustomType2(record) {
   const props = List.fromArray(
-    Object.keys(record).map((label) => {
-      const value4 = inspect3(record[label]);
-      return isNaN(parseInt(label)) ? [new Some(label + ": "), value4] : [new None(), value4];
+    Object.keys(record).map((label2) => {
+      const value4 = inspect3(record[label2]);
+      return isNaN(parseInt(label2)) ? [new Some(label2 + ": "), value4] : [new None(), value4];
     })
   );
   return new DataCustomType(record.constructor.name, props);
 }
-function inspectList2(list) {
-  return new DataList(List.fromArray(list.toArray().map(inspect3)));
+function inspectList2(list2) {
+  return new DataList(List.fromArray(list2.toArray().map(inspect3)));
 }
 function inspectBitArray2(bits) {
   return new DataBitArray(`<<${Array.from(bits.buffer).join(", ")}>>`);
@@ -4768,77 +5020,77 @@ function count_data(data) {
     });
   }
 }
-function display_parenthesis(should_display, p2) {
+function display_parenthesis(should_display, p) {
   if (should_display) {
-    return p2;
+    return p;
   } else {
     return "";
   }
 }
-function view_data_tuple(values2, p2, i) {
+function view_data_tuple(values2, p, i) {
   return concat2(
     toList([
-      toList([view_data_line(i, p2, "#(", "var(--editor-fg)")]),
+      toList([view_data_line(i, p, "#(", "var(--editor-fg)")]),
       flat_map(
         values2,
         (_capture) => {
           return view_data(_capture, i + 2, "");
         }
       ),
-      toList([view_data_line(i, p2, ")", "var(--editor-fg)")])
+      toList([view_data_line(i, p, ")", "var(--editor-fg)")])
     ])
   );
 }
-function view_data(data, i, p2) {
+function view_data(data, i, p) {
   if (data instanceof DataNil) {
-    return toList([view_data_line(i, p2, "Nil", "var(--nil)")]);
+    return toList([view_data_line(i, p, "Nil", "var(--nil)")]);
   } else if (data instanceof DataBool) {
     let v = data[0];
-    return toList([view_data_line(i, p2, v, "var(--bool)")]);
+    return toList([view_data_line(i, p, v, "var(--bool)")]);
   } else if (data instanceof DataConstant) {
     let v = data[0];
-    return toList([view_data_line(i, p2, v, "var(--constant)")]);
+    return toList([view_data_line(i, p, v, "var(--constant)")]);
   } else if (data instanceof DataBitArray) {
     let v = data[0];
-    return toList([view_data_line(i, p2, v, "var(--bit-array)")]);
+    return toList([view_data_line(i, p, v, "var(--bit-array)")]);
   } else if (data instanceof DataUtfCodepoint) {
     let v = data[0];
-    return toList([view_data_line(i, p2, v, "var(--utfcodepoint)")]);
+    return toList([view_data_line(i, p, v, "var(--utfcodepoint)")]);
   } else if (data instanceof DataString) {
     let v = data[0];
-    return toList([view_data_line(i, p2, v, "var(--string)")]);
+    return toList([view_data_line(i, p, v, "var(--string)")]);
   } else if (data instanceof DataNumber) {
     let v = data[0];
-    return toList([view_data_line(i, p2, v, "var(--number)")]);
+    return toList([view_data_line(i, p, v, "var(--number)")]);
   } else if (data instanceof DataRegex) {
     let v = data[0];
-    return toList([view_data_line(i, p2, v, "var(--regex)")]);
+    return toList([view_data_line(i, p, v, "var(--regex)")]);
   } else if (data instanceof DataDate) {
     let v = data[0];
-    return toList([view_data_line(i, p2, v, "var(--date)")]);
+    return toList([view_data_line(i, p, v, "var(--date)")]);
   } else if (data instanceof DataFunction) {
     let v = data[0];
-    return toList([view_data_line(i, p2, v, "var(--function)")]);
+    return toList([view_data_line(i, p, v, "var(--function)")]);
   } else if (data instanceof DataTuple) {
     let vs = data[0];
-    return view_data_tuple(vs, p2, i);
+    return view_data_tuple(vs, p, i);
   } else if (data instanceof DataList) {
     let vs = data[0];
-    return view_data_list(vs, p2, i);
+    return view_data_list(vs, p, i);
   } else if (data instanceof DataCustomType) {
     let name = data[0];
     let vs = data[1];
-    return view_data_custom_type(name, vs, p2, i);
+    return view_data_custom_type(name, vs, p, i);
   } else if (data instanceof DataDict) {
     let vs = data[0];
-    return view_data_dict(vs, p2, i);
+    return view_data_dict(vs, p, i);
   } else if (data instanceof DataSet) {
     let vs = data[0];
-    return view_data_set(vs, p2, i);
+    return view_data_set(vs, p, i);
   } else {
     let name = data[0];
     let vs = data[1];
-    return view_data_object(name, vs, p2, i);
+    return view_data_object(name, vs, p, i);
   }
 }
 function view_step(debugger_, selected_step, item) {
@@ -4888,8 +5140,8 @@ function view_model(opened, debugger_, model) {
     );
   }
 }
-function view_data_list(values2, p2, i) {
-  let open_list = view_data_line(i, p2, "[", "var(--editor-fg)");
+function view_data_list(values2, p, i) {
+  let open_list = view_data_line(i, p, "[", "var(--editor-fg)");
   let close_list = (idt) => {
     return view_data_line(idt, "", "]", "var(--editor-fg)");
   };
@@ -4913,10 +5165,10 @@ function view_data_list(values2, p2, i) {
     );
   }
 }
-function view_data_custom_type(name, values2, p2, i) {
+function view_data_custom_type(name, values2, p, i) {
   let open_type = (display_paren) => {
     let paren = display_parenthesis(display_paren, "(");
-    return view_data_line(i, p2, name + paren, "var(--custom-type)");
+    return view_data_line(i, p, name + paren, "var(--custom-type)");
   };
   let close_type = (idt, display_paren) => {
     let paren = display_parenthesis(display_paren, ")");
@@ -4977,10 +5229,10 @@ function view_data_custom_type(name, values2, p2, i) {
     ]);
   }
 }
-function view_data_dict(values2, p2, i) {
+function view_data_dict(values2, p, i) {
   return concat2(
     toList([
-      toList([view_data_line(i, p2, "//js dict.from_list([", "var(--editor-fg)")]),
+      toList([view_data_line(i, p, "//js dict.from_list([", "var(--editor-fg)")]),
       flat_map(
         values2,
         (data) => {
@@ -5008,31 +5260,31 @@ function view_data_dict(values2, p2, i) {
     ])
   );
 }
-function view_data_set(vs, p2, i) {
+function view_data_set(vs, p, i) {
   return concat2(
     toList([
-      toList([view_data_line(i, p2, "//js Set(", "var(--editor-fg)")]),
+      toList([view_data_line(i, p, "//js Set(", "var(--editor-fg)")]),
       flat_map(
         vs,
         (_capture) => {
           return view_data(_capture, i + 2, "");
         }
       ),
-      toList([view_data_line(i, p2, ")", "var(--editor-fg)")])
+      toList([view_data_line(i, p, ")", "var(--editor-fg)")])
     ])
   );
 }
-function view_data_object(name, vs, p2, i) {
+function view_data_object(name, vs, p, i) {
   return concat2(
     toList([
-      toList([view_data_line(i, p2, name + " {", "var(--editor-fg)")]),
+      toList([view_data_line(i, p, name + " {", "var(--editor-fg)")]),
       flat_map(
         vs,
         (data) => {
           return view_data(second(data), i + 2, "");
         }
       ),
-      toList([view_data_line(i, p2, "}", "var(--editor-fg)")])
+      toList([view_data_line(i, p, "}", "var(--editor-fg)")])
     ])
   );
 }
@@ -5483,13 +5735,13 @@ var RecipeSeed = [{
     { units: "g", quantity: "15", name: "Flat - leaf parsley" }
   ],
   method_steps: [{
-    stepText: "Boil the potatoes in salted water for 10 minutes, until they are just cooked through, then drain and rinse under running cold water to cool."
+    step_text: "Boil the potatoes in salted water for 10 minutes, until they are just cooked through, then drain and rinse under running cold water to cool."
   }, {
-    stepText: "While the potatoes are cooking, shred the cabbage, deseed the pomegranate (or open the packet), and drain and rinse the beans."
+    step_text: "While the potatoes are cooking, shred the cabbage, deseed the pomegranate (or open the packet), and drain and rinse the beans."
   }, {
-    stepText: "In a bowl, mix the mayonnaise, yoghurt, lemon juice, oil, a teaspoon of flaky sea salt and plenty of pepper, then taste and adjust the seasoning accordingly."
+    step_text: "In a bowl, mix the mayonnaise, yoghurt, lemon juice, oil, a teaspoon of flaky sea salt and plenty of pepper, then taste and adjust the seasoning accordingly."
   }, {
-    stepText: "Put the cooled, drained potatoes, red cabbage, pomegranate, beans and the dressing in a large bowl, then taste and adjust the seasoning if necessary. Arrange on a large plate, scatter over the parsley and serve at room temperature."
+    step_text: "Put the cooled, drained potatoes, red cabbage, pomegranate, beans and the dressing in a large bowl, then taste and adjust the seasoning if necessary. Arrange on a large plate, scatter over the parsley and serve at room temperature."
   }],
   tags: [{ name: "Cuisine", value: "Australian" }, {
     name: "Style",
@@ -5509,8 +5761,8 @@ async function seedDb() {
       const res = await addTagOption(item);
     }
   }
-  console.log("recipes.length: ", recipes[0].length);
-  if (recipes[0].length === 0) {
+  console.log("recipes.length: ", recipes.length);
+  if (recipes.length === 0) {
     for (const item of RecipeSeed) {
       await addOrUpdateRecipe(item);
     }
@@ -5577,8 +5829,15 @@ async function listRecipes() {
   if (!exists) {
     return new Ok2([]);
   }
-  const result = await db.execO("SELECT * FROM recipes");
-  return result;
+  const result = await db.execO("SELECT id, title, slug, prep_time, cook_time, serves, tags, ingredients, method_steps FROM recipes");
+  const mapped = result.map((recipe) => {
+    recipe.tags = JSON.parse(recipe.tags);
+    recipe.ingredients = JSON.parse(recipe.ingredients);
+    recipe.method_steps = JSON.parse(recipe.method_steps);
+    return recipe;
+  });
+  console.log("mapped: ", mapped);
+  return mapped;
 }
 async function addOrUpdateRecipe(recipe) {
   console.log("addOrUpdateRecipe: ", recipe);
@@ -5598,29 +5857,57 @@ async function do_get_recipes() {
 
 // build/dev/javascript/mealstack_client/mealstack_client.mjs
 var Model2 = class extends CustomType {
-  constructor(current_route, recipes) {
+  constructor(current_route, current_recipe, recipes) {
     super();
     this.current_route = current_route;
+    this.current_recipe = current_recipe;
     this.recipes = recipes;
   }
 };
 var Home = class extends CustomType {
-  constructor(title) {
-    super();
-    this.title = title;
-  }
 };
 var RecipeDetail = class extends CustomType {
-  constructor(title, slug) {
+  constructor(slug) {
     super();
-    this.title = title;
     this.slug = slug;
   }
 };
 var RecipeBook = class extends CustomType {
-  constructor(title) {
+};
+var Recipe = class extends CustomType {
+  constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
     super();
+    this.id = id2;
     this.title = title;
+    this.slug = slug;
+    this.cook_time = cook_time;
+    this.prep_time = prep_time;
+    this.serves = serves;
+    this.tags = tags;
+    this.ingredients = ingredients;
+    this.method_steps = method_steps;
+  }
+};
+var Ingredient = class extends CustomType {
+  constructor(name, ismain, quantity, units) {
+    super();
+    this.name = name;
+    this.ismain = ismain;
+    this.quantity = quantity;
+    this.units = units;
+  }
+};
+var Tag = class extends CustomType {
+  constructor(name, value4) {
+    super();
+    this.name = name;
+    this.value = value4;
+  }
+};
+var MethodStep = class extends CustomType {
+  constructor(step_text) {
+    super();
+    this.step_text = step_text;
   }
 };
 var OnRouteChange = class extends CustomType {
@@ -5635,46 +5922,125 @@ var CacheUpdatedMessage = class extends CustomType {
     this[0] = x0;
   }
 };
+function decode_ingredient(d) {
+  let decoder = decode4(
+    (var0, var1, var2, var3) => {
+      return new Ingredient(var0, var1, var2, var3);
+    },
+    optional_field("name", string),
+    optional_field("ismain", bool),
+    optional_field("quantity", string),
+    optional_field("units", string)
+  );
+  return decoder(d);
+}
+function decode_tag(d) {
+  let decoder = decode2(
+    (var0, var1) => {
+      return new Tag(var0, var1);
+    },
+    field("name", string),
+    field("value", string)
+  );
+  return decoder(d);
+}
+function decode_method_step(d) {
+  let decoder = decode1(
+    (var0) => {
+      return new MethodStep(var0);
+    },
+    field("step_text", string)
+  );
+  return decoder(d);
+}
+function decode_recipe(d) {
+  let decoder = decode9(
+    (var0, var1, var2, var3, var4, var5, var6, var7, var8) => {
+      return new Recipe(var0, var1, var2, var3, var4, var5, var6, var7, var8);
+    },
+    optional_field("id", string),
+    field("title", string),
+    field("slug", string),
+    field("cook_time", int),
+    field("prep_time", int),
+    field("serves", int),
+    optional_field("tags", list(decode_tag)),
+    optional_field("ingredients", list(decode_ingredient)),
+    optional_field("method_steps", list(decode_method_step))
+  );
+  return decoder(d);
+}
+function lookup_recipe_by_slug(model, slug) {
+  return from_result(
+    find2(model.recipes, (a2) => {
+      return a2.slug === slug;
+    })
+  );
+}
 function on_route_change(uri) {
   let $ = path_segments(uri.path);
   if ($.hasLength(2) && $.head === "recipes") {
     let slug = $.tail.head;
-    return new OnRouteChange(new RecipeDetail(slug, "Recipe"));
+    return new OnRouteChange(new RecipeDetail(slug));
   } else if ($.hasLength(1) && $.head === "recipes") {
-    return new OnRouteChange(new RecipeBook("Recipes"));
+    return new OnRouteChange(new RecipeBook());
   } else {
-    return new OnRouteChange(new Home("Mealstack"));
+    return new OnRouteChange(new Home());
   }
 }
 function init6(_) {
   return [
-    new Model2(new Home("Mealstack"), toList([])),
+    new Model2(new Home(), new None(), toList([])),
     init2(on_route_change)
   ];
 }
 function get_recipes() {
   return from2(
     (dispatch2) => {
-      return (() => {
-        let _pipe = do_get_recipes();
-        let _pipe$1 = map_promise(_pipe, toList);
-        let _pipe$2 = map_promise(
-          _pipe$1,
-          (var0) => {
-            return new CacheUpdatedMessage(var0);
-          }
-        );
-        tap(_pipe$2, dispatch2);
-        return void 0;
-      })();
+      let _pipe = do_get_recipes();
+      let _pipe$1 = map_promise(_pipe, toList);
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map3(_capture, decode_recipe);
+        }
+      );
+      let _pipe$3 = map_promise(_pipe$2, all);
+      let _pipe$4 = map_promise(
+        _pipe$3,
+        (_capture) => {
+          return map4(
+            _capture,
+            (var0) => {
+              return new CacheUpdatedMessage(var0);
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$4,
+        (_capture) => {
+          return map4(_capture, dispatch2);
+        }
+      );
+      return void 0;
     }
   );
 }
 function update3(model, msg) {
-  if (msg instanceof OnRouteChange && msg[0] instanceof RecipeBook && msg[0].title === "Recipes") {
+  if (msg instanceof OnRouteChange && msg[0] instanceof RecipeBook) {
     return [
-      model.withFields({ current_route: new RecipeBook("Recipes") }),
+      model.withFields({ current_route: new RecipeBook() }),
       get_recipes()
+    ];
+  } else if (msg instanceof OnRouteChange && msg[0] instanceof RecipeDetail) {
+    let slug = msg[0].slug;
+    return [
+      model.withFields({
+        current_route: new RecipeDetail(slug),
+        current_recipe: lookup_recipe_by_slug(model, slug)
+      }),
+      none()
     ];
   } else if (msg instanceof OnRouteChange) {
     let route = msg[0];
@@ -5694,7 +6060,7 @@ function view_base(children) {
     toList([children])
   );
 }
-function view_title(model, styles) {
+function view_title(title, styles) {
   return div(
     toList([
       class$(styles),
@@ -5710,17 +6076,17 @@ function view_title(model, styles) {
             "min-h-[56px] max-h-[140px] sm:max-h-[170px] overflow-hidden px-0 pb-1 w-full font-transitional font-bold italic text-ecru-white-950"
           )
         ]),
-        toList([text(model.current_route.title)])
+        toList([text(title)])
       )
     ])
   );
 }
-function view_home(model) {
+function view_home() {
   return section(
     toList([class$("grid-cols-12 col-start-[main-start]")]),
     toList([
       view_title(
-        model,
+        "Mealstack",
         "text-9xl placeholder:underline-pink underline-pink col-span-full xxs:col-span-11"
       ),
       nav(
@@ -5842,7 +6208,7 @@ function view_recipe_book(model) {
       )
     ]),
     toList([
-      view_title(model, "underline-green"),
+      view_title("Recipe Book", "underline-green"),
       nav(
         toList([
           class$(
@@ -5860,15 +6226,266 @@ function view_recipe_book(model) {
     ])
   );
 }
+function view_ingredient(ingredient) {
+  return div(
+    toList([class$("flex justify-start col-span-6 text-sm items-baseline")]),
+    toList([
+      div(
+        toList([class$("flex-grow-[2] text-left flex justify-start")]),
+        toList([
+          unwrap(
+            map2(
+              ingredient.name,
+              (_capture) => {
+                return text(_capture);
+              }
+            ),
+            none3()
+          )
+        ])
+      ),
+      div(
+        toList([class$("col-span-1 text-xs")]),
+        toList([
+          unwrap(
+            map2(
+              ingredient.quantity,
+              (_capture) => {
+                return text(_capture);
+              }
+            ),
+            none3()
+          )
+        ])
+      ),
+      div(
+        toList([class$("col-span-1 text-xs")]),
+        toList([
+          unwrap(
+            map2(
+              ingredient.units,
+              (_capture) => {
+                return text(_capture);
+              }
+            ),
+            none3()
+          )
+        ])
+      )
+    ])
+  );
+}
+function view_method_step(method_step) {
+  return li(
+    toList([
+      class$(
+        "marker:text-base w-full justify-self-start list-decimal text-left pl-1 ml-2 leading-snug my-2"
+      )
+    ]),
+    toList([text(method_step.step_text)])
+  );
+}
+function view_tag(tag) {
+  return div(
+    toList([class$("flex")]),
+    toList([
+      div(
+        toList([
+          class$(
+            "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs"
+          )
+        ]),
+        toList([text(tag.name)])
+      ),
+      div(
+        toList([
+          class$(
+            "font-mono bg-ecru-white-50 border border-l-0 border-ecru-white-950  px-1 text-xs"
+          )
+        ]),
+        toList([text(tag.value)])
+      )
+    ])
+  );
+}
+function view_recipe_detail(recipe) {
+  return section(
+    toList([
+      class$(
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr]"
+      )
+    ]),
+    toList([
+      view_title(recipe.title, "underline-green"),
+      fieldset(
+        toList([
+          class$(
+            "mx-2 sm:mx-0 mt-0 sm:mt-4 flex sm:flex-wrap justify-between row-start-2 col-span-full sm:row-start-1 sm:col-span-3 sm:col-start-9"
+          )
+        ]),
+        toList([
+          fieldset(
+            toList([
+              class$("flex flex-wrap sm:justify-between items-baseline mb-2")
+            ]),
+            toList([
+              label(
+                toList([
+                  for$("prep_time"),
+                  class$("justify-self-start font-mono italic")
+                ]),
+                toList([text("Prep:")])
+              ),
+              div(
+                toList([class$("mx-4 justify-self-start")]),
+                toList([text(to_string3(recipe.prep_time))])
+              )
+            ])
+          ),
+          fieldset(
+            toList([
+              class$("flex flex-wrap sm:justify-between items-baseline mb-2")
+            ]),
+            toList([
+              label(
+                toList([
+                  for$("cook_time"),
+                  class$("justify-self-start font-mono italic")
+                ]),
+                toList([text("Cook:")])
+              ),
+              div(
+                toList([class$("mx-4 justify-self-start")]),
+                toList([text(to_string3(recipe.cook_time))])
+              )
+            ])
+          ),
+          fieldset(
+            toList([
+              class$("flex flex-wrap sm:justify-between items-baseline mb-2")
+            ]),
+            toList([
+              label(
+                toList([
+                  for$("cook_time"),
+                  class$("justify-self-start font-mono italic")
+                ]),
+                toList([text("Serves:")])
+              ),
+              div(
+                toList([class$("mx-4 justify-self-start")]),
+                toList([text(to_string3(recipe.serves))])
+              )
+            ])
+          )
+        ])
+      ),
+      nav(
+        toList([
+          class$(
+            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
+          )
+        ]),
+        toList([
+          a(toList([href("/"), class$("text-center")]), toList([text("\u{1F3E0}")]))
+        ])
+      ),
+      fieldset(
+        toList([
+          class$(
+            "flex flex-wrap gap-1 items-baseline mx-1 col-span-full gap-x-3"
+          )
+        ]),
+        (() => {
+          let $ = recipe.tags;
+          if ($ instanceof Some) {
+            let a$1 = $[0];
+            return map3(a$1, (tag) => {
+              return view_tag(tag);
+            });
+          } else {
+            return toList([none3()]);
+          }
+        })()
+      ),
+      fieldset(
+        toList([
+          class$(
+            "col-span-full my-1 mb-6 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-6 [box-shadow:1px_1px_0_#a3d2ab] mr-1"
+          )
+        ]),
+        toList([
+          legend(
+            toList([class$("mx-2 px-1 font-mono italic")]),
+            toList([text("Ingredients")])
+          ),
+          (() => {
+            let _pipe = recipe.ingredients;
+            let _pipe$1 = map2(
+              _pipe,
+              (_capture) => {
+                return map3(_capture, view_ingredient);
+              }
+            );
+            let _pipe$2 = unwrap(_pipe$1, toList([none3()]));
+            return fragment(_pipe$2);
+          })()
+        ])
+      ),
+      fieldset(
+        toList([
+          class$(
+            "flex justify-start flex-wrap col-span-full my-1 mb-6 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-6 [box-shadow:1px_1px_0_#a3d2ab] mr-1"
+          )
+        ]),
+        toList([
+          legend(
+            toList([class$("mx-2 px-1 font-mono italic")]),
+            toList([text("Method")])
+          ),
+          ol(
+            toList([
+              class$(
+                "list-decimal flex flex-wrap w-full items-baseline col-span-full pr-1 pl-2 ml-1 mb-1"
+              )
+            ]),
+            toList([
+              (() => {
+                let _pipe = recipe.method_steps;
+                let _pipe$1 = map2(
+                  _pipe,
+                  (_capture) => {
+                    return map3(_capture, view_method_step);
+                  }
+                );
+                let _pipe$2 = unwrap(_pipe$1, toList([none3()]));
+                return fragment(_pipe$2);
+              })()
+            ])
+          )
+        ])
+      )
+    ])
+  );
+}
+function view_lookup_recipe_detail(maybe_recipe) {
+  if (maybe_recipe instanceof Some) {
+    let a$1 = maybe_recipe[0];
+    return view_recipe_detail(a$1);
+  } else {
+    return view_title("Recipe not found", "");
+  }
+}
 function view2(model) {
   let page = (() => {
     let $ = model.current_route;
-    if ($ instanceof Home && $.title === "Mealstack") {
-      return view_home(model);
-    } else if ($ instanceof RecipeBook && $.title === "Recipes") {
+    if ($ instanceof Home) {
+      return view_home();
+    } else if ($ instanceof RecipeBook) {
       return view_recipe_book(model);
     } else {
-      return view_home(model);
+      let slug = $.slug;
+      return view_lookup_recipe_detail(model.current_recipe);
     }
   })();
   return view_base(page);
@@ -5879,7 +6496,7 @@ function main2() {
     throw makeError(
       "assignment_no_match",
       "mealstack_client",
-      29,
+      35,
       "main",
       "Assignment pattern did not match",
       { value: $ }
