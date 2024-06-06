@@ -575,6 +575,29 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+.input-base {
+  border-width: 0px;
+  border-bottom-width: 0px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+  line-height: inherit;
+  background-color: transparent;
+}
+
+.input-focus:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(0px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-border-opacity: 1;
+  border-color: rgb(80 156 94 / var(--tw-border-opacity));
+  border-width: 0px;
+  border-bottom-width: 1px;
+}
+
 .underline-pink {
   -webkit-text-decoration: underline solid 6px #fce7f8;
           text-decoration: underline solid 6px #fce7f8;
@@ -702,6 +725,10 @@ fieldset {
   margin-top: 1rem;
 }
 
+.inline-block {
+  display: inline-block;
+}
+
 .flex {
   display: flex;
 }
@@ -730,12 +757,20 @@ fieldset {
   min-height: 90vh;
 }
 
+.w-\[3ch\] {
+  width: 3ch;
+}
+
 .w-full {
   width: 100%;
 }
 
 .flex-grow-\[2\] {
   flex-grow: 2;
+}
+
+.resize-none {
+  resize: none;
 }
 
 .list-decimal {
@@ -803,12 +838,20 @@ fieldset {
   row-gap: 3rem;
 }
 
+.gap-y-2 {
+  row-gap: 0.5rem;
+}
+
 .justify-self-start {
   justify-self: start;
 }
 
 .overflow-hidden {
   overflow: hidden;
+}
+
+.overflow-x-hidden {
+  overflow-x: hidden;
 }
 
 .rounded-\[1px\] {
@@ -873,6 +916,14 @@ fieldset {
   padding-left: 0.5rem;
 }
 
+.pr-0 {
+  padding-right: 0px;
+}
+
+.pr-0\.5 {
+  padding-right: 0.125rem;
+}
+
 .pr-1 {
   padding-right: 0.25rem;
 }
@@ -891,6 +942,10 @@ fieldset {
 
 .text-center {
   text-align: center;
+}
+
+.text-right {
+  text-align: right;
 }
 
 .font-mono {
@@ -979,6 +1034,17 @@ fieldset {
 
 .marker\:text-base::marker {
   font-size: clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem);
+  line-height: 1.6;
+}
+
+.after\:content-\[\'h\'\]::after {
+  --tw-content: 'h';
+  content: var(--tw-content);
+}
+
+.after\:text-xs::after {
+  content: var(--tw-content);
+  font-size: clamp(0.8680555555555557rem, calc(0.8680555555555557rem + ((0.8888888888888888 - 0.8680555555555557) * ((100vw - 20rem) / (96 - 20)))), 0.8888888888888888rem);
   line-height: 1.6;
 }
 

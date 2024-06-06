@@ -3,9 +3,11 @@
   "version": "0.0.1",
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.588.0",
     "@vlcn.io/crsqlite-wasm": "^0.16.0",
     "esbuild-plugin-wasm": "^1.1.0",
-    "nanoid": "^5.0.7"
+    "nanoid": "^5.0.7",
+    "wrangler": "^3.58.0"
   },
   "devDependencies": {
     "@types/bun": "^1.1.3"

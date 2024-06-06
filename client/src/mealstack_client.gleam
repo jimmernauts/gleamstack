@@ -1,3 +1,4 @@
+import components/view_title.{view_title}
 import gleam/dynamic.{
   type Dynamic, bool, field, int, list, optional_field, string,
 }
@@ -11,11 +12,12 @@ import gleam/result
 import gleam/string.{append}
 import gleam/uri.{type Uri}
 import lustre
-import lustre/attribute.{class, for, href, id}
+import lustre/attribute.{class, for, href, id, name, type_, value}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, fragment, none, text}
 import lustre/element/html.{
-  a, div, fieldset, h1, label, legend, li, nav, ol, section, span,
+  a, div, fieldset, form, input, label, legend, li, nav, ol, section, span,
+  textarea,
 }
 import modem
 import tardis
@@ -61,6 +63,7 @@ type Route {
   Home
   RecipeDetail(slug: String)
   RecipeBook
+  EditRecipe(slug: Option(String))
 }
 
 type Recipe {
@@ -170,6 +173,18 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       ),
       effect.none(),
     )
+    OnRouteChange(EditRecipe(None)) -> #(
+      Model(..model, current_route: EditRecipe(None), current_recipe: None),
+      effect.none(),
+    )
+    OnRouteChange(EditRecipe(slug: Some(slug))) -> #(
+      Model(
+        ..model,
+        current_route: EditRecipe(slug: Some(slug)),
+        current_recipe: lookup_recipe_by_slug(model, slug),
+      ),
+      effect.none(),
+    )
     OnRouteChange(route) -> #(
       Model(..model, current_route: route),
       effect.none(),
@@ -187,6 +202,7 @@ fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(Recipe) {
 
 fn on_route_change(uri: Uri) -> Msg {
   case uri.path_segments(uri.path) {
+    ["recipes", "new"] -> OnRouteChange(EditRecipe(None))
     ["recipes", slug] -> OnRouteChange(RecipeDetail(slug: slug))
     ["recipes"] -> OnRouteChange(RecipeBook)
     _ -> OnRouteChange(Home)
@@ -214,6 +230,7 @@ fn view(model: Model) -> Element(Msg) {
     Home -> view_home()
     RecipeBook -> view_recipe_book(model)
     RecipeDetail(slug: slug) -> view_lookup_recipe_detail(model.current_recipe)
+    EditRecipe(slug: slug) -> view_edit_recipe(model.current_recipe)
   }
   view_base(page)
 }
@@ -301,28 +318,6 @@ fn view_home() {
   ])
 }
 
-fn view_title(title: String, styles: String) {
-  div(
-    [
-      class(styles),
-      class(
-        "mt-4 mb-2 sm:mb-4 mx-2 flex col-start-1 col-span-11 sm:col-start-1 sm:col-span-8 text-7xl",
-      ),
-    ],
-    [
-      h1(
-        [
-          id("title"),
-          class(
-            "min-h-[56px] max-h-[140px] sm:max-h-[170px] overflow-hidden px-0 pb-1 w-full font-transitional font-bold italic text-ecru-white-950",
-          ),
-        ],
-        [text(title)],
-      ),
-    ],
-  )
-}
-
 fn view_recipe_book(model: Model) {
   section(
     [
@@ -384,6 +379,71 @@ fn view_lookup_recipe_detail(maybe_recipe: Option(Recipe)) {
     Some(a) -> view_recipe_detail(a)
     _ -> view_title("Recipe not found", "")
   }
+}
+
+fn view_edit_recipe(maybe_recipe: Option(Recipe)) {
+  form(
+    [class("grid grid-cols-12 gap-y-2 col-span-full"), id("create_recipe_form")],
+    [
+      div(
+        [
+          class(
+            "mt-4 mb-2 sm:mb-4 mr-2 flex col-start-1 col-span-11 sm:col-start-1 sm:col-span-8",
+          ),
+        ],
+        [
+          textarea(
+            [
+              id("title"),
+              name("title"),
+              class(
+                "min-h-[56px] max-h-[140px] sm:max-h-[170px] overflow-x-hidden px-0 pb-1 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100`",
+              ),
+            ],
+            case maybe_recipe {
+              Some(a) -> a.title
+              _ -> ""
+            },
+          ),
+        ],
+      ),
+      fieldset(
+        [
+          class(
+            "mx-2 sm:mx-0 mt-0 sm:mt-4 flex sm:flex-wrap justify-between row-start-2 col-span-full sm:row-start-1 sm:col-span-3 sm:col-start-9",
+          ),
+        ],
+        [
+          fieldset([class("flex flex-wrap items-baseline mb-2")], [
+            label(
+              [class("justify-self-start font-mono italic"), for("prep_time")],
+              [text("Prep:")],
+            ),
+            div([class("justify-self-start")], [
+              div([class("after:content-['h'] after:text-xs inline-block")], [
+                input([
+                  id("prep_time_hrs"),
+                  class(
+                    "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base",
+                  ),
+                  type_("number"),
+                  name("prep_time_hrs"),
+                  value(case maybe_recipe {
+                    Some(a) ->
+                      int.floor_divide(a.prep_time, 60)
+                      |> result.unwrap(0)
+                      |> to_string
+                      |> string.replace("0", "")
+                    _ -> ""
+                  }),
+                ]),
+              ]),
+            ]),
+          ]),
+        ],
+      ),
+    ],
+  )
 }
 
 fn view_recipe_detail(recipe: Recipe) {

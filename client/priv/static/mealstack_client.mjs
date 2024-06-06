@@ -1025,6 +1025,16 @@ function float_to_string(float3) {
     return string3 + ".0";
   }
 }
+function string_replace(string3, target2, substitute) {
+  if (typeof string3.replaceAll !== "undefined") {
+    return string3.replaceAll(target2, substitute);
+  }
+  return string3.replace(
+    // $& means the whole matched string
+    new RegExp(target2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
+    substitute
+  );
+}
 function string_length(string3) {
   if (string3 === "") {
     return 0;
@@ -1158,17 +1168,17 @@ function decode_option(data, decoder) {
     return result;
   }
 }
-function decode_field(value4, name) {
+function decode_field(value4, name2) {
   const not_a_map_error = () => decoder_error("Dict", value4);
   if (value4 instanceof Dict || value4 instanceof WeakMap || value4 instanceof Map) {
-    const entry = map_get(value4, name);
+    const entry = map_get(value4, name2);
     return new Ok2(entry.isOk() ? new Some(entry[0]) : new None());
   } else if (value4 === null) {
     return not_a_map_error();
   } else if (Object.getPrototypeOf(value4) == Object.prototype) {
-    return try_get_field(value4, name, () => new Ok2(new None()));
+    return try_get_field(value4, name2, () => new Ok2(new None()));
   } else {
-    return try_get_field(value4, name, not_a_map_error);
+    return try_get_field(value4, name2, not_a_map_error);
   }
 }
 function try_get_field(value4, field2, or_else) {
@@ -1230,13 +1240,13 @@ function inspectDict(map6) {
   return body3 + "])";
 }
 function inspectObject(v) {
-  const name = Object.getPrototypeOf(v)?.constructor?.name || "Object";
+  const name2 = Object.getPrototypeOf(v)?.constructor?.name || "Object";
   const props = [];
   for (const k of Object.keys(v)) {
     props.push(`${inspect(k)}: ${inspect(v[k])}`);
   }
   const body3 = props.length ? " " + props.join(", ") + " " : "";
-  const head = name === "Object" ? "" : name + " ";
+  const head = name2 === "Object" ? "" : name2 + " ";
   return `//js(${head}{${body3}})`;
 }
 function inspectCustomType(record) {
@@ -1714,8 +1724,8 @@ function decode1(constructor, t1) {
     }
   };
 }
-function push_path(error, name) {
-  let name$1 = from(name);
+function push_path(error, name2) {
+  let name$1 = from(name2);
   let decoder = any(
     toList([string, (x) => {
       return map4(int(x), to_string3);
@@ -1759,11 +1769,11 @@ function map_errors(result, f) {
     }
   );
 }
-function field(name, inner_type) {
+function field(name2, inner_type) {
   return (value4) => {
     let missing_field_error = new DecodeError("field", "nothing", toList([]));
     return try$(
-      decode_field(value4, name),
+      decode_field(value4, name2),
       (maybe_inner) => {
         let _pipe = maybe_inner;
         let _pipe$1 = to_result(_pipe, toList([missing_field_error]));
@@ -1771,17 +1781,17 @@ function field(name, inner_type) {
         return map_errors(
           _pipe$2,
           (_capture) => {
-            return push_path(_capture, name);
+            return push_path(_capture, name2);
           }
         );
       }
     );
   };
 }
-function optional_field(name, inner_type) {
+function optional_field(name2, inner_type) {
   return (value4) => {
     return try$(
-      decode_field(value4, name),
+      decode_field(value4, name2),
       (maybe_inner) => {
         if (maybe_inner instanceof None) {
           return new Ok2(new None());
@@ -1792,7 +1802,7 @@ function optional_field(name, inner_type) {
           return map_errors(
             _pipe$1,
             (_capture) => {
-              return push_path(_capture, name);
+              return push_path(_capture, name2);
             }
           );
         }
@@ -2012,6 +2022,12 @@ function take2(iterator, desired) {
 function length3(string3) {
   return string_length(string3);
 }
+function replace(string3, pattern, substitute) {
+  let _pipe = string3;
+  let _pipe$1 = from_string(_pipe);
+  let _pipe$2 = string_replace(_pipe$1, pattern, substitute);
+  return to_string4(_pipe$2);
+}
 function append4(first3, second2) {
   let _pipe = first3;
   let _pipe$1 = from_string(_pipe);
@@ -2073,13 +2089,13 @@ var Uri = class extends CustomType {
 };
 function do_remove_dot_segments(loop$input, loop$accumulator) {
   while (true) {
-    let input = loop$input;
+    let input2 = loop$input;
     let accumulator = loop$accumulator;
-    if (input.hasLength(0)) {
+    if (input2.hasLength(0)) {
       return reverse(accumulator);
     } else {
-      let segment = input.head;
-      let rest = input.tail;
+      let segment = input2.head;
+      let rest = input2.tail;
       let accumulator$1 = (() => {
         if (segment === "") {
           let accumulator$12 = accumulator;
@@ -2103,8 +2119,8 @@ function do_remove_dot_segments(loop$input, loop$accumulator) {
     }
   }
 }
-function remove_dot_segments(input) {
-  return do_remove_dot_segments(input, toList([]));
+function remove_dot_segments(input2) {
+  return do_remove_dot_segments(input2, toList([]));
 }
 function path_segments(path) {
   return remove_dot_segments(split3(path, "/"));
@@ -2196,17 +2212,17 @@ var Event = class extends CustomType {
 };
 
 // build/dev/javascript/lustre/lustre/attribute.mjs
-function attribute(name, value4) {
-  return new Attribute(name, from(value4), false);
+function attribute(name2, value4) {
+  return new Attribute(name2, from(value4), false);
 }
-function property(name, value4) {
-  return new Attribute(name, from(value4), true);
+function property(name2, value4) {
+  return new Attribute(name2, from(value4), true);
 }
-function on(name, handler) {
-  return new Event("on" + name, handler);
+function on(name2, handler) {
+  return new Event("on" + name2, handler);
 }
-function class$(name) {
-  return attribute("class", name);
+function class$(name2) {
+  return attribute("class", name2);
 }
 function none2() {
   return class$("");
@@ -2231,14 +2247,20 @@ function classes(names) {
     })()
   );
 }
-function id(name) {
-  return attribute("id", name);
+function id(name2) {
+  return attribute("id", name2);
+}
+function type_(name2) {
+  return attribute("type", name2);
 }
 function value(val) {
   return attribute("value", val);
 }
 function selected(is_selected) {
   return property("selected", is_selected);
+}
+function name(name2) {
+  return attribute("name", name2);
 }
 function for$(id2) {
   return attribute("for", id2);
@@ -2454,15 +2476,15 @@ function createElementNode({ prev, next, dispatch: dispatch2, stack }) {
   let style2 = null;
   let innerHTML = null;
   for (const attr of next.attrs) {
-    const name = attr[0];
+    const name2 = attr[0];
     const value4 = attr[1];
     if (attr.as_property) {
-      if (el2[name] !== value4)
-        el2[name] = value4;
+      if (el2[name2] !== value4)
+        el2[name2] = value4;
       if (canMorph)
-        prevAttributes.delete(name);
-    } else if (name.startsWith("on")) {
-      const eventName = name.slice(2);
+        prevAttributes.delete(name2);
+    } else if (name2.startsWith("on")) {
+      const eventName = name2.slice(2);
       const callback = dispatch2(value4);
       if (!handlersForEl.has(eventName)) {
         el2.addEventListener(eventName, lustreGenericEventHandler);
@@ -2470,27 +2492,27 @@ function createElementNode({ prev, next, dispatch: dispatch2, stack }) {
       handlersForEl.set(eventName, callback);
       if (canMorph)
         prevHandlers.delete(eventName);
-    } else if (name.startsWith("data-lustre-on-")) {
-      const eventName = name.slice(15);
+    } else if (name2.startsWith("data-lustre-on-")) {
+      const eventName = name2.slice(15);
       const callback = dispatch2(lustreServerEventHandler);
       if (!handlersForEl.has(eventName)) {
         el2.addEventListener(eventName, lustreGenericEventHandler);
       }
       handlersForEl.set(eventName, callback);
-      el2.setAttribute(name, value4);
-    } else if (name === "class") {
+      el2.setAttribute(name2, value4);
+    } else if (name2 === "class") {
       className = className === null ? value4 : className + " " + value4;
-    } else if (name === "style") {
+    } else if (name2 === "style") {
       style2 = style2 === null ? value4 : style2 + value4;
-    } else if (name === "dangerous-unescaped-html") {
+    } else if (name2 === "dangerous-unescaped-html") {
       innerHTML = value4;
     } else {
       if (typeof value4 === "string")
-        el2.setAttribute(name, value4);
-      if (name === "value" || name === "selected")
-        el2[name] = value4;
+        el2.setAttribute(name2, value4);
+      if (name2 === "value" || name2 === "selected")
+        el2[name2] = value4;
       if (canMorph)
-        prevAttributes.delete(name);
+        prevAttributes.delete(name2);
     }
   }
   if (className !== null) {
@@ -2862,6 +2884,12 @@ function button(attrs, children) {
 function fieldset(attrs, children) {
   return element("fieldset", attrs, children);
 }
+function form(attrs, children) {
+  return element("form", attrs, children);
+}
+function input(attrs) {
+  return element("input", attrs, toList([]));
+}
 function label(attrs, children) {
   return element("label", attrs, children);
 }
@@ -2873,6 +2901,9 @@ function option(attrs, label2) {
 }
 function select(attrs, children) {
   return element("select", attrs, children);
+}
+function textarea(attrs, content) {
+  return element("textarea", attrs, toList([text(content)]));
 }
 
 // build/dev/javascript/modem/modem.ffi.mjs
@@ -2975,8 +3006,8 @@ function apply1(fun, arg1) {
 }
 
 // build/dev/javascript/lustre/lustre/event.mjs
-function on2(name, handler) {
-  return on(name, handler);
+function on2(name2, handler) {
+  return on(name2, handler);
 }
 function on_click(msg) {
   return on2("click", (_) => {
@@ -3046,8 +3077,8 @@ var NotABrowser2 = class extends CustomType {
 };
 
 // build/dev/javascript/plinth/element_ffi.mjs
-function setAttribute(element2, name, value4) {
-  element2.setAttribute(name, value4);
+function setAttribute(element2, name2, value4) {
+  element2.setAttribute(name2, value4);
 }
 function appendChild(parent, child) {
   parent.appendChild(child);
@@ -3408,12 +3439,12 @@ var PseudoProperty = class extends CustomType {
   }
 };
 var ComputedClass = class extends CustomType {
-  constructor(class_def, medias_def, selectors_def, name) {
+  constructor(class_def, medias_def, selectors_def, name2) {
     super();
     this.class_def = class_def;
     this.medias_def = medias_def;
     this.selectors_def = selectors_def;
-    this.name = name;
+    this.name = name2;
   }
 };
 function compute_property(indent2, key2, value4, important) {
@@ -3505,8 +3536,8 @@ function compute_classes(class_name, computed_properties) {
     }
   );
   let selectors_def = wrap_pseudo_selectors(class_name, 0, pseudo_selectors);
-  let name = trim2(join2(classes2, " ") + " " + class_name);
-  return new ComputedClass(class_def, medias_def, selectors_def, name);
+  let name2 = trim2(join2(classes2, " ") + " " + class_name);
+  return new ComputedClass(class_def, medias_def, selectors_def, name2);
 }
 function handle_media(props, style2) {
   if (!(style2 instanceof Media)) {
@@ -3590,20 +3621,20 @@ function compileClass(styles, classId) {
     return content;
   const id2 = uid(className);
   const computedProperties = compute_properties(styles, 2);
-  const { name, ...definitions2 } = compute_classes(
+  const { name: name2, ...definitions2 } = compute_classes(
     id2,
     computedProperties
   );
   cache.store(className, {
-    name,
+    name: name2,
     definitions: definitions2,
     previousStyles: styles,
     indexRules: null
   });
-  return { name, className };
+  return { name: name2, className };
 }
-function toString({ name }) {
-  return name;
+function toString({ name: name2 }) {
+  return name2;
 }
 
 // build/dev/javascript/sketch/sketch/size.mjs
@@ -4553,12 +4584,12 @@ function inspectDict2(map6) {
   return new DataDict(List.fromArray(data));
 }
 function inspectObject2(v) {
-  const name = Object.getPrototypeOf(v)?.constructor?.name || "Object";
+  const name2 = Object.getPrototypeOf(v)?.constructor?.name || "Object";
   const props = [];
   for (const k of Object.keys(v)) {
     props.push([inspect3(k), inspect3(v[k])]);
   }
-  const head = name === "Object" ? "" : name + " ";
+  const head = name2 === "Object" ? "" : name2 + " ";
   return new DataObject(head, List.fromArray(props));
 }
 function inspectCustomType2(record) {
@@ -4661,11 +4692,11 @@ function create_model_updater(dispatch2, application3) {
     return dispatch2(_pipe$2);
   };
 }
-function step_adder(dispatch2, name) {
+function step_adder(dispatch2, name2) {
   return (model, msg) => {
     let _pipe = model;
     let _pipe$1 = ((_capture) => {
-      return new AddStep(name, _capture, msg);
+      return new AddStep(name2, _capture, msg);
     })(_pipe);
     let _pipe$2 = dispatch(_pipe$1);
     return dispatch2(_pipe$2);
@@ -5078,9 +5109,9 @@ function view_data(data, i, p) {
     let vs = data[0];
     return view_data_list(vs, p, i);
   } else if (data instanceof DataCustomType) {
-    let name = data[0];
+    let name2 = data[0];
     let vs = data[1];
-    return view_data_custom_type(name, vs, p, i);
+    return view_data_custom_type(name2, vs, p, i);
   } else if (data instanceof DataDict) {
     let vs = data[0];
     return view_data_dict(vs, p, i);
@@ -5088,9 +5119,9 @@ function view_data(data, i, p) {
     let vs = data[0];
     return view_data_set(vs, p, i);
   } else {
-    let name = data[0];
+    let name2 = data[0];
     let vs = data[1];
-    return view_data_object(name, vs, p, i);
+    return view_data_object(name2, vs, p, i);
   }
 }
 function view_step(debugger_, selected_step, item) {
@@ -5165,10 +5196,10 @@ function view_data_list(values2, p, i) {
     );
   }
 }
-function view_data_custom_type(name, values2, p, i) {
+function view_data_custom_type(name2, values2, p, i) {
   let open_type = (display_paren) => {
     let paren = display_parenthesis(display_paren, "(");
-    return view_data_line(i, p, name + paren, "var(--custom-type)");
+    return view_data_line(i, p, name2 + paren, "var(--custom-type)");
   };
   let close_type = (idt, display_paren) => {
     let paren = display_parenthesis(display_paren, ")");
@@ -5274,10 +5305,10 @@ function view_data_set(vs, p, i) {
     ])
   );
 }
-function view_data_object(name, vs, p, i) {
+function view_data_object(name2, vs, p, i) {
   return concat2(
     toList([
-      toList([view_data_line(i, p, name + " {", "var(--editor-fg)")]),
+      toList([view_data_line(i, p, name2 + " {", "var(--editor-fg)")]),
       flat_map(
         vs,
         (data) => {
@@ -5648,19 +5679,42 @@ function wrap(application3, instance) {
     wrap_update(middleware)
   );
 }
-function application2(instance, name) {
+function application2(instance, name2) {
   let dispatch2 = instance.dispatch;
-  let updater = create_model_updater(dispatch2, name);
-  let adder = step_adder(dispatch2, name);
+  let updater = create_model_updater(dispatch2, name2);
+  let adder = step_adder(dispatch2, name2);
   return new Instance([updater, adder]);
 }
-function single2(name) {
+function single2(name2) {
   let _pipe = setup2();
   return map4(
     _pipe,
     (_capture) => {
-      return application2(_capture, name);
+      return application2(_capture, name2);
     }
+  );
+}
+
+// build/dev/javascript/mealstack_client/components/view_title.mjs
+function view_title(title, styles) {
+  return div(
+    toList([
+      class$(styles),
+      class$(
+        "mt-4 mb-2 sm:mb-4 mx-2 flex col-start-1 col-span-11 sm:col-start-1 sm:col-span-8 text-7xl"
+      )
+    ]),
+    toList([
+      h1(
+        toList([
+          id("title"),
+          class$(
+            "min-h-[56px] max-h-[140px] sm:max-h-[170px] overflow-hidden px-0 pb-1 w-full font-transitional font-bold italic text-ecru-white-950"
+          )
+        ]),
+        toList([text(title)])
+      )
+    ])
   );
 }
 
@@ -5874,6 +5928,12 @@ var RecipeDetail = class extends CustomType {
 };
 var RecipeBook = class extends CustomType {
 };
+var EditRecipe = class extends CustomType {
+  constructor(slug) {
+    super();
+    this.slug = slug;
+  }
+};
 var Recipe = class extends CustomType {
   constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
     super();
@@ -5889,18 +5949,18 @@ var Recipe = class extends CustomType {
   }
 };
 var Ingredient = class extends CustomType {
-  constructor(name, ismain, quantity, units) {
+  constructor(name2, ismain, quantity, units) {
     super();
-    this.name = name;
+    this.name = name2;
     this.ismain = ismain;
     this.quantity = quantity;
     this.units = units;
   }
 };
 var Tag = class extends CustomType {
-  constructor(name, value4) {
+  constructor(name2, value4) {
     super();
-    this.name = name;
+    this.name = name2;
     this.value = value4;
   }
 };
@@ -5979,7 +6039,9 @@ function lookup_recipe_by_slug(model, slug) {
 }
 function on_route_change(uri) {
   let $ = path_segments(uri.path);
-  if ($.hasLength(2) && $.head === "recipes") {
+  if ($.hasLength(2) && $.head === "recipes" && $.tail.head === "new") {
+    return new OnRouteChange(new EditRecipe(new None()));
+  } else if ($.hasLength(2) && $.head === "recipes") {
     let slug = $.tail.head;
     return new OnRouteChange(new RecipeDetail(slug));
   } else if ($.hasLength(1) && $.head === "recipes") {
@@ -6042,6 +6104,23 @@ function update3(model, msg) {
       }),
       none()
     ];
+  } else if (msg instanceof OnRouteChange && msg[0] instanceof EditRecipe && msg[0].slug instanceof None) {
+    return [
+      model.withFields({
+        current_route: new EditRecipe(new None()),
+        current_recipe: new None()
+      }),
+      none()
+    ];
+  } else if (msg instanceof OnRouteChange && msg[0] instanceof EditRecipe && msg[0].slug instanceof Some) {
+    let slug = msg[0].slug[0];
+    return [
+      model.withFields({
+        current_route: new EditRecipe(new Some(slug)),
+        current_recipe: lookup_recipe_by_slug(model, slug)
+      }),
+      none()
+    ];
   } else if (msg instanceof OnRouteChange) {
     let route = msg[0];
     return [model.withFields({ current_route: route }), none()];
@@ -6058,27 +6137,6 @@ function view_base(children) {
       )
     ]),
     toList([children])
-  );
-}
-function view_title(title, styles) {
-  return div(
-    toList([
-      class$(styles),
-      class$(
-        "mt-4 mb-2 sm:mb-4 mx-2 flex col-start-1 col-span-11 sm:col-start-1 sm:col-span-8 text-7xl"
-      )
-    ]),
-    toList([
-      h1(
-        toList([
-          id("title"),
-          class$(
-            "min-h-[56px] max-h-[140px] sm:max-h-[170px] overflow-hidden px-0 pb-1 w-full font-transitional font-bold italic text-ecru-white-950"
-          )
-        ]),
-        toList([text(title)])
-      )
-    ])
   );
 }
 function view_home() {
@@ -6222,6 +6280,98 @@ function view_recipe_book(model) {
       div(
         toList([class$("contents")]),
         map3(model.recipes, view_recipe_summary)
+      )
+    ])
+  );
+}
+function view_edit_recipe(maybe_recipe) {
+  return form(
+    toList([
+      class$("grid grid-cols-12 gap-y-2 col-span-full"),
+      id("create_recipe_form")
+    ]),
+    toList([
+      div(
+        toList([
+          class$(
+            "mt-4 mb-2 sm:mb-4 mr-2 flex col-start-1 col-span-11 sm:col-start-1 sm:col-span-8"
+          )
+        ]),
+        toList([
+          textarea(
+            toList([
+              id("title"),
+              name("title"),
+              class$(
+                "min-h-[56px] max-h-[140px] sm:max-h-[170px] overflow-x-hidden px-0 pb-1 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100`"
+              )
+            ]),
+            (() => {
+              if (maybe_recipe instanceof Some) {
+                let a$1 = maybe_recipe[0];
+                return a$1.title;
+              } else {
+                return "";
+              }
+            })()
+          )
+        ])
+      ),
+      fieldset(
+        toList([
+          class$(
+            "mx-2 sm:mx-0 mt-0 sm:mt-4 flex sm:flex-wrap justify-between row-start-2 col-span-full sm:row-start-1 sm:col-span-3 sm:col-start-9"
+          )
+        ]),
+        toList([
+          fieldset(
+            toList([class$("flex flex-wrap items-baseline mb-2")]),
+            toList([
+              label(
+                toList([
+                  class$("justify-self-start font-mono italic"),
+                  for$("prep_time")
+                ]),
+                toList([text("Prep:")])
+              ),
+              div(
+                toList([class$("justify-self-start")]),
+                toList([
+                  div(
+                    toList([
+                      class$("after:content-['h'] after:text-xs inline-block")
+                    ]),
+                    toList([
+                      input(
+                        toList([
+                          id("prep_time_hrs"),
+                          class$(
+                            "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base"
+                          ),
+                          type_("number"),
+                          name("prep_time_hrs"),
+                          value(
+                            (() => {
+                              if (maybe_recipe instanceof Some) {
+                                let a$1 = maybe_recipe[0];
+                                let _pipe = floor_divide(a$1.prep_time, 60);
+                                let _pipe$1 = unwrap2(_pipe, 0);
+                                let _pipe$2 = to_string3(_pipe$1);
+                                return replace(_pipe$2, "0", "");
+                              } else {
+                                return "";
+                              }
+                            })()
+                          )
+                        ])
+                      )
+                    ])
+                  )
+                ])
+              )
+            ])
+          )
+        ])
       )
     ])
   );
@@ -6483,9 +6633,12 @@ function view2(model) {
       return view_home();
     } else if ($ instanceof RecipeBook) {
       return view_recipe_book(model);
-    } else {
+    } else if ($ instanceof RecipeDetail) {
       let slug = $.slug;
       return view_lookup_recipe_detail(model.current_recipe);
+    } else {
+      let slug = $.slug;
+      return view_edit_recipe(model.current_recipe);
     }
   })();
   return view_base(page);
@@ -6496,7 +6649,7 @@ function main2() {
     throw makeError(
       "assignment_no_match",
       "mealstack_client",
-      35,
+      37,
       "main",
       "Assignment pattern did not match",
       { value: $ }
