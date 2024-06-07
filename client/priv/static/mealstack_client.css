@@ -627,12 +627,43 @@ fieldset {
   min-width: 0;
 }
 
+.ingredient-toggle {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.ingredient-toggle > input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  -o-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.ingredient-toggle > span {
+  display: contents;
+}
+
+.ingredient-toggle > input + span::before {
+  content: '❕';
+  align-self: baseline;
+}
+
+.ingredient-toggle > input:checked + span::before {
+  content: '❗';
+  align-self: baseline;
+}
+
 .col-span-1 {
   grid-column: span 1 / span 1;
 }
 
 .col-span-11 {
   grid-column: span 11 / span 11;
+}
+
+.col-span-3 {
+  grid-column: span 3 / span 3;
 }
 
 .col-span-6 {
@@ -674,6 +705,16 @@ fieldset {
   margin-right: 1rem;
 }
 
+.my-0 {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+.my-0\.5 {
+  margin-top: 0.125rem;
+  margin-bottom: 0.125rem;
+}
+
 .my-1 {
   margin-top: 0.25rem;
   margin-bottom: 0.25rem;
@@ -682,6 +723,11 @@ fieldset {
 .my-2 {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
+}
+
+.my-4 {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
 .my-6 {
@@ -707,6 +753,10 @@ fieldset {
 
 .ml-2 {
   margin-left: 0.5rem;
+}
+
+.mr-0 {
+  margin-right: 0px;
 }
 
 .mr-1 {
@@ -757,8 +807,20 @@ fieldset {
   min-height: 90vh;
 }
 
+.w-\[16ch\] {
+  width: 16ch;
+}
+
 .w-\[3ch\] {
   width: 3ch;
+}
+
+.w-\[4ch\] {
+  width: 4ch;
+}
+
+.w-\[5ch\] {
+  width: 5ch;
 }
 
 .w-full {
@@ -813,6 +875,10 @@ fieldset {
   justify-content: flex-start;
 }
 
+.justify-end {
+  justify-content: flex-end;
+}
+
 .justify-between {
   justify-content: space-between;
 }
@@ -836,10 +902,6 @@ fieldset {
 
 .gap-y-12 {
   row-gap: 3rem;
-}
-
-.gap-y-2 {
-  row-gap: 0.5rem;
 }
 
 .justify-self-start {
@@ -900,6 +962,11 @@ fieldset {
   padding-right: 0.5rem;
 }
 
+.py-1 {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
 .pb-1 {
   padding-bottom: 0.25rem;
 }
@@ -930,6 +997,14 @@ fieldset {
 
 .pr-4 {
   padding-right: 1rem;
+}
+
+.pt-0 {
+  padding-top: 0px;
+}
+
+.pt-0\.5 {
+  padding-top: 0.125rem;
 }
 
 .pt-1 {
@@ -1014,6 +1089,10 @@ fieldset {
   line-height: 1;
 }
 
+.\[box-shadow\:1px_1px_0_\#9edef1\] {
+  box-shadow: 1px 1px 0 #9edef1;
+}
+
 .\[box-shadow\:1px_1px_0_\#a3d2ab\] {
   box-shadow: 1px 1px 0 #a3d2ab;
 }
@@ -1025,6 +1104,15 @@ fieldset {
 .placeholder\:underline-pink::placeholder {
   -webkit-text-decoration: underline solid 6px #fce7f8;
           text-decoration: underline solid 6px #fce7f8;
+}
+
+.placeholder\:underline-blue::-moz-placeholder {
+  text-decoration: underline solid 6px #9edef1;
+}
+
+.placeholder\:underline-blue::placeholder {
+  -webkit-text-decoration: underline solid 6px #9edef1;
+          text-decoration: underline solid 6px #9edef1;
 }
 
 .marker\:text-base *::marker {
@@ -1042,6 +1130,11 @@ fieldset {
   content: var(--tw-content);
 }
 
+.after\:content-\[\'m\'\]::after {
+  --tw-content: 'm';
+  content: var(--tw-content);
+}
+
 .after\:text-xs::after {
   content: var(--tw-content);
   font-size: clamp(0.8680555555555557rem, calc(0.8680555555555557rem + ((0.8888888888888888 - 0.8680555555555557) * ((100vw - 20rem) / (96 - 20)))), 0.8888888888888888rem);
@@ -1051,6 +1144,16 @@ fieldset {
 @media (min-width: 380px) {
   .xxs\:col-span-11 {
     grid-column: span 11 / span 11;
+  }
+
+  .xxs\:w-\[23ch\] {
+    width: 23ch;
+  }
+}
+
+@media (min-width: 480px) {
+  .xs\:w-\[28ch\] {
+    width: 28ch;
   }
 }
 
@@ -1100,6 +1203,10 @@ fieldset {
     max-height: 170px;
   }
 
+  .sm\:w-\[16ch\] {
+    width: 16ch;
+  }
+
   .sm\:flex-wrap {
     flex-wrap: wrap;
   }
@@ -1107,9 +1214,18 @@ fieldset {
   .sm\:justify-between {
     justify-content: space-between;
   }
+
+  .sm\:text-base {
+    font-size: clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem);
+    line-height: 1.6;
+  }
 }
 
 @media (min-width: 768px) {
+  .md\:w-\[23ch\] {
+    width: 23ch;
+  }
+
   .md\:grid-cols-\[\[start_full-start\]_1fr_\[main-start\]_85ch_\[main-end\]_1fr_\[full-end_end\]\] {
     grid-template-columns: [start full-start] 1fr [main-start] 85ch [main-end] 1fr [full-end end];
   }
@@ -1121,6 +1237,10 @@ fieldset {
 }
 
 @media (min-width: 1024px) {
+  .lg\:w-\[28ch\] {
+    width: 28ch;
+  }
+
   .lg\:grid-cols-\[\[start\]_1fr_\[full-start\]_3fr_\[main-start\]_85ch_\[main-end\]_3fr_\[full-end\]_1fr_\[end\]\] {
     grid-template-columns: [start] 1fr [full-start] 3fr [main-start] 85ch [main-end] 3fr [full-end] 1fr [end];
   }

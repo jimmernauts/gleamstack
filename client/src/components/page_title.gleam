@@ -2,7 +2,7 @@ import lustre/attribute.{class, id}
 import lustre/element.{text}
 import lustre/element/html.{div, h1}
 
-pub fn view_title(title: String, styles: String) {
+pub fn page_title(title: String, styles: String) {
   div(
     [
       class(styles),

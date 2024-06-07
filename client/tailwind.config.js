@@ -1,5 +1,5 @@
 export default {
-    content: ['./src/**/*.{astro,gleam,html,js,jsx,md,mdx,svelte,ts,tsx,vue}','./priv/index.html'],
+    content: ['./src/**/*.{astro,gleam,html,js,jsx,md,mdx,svelte,ts,tsx,vue}','./src/*.{astro,gleam,html,js,jsx,md,mdx,svelte,ts,tsx,vue}','./priv/index.html'],
     theme: {
         extend: {
             screens:{
@@ -20,7 +20,7 @@ export default {
                     '900': '#594e35',
                     '950': '#2f281b',
                 },
-                'parchment': {
+                parchment: {
                     '50': '#f8f6ee',
                     '100': '#eee9d3',
                     '200': '#dfd3a9',
@@ -34,7 +34,7 @@ export default {
                     '950': '#321f16',
                 },
 
-                'orchid': {
+                orchid: {
                     '50': '#fdf2fb',
                     '100': '#fce7f8',
                     '200': '#fad0f3',
@@ -74,7 +74,7 @@ export default {
                     '950': '#102315',
                 },
 
-                'anakiwa': {
+                anakiwa: {
                     '50': '#f2fafd',
                     '100': '#e3f3fb',
                     '200': '#c1e9f6',
@@ -87,7 +87,7 @@ export default {
                     '900': '#174e63',
                     '950': '#0f3342',
                 },
-                'punch': {
+                punch: {
                     '50': '#fff2f1',
                     '100': '#ffe4e1',
                     '200': '#ffccc7',
@@ -100,9 +100,6 @@ export default {
                     '900': '#842218',
                     '950': '#480d07',
                 }
-
-
-
             }
         },
     },
@@ -154,11 +151,11 @@ export default {
                 'input[type="number"]': {
                     '&::-webkit-inner-spin-button': {
                         '-webkit-appearance': 'none',
-                        'margin': 0
+                        margin: 0
                     },
                     '&::-webkit-outer-spin-button': {
                         '-webkit-appearance': 'none',
-                        'margin': 0
+                        margin: 0
                     },
                     '-moz-appearance': 'textfield'
                 },
@@ -191,7 +188,7 @@ export default {
                     borderBottomWidth: '1px',
                 },
                 '.under-gradient': {
-                    'background': 'linear-gradient(to left, #fce7f8, #fce7f8 100%)',
+                    background: 'linear-gradient(to left, #fce7f8, #fce7f8 100%)',
                     backgroundPosition: '0 100%',
                     backgroundSize: '100% 6px',
                     backgroundRepeat: 'repeat-x',
@@ -225,7 +222,7 @@ export default {
                     cursor: 'pointer;'
 
                 },
-                "fieldset": {
+                fieldset: {
                     minWidth: 0,
                 },
                 ".ingredient-toggle": {
