@@ -1,26 +1,31 @@
 import components/ingredient_input.{ingredient_input}
 import components/method_step_input.{method_step_input}
+import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
+import lib/decoders.{decode_recipe}
 import lustre/attribute.{attribute, class, for, href, id, name, type_, value}
 import lustre/element.{type Element, fragment, text}
 import lustre/element/html.{
   a, button, div, fieldset, form, input, label, legend, nav, textarea,
 }
-import lustre/event
-import types.{type Msg, type Recipe, SaveUpdatedRecipe}
+import lustre/event.{on_input}
+import types.{
+  type Msg, type Recipe, UserSavedUpdatedRecipe, UserUpdatedRecipePrepTimeHrs,
+  UserUpdatedRecipePrepTimeMins, UserUpdatedRecipeTitle,
+}
 
-pub fn edit_recipe(recipe: Recipe) {
+pub fn edit_recipe(recipe: Recipe) -> Element(Msg) {
   form(
     [
       class(
         "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr]",
       ),
       id("create_recipe_form"),
-      event.on_submit(SaveUpdatedRecipe),
+      event.on_submit(UserSavedUpdatedRecipe(recipe)),
     ],
     [
       div(
@@ -38,6 +43,7 @@ pub fn edit_recipe(recipe: Recipe) {
                 "placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] sm:max-h-[170px] overflow-x-hidden px-0 pb-1 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100",
               ),
               attribute("title", "recipe title"),
+              on_input(UserUpdatedRecipeTitle),
             ],
             recipe.title,
           ),
@@ -71,6 +77,7 @@ pub fn edit_recipe(recipe: Recipe) {
                     |> int.to_string
                     |> string.replace("0", ""),
                   ),
+                  on_input(UserUpdatedRecipePrepTimeHrs),
                 ]),
               ]),
               div([class("after:content-['m'] after:text-xs inline-block")], [
@@ -86,6 +93,7 @@ pub fn edit_recipe(recipe: Recipe) {
                     recipe.prep_time % 60
                     |> int.to_string,
                   ),
+                  on_input(UserUpdatedRecipePrepTimeMins),
                 ]),
               ]),
             ]),

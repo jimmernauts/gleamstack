@@ -2,8 +2,11 @@ import gleam/option.{type Option}
 
 pub type Msg {
   OnRouteChange(Route)
-  CacheUpdatedMessage(List(Recipe))
-  SaveUpdatedRecipe(Recipe)
+  DbRetrievedRecipes(List(Recipe))
+  UserSavedUpdatedRecipe(Recipe)
+  UserUpdatedRecipeTitle(String)
+  UserUpdatedRecipePrepTimeHrs(String)
+  UserUpdatedRecipePrepTimeMins(String)
 }
 
 pub type Model {

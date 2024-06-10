@@ -1014,6 +1014,13 @@ var NOT_FOUND = {};
 function identity(x) {
   return x;
 }
+function parse_int(value4) {
+  if (/^[-+]?(\d+)$/.test(value4)) {
+    return new Ok2(parseInt(value4));
+  } else {
+    return new Error2(Nil2);
+  }
+}
 function to_string(term) {
   return term.toString();
 }
@@ -1098,12 +1105,21 @@ function print_debug(string3) {
     console.log(string3);
   }
 }
+function new_map() {
+  return Dict.new();
+}
+function map_to_list(map6) {
+  return List.fromArray(map6.entries());
+}
 function map_get(map6, key2) {
   const value4 = map6.get(key2, NOT_FOUND);
   if (value4 === NOT_FOUND) {
     return new Error2(Nil2);
   }
   return new Ok2(value4);
+}
+function map_insert(key2, value4, map6) {
+  return map6.set(key2, value4);
 }
 function classify_dynamic(data) {
   if (typeof data === "string") {
@@ -1266,12 +1282,100 @@ function inspectUtfCodepoint(codepoint2) {
   return `//utfcodepoint(${String.fromCodePoint(codepoint2.value)})`;
 }
 
+// build/dev/javascript/gleam_stdlib/gleam/dict.mjs
+function new$() {
+  return new_map();
+}
+function insert(dict, key2, value4) {
+  return map_insert(key2, value4, dict);
+}
+function fold_list_of_pair(loop$list, loop$initial) {
+  while (true) {
+    let list2 = loop$list;
+    let initial = loop$initial;
+    if (list2.hasLength(0)) {
+      return initial;
+    } else {
+      let x = list2.head;
+      let rest = list2.tail;
+      loop$list = rest;
+      loop$initial = insert(initial, x[0], x[1]);
+    }
+  }
+}
+function from_list(list2) {
+  return fold_list_of_pair(list2, new$());
+}
+function reverse_and_concat(loop$remaining, loop$accumulator) {
+  while (true) {
+    let remaining = loop$remaining;
+    let accumulator = loop$accumulator;
+    if (remaining.hasLength(0)) {
+      return accumulator;
+    } else {
+      let item = remaining.head;
+      let rest = remaining.tail;
+      loop$remaining = rest;
+      loop$accumulator = prepend(item, accumulator);
+    }
+  }
+}
+function do_values_acc(loop$list, loop$acc) {
+  while (true) {
+    let list2 = loop$list;
+    let acc = loop$acc;
+    if (list2.hasLength(0)) {
+      return reverse_and_concat(acc, toList([]));
+    } else {
+      let x = list2.head;
+      let xs = list2.tail;
+      loop$list = xs;
+      loop$acc = prepend(x[1], acc);
+    }
+  }
+}
+function do_values(dict) {
+  let list_of_pairs = map_to_list(dict);
+  return do_values_acc(list_of_pairs, toList([]));
+}
+function values(dict) {
+  return do_values(dict);
+}
+function insert_pair(dict, pair) {
+  return insert(dict, pair[0], pair[1]);
+}
+function fold_inserts(loop$new_entries, loop$dict) {
+  while (true) {
+    let new_entries = loop$new_entries;
+    let dict = loop$dict;
+    if (new_entries.hasLength(0)) {
+      return dict;
+    } else {
+      let x = new_entries.head;
+      let xs = new_entries.tail;
+      loop$new_entries = xs;
+      loop$dict = insert_pair(dict, x);
+    }
+  }
+}
+function do_merge(dict, new_entries) {
+  let _pipe = new_entries;
+  let _pipe$1 = map_to_list(_pipe);
+  return fold_inserts(_pipe$1, dict);
+}
+function merge(dict, new_entries) {
+  return do_merge(dict, new_entries);
+}
+
 // build/dev/javascript/gleam_stdlib/gleam/float.mjs
 function to_string2(x) {
   return float_to_string(x);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/int.mjs
+function parse(string3) {
+  return parse_int(string3);
+}
 function to_string3(x) {
   return to_string(x);
 }
@@ -1301,7 +1405,7 @@ function second(pair) {
   let a2 = pair[1];
   return a2;
 }
-function new$(first3, second2) {
+function new$2(first3, second2) {
   return [first3, second2];
 }
 
@@ -2818,6 +2922,7 @@ var start = (app, selector, flags) => LustreClientApplication2.start(
   app.view
 );
 var is_browser = () => window && window.document;
+var prevent_default = (event2) => event2.preventDefault();
 
 // build/dev/javascript/lustre/lustre.mjs
 var App = class extends CustomType {
@@ -3032,6 +3137,15 @@ function on_input(msg) {
     (event2) => {
       let _pipe = value2(event2);
       return map4(_pipe, msg);
+    }
+  );
+}
+function on_submit(msg) {
+  return on2(
+    "submit",
+    (event2) => {
+      let $ = prevent_default(event2);
+      return new Ok2(msg);
     }
   );
 }
@@ -5375,7 +5489,7 @@ function init5(_) {
   let _pipe$1 = ((_capture) => {
     return new Model(toList([]), _capture, false, false, new None());
   })(_pipe);
-  return new$(_pipe$1, none());
+  return new$2(_pipe$1, none());
 }
 function update2(model, msg) {
   if (msg instanceof ToggleOpen) {
@@ -5411,11 +5525,11 @@ function update2(model, msg) {
     let _pipe$2 = ((ds) => {
       return model.withFields({ frozen: false, debuggers: ds });
     })(_pipe$1);
-    return new$(_pipe$2, restart_effect);
+    return new$2(_pipe$2, restart_effect);
   } else if (msg instanceof UpdateColorScheme) {
     let cs = msg[0];
     let _pipe = model.withFields({ color_scheme: cs });
-    return new$(_pipe, save_color_scheme(cs));
+    return new$2(_pipe, save_color_scheme(cs));
   } else if (msg instanceof AddApplication) {
     let debugger_ = msg[0];
     let dispatcher = msg[1];
@@ -5432,7 +5546,7 @@ function update2(model, msg) {
     })(
       _pipe$1
     );
-    return new$(_pipe$2, none());
+    return new$2(_pipe$2, none());
   } else if (msg instanceof BackToStep) {
     let debugger_ = msg[0];
     let item = msg[1];
@@ -5466,7 +5580,7 @@ function update2(model, msg) {
     let _pipe$2 = ((d) => {
       return model.withFields({ frozen: true, debuggers: d });
     })(_pipe$1);
-    return new$(_pipe$2, model_effect);
+    return new$2(_pipe$2, model_effect);
   } else if (msg instanceof Debug2) {
     let value4 = msg[0];
     debug(value4);
@@ -5476,7 +5590,7 @@ function update2(model, msg) {
     let _pipe = model.withFields({
       selected_debugger: new Some(debugger_)
     });
-    return new$(_pipe, none());
+    return new$2(_pipe, none());
   } else {
     let debugger_ = msg[0];
     let m = msg[1];
@@ -5495,7 +5609,7 @@ function update2(model, msg) {
       _pipe$1
     );
     let _pipe$3 = optional_set_debugger(_pipe$2, debugger_);
-    return new$(_pipe$3, none());
+    return new$2(_pipe$3, none());
   }
 }
 function select_panel_options(panel_opened) {
@@ -5922,7 +6036,31 @@ var OnRouteChange = class extends CustomType {
     this[0] = x0;
   }
 };
-var CacheUpdatedMessage = class extends CustomType {
+var DbRetrievedRecipes = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserSavedUpdatedRecipe = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserUpdatedRecipeTitle = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserUpdatedRecipePrepTimeHrs = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserUpdatedRecipePrepTimeMins = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
@@ -5988,6 +6126,66 @@ var Recipe = class extends CustomType {
     this.method_steps = method_steps;
   }
 };
+
+// build/dev/javascript/mealstack_client/lib/decoders.mjs
+function decode_ingredient(d) {
+  let decoder = decode4(
+    (var0, var1, var2, var3) => {
+      return new Ingredient(var0, var1, var2, var3);
+    },
+    optional_field("name", string),
+    optional_field("ismain", bool),
+    optional_field("quantity", string),
+    optional_field("units", string)
+  );
+  return decoder(d);
+}
+function decode_tag(d) {
+  let decoder = decode2(
+    (var0, var1) => {
+      return new Tag(var0, var1);
+    },
+    field("name", string),
+    field("value", string)
+  );
+  return decoder(d);
+}
+function decode_method_step(d) {
+  let decoder = decode1(
+    (var0) => {
+      return new MethodStep(var0);
+    },
+    field("step_text", string)
+  );
+  return decoder(d);
+}
+function decode_recipe(d) {
+  let decoder = decode9(
+    (var0, var1, var2, var3, var4, var5, var6, var7, var8) => {
+      return new Recipe(
+        var0,
+        var1,
+        var2,
+        var3,
+        var4,
+        var5,
+        var6,
+        var7,
+        var8
+      );
+    },
+    optional_field("id", string),
+    field("title", string),
+    field("slug", string),
+    field("cook_time", int),
+    field("prep_time", int),
+    field("serves", int),
+    optional_field("tags", list(decode_tag)),
+    optional_field("ingredients", list(decode_ingredient)),
+    optional_field("method_steps", list(decode_method_step))
+  );
+  return decoder(d);
+}
 
 // build/dev/javascript/mealstack_client/components/ingredient_input.mjs
 function ingredient_input(ingredient, index3) {
@@ -6180,7 +6378,8 @@ function edit_recipe(recipe) {
       class$(
         "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr]"
       ),
-      id("create_recipe_form")
+      id("create_recipe_form"),
+      on_submit(new UserSavedUpdatedRecipe(recipe))
     ]),
     toList([
       div(
@@ -6197,7 +6396,10 @@ function edit_recipe(recipe) {
               class$(
                 "placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] sm:max-h-[170px] overflow-x-hidden px-0 pb-1 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100"
               ),
-              attribute("title", "recipe title")
+              attribute("title", "recipe title"),
+              on_input((var0) => {
+                return new UserUpdatedRecipeTitle(var0);
+              })
             ]),
             recipe.title
           )
@@ -6247,6 +6449,11 @@ function edit_recipe(recipe) {
                               let _pipe$2 = to_string3(_pipe$1);
                               return replace(_pipe$2, "0", "");
                             })()
+                          ),
+                          on_input(
+                            (var0) => {
+                              return new UserUpdatedRecipePrepTimeHrs(var0);
+                            }
                           )
                         ])
                       )
@@ -6271,6 +6478,11 @@ function edit_recipe(recipe) {
                               let _pipe = remainderInt(recipe.prep_time, 60);
                               return to_string3(_pipe);
                             })()
+                          ),
+                          on_input(
+                            (var0) => {
+                              return new UserUpdatedRecipePrepTimeMins(var0);
+                            }
                           )
                         ])
                       )
@@ -6721,63 +6933,21 @@ function view_recipe(recipe) {
 }
 
 // build/dev/javascript/mealstack_client/mealstack_client.mjs
-function decode_ingredient(d) {
-  let decoder = decode4(
-    (var0, var1, var2, var3) => {
-      return new Ingredient(var0, var1, var2, var3);
-    },
-    optional_field("name", string),
-    optional_field("ismain", bool),
-    optional_field("quantity", string),
-    optional_field("units", string)
-  );
-  return decoder(d);
-}
-function decode_tag(d) {
-  let decoder = decode2(
-    (var0, var1) => {
-      return new Tag(var0, var1);
-    },
-    field("name", string),
-    field("value", string)
-  );
-  return decoder(d);
-}
-function decode_method_step(d) {
-  let decoder = decode1(
-    (var0) => {
-      return new MethodStep(var0);
-    },
-    field("step_text", string)
-  );
-  return decoder(d);
-}
-function decode_recipe(d) {
-  let decoder = decode9(
-    (var0, var1, var2, var3, var4, var5, var6, var7, var8) => {
-      return new Recipe(
-        var0,
-        var1,
-        var2,
-        var3,
-        var4,
-        var5,
-        var6,
-        var7,
-        var8
+function merge_recipe_into_model(recipe, model) {
+  return model.withFields({
+    recipes: (() => {
+      let _pipe = model.recipes;
+      let _pipe$1 = map3(_pipe, (a2) => {
+        return [a2.id, a2];
+      });
+      let _pipe$2 = from_list(_pipe$1);
+      let _pipe$3 = merge(
+        _pipe$2,
+        from_list(toList([[recipe.id, recipe]]))
       );
-    },
-    optional_field("id", string),
-    field("title", string),
-    field("slug", string),
-    field("cook_time", int),
-    field("prep_time", int),
-    field("serves", int),
-    optional_field("tags", list(decode_tag)),
-    optional_field("ingredients", list(decode_ingredient)),
-    optional_field("method_steps", list(decode_method_step))
-  );
-  return decoder(d);
+      return values(_pipe$3);
+    })()
+  });
 }
 function lookup_recipe_by_slug(model, slug) {
   return from_result(
@@ -6806,6 +6976,47 @@ function init6(_) {
     init2(on_route_change)
   ];
 }
+function save_recipe(recipe) {
+  return from2(
+    (dispatch2) => {
+      let _pipe = addOrUpdateRecipe(recipe);
+      let _pipe$1 = map_promise(
+        _pipe,
+        (_capture) => {
+          return map4(_capture, decode_recipe);
+        }
+      );
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map4(
+            _capture,
+            (_capture2) => {
+              return map4(
+                _capture2,
+                (a2) => {
+                  return new OnRouteChange(new RecipeDetail(a2.slug));
+                }
+              );
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$2,
+        (_capture) => {
+          return map4(
+            _capture,
+            (_capture2) => {
+              return map4(_capture2, dispatch2);
+            }
+          );
+        }
+      );
+      return void 0;
+    }
+  );
+}
 function get_recipes() {
   return from2(
     (dispatch2) => {
@@ -6824,7 +7035,7 @@ function get_recipes() {
           return map4(
             _capture,
             (var0) => {
-              return new CacheUpdatedMessage(var0);
+              return new DbRetrievedRecipes(var0);
             }
           );
         }
@@ -6866,15 +7077,82 @@ function update3(model, msg) {
   } else if (msg instanceof OnRouteChange) {
     let route = msg[0];
     return [model.withFields({ current_route: route }), none()];
-  } else if (msg instanceof CacheUpdatedMessage) {
+  } else if (msg instanceof DbRetrievedRecipes) {
     let recipes = msg[0];
     return [model.withFields({ recipes }), none()];
+  } else if (msg instanceof UserUpdatedRecipeTitle) {
+    let newtitle = msg[0];
+    let $ = model.current_recipe;
+    if ($ instanceof Some) {
+      let a$1 = $[0];
+      return [
+        model.withFields({
+          current_recipe: new Some(a$1.withFields({ title: newtitle }))
+        }),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedRecipePrepTimeHrs) {
+    let newpreptimehrs = msg[0];
+    let $ = model.current_recipe;
+    if ($ instanceof Some) {
+      let a$1 = $[0];
+      return [
+        model.withFields({
+          current_recipe: new Some(
+            a$1.withFields({
+              prep_time: (() => {
+                let _pipe = newpreptimehrs;
+                let _pipe$1 = parse(_pipe);
+                let _pipe$2 = map4(
+                  _pipe$1,
+                  (b) => {
+                    return b * 60 + remainderInt(a$1.prep_time, 60);
+                  }
+                );
+                return unwrap2(_pipe$2, 0);
+              })()
+            })
+          )
+        }),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedRecipePrepTimeMins) {
+    let newpreptimemins = msg[0];
+    let $ = model.current_recipe;
+    if ($ instanceof Some) {
+      let a$1 = $[0];
+      return [
+        model.withFields({
+          current_recipe: new Some(
+            a$1.withFields({
+              prep_time: (() => {
+                let _pipe = newpreptimemins;
+                let _pipe$1 = parse(_pipe);
+                let _pipe$2 = map4(
+                  _pipe$1,
+                  (b) => {
+                    return a$1.prep_time - remainderInt(a$1.prep_time, 60) + b;
+                  }
+                );
+                return unwrap2(_pipe$2, 0);
+              })()
+            })
+          )
+        }),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
   } else {
     let recipe = msg[0];
-    return [
-      model.withFields({ recipes: prepend(recipe, model.recipes) }),
-      none()
-    ];
+    return [merge_recipe_into_model(recipe, model), save_recipe(recipe)];
   }
 }
 function view_base(children) {
@@ -6992,7 +7270,10 @@ function view_recipe_summary(recipe) {
                   text("h"),
                   text(
                     (() => {
-                      let _pipe = recipe.prep_time + recipe.cook_time;
+                      let _pipe = remainderInt(
+                        recipe.prep_time + recipe.cook_time,
+                        60
+                      );
                       return to_string3(_pipe);
                     })()
                   ),
@@ -7069,7 +7350,7 @@ function main2() {
     throw makeError(
       "assignment_no_match",
       "mealstack_client",
-      42,
+      44,
       "main",
       "Assignment pattern did not match",
       { value: $ }

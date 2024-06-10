@@ -1,7 +1,6 @@
 import components/page_title.{page_title}
-import gleam/dynamic.{
-  type Dynamic, bool, field, int, list, optional_field, string,
-}
+import gleam/dict
+import gleam/dynamic.{type Dynamic}
 import gleam/int.{floor_divide, to_string}
 import gleam/io.{debug}
 import gleam/javascript/array.{type Array}
@@ -11,6 +10,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{append}
 import gleam/uri.{type Uri}
+import lib/decoders.{decode_recipe}
 import lustre
 import lustre/attribute.{class, for, href}
 import lustre/effect.{type Effect}
@@ -23,8 +23,10 @@ import pages/edit_recipe.{edit_recipe}
 import pages/view_recipe.{view_recipe}
 import tardis
 import types.{
-  type Model, type Msg, CacheUpdatedMessage, EditRecipe, Home, Model,
-  OnRouteChange, RecipeBook, RecipeDetail, SaveUpdatedRecipe,
+  type Model, type Msg, type Recipe, DbRetrievedRecipes, EditRecipe, Home, Model,
+  OnRouteChange, Recipe, RecipeBook, RecipeDetail, UserSavedUpdatedRecipe,
+  UserUpdatedRecipePrepTimeHrs, UserUpdatedRecipePrepTimeMins,
+  UserUpdatedRecipeTitle,
 }
 
 // MAIN ------------------------------------------------------------------------
@@ -56,68 +58,6 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
 
 // MODEL -----------------------------------------------------------------------
 
-fn decode_recipe(d: Dynamic) -> Result(types.Recipe, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode9(
-      types.Recipe,
-      optional_field("id", of: string),
-      field("title", of: string),
-      field("slug", of: string),
-      field("cook_time", of: int),
-      field("prep_time", of: int),
-      field("serves", of: int),
-      optional_field("tags", of: list(decode_tag)),
-      optional_field("ingredients", of: list(decode_ingredient)),
-      optional_field("method_steps", of: list(decode_method_step)),
-    )
-  decoder(d)
-}
-
-fn decode_ingredient(
-  d: Dynamic,
-) -> Result(types.Ingredient, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode4(
-      types.Ingredient,
-      optional_field("name", of: string),
-      optional_field("ismain", of: bool),
-      optional_field("quantity", of: string),
-      optional_field("units", of: string),
-    )
-  decoder(d)
-}
-
-fn decode_tag(d: Dynamic) -> Result(types.Tag, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode2(
-      types.Tag,
-      field("name", of: string),
-      field("value", of: string),
-    )
-  decoder(d)
-}
-
-fn decode_method_step(
-  d: Dynamic,
-) -> Result(types.MethodStep, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode1(types.MethodStep, field("step_text", of: string))
-  decoder(d)
-}
-
-fn decode_tag_option(
-  d: Dynamic,
-) -> Result(types.TagOption, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode3(
-      types.TagOption,
-      optional_field("id", of: string),
-      field("name", of: string),
-      field("options", of: list(of: string)),
-    )
-  decoder(d)
-}
-
 // UPDATE ----------------------------------------------------------------------
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
@@ -146,16 +86,78 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(..model, current_route: route),
       effect.none(),
     )
-    CacheUpdatedMessage(recipes) -> #(
+    DbRetrievedRecipes(recipes) -> #(
       Model(..model, recipes: recipes),
       effect.none(),
     )
+    UserUpdatedRecipeTitle(newtitle) -> {
+      case model.current_recipe {
+        Some(a) -> #(
+          Model(..model, current_recipe: Some(Recipe(..a, title: newtitle))),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserUpdatedRecipePrepTimeHrs(newpreptimehrs) -> {
+      case model.current_recipe {
+        Some(a) -> #(
+          Model(
+            ..model,
+            current_recipe: Some(
+              Recipe(
+                ..a,
+                prep_time: newpreptimehrs
+                  |> int.parse
+                  |> result.map(fn(b) { { b * 60 } + a.prep_time % 60 })
+                  |> result.unwrap(0),
+              ),
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserUpdatedRecipePrepTimeMins(newpreptimemins) -> {
+      case model.current_recipe {
+        Some(a) -> #(
+          Model(
+            ..model,
+            current_recipe: Some(
+              Recipe(
+                ..a,
+                prep_time: newpreptimemins
+                  |> int.parse
+                  |> result.map(fn(b) {
+                    { a.prep_time - { a.prep_time % 60 } } + b
+                  })
+                  |> result.unwrap(0),
+              ),
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
     // TODO ACTUALLY SAVE THE RECIPE PROPERLY
-    SaveUpdatedRecipe(recipe) -> #(
-      Model(..model, recipes: [recipe, ..model.recipes]),
-      effect.none(),
+    UserSavedUpdatedRecipe(recipe) -> #(
+      merge_recipe_into_model(recipe, model),
+      save_recipe(recipe),
     )
   }
+}
+
+fn merge_recipe_into_model(recipe: Recipe, model: Model) -> Model {
+  Model(
+    ..model,
+    recipes: model.recipes
+      |> list.map(fn(a) { #(a.id, a) })
+      |> dict.from_list
+      |> dict.merge(dict.from_list([#(recipe.id, recipe)]))
+      |> dict.values(),
+  )
 }
 
 fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(types.Recipe) {
@@ -171,13 +173,29 @@ fn on_route_change(uri: Uri) -> Msg {
   }
 }
 
+fn save_recipe(recipe: Recipe) -> Effect(Msg) {
+  use dispatch <- effect.from
+  do_save_recipe(recipe)
+  |> promise.map(result.map(_, decode_recipe))
+  |> promise.map(result.map(_, result.map(_, fn(a: Recipe) {
+    OnRouteChange(RecipeDetail(slug: a.slug))
+  })))
+  |> promise.tap(result.map(_, result.map(_, dispatch)))
+  Nil
+}
+
+type FailedToSaveError
+
+@external(javascript, "./db.ts", "addOrUpdateRecipe")
+fn do_save_recipe(recipe: Recipe) -> Promise(Result(Dynamic, FailedToSaveError))
+
 fn get_recipes() -> Effect(Msg) {
   use dispatch <- effect.from
   do_get_recipes()
   |> promise.map(array.to_list)
   |> promise.map(list.map(_, decode_recipe))
   |> promise.map(result.all)
-  |> promise.map(result.map(_, CacheUpdatedMessage))
+  |> promise.map(result.map(_, DbRetrievedRecipes))
   |> promise.tap(result.map(_, dispatch))
   Nil
 }
@@ -325,7 +343,7 @@ fn view_recipe_summary(recipe: types.Recipe) {
             ),
             text("h"),
             text(
-              { recipe.prep_time + recipe.cook_time }
+              { recipe.prep_time + recipe.cook_time } % 60
               |> to_string(),
             ),
             text("m"),
