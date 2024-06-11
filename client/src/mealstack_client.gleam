@@ -9,7 +9,8 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{append}
-import gleam/uri.{type Uri}
+import gleam/uri.{type Uri, Uri}
+import justin.{kebab_case}
 import lib/decoders.{decode_recipe}
 import lustre
 import lustre/attribute.{class, for, href}
@@ -23,10 +24,11 @@ import pages/edit_recipe.{edit_recipe}
 import pages/view_recipe.{view_recipe}
 import tardis
 import types.{
-  type Model, type Msg, type Recipe, DbRetrievedRecipes, EditRecipe, Home, Model,
-  OnRouteChange, Recipe, RecipeBook, RecipeDetail, UserSavedUpdatedRecipe,
-  UserUpdatedRecipePrepTimeHrs, UserUpdatedRecipePrepTimeMins,
-  UserUpdatedRecipeTitle,
+  type Ingredient, type MethodStep, type Model, type Msg, type Recipe, type Tag,
+  DbRetrievedRecipes, EditRecipe, Home, Model, OnRouteChange, Recipe, RecipeBook,
+  RecipeDetail, UserSavedUpdatedRecipe, UserUpdatedRecipeCookTimeHrs,
+  UserUpdatedRecipeCookTimeMins, UserUpdatedRecipePrepTimeHrs,
+  UserUpdatedRecipePrepTimeMins, UserUpdatedRecipeTitle,
 }
 
 // MAIN ------------------------------------------------------------------------
@@ -83,7 +85,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       effect.none(),
     )
     OnRouteChange(route) -> #(
-      Model(..model, current_route: route),
+      Model(..model, current_route: route, current_recipe: None),
       effect.none(),
     )
     DbRetrievedRecipes(recipes) -> #(
@@ -93,7 +95,12 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     UserUpdatedRecipeTitle(newtitle) -> {
       case model.current_recipe {
         Some(a) -> #(
-          Model(..model, current_recipe: Some(Recipe(..a, title: newtitle))),
+          Model(
+            ..model,
+            current_recipe: Some(
+              Recipe(..a, title: newtitle, slug: kebab_case(newtitle)),
+            ),
+          ),
           effect.none(),
         )
         _ -> #(model, effect.none())
@@ -141,9 +148,53 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         _ -> #(model, effect.none())
       }
     }
-    // TODO ACTUALLY SAVE THE RECIPE PROPERLY
+    UserUpdatedRecipeCookTimeHrs(newcooktimehrs) -> {
+      case model.current_recipe {
+        Some(a) -> #(
+          Model(
+            ..model,
+            current_recipe: Some(
+              Recipe(
+                ..a,
+                cook_time: newcooktimehrs
+                  |> int.parse
+                  |> result.map(fn(b) { { b * 60 } + a.cook_time % 60 })
+                  |> result.unwrap(0),
+              ),
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserUpdatedRecipeCookTimeMins(newcooktimemins) -> {
+      case model.current_recipe {
+        Some(a) -> #(
+          Model(
+            ..model,
+            current_recipe: Some(
+              Recipe(
+                ..a,
+                cook_time: newcooktimemins
+                  |> int.parse
+                  |> result.map(fn(b) {
+                    { a.cook_time - { a.cook_time % 60 } } + b
+                  })
+                  |> result.unwrap(0),
+              ),
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
     UserSavedUpdatedRecipe(recipe) -> #(
-      merge_recipe_into_model(recipe, model),
+      Model(
+        ..merge_recipe_into_model(recipe, model),
+        current_route: RecipeDetail(recipe.slug),
+      ),
       save_recipe(recipe),
     )
   }
@@ -173,27 +224,69 @@ fn on_route_change(uri: Uri) -> Msg {
   }
 }
 
+type JSIngredient {
+  JSIngredient(name: String, ismain: Bool, quantity: String, units: String)
+}
+
+fn make_ingredient_concrete(gleam_ing: Ingredient) -> JSIngredient {
+  JSIngredient(
+    name: option.unwrap(gleam_ing.name, ""),
+    ismain: option.unwrap(gleam_ing.ismain, False),
+    quantity: option.unwrap(gleam_ing.quantity, ""),
+    units: option.unwrap(gleam_ing.units, ""),
+  )
+}
+
+type JSRecipe {
+  JSRecipe(
+    id: String,
+    title: String,
+    slug: String,
+    cook_time: Int,
+    prep_time: Int,
+    serves: Int,
+    tags: Array(Tag),
+    ingredients: Array(JSIngredient),
+    method_steps: Array(MethodStep),
+  )
+}
+
 fn save_recipe(recipe: Recipe) -> Effect(Msg) {
-  use dispatch <- effect.from
-  do_save_recipe(recipe)
-  |> promise.map(result.map(_, decode_recipe))
-  |> promise.map(result.map(_, result.map(_, fn(a: Recipe) {
-    OnRouteChange(RecipeDetail(slug: a.slug))
-  })))
-  |> promise.tap(result.map(_, result.map(_, dispatch)))
+  let js_recipe =
+    JSRecipe(
+      id: option.unwrap(recipe.id, ""),
+      title: recipe.title,
+      slug: recipe.slug,
+      cook_time: recipe.cook_time,
+      prep_time: recipe.prep_time,
+      serves: recipe.serves,
+      tags: option.unwrap(
+        option.map(recipe.tags, array.from_list),
+        array.from_list([]),
+      ),
+      ingredients: recipe.ingredients
+        |> option.map(list.map(_, fn(a) { make_ingredient_concrete(a) }))
+        |> option.map(array.from_list)
+        |> option.unwrap(array.from_list([])),
+      method_steps: option.unwrap(
+        option.map(recipe.method_steps, array.from_list),
+        array.from_list([]),
+      ),
+    )
+  use _ <- effect.from
+  do_save_recipe(js_recipe)
   Nil
 }
 
-type FailedToSaveError
-
 @external(javascript, "./db.ts", "addOrUpdateRecipe")
-fn do_save_recipe(recipe: Recipe) -> Promise(Result(Dynamic, FailedToSaveError))
+fn do_save_recipe(recipe: JSRecipe) -> Nil
 
 fn get_recipes() -> Effect(Msg) {
   use dispatch <- effect.from
   do_get_recipes()
   |> promise.map(array.to_list)
   |> promise.map(list.map(_, decode_recipe))
+  |> promise.map(io.debug)
   |> promise.map(result.all)
   |> promise.map(result.map(_, DbRetrievedRecipes))
   |> promise.tap(result.map(_, dispatch))

@@ -7,6 +7,8 @@ pub type Msg {
   UserUpdatedRecipeTitle(String)
   UserUpdatedRecipePrepTimeHrs(String)
   UserUpdatedRecipePrepTimeMins(String)
+  UserUpdatedRecipeCookTimeHrs(String)
+  UserUpdatedRecipeCookTimeMins(String)
 }
 
 pub type Model {

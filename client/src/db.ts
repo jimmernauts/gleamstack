@@ -109,12 +109,12 @@ export async function addOrUpdateRecipe(recipe: Recipe) {
 		 method_steps=excluded.method_steps, \
 		 tags=excluded.tags, \
 		 shortlisted=excluded.shortlisted;`);
-	return result ? new Ok(result) : new Error(undefined);
+	return new Ok();
 }
 
 export async function do_get_recipes() {
 	const _seed = await seedDb();
 	const result = await listRecipes();
-	console.log(result)
+	console.log("result from ffi: ",result)
 	return result;
 }

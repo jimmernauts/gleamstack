@@ -14,7 +14,8 @@ import lustre/element/html.{
 }
 import lustre/event.{on_input}
 import types.{
-  type Msg, type Recipe, UserSavedUpdatedRecipe, UserUpdatedRecipePrepTimeHrs,
+  type Msg, type Recipe, UserSavedUpdatedRecipe, UserUpdatedRecipeCookTimeHrs,
+  UserUpdatedRecipeCookTimeMins, UserUpdatedRecipePrepTimeHrs,
   UserUpdatedRecipePrepTimeMins, UserUpdatedRecipeTitle,
 }
 
@@ -119,6 +120,7 @@ pub fn edit_recipe(recipe: Recipe) -> Element(Msg) {
                     |> int.to_string
                     |> string.replace("0", ""),
                   ),
+                  on_input(UserUpdatedRecipeCookTimeHrs),
                 ]),
               ]),
               div([class("after:content-['m'] after:text-xs inline-block")], [
@@ -134,6 +136,7 @@ pub fn edit_recipe(recipe: Recipe) -> Element(Msg) {
                     recipe.cook_time % 60
                     |> int.to_string,
                   ),
+                  on_input(UserUpdatedRecipeCookTimeMins),
                 ]),
               ]),
             ]),
@@ -163,7 +166,7 @@ pub fn edit_recipe(recipe: Recipe) -> Element(Msg) {
         ],
         [
           a([href("/"), class("text-center")], [text("🏠")]),
-          a([href("/recipes." <> recipe.slug), class("text-center")], [
+          a([href("/recipes/" <> recipe.slug), class("text-center")], [
             text("❎"),
           ]),
           button([type_("submit"), class("")], [text("💾")]),
