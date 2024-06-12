@@ -1,3 +1,4 @@
+import gleam/dict.{type Dict}
 import gleam/option.{type Option}
 
 pub type Msg {
@@ -9,6 +10,8 @@ pub type Msg {
   UserUpdatedRecipePrepTimeMins(String)
   UserUpdatedRecipeCookTimeHrs(String)
   UserUpdatedRecipeCookTimeMins(String)
+  UserUpdatedRecipeServes(String)
+  UserUpdatedIngredientNameAtIndex(Int, String)
 }
 
 pub type Model {
@@ -56,7 +59,7 @@ pub type Recipe {
     prep_time: Int,
     serves: Int,
     tags: Option(List(Tag)),
-    ingredients: Option(List(Ingredient)),
+    ingredients: Option(Dict(Int, Ingredient)),
     method_steps: Option(List(MethodStep)),
   )
 }

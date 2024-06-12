@@ -5,7 +5,7 @@ export type Recipe = {
 	cook_time: number;
 	prep_time: number;
 	serves: number;
-	ingredients?: Ingredient[];
+	ingredients?: Map<number,Ingredient>;
 	method_steps?: MethodStep[];
 	tags?: Tag[];
 	shortlisted?: boolean;

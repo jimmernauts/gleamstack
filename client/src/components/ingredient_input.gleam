@@ -1,13 +1,17 @@
+import gleam/function
 import gleam/int.{to_string}
 import gleam/option.{type Option, Some, unwrap}
+import lib/types
 import lustre/attribute.{
   attribute, checked, class, id, name, placeholder, type_, value,
 }
 import lustre/element.{text}
 import lustre/element/html.{button, div, input, label, span}
-import types
+import lustre/event.{on_input}
 
 pub fn ingredient_input(ingredient: Option(types.Ingredient), index: Int) {
+  let with_index = function.curry2(types.UserUpdatedIngredientNameAtIndex)
+
   div([class("my-0.5 w-full flex justify-between items-baseline")], [
     input([
       attribute("aria-label", "Enter ingredient name"),
@@ -21,6 +25,7 @@ pub fn ingredient_input(ingredient: Option(types.Ingredient), index: Int) {
         Some(ing) -> unwrap(ing.name, "")
         _ -> ""
       }),
+      on_input(with_index(index)),
     ]),
     div([class("flex justify-end gap-1 items-baseline")], [
       input([

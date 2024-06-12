@@ -1,9 +1,9 @@
 import gleam/int.{to_string}
 import gleam/option.{type Option, Some}
+import lib/types
 import lustre/attribute.{class, id, name, type_}
 import lustre/element.{text}
 import lustre/element/html.{button, div, label, textarea}
-import types
 
 pub fn method_step_input(method_step: Option(types.MethodStep), index: Int) {
   div([class("flex w-full items-baseline col-span-full px-1 mb-1")], [

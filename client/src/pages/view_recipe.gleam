@@ -1,15 +1,16 @@
 import components/page_title.{page_title}
+import gleam/dict
 import gleam/int.{to_string}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/uri.{type Uri}
+import lib/types
 import lustre/attribute.{class, for, href}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, fragment, none, text}
 import lustre/element/html.{
   a, div, fieldset, label, legend, li, nav, ol, section, span,
 }
-import types
 
 pub fn view_recipe(recipe: types.Recipe) {
   section(
@@ -99,9 +100,12 @@ pub fn view_recipe(recipe: types.Recipe) {
         [
           legend([class("mx-2 px-1 font-mono italic")], [text("Ingredients")]),
           recipe.ingredients
-            |> option.map(list.map(_, view_ingredient))
-            |> option.unwrap([none()])
-            |> fragment,
+            |> option.map(dict.map_values(_, fn(_i, item) {
+              view_ingredient(item)
+            }))
+            |> option.map(dict.values)
+            |> option.map(fragment)
+            |> option.unwrap(element.none()),
         ],
       ),
       fieldset(

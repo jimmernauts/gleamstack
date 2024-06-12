@@ -1,5 +1,6 @@
 import components/ingredient_input.{ingredient_input}
 import components/method_step_input.{method_step_input}
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/list
@@ -7,17 +8,17 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import lib/decoders.{decode_recipe}
+import lib/types.{
+  type Msg, type Recipe, UserSavedUpdatedRecipe, UserUpdatedRecipeCookTimeHrs,
+  UserUpdatedRecipeCookTimeMins, UserUpdatedRecipePrepTimeHrs,
+  UserUpdatedRecipePrepTimeMins, UserUpdatedRecipeServes, UserUpdatedRecipeTitle,
+}
 import lustre/attribute.{attribute, class, for, href, id, name, type_, value}
 import lustre/element.{type Element, fragment, text}
 import lustre/element/html.{
   a, button, div, fieldset, form, input, label, legend, nav, textarea,
 }
 import lustre/event.{on_input}
-import types.{
-  type Msg, type Recipe, UserSavedUpdatedRecipe, UserUpdatedRecipeCookTimeHrs,
-  UserUpdatedRecipeCookTimeMins, UserUpdatedRecipePrepTimeHrs,
-  UserUpdatedRecipePrepTimeMins, UserUpdatedRecipeTitle,
-}
 
 pub fn edit_recipe(recipe: Recipe) -> Element(Msg) {
   form(
@@ -154,6 +155,7 @@ pub fn edit_recipe(recipe: Recipe) -> Element(Msg) {
               type_("number"),
               name("serves"),
               value(recipe.serves |> int.to_string),
+              on_input(UserUpdatedRecipeServes),
             ]),
           ]),
         ],
@@ -181,8 +183,10 @@ pub fn edit_recipe(recipe: Recipe) -> Element(Msg) {
         [
           legend([class("mx-2 px-1 font-mono italic")], [text("Ingredients")]),
           recipe.ingredients
-            |> option.map(list.map(_, Some(_)))
-            |> option.map(list.index_map(_, ingredient_input))
+            |> option.map(dict.map_values(_, fn(i, item) {
+              ingredient_input(Some(item), i)
+            }))
+            |> option.map(dict.values)
             |> option.map(fragment)
             |> option.unwrap(element.none()),
         ],

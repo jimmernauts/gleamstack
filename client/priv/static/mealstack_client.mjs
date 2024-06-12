@@ -1169,14 +1169,30 @@ function decode_string(data) {
 function decode_int(data) {
   return Number.isInteger(data) ? new Ok2(data) : decoder_error("Int", data);
 }
-function decode_bool(data) {
-  return typeof data === "boolean" ? new Ok2(data) : decoder_error("Bool", data);
-}
 function decode_list(data) {
   if (Array.isArray(data)) {
     return new Ok2(List.fromArray(data));
   }
   return data instanceof List ? new Ok2(data) : decoder_error("List", data);
+}
+function decode_map(data) {
+  if (data instanceof Dict) {
+    return new Ok2(data);
+  }
+  if (data instanceof Map || data instanceof WeakMap) {
+    return new Ok2(Dict.fromMap(data));
+  }
+  if (data == null) {
+    return decoder_error("Dict", data);
+  }
+  if (typeof data !== "object") {
+    return decoder_error("Dict", data);
+  }
+  const proto = Object.getPrototypeOf(data);
+  if (proto === Object.prototype || proto === null) {
+    return new Ok2(Dict.fromObject(data));
+  }
+  return decoder_error("Dict", data);
 }
 function decode_option(data, decoder) {
   if (data === null || data === void 0 || data instanceof None)
@@ -1292,8 +1308,11 @@ function inspectUtfCodepoint(codepoint2) {
 function new$() {
   return new_map();
 }
-function insert(dict, key2, value4) {
-  return map_insert(key2, value4, dict);
+function get(from3, get3) {
+  return map_get(from3, get3);
+}
+function insert(dict2, key2, value4) {
+  return map_insert(key2, value4, dict2);
 }
 function fold_list_of_pair(loop$list, loop$initial) {
   while (true) {
@@ -1340,37 +1359,69 @@ function do_values_acc(loop$list, loop$acc) {
     }
   }
 }
-function do_values(dict) {
-  let list_of_pairs = map_to_list(dict);
+function do_values(dict2) {
+  let list_of_pairs = map_to_list(dict2);
   return do_values_acc(list_of_pairs, toList([]));
 }
-function values(dict) {
-  return do_values(dict);
+function values(dict2) {
+  return do_values(dict2);
 }
-function insert_pair(dict, pair) {
-  return insert(dict, pair[0], pair[1]);
+function insert_pair(dict2, pair) {
+  return insert(dict2, pair[0], pair[1]);
 }
 function fold_inserts(loop$new_entries, loop$dict) {
   while (true) {
     let new_entries = loop$new_entries;
-    let dict = loop$dict;
+    let dict2 = loop$dict;
     if (new_entries.hasLength(0)) {
-      return dict;
+      return dict2;
     } else {
       let x = new_entries.head;
       let xs = new_entries.tail;
       loop$new_entries = xs;
-      loop$dict = insert_pair(dict, x);
+      loop$dict = insert_pair(dict2, x);
     }
   }
 }
-function do_merge(dict, new_entries) {
+function do_merge(dict2, new_entries) {
   let _pipe = new_entries;
   let _pipe$1 = map_to_list(_pipe);
-  return fold_inserts(_pipe$1, dict);
+  return fold_inserts(_pipe$1, dict2);
 }
-function merge(dict, new_entries) {
-  return do_merge(dict, new_entries);
+function merge(dict2, new_entries) {
+  return do_merge(dict2, new_entries);
+}
+function do_fold(loop$list, loop$initial, loop$fun) {
+  while (true) {
+    let list2 = loop$list;
+    let initial = loop$initial;
+    let fun = loop$fun;
+    if (list2.hasLength(0)) {
+      return initial;
+    } else {
+      let k = list2.head[0];
+      let v = list2.head[1];
+      let rest = list2.tail;
+      loop$list = rest;
+      loop$initial = fun(initial, k, v);
+      loop$fun = fun;
+    }
+  }
+}
+function fold(dict2, initial, fun) {
+  let _pipe = dict2;
+  let _pipe$1 = map_to_list(_pipe);
+  return do_fold(_pipe$1, initial, fun);
+}
+function do_map_values(f, dict2) {
+  let f$1 = (dict3, k, v) => {
+    return insert(dict3, k, f(k, v));
+  };
+  let _pipe = dict2;
+  return fold(_pipe, new$(), f$1);
+}
+function map_values(dict2, fun) {
+  return do_map_values(fun, dict2);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/float.mjs
@@ -1645,7 +1696,7 @@ function flat_map(list2, fun) {
   let _pipe = map3(list2, fun);
   return concat2(_pipe);
 }
-function fold(loop$list, loop$initial, loop$fun) {
+function fold2(loop$list, loop$initial, loop$fun) {
   while (true) {
     let list2 = loop$list;
     let initial = loop$initial;
@@ -1722,6 +1773,15 @@ function map_error(result, fun) {
     return new Error2(fun(error));
   }
 }
+function flatten(result) {
+  if (result.isOk()) {
+    let x = result[0];
+    return x;
+  } else {
+    let error = result[0];
+    return new Error2(error);
+  }
+}
 function try$(result, fun) {
   if (result.isOk()) {
     let x = result[0];
@@ -1788,9 +1848,6 @@ function classify(data) {
 }
 function int(data) {
   return decode_int(data);
-}
-function bool(data) {
-  return decode_bool(data);
 }
 function shallow_list(value4) {
   return decode_list(value4);
@@ -1916,6 +1973,58 @@ function optional_field(name2, inner_type) {
             }
           );
         }
+      }
+    );
+  };
+}
+function dict(key_type, value_type) {
+  return (value4) => {
+    return try$(
+      decode_map(value4),
+      (map6) => {
+        return try$(
+          (() => {
+            let _pipe = map6;
+            let _pipe$1 = map_to_list(_pipe);
+            return try_map(
+              _pipe$1,
+              (pair) => {
+                let k = pair[0];
+                let v = pair[1];
+                return try$(
+                  (() => {
+                    let _pipe$2 = key_type(k);
+                    return map_errors(
+                      _pipe$2,
+                      (_capture) => {
+                        return push_path(_capture, "keys");
+                      }
+                    );
+                  })(),
+                  (k2) => {
+                    return try$(
+                      (() => {
+                        let _pipe$2 = value_type(v);
+                        return map_errors(
+                          _pipe$2,
+                          (_capture) => {
+                            return push_path(_capture, "values");
+                          }
+                        );
+                      })(),
+                      (v2) => {
+                        return new Ok2([k2, v2]);
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          })(),
+          (pairs) => {
+            return new Ok2(from_list(pairs));
+          }
+        );
       }
     );
   };
@@ -2073,7 +2182,7 @@ function repeat(x) {
     return x;
   });
 }
-function do_fold(loop$continuation, loop$f, loop$accumulator) {
+function do_fold2(loop$continuation, loop$f, loop$accumulator) {
   while (true) {
     let continuation = loop$continuation;
     let f = loop$f;
@@ -2090,13 +2199,13 @@ function do_fold(loop$continuation, loop$f, loop$accumulator) {
     }
   }
 }
-function fold2(iterator, initial, f) {
+function fold3(iterator, initial, f) {
   let _pipe = iterator.continuation;
-  return do_fold(_pipe, f, initial);
+  return do_fold2(_pipe, f, initial);
 }
 function to_list(iterator) {
   let _pipe = iterator;
-  let _pipe$1 = fold2(
+  let _pipe$1 = fold3(
     _pipe,
     toList([]),
     (acc, e) => {
@@ -2177,6 +2286,52 @@ function split3(x, substring) {
 function inspect2(term) {
   let _pipe = inspect(term);
   return to_string4(_pipe);
+}
+
+// build/dev/javascript/gleam_json/gleam_json_ffi.mjs
+function object(entries) {
+  return Object.fromEntries(entries);
+}
+function identity2(x) {
+  return x;
+}
+function do_null() {
+  return null;
+}
+
+// build/dev/javascript/gleam_json/gleam/json.mjs
+function string2(input2) {
+  return identity2(input2);
+}
+function null$() {
+  return do_null();
+}
+function nullable(input2, inner_type) {
+  if (input2 instanceof Some) {
+    let value4 = input2[0];
+    return inner_type(value4);
+  } else {
+    return null$();
+  }
+}
+function object2(entries) {
+  return object(entries);
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/bool.mjs
+function to_string6(bool3) {
+  if (!bool3) {
+    return "False";
+  } else {
+    return "True";
+  }
+}
+function guard(requirement, consequence, alternative) {
+  if (requirement) {
+    return consequence;
+  } else {
+    return alternative();
+  }
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/io.mjs
@@ -2349,15 +2504,6 @@ function kebab_case(text3) {
   return lowercase2(_pipe$2);
 }
 
-// build/dev/javascript/gleam_stdlib/gleam/bool.mjs
-function guard(requirement, consequence, alternative) {
-  if (requirement) {
-    return consequence;
-  } else {
-    return alternative();
-  }
-}
-
 // build/dev/javascript/lustre/lustre/effect.mjs
 var Effect = class extends CustomType {
   constructor(all2) {
@@ -2375,7 +2521,7 @@ function none() {
 }
 function batch(effects) {
   return new Effect(
-    fold(
+    fold2(
       effects,
       toList([]),
       (b, _use1) => {
@@ -3231,6 +3377,13 @@ function init2(handler) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/function.mjs
+function curry2(fun) {
+  return (a2) => {
+    return (b) => {
+      return fun(a2, b);
+    };
+  };
+}
 function apply1(fun, arg1) {
   return fun(arg1);
 }
@@ -3937,7 +4090,7 @@ function px(value4) {
 function percent(value4) {
   return new Pct(to_float(value4));
 }
-function to_string7(size) {
+function to_string8(size) {
   if (size instanceof Px) {
     let value4 = size[0];
     return append4(to_string2(value4), "px");
@@ -3987,7 +4140,7 @@ function property2(field2, content) {
   return new Style(new Property(field2, content, false));
 }
 function width(width2) {
-  return property2("width", to_string7(width2));
+  return property2("width", to_string8(width2));
 }
 function width_(width2) {
   return property2("width", width2);
@@ -4005,7 +4158,7 @@ function font_family(font_family2) {
   return property2("font-family", font_family2);
 }
 function font_size(font_size2) {
-  return property2("font-size", to_string7(font_size2));
+  return property2("font-size", to_string8(font_size2));
 }
 function line_height(line_height2) {
   return property2("line-height", line_height2);
@@ -4032,7 +4185,7 @@ function outline(outline2) {
   return property2("outline", outline2);
 }
 function gap(gap2) {
-  return property2("gap", to_string7(gap2));
+  return property2("gap", to_string8(gap2));
 }
 function grid_column(grid_column2) {
   return property2("grid-column", grid_column2);
@@ -4053,16 +4206,16 @@ function appearance(appearance2) {
   return property2("appearance", appearance2);
 }
 function top(size) {
-  return property2("top", to_string7(size));
+  return property2("top", to_string8(size));
 }
 function bottom(size) {
-  return property2("bottom", to_string7(size));
+  return property2("bottom", to_string8(size));
 }
 function right(size) {
-  return property2("right", to_string7(size));
+  return property2("right", to_string8(size));
 }
 function left(size) {
-  return property2("left", to_string7(size));
+  return property2("left", to_string8(size));
 }
 function box_shadow(box_shadow2) {
   return property2("box-shadow", box_shadow2);
@@ -4086,16 +4239,16 @@ function border_right(border_right2) {
   return property2("border-right", border_right2);
 }
 function border_radius(border_radius2) {
-  return property2("border-radius", to_string7(border_radius2));
+  return property2("border-radius", to_string8(border_radius2));
 }
 function padding(padding2) {
-  return property2("padding", to_string7(padding2));
+  return property2("padding", to_string8(padding2));
 }
 function padding_(padding2) {
   return property2("padding", padding2);
 }
 function margin(margin2) {
-  return property2("margin", to_string7(margin2));
+  return property2("margin", to_string8(margin2));
 }
 function compose(class$3) {
   let _pipe = class$3;
@@ -5247,13 +5400,13 @@ function count_data(data) {
   } else if (data instanceof DataTuple) {
     let vs = data[0];
     let _pipe = map3(vs, count_data);
-    return fold(_pipe, 2, (acc, val) => {
+    return fold2(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   } else if (data instanceof DataList) {
     let vs = data[0];
     let _pipe = map3(vs, count_data);
-    return fold(_pipe, 2, (acc, val) => {
+    return fold2(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   } else if (data instanceof DataCustomType) {
@@ -5261,7 +5414,7 @@ function count_data(data) {
     let _pipe = map3(vs, (d) => {
       return count_data(second(d));
     });
-    return fold(_pipe, 2, (acc, val) => {
+    return fold2(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   } else if (data instanceof DataDict) {
@@ -5269,7 +5422,7 @@ function count_data(data) {
     let _pipe = map3(vs, (d) => {
       return count_data(second(d));
     });
-    return fold(_pipe, 2, (acc, val) => {
+    return fold2(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   } else if (data instanceof DataSet) {
@@ -5277,7 +5430,7 @@ function count_data(data) {
     let _pipe = map3(vs, (d) => {
       return count_data(d);
     });
-    return fold(_pipe, 2, (acc, val) => {
+    return fold2(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   } else {
@@ -5285,7 +5438,7 @@ function count_data(data) {
     let _pipe = map3(vs, (d) => {
       return count_data(second(d));
     });
-    return fold(_pipe, 2, (acc, val) => {
+    return fold2(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   }
@@ -5471,7 +5624,7 @@ function view_data_custom_type(name2, values2, p, i) {
   if (values2.atLeastLength(2)) {
     return body_type(true);
   } else if (values2.atLeastLength(1)) {
-    let v = fold(
+    let v = fold2(
       values2,
       0,
       (acc, d) => {
@@ -6016,17 +6169,17 @@ var RecipeSeed = [{
   prep_time: 10,
   serves: 4,
   shortlisted: false,
-  ingredients: [
-    { units: "g", quantity: "600", name: "Baby potato" },
-    { units: "pc", quantity: "1 / 2", name: "Red Cabbage" },
-    { units: "g", quantity: "200", name: "Pomegranate seeds" },
-    { units: "tin", quantity: "1", name: "Butter Beans" },
-    { units: "g", quantity: "100", name: "Mayonnaise" },
-    { units: "g", quantity: "50", name: "Yoghurt" },
-    { units: "tbsp", quantity: "3", name: "Extra Virgin Olive Oil" },
-    { units: "pc", quantity: "1 / 2", name: "Lemon juice" },
-    { units: "g", quantity: "15", name: "Flat - leaf parsley" }
-  ],
+  ingredients: /* @__PURE__ */ new Map([
+    [0, { units: "g", quantity: "600", name: "Baby potato" }],
+    [1, { units: "pc", quantity: "1 / 2", name: "Red Cabbage" }],
+    [2, { units: "g", quantity: "200", name: "Pomegranate seeds" }],
+    [3, { units: "tin", quantity: "1", name: "Butter Beans" }],
+    [4, { units: "g", quantity: "100", name: "Mayonnaise" }],
+    [5, { units: "g", quantity: "50", name: "Yoghurt" }],
+    [6, { units: "tbsp", quantity: "3", name: "Extra Virgin Olive Oil" }],
+    [7, { units: "pc", quantity: "1 / 2", name: "Lemon juice" }],
+    [8, { units: "g", quantity: "15", name: "Flat - leaf parsley" }]
+  ]),
   method_steps: [{
     step_text: "Boil the potatoes in salted water for 10 minutes, until they are just cooked through, then drain and rinse under running cold water to cool."
   }, {
@@ -6069,6 +6222,24 @@ var sqlite = await sqliteWasm.default(
   () => "https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0/dist/crsqlite.wasm"
 );
 var db = await sqlite.open("mealstack.db");
+function replacer(key2, value4) {
+  if (value4 instanceof Map) {
+    return {
+      dataType: "Map",
+      value: Array.from(value4.entries())
+      // or with spread: value: [...value]
+    };
+  }
+  return value4;
+}
+function reviver(key2, value4) {
+  if (typeof value4 === "object" && value4 !== null) {
+    if (value4.dataType === "Map") {
+      return new Map(value4.value);
+    }
+  }
+  return value4;
+}
 async function prepareTables() {
   const findTagOptionsTable = await db.execA(
     "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='tag_options')"
@@ -6125,7 +6296,7 @@ async function listRecipes() {
   const result = await db.execO("SELECT id, title, slug, prep_time, cook_time, serves, tags, ingredients, method_steps FROM recipes");
   const mapped = result.map((recipe) => {
     recipe.tags = JSON.parse(recipe.tags);
-    recipe.ingredients = JSON.parse(recipe.ingredients);
+    recipe.ingredients = JSON.parse(recipe.ingredients, reviver);
     recipe.method_steps = JSON.parse(recipe.method_steps);
     return recipe;
   });
@@ -6134,10 +6305,12 @@ async function listRecipes() {
 }
 async function addOrUpdateRecipe(recipe) {
   console.log("addOrUpdateRecipe: ", recipe);
+  const query = ` 		INSERT INTO recipes 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
+			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(recipe.ingredients, replacer)}',
+			'${JSON.stringify(recipe.method_steps)}', '${JSON.stringify(recipe.tags)}', '${recipe.shortlisted}') 		 ON CONFLICT(id) DO UPDATE SET		 slug=excluded.slug, 		 title=excluded.title, 		 cook_time=excluded.cook_time, 		 prep_time=excluded.prep_time, 		 serves=excluded.serves, 		 ingredients=excluded.ingredients, 		 method_steps=excluded.method_steps, 		 tags=excluded.tags, 		 shortlisted=excluded.shortlisted;`;
+  console.log("query: ", query);
   const result = await db.execA(
-    ` 		INSERT INTO recipes 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
-			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(recipe.ingredients)}',
-			'${JSON.stringify(recipe.method_steps)}', '${JSON.stringify(recipe.tags)}', '${recipe.shortlisted}') 		 ON CONFLICT(id) DO UPDATE SET		 slug=excluded.slug, 		 title=excluded.title, 		 cook_time=excluded.cook_time, 		 prep_time=excluded.prep_time, 		 serves=excluded.serves, 		 ingredients=excluded.ingredients, 		 method_steps=excluded.method_steps, 		 tags=excluded.tags, 		 shortlisted=excluded.shortlisted;`
+    query
   );
   return new Ok2();
 }
@@ -6148,7 +6321,7 @@ async function do_get_recipes() {
   return result;
 }
 
-// build/dev/javascript/mealstack_client/types.mjs
+// build/dev/javascript/mealstack_client/lib/types.mjs
 var OnRouteChange = class extends CustomType {
   constructor(x0) {
     super();
@@ -6195,6 +6368,19 @@ var UserUpdatedRecipeCookTimeMins = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
+  }
+};
+var UserUpdatedRecipeServes = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserUpdatedIngredientNameAtIndex = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
   }
 };
 var Model2 = class extends CustomType {
@@ -6259,13 +6445,49 @@ var Recipe = class extends CustomType {
 };
 
 // build/dev/javascript/mealstack_client/lib/decoders.mjs
+function decode_stringed_int(d) {
+  let decoder = string;
+  let _pipe = decoder(d);
+  let _pipe$1 = map4(_pipe, parse);
+  let _pipe$2 = map4(
+    _pipe$1,
+    (_capture) => {
+      return map_error(
+        _capture,
+        (_) => {
+          return toList([
+            new DecodeError(
+              "a stringed int",
+              "something else",
+              toList([""])
+            )
+          ]);
+        }
+      );
+    }
+  );
+  return flatten(_pipe$2);
+}
+function decode_stringed_bool(d) {
+  let _pipe = string(d);
+  return map4(
+    _pipe,
+    (a2) => {
+      if (a2 === "True") {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  );
+}
 function decode_ingredient(d) {
   let decoder = decode4(
     (var0, var1, var2, var3) => {
       return new Ingredient(var0, var1, var2, var3);
     },
     optional_field("name", string),
-    optional_field("ismain", bool),
+    optional_field("ismain", decode_stringed_bool),
     optional_field("quantity", string),
     optional_field("units", string)
   );
@@ -6312,14 +6534,41 @@ function decode_recipe(d) {
     field("prep_time", int),
     field("serves", int),
     optional_field("tags", list(decode_tag)),
-    optional_field("ingredients", list(decode_ingredient)),
+    optional_field("ingredients", dict(decode_stringed_int, decode_ingredient)),
     optional_field("method_steps", list(decode_method_step))
   );
+  debug(d);
   return decoder(d);
+}
+
+// build/dev/javascript/mealstack_client/lib/utils.mjs
+function dict_update(dict2, key2, fun) {
+  let item = (() => {
+    let _pipe = dict2;
+    let _pipe$1 = get(_pipe, key2);
+    return from_result(_pipe$1);
+  })();
+  if (item instanceof Some) {
+    let item$1 = item[0];
+    let _pipe = item$1;
+    let _pipe$1 = fun(_pipe);
+    return ((_capture) => {
+      return insert(dict2, key2, _capture);
+    })(
+      _pipe$1
+    );
+  } else {
+    return dict2;
+  }
 }
 
 // build/dev/javascript/mealstack_client/components/ingredient_input.mjs
 function ingredient_input(ingredient, index3) {
+  let with_index = curry2(
+    (var0, var1) => {
+      return new UserUpdatedIngredientNameAtIndex(var0, var1);
+    }
+  );
   return div(
     toList([class$("my-0.5 w-full flex justify-between items-baseline")]),
     toList([
@@ -6341,7 +6590,8 @@ function ingredient_input(ingredient, index3) {
                 return "";
               }
             })()
-          )
+          ),
+          on_input(with_index(index3))
         ])
       ),
       div(
@@ -6726,6 +6976,11 @@ function edit_recipe(recipe) {
                       let _pipe = recipe.serves;
                       return to_string3(_pipe);
                     })()
+                  ),
+                  on_input(
+                    (var0) => {
+                      return new UserUpdatedRecipeServes(var0);
+                    }
                   )
                 ])
               )
@@ -6764,20 +7019,15 @@ function edit_recipe(recipe) {
             let _pipe$1 = map2(
               _pipe,
               (_capture) => {
-                return map3(
+                return map_values(
                   _capture,
-                  (_capture2) => {
-                    return new Some(_capture2);
+                  (i, item) => {
+                    return ingredient_input(new Some(item), i);
                   }
                 );
               }
             );
-            let _pipe$2 = map2(
-              _pipe$1,
-              (_capture) => {
-                return index_map(_capture, ingredient_input);
-              }
-            );
+            let _pipe$2 = map2(_pipe$1, values);
             let _pipe$3 = map2(_pipe$2, fragment);
             return unwrap(_pipe$3, none3());
           })()
@@ -7028,11 +7278,17 @@ function view_recipe(recipe) {
             let _pipe$1 = map2(
               _pipe,
               (_capture) => {
-                return map3(_capture, view_ingredient);
+                return map_values(
+                  _capture,
+                  (_, item) => {
+                    return view_ingredient(item);
+                  }
+                );
               }
             );
-            let _pipe$2 = unwrap(_pipe$1, toList([none3()]));
-            return fragment(_pipe$2);
+            let _pipe$2 = map2(_pipe$1, values);
+            let _pipe$3 = map2(_pipe$2, fragment);
+            return unwrap(_pipe$3, none3());
           })()
         ])
       ),
@@ -7074,15 +7330,6 @@ function view_recipe(recipe) {
 }
 
 // build/dev/javascript/mealstack_client/mealstack_client.mjs
-var JSIngredient = class extends CustomType {
-  constructor(name2, ismain, quantity, units) {
-    super();
-    this.name = name2;
-    this.ismain = ismain;
-    this.quantity = quantity;
-    this.units = units;
-  }
-};
 var JSRecipe = class extends CustomType {
   constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
     super();
@@ -7140,13 +7387,29 @@ function init6(_) {
     init2(on_route_change)
   ];
 }
-function make_ingredient_concrete(gleam_ing) {
-  return new JSIngredient(
-    unwrap(gleam_ing.name, ""),
-    unwrap(gleam_ing.ismain, false),
-    unwrap(gleam_ing.quantity, ""),
-    unwrap(gleam_ing.units, "")
+function json_encode_ingredient(ingredient) {
+  return object2(
+    toList([
+      ["name", string2(unwrap(ingredient.name, ""))],
+      ["quantity", string2(unwrap(ingredient.quantity, ""))],
+      ["units", string2(unwrap(ingredient.units, ""))],
+      [
+        "ismain",
+        string2(to_string6(unwrap(ingredient.ismain, false)))
+      ]
+    ])
   );
+}
+function json_encode_ingredient_list(dict2) {
+  let _pipe = dict2;
+  let _pipe$1 = map_to_list(_pipe);
+  let _pipe$2 = map3(
+    _pipe$1,
+    (pair) => {
+      return [to_string3(pair[0]), json_encode_ingredient(pair[1])];
+    }
+  );
+  return object2(_pipe$2);
 }
 function save_recipe(recipe) {
   let js_recipe = new JSRecipe(
@@ -7162,19 +7425,7 @@ function save_recipe(recipe) {
     ),
     (() => {
       let _pipe = recipe.ingredients;
-      let _pipe$1 = map2(
-        _pipe,
-        (_capture) => {
-          return map3(
-            _capture,
-            (a2) => {
-              return make_ingredient_concrete(a2);
-            }
-          );
-        }
-      );
-      let _pipe$2 = map2(_pipe$1, toArray);
-      return unwrap(_pipe$2, toArray(toList([])));
+      return nullable(_pipe, json_encode_ingredient_list);
     })(),
     unwrap(
       map2(recipe.method_steps, toArray),
@@ -7374,6 +7625,63 @@ function update3(model, msg) {
                   }
                 );
                 return unwrap2(_pipe$2, 0);
+              })()
+            })
+          )
+        }),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedRecipeServes) {
+    let newserves = msg[0];
+    let $ = model.current_recipe;
+    if ($ instanceof Some) {
+      let a$1 = $[0];
+      return [
+        model.withFields({
+          current_recipe: new Some(
+            a$1.withFields({
+              serves: (() => {
+                let _pipe = newserves;
+                let _pipe$1 = parse(_pipe);
+                return unwrap2(_pipe$1, 0);
+              })()
+            })
+          )
+        }),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedIngredientNameAtIndex) {
+    let i = msg[0];
+    let new_ingredient_name = msg[1];
+    let $ = model.current_recipe;
+    if ($ instanceof Some) {
+      let a$1 = $[0];
+      return [
+        model.withFields({
+          current_recipe: new Some(
+            a$1.withFields({
+              ingredients: (() => {
+                let _pipe = a$1.ingredients;
+                return map2(
+                  _pipe,
+                  (_capture) => {
+                    return dict_update(
+                      _capture,
+                      i,
+                      (ing) => {
+                        return ing.withFields({
+                          name: new Some(new_ingredient_name)
+                        });
+                      }
+                    );
+                  }
+                );
               })()
             })
           )
@@ -7588,7 +7896,7 @@ function main2() {
     throw makeError(
       "assignment_no_match",
       "mealstack_client",
-      46,
+      50,
       "main",
       "Assignment pattern did not match",
       { value: $ }

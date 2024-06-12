@@ -1,10 +1,12 @@
 import components/page_title.{page_title}
-import gleam/dict
+import gleam/bool
+import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/int.{floor_divide, to_string}
 import gleam/io.{debug}
 import gleam/javascript/array.{type Array}
 import gleam/javascript/promise.{type Promise}
+import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -12,6 +14,15 @@ import gleam/string.{append}
 import gleam/uri.{type Uri, Uri}
 import justin.{kebab_case}
 import lib/decoders.{decode_recipe}
+import lib/types.{
+  type Ingredient, type MethodStep, type Model, type Msg, type Recipe, type Tag,
+  DbRetrievedRecipes, EditRecipe, Home, Ingredient, Model, OnRouteChange, Recipe,
+  RecipeBook, RecipeDetail, UserSavedUpdatedRecipe,
+  UserUpdatedIngredientNameAtIndex, UserUpdatedRecipeCookTimeHrs,
+  UserUpdatedRecipeCookTimeMins, UserUpdatedRecipePrepTimeHrs,
+  UserUpdatedRecipePrepTimeMins, UserUpdatedRecipeServes, UserUpdatedRecipeTitle,
+}
+import lib/utils
 import lustre
 import lustre/attribute.{class, for, href}
 import lustre/effect.{type Effect}
@@ -23,13 +34,6 @@ import modem
 import pages/edit_recipe.{edit_recipe}
 import pages/view_recipe.{view_recipe}
 import tardis
-import types.{
-  type Ingredient, type MethodStep, type Model, type Msg, type Recipe, type Tag,
-  DbRetrievedRecipes, EditRecipe, Home, Model, OnRouteChange, Recipe, RecipeBook,
-  RecipeDetail, UserSavedUpdatedRecipe, UserUpdatedRecipeCookTimeHrs,
-  UserUpdatedRecipeCookTimeMins, UserUpdatedRecipePrepTimeHrs,
-  UserUpdatedRecipePrepTimeMins, UserUpdatedRecipeTitle,
-}
 
 // MAIN ------------------------------------------------------------------------
 
@@ -190,6 +194,51 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         _ -> #(model, effect.none())
       }
     }
+    UserUpdatedRecipeServes(newserves) -> {
+      case model.current_recipe {
+        Some(a) -> #(
+          Model(
+            ..model,
+            current_recipe: Some(
+              Recipe(
+                ..a,
+                serves: newserves
+                  |> int.parse
+                  |> result.unwrap(0),
+              ),
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserUpdatedIngredientNameAtIndex(i, new_ingredient_name) -> {
+      case model.current_recipe {
+        Some(a) -> #(
+          Model(
+            ..model,
+            current_recipe: Some(
+              Recipe(
+                ..a,
+                ingredients: {
+                  a.ingredients
+                  |> option.map(utils.dict_update(
+                    _,
+                    i,
+                    fn(ing) {
+                      Ingredient(..ing, name: Some(new_ingredient_name))
+                    },
+                  ))
+                },
+              ),
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
     UserSavedUpdatedRecipe(recipe) -> #(
       Model(
         ..merge_recipe_into_model(recipe, model),
@@ -224,17 +273,25 @@ fn on_route_change(uri: Uri) -> Msg {
   }
 }
 
-type JSIngredient {
-  JSIngredient(name: String, ismain: Bool, quantity: String, units: String)
+fn json_encode_ingredient(ingredient: Ingredient) -> Json {
+  json.object([
+    #("name", json.string(option.unwrap(ingredient.name, ""))),
+    #("quantity", json.string(option.unwrap(ingredient.quantity, ""))),
+    #("units", json.string(option.unwrap(ingredient.units, ""))),
+    #(
+      "ismain",
+      json.string(bool.to_string(option.unwrap(ingredient.ismain, False))),
+    ),
+  ])
 }
 
-fn make_ingredient_concrete(gleam_ing: Ingredient) -> JSIngredient {
-  JSIngredient(
-    name: option.unwrap(gleam_ing.name, ""),
-    ismain: option.unwrap(gleam_ing.ismain, False),
-    quantity: option.unwrap(gleam_ing.quantity, ""),
-    units: option.unwrap(gleam_ing.units, ""),
-  )
+fn json_encode_ingredient_list(dict: Dict(Int, Ingredient)) -> Json {
+  dict
+  |> dict.to_list
+  |> list.map(fn(pair: #(Int, Ingredient)) {
+    #(int.to_string(pair.0), json_encode_ingredient(pair.1))
+  })
+  |> json.object
 }
 
 type JSRecipe {
@@ -246,7 +303,7 @@ type JSRecipe {
     prep_time: Int,
     serves: Int,
     tags: Array(Tag),
-    ingredients: Array(JSIngredient),
+    ingredients: Json,
     method_steps: Array(MethodStep),
   )
 }
@@ -265,9 +322,7 @@ fn save_recipe(recipe: Recipe) -> Effect(Msg) {
         array.from_list([]),
       ),
       ingredients: recipe.ingredients
-        |> option.map(list.map(_, fn(a) { make_ingredient_concrete(a) }))
-        |> option.map(array.from_list)
-        |> option.unwrap(array.from_list([])),
+        |> json.nullable(json_encode_ingredient_list),
       method_steps: option.unwrap(
         option.map(recipe.method_steps, array.from_list),
         array.from_list([]),

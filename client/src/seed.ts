@@ -45,17 +45,17 @@ const RecipeSeed = [{
   prep_time: 10,
   serves: 4,
   shortlisted: false,
-  ingredients: [
-    { units: "g", quantity: "600", name: "Baby potato" },
-    { units: "pc", quantity: "1 / 2", name: "Red Cabbage" },
-    { units: "g", quantity: "200", name: "Pomegranate seeds" },
-    { units: "tin", quantity: "1", name: "Butter Beans" },
-    { units: "g", quantity: "100", name: "Mayonnaise" },
-    { units: "g", quantity: "50", name: "Yoghurt" },
-    { units: "tbsp", quantity: "3", name: "Extra Virgin Olive Oil" },
-    { units: "pc", quantity: "1 / 2", name: "Lemon juice" },
-    { units: "g", quantity: "15", name: "Flat - leaf parsley" },
-  ],
+  ingredients: new Map([
+    [0,{ units: "g", quantity: "600", name: "Baby potato" }],
+    [1,{ units: "pc", quantity: "1 / 2", name: "Red Cabbage" }],
+    [2,{ units: "g", quantity: "200", name: "Pomegranate seeds" }],
+    [3,{ units: "tin", quantity: "1", name: "Butter Beans" }],
+    [4,{ units: "g", quantity: "100", name: "Mayonnaise" }],
+    [5,{ units: "g", quantity: "50", name: "Yoghurt" }],
+    [6,{ units: "tbsp", quantity: "3", name: "Extra Virgin Olive Oil" }],
+    [7,{ units: "pc", quantity: "1 / 2", name: "Lemon juice" }],
+    [8,{ units: "g", quantity: "15", name: "Flat - leaf parsley" }],
+  ]),
   method_steps: [{
     step_text:
       "Boil the potatoes in salted water for 10 minutes, until they are just cooked through, then drain and rinse under running cold water to cool.",

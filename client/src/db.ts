@@ -9,6 +9,25 @@ const sqlite = await sqliteWasm.default(
 );
 const db = await sqlite.open("mealstack.db");
 
+function replacer(key, value) {
+	if(value instanceof Map) {
+	  return {
+		dataType: 'Map',
+		value: Array.from(value.entries()), // or with spread: value: [...value]
+	  };
+	}
+	  return value;
+  }
+  function reviver(key, value) {
+	if(typeof value === 'object' && value !== null) {
+	  if (value.dataType === 'Map') {
+		return new Map(value.value);
+	  }
+	}
+	return value;
+  }
+
+
 export async function prepareTables() {
 	const findTagOptionsTable = await db.execA(
 		"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='tag_options')",
@@ -82,22 +101,23 @@ export async function listRecipes() {
 	const result = await db.execO("SELECT id, title, slug, prep_time, cook_time, serves, tags, ingredients, method_steps FROM recipes")
 	const mapped = result.map(recipe=>{
 		recipe.tags = JSON.parse(recipe.tags)
-		recipe.ingredients = JSON.parse(recipe.ingredients)
+		recipe.ingredients = JSON.parse(recipe.ingredients,reviver)
 		recipe.method_steps = JSON.parse(recipe.method_steps)
 		return recipe
-	})
+	})		
 	console.log("mapped: ",mapped)
 	return mapped
 }
 
+
+
 export async function addOrUpdateRecipe(recipe: Recipe) {
 	console.log("addOrUpdateRecipe: ",recipe);
-	const result = await db.execA(
-		` \
+	const query = ` \
 		INSERT INTO recipes \
 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) \
 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
-			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(recipe.ingredients)}',
+			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(recipe.ingredients,replacer)}',
 			'${JSON.stringify(recipe.method_steps)}', '${JSON.stringify(recipe.tags)}', '${recipe.shortlisted}') \
 		 ON CONFLICT(id) DO UPDATE SET\
 		 slug=excluded.slug, \
@@ -108,7 +128,10 @@ export async function addOrUpdateRecipe(recipe: Recipe) {
 		 ingredients=excluded.ingredients, \
 		 method_steps=excluded.method_steps, \
 		 tags=excluded.tags, \
-		 shortlisted=excluded.shortlisted;`);
+		 shortlisted=excluded.shortlisted;`
+	console.log("query: ",query)
+	const result = await db.execA(query
+		);
 	return new Ok();
 }
 
