@@ -244,27 +244,6 @@ function makeError(variant, module, line, fn, message, extra) {
   return error;
 }
 
-// build/dev/javascript/gleam_javascript/ffi.mjs
-function toArray(list2) {
-  return list2.toArray();
-}
-var PromiseLayer = class _PromiseLayer {
-  constructor(promise) {
-    this.promise = promise;
-  }
-  static wrap(value4) {
-    return value4 instanceof Promise ? new _PromiseLayer(value4) : value4;
-  }
-  static unwrap(value4) {
-    return value4 instanceof _PromiseLayer ? value4.promise : value4;
-  }
-};
-function map_promise(promise, fn) {
-  return promise.then(
-    (value4) => PromiseLayer.wrap(fn(PromiseLayer.unwrap(value4)))
-  );
-}
-
 // build/dev/javascript/gleam_stdlib/gleam/option.mjs
 var Some = class extends CustomType {
   constructor(x0) {
@@ -298,7 +277,7 @@ function unwrap(option2, default$) {
     return default$;
   }
 }
-function map2(option2, fun) {
+function map(option2, fun) {
   if (option2 instanceof Some) {
     let x = option2[0];
     return new Some(fun(x));
@@ -312,6 +291,401 @@ function or(first3, second2) {
   } else {
     return second2;
   }
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/float.mjs
+function to_string(x) {
+  return float_to_string(x);
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/int.mjs
+function parse(string3) {
+  return parse_int(string3);
+}
+function to_string3(x) {
+  return to_string2(x);
+}
+function to_float(x) {
+  return identity(x);
+}
+function floor_divide(dividend, divisor) {
+  if (divisor === 0) {
+    return new Error2(void 0);
+  } else {
+    let divisor$1 = divisor;
+    let $ = dividend * divisor$1 < 0 && remainderInt(dividend, divisor$1) !== 0;
+    if ($) {
+      return new Ok2(divideInt(dividend, divisor$1) - 1);
+    } else {
+      return new Ok2(divideInt(dividend, divisor$1));
+    }
+  }
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/result.mjs
+function map2(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok2(fun(x));
+  } else {
+    let e = result[0];
+    return new Error2(e);
+  }
+}
+function map_error(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok2(x);
+  } else {
+    let error = result[0];
+    return new Error2(fun(error));
+  }
+}
+function flatten(result) {
+  if (result.isOk()) {
+    let x = result[0];
+    return x;
+  } else {
+    let error = result[0];
+    return new Error2(error);
+  }
+}
+function try$(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return fun(x);
+  } else {
+    let e = result[0];
+    return new Error2(e);
+  }
+}
+function unwrap2(result, default$) {
+  if (result.isOk()) {
+    let v = result[0];
+    return v;
+  } else {
+    return default$;
+  }
+}
+function all(results) {
+  return try_map(results, (x) => {
+    return x;
+  });
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/string_builder.mjs
+function append_builder(builder, suffix) {
+  return add(builder, suffix);
+}
+function from_strings(strings) {
+  return concat(strings);
+}
+function from_string(string3) {
+  return identity(string3);
+}
+function append(builder, second2) {
+  return append_builder(builder, from_string(second2));
+}
+function to_string4(builder) {
+  return identity(builder);
+}
+function split2(iodata, pattern) {
+  return split(iodata, pattern);
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
+var DecodeError = class extends CustomType {
+  constructor(expected, found, path) {
+    super();
+    this.expected = expected;
+    this.found = found;
+    this.path = path;
+  }
+};
+function from(a2) {
+  return identity(a2);
+}
+function unsafe_coerce(a2) {
+  return identity(a2);
+}
+function string(data) {
+  return decode_string(data);
+}
+function classify(data) {
+  return classify_dynamic(data);
+}
+function int(data) {
+  return decode_int(data);
+}
+function shallow_list(value4) {
+  return decode_list(value4);
+}
+function any(decoders) {
+  return (data) => {
+    if (decoders.hasLength(0)) {
+      return new Error2(
+        toList([new DecodeError("another type", classify(data), toList([]))])
+      );
+    } else {
+      let decoder = decoders.head;
+      let decoders$1 = decoders.tail;
+      let $ = decoder(data);
+      if ($.isOk()) {
+        let decoded = $[0];
+        return new Ok2(decoded);
+      } else {
+        return any(decoders$1)(data);
+      }
+    }
+  };
+}
+function all_errors(result) {
+  if (result.isOk()) {
+    return toList([]);
+  } else {
+    let errors = result[0];
+    return errors;
+  }
+}
+function decode1(constructor, t1) {
+  return (value4) => {
+    let $ = t1(value4);
+    if ($.isOk()) {
+      let a2 = $[0];
+      return new Ok2(constructor(a2));
+    } else {
+      let a2 = $;
+      return new Error2(all_errors(a2));
+    }
+  };
+}
+function push_path(error, name2) {
+  let name$1 = from(name2);
+  let decoder = any(
+    toList([string, (x) => {
+      return map2(int(x), to_string3);
+    }])
+  );
+  let name$2 = (() => {
+    let $ = decoder(name$1);
+    if ($.isOk()) {
+      let name$22 = $[0];
+      return name$22;
+    } else {
+      let _pipe = toList(["<", classify(name$1), ">"]);
+      let _pipe$1 = from_strings(_pipe);
+      return to_string4(_pipe$1);
+    }
+  })();
+  return error.withFields({ path: prepend(name$2, error.path) });
+}
+function list(decoder_type) {
+  return (dynamic2) => {
+    return try$(
+      shallow_list(dynamic2),
+      (list2) => {
+        let _pipe = list2;
+        let _pipe$1 = try_map(_pipe, decoder_type);
+        return map_errors(
+          _pipe$1,
+          (_capture) => {
+            return push_path(_capture, "*");
+          }
+        );
+      }
+    );
+  };
+}
+function map_errors(result, f) {
+  return map_error(
+    result,
+    (_capture) => {
+      return map3(_capture, f);
+    }
+  );
+}
+function field(name2, inner_type) {
+  return (value4) => {
+    let missing_field_error = new DecodeError("field", "nothing", toList([]));
+    return try$(
+      decode_field(value4, name2),
+      (maybe_inner) => {
+        let _pipe = maybe_inner;
+        let _pipe$1 = to_result(_pipe, toList([missing_field_error]));
+        let _pipe$2 = try$(_pipe$1, inner_type);
+        return map_errors(
+          _pipe$2,
+          (_capture) => {
+            return push_path(_capture, name2);
+          }
+        );
+      }
+    );
+  };
+}
+function optional_field(name2, inner_type) {
+  return (value4) => {
+    return try$(
+      decode_field(value4, name2),
+      (maybe_inner) => {
+        if (maybe_inner instanceof None) {
+          return new Ok2(new None());
+        } else {
+          let dynamic_inner = maybe_inner[0];
+          let _pipe = dynamic_inner;
+          let _pipe$1 = decode_option(_pipe, inner_type);
+          return map_errors(
+            _pipe$1,
+            (_capture) => {
+              return push_path(_capture, name2);
+            }
+          );
+        }
+      }
+    );
+  };
+}
+function dict(key_type, value_type) {
+  return (value4) => {
+    return try$(
+      decode_map(value4),
+      (map8) => {
+        return try$(
+          (() => {
+            let _pipe = map8;
+            let _pipe$1 = map_to_list(_pipe);
+            return try_map(
+              _pipe$1,
+              (pair) => {
+                let k = pair[0];
+                let v = pair[1];
+                return try$(
+                  (() => {
+                    let _pipe$2 = key_type(k);
+                    return map_errors(
+                      _pipe$2,
+                      (_capture) => {
+                        return push_path(_capture, "keys");
+                      }
+                    );
+                  })(),
+                  (k2) => {
+                    return try$(
+                      (() => {
+                        let _pipe$2 = value_type(v);
+                        return map_errors(
+                          _pipe$2,
+                          (_capture) => {
+                            return push_path(_capture, "values");
+                          }
+                        );
+                      })(),
+                      (v2) => {
+                        return new Ok2([k2, v2]);
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          })(),
+          (pairs) => {
+            return new Ok2(from_list(pairs));
+          }
+        );
+      }
+    );
+  };
+}
+function decode2(constructor, t1, t2) {
+  return (value4) => {
+    let $ = t1(value4);
+    let $1 = t2(value4);
+    if ($.isOk() && $1.isOk()) {
+      let a2 = $[0];
+      let b = $1[0];
+      return new Ok2(constructor(a2, b));
+    } else {
+      let a2 = $;
+      let b = $1;
+      return new Error2(concat2(toList([all_errors(a2), all_errors(b)])));
+    }
+  };
+}
+function decode4(constructor, t1, t2, t3, t4) {
+  return (x) => {
+    let $ = t1(x);
+    let $1 = t2(x);
+    let $2 = t3(x);
+    let $3 = t4(x);
+    if ($.isOk() && $1.isOk() && $2.isOk() && $3.isOk()) {
+      let a2 = $[0];
+      let b = $1[0];
+      let c = $2[0];
+      let d = $3[0];
+      return new Ok2(constructor(a2, b, c, d));
+    } else {
+      let a2 = $;
+      let b = $1;
+      let c = $2;
+      let d = $3;
+      return new Error2(
+        concat2(
+          toList([all_errors(a2), all_errors(b), all_errors(c), all_errors(d)])
+        )
+      );
+    }
+  };
+}
+function decode9(constructor, t1, t2, t3, t4, t5, t6, t7, t8, t9) {
+  return (x) => {
+    let $ = t1(x);
+    let $1 = t2(x);
+    let $2 = t3(x);
+    let $3 = t4(x);
+    let $4 = t5(x);
+    let $5 = t6(x);
+    let $6 = t7(x);
+    let $7 = t8(x);
+    let $8 = t9(x);
+    if ($.isOk() && $1.isOk() && $2.isOk() && $3.isOk() && $4.isOk() && $5.isOk() && $6.isOk() && $7.isOk() && $8.isOk()) {
+      let a2 = $[0];
+      let b = $1[0];
+      let c = $2[0];
+      let d = $3[0];
+      let e = $4[0];
+      let f = $5[0];
+      let g = $6[0];
+      let h = $7[0];
+      let i = $8[0];
+      return new Ok2(constructor(a2, b, c, d, e, f, g, h, i));
+    } else {
+      let a2 = $;
+      let b = $1;
+      let c = $2;
+      let d = $3;
+      let e = $4;
+      let f = $5;
+      let g = $6;
+      let h = $7;
+      let i = $8;
+      return new Error2(
+        concat2(
+          toList([
+            all_errors(a2),
+            all_errors(b),
+            all_errors(c),
+            all_errors(d),
+            all_errors(e),
+            all_errors(f),
+            all_errors(g),
+            all_errors(h),
+            all_errors(i)
+          ])
+        )
+      );
+    }
+  };
 }
 
 // build/dev/javascript/gleam_stdlib/dict.mjs
@@ -447,7 +821,7 @@ function bitcount(x) {
   x += x >> 16;
   return x & 127;
 }
-function index2(bitmap, bit) {
+function index(bitmap, bit) {
   return bitcount(bitmap & bit - 1);
 }
 function cloneAndSet(arr, at, val) {
@@ -568,7 +942,7 @@ function assocArray(root2, shift, hash, key2, val, addedLeaf) {
 }
 function assocIndex(root2, shift, hash, key2, val, addedLeaf) {
   const bit = bitpos(hash, shift);
-  const idx = index2(root2.bitmap, bit);
+  const idx = index(root2.bitmap, bit);
   if ((root2.bitmap & bit) !== 0) {
     const node = root2.array[idx];
     if (node.type !== ENTRY) {
@@ -715,7 +1089,7 @@ function findIndex(root2, shift, hash, key2) {
   if ((root2.bitmap & bit) === 0) {
     return void 0;
   }
-  const idx = index2(root2.bitmap, bit);
+  const idx = index(root2.bitmap, bit);
   const node = root2.array[idx];
   if (node.type !== ENTRY) {
     return find(node, shift + SHIFT, hash, key2);
@@ -808,7 +1182,7 @@ function withoutIndex(root2, shift, hash, key2) {
   if ((root2.bitmap & bit) === 0) {
     return root2;
   }
-  const idx = index2(root2.bitmap, bit);
+  const idx = index(root2.bitmap, bit);
   const node = root2.array[idx];
   if (node.type !== ENTRY) {
     const n = without(node, shift + SHIFT, hash, key2);
@@ -1024,7 +1398,7 @@ function parse_int(value4) {
     return new Error2(Nil2);
   }
 }
-function to_string(term) {
+function to_string2(term) {
   return term.toString();
 }
 function float_to_string(float3) {
@@ -1114,18 +1488,18 @@ function print_debug(string3) {
 function new_map() {
   return Dict.new();
 }
-function map_to_list(map6) {
-  return List.fromArray(map6.entries());
+function map_to_list(map8) {
+  return List.fromArray(map8.entries());
 }
-function map_get(map6, key2) {
-  const value4 = map6.get(key2, NOT_FOUND);
+function map_get(map8, key2) {
+  const value4 = map8.get(key2, NOT_FOUND);
   if (value4 === NOT_FOUND) {
     return new Error2(Nil2);
   }
   return new Ok2(value4);
 }
-function map_insert(key2, value4, map6) {
-  return map6.set(key2, value4);
+function map_insert(key2, value4, map8) {
+  return map8.set(key2, value4);
 }
 function classify_dynamic(data) {
   if (typeof data === "string") {
@@ -1266,10 +1640,10 @@ function inspect(v) {
   }
   return inspectObject(v);
 }
-function inspectDict(map6) {
+function inspectDict(map8) {
   let body3 = "dict.from_list([";
   let first3 = true;
-  map6.forEach((value4, key2) => {
+  map8.forEach((value4, key2) => {
     if (!first3)
       body3 = body3 + ", ";
     body3 = body3 + "#(" + inspect(key2) + ", " + inspect(value4) + ")";
@@ -1366,31 +1740,6 @@ function do_values(dict2) {
 function values(dict2) {
   return do_values(dict2);
 }
-function insert_pair(dict2, pair) {
-  return insert(dict2, pair[0], pair[1]);
-}
-function fold_inserts(loop$new_entries, loop$dict) {
-  while (true) {
-    let new_entries = loop$new_entries;
-    let dict2 = loop$dict;
-    if (new_entries.hasLength(0)) {
-      return dict2;
-    } else {
-      let x = new_entries.head;
-      let xs = new_entries.tail;
-      loop$new_entries = xs;
-      loop$dict = insert_pair(dict2, x);
-    }
-  }
-}
-function do_merge(dict2, new_entries) {
-  let _pipe = new_entries;
-  let _pipe$1 = map_to_list(_pipe);
-  return fold_inserts(_pipe$1, dict2);
-}
-function merge(dict2, new_entries) {
-  return do_merge(dict2, new_entries);
-}
 function do_fold(loop$list, loop$initial, loop$fun) {
   while (true) {
     let list2 = loop$list;
@@ -1422,35 +1771,6 @@ function do_map_values(f, dict2) {
 }
 function map_values(dict2, fun) {
   return do_map_values(fun, dict2);
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/float.mjs
-function to_string2(x) {
-  return float_to_string(x);
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/int.mjs
-function parse(string3) {
-  return parse_int(string3);
-}
-function to_string3(x) {
-  return to_string(x);
-}
-function to_float(x) {
-  return identity(x);
-}
-function floor_divide(dividend, divisor) {
-  if (divisor === 0) {
-    return new Error2(void 0);
-  } else {
-    let divisor$1 = divisor;
-    let $ = dividend * divisor$1 < 0 && remainderInt(dividend, divisor$1) !== 0;
-    if ($) {
-      return new Ok2(divideInt(dividend, divisor$1) - 1);
-    } else {
-      return new Ok2(divideInt(dividend, divisor$1));
-    }
-  }
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/pair.mjs
@@ -1655,7 +1975,7 @@ function do_append(loop$first, loop$second) {
     }
   }
 }
-function append(first3, second2) {
+function append2(first3, second2) {
   return do_append(reverse(first3), second2);
 }
 function prepend2(list2, item) {
@@ -1752,384 +2072,6 @@ function key_set(list2, key2, value4) {
     let rest$1 = list2.tail;
     return prepend(first$1, key_set(rest$1, key2, value4));
   }
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/result.mjs
-function map4(result, fun) {
-  if (result.isOk()) {
-    let x = result[0];
-    return new Ok2(fun(x));
-  } else {
-    let e = result[0];
-    return new Error2(e);
-  }
-}
-function map_error(result, fun) {
-  if (result.isOk()) {
-    let x = result[0];
-    return new Ok2(x);
-  } else {
-    let error = result[0];
-    return new Error2(fun(error));
-  }
-}
-function flatten(result) {
-  if (result.isOk()) {
-    let x = result[0];
-    return x;
-  } else {
-    let error = result[0];
-    return new Error2(error);
-  }
-}
-function try$(result, fun) {
-  if (result.isOk()) {
-    let x = result[0];
-    return fun(x);
-  } else {
-    let e = result[0];
-    return new Error2(e);
-  }
-}
-function unwrap2(result, default$) {
-  if (result.isOk()) {
-    let v = result[0];
-    return v;
-  } else {
-    return default$;
-  }
-}
-function all(results) {
-  return try_map(results, (x) => {
-    return x;
-  });
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/string_builder.mjs
-function append_builder(builder, suffix) {
-  return add(builder, suffix);
-}
-function from_strings(strings) {
-  return concat(strings);
-}
-function from_string(string3) {
-  return identity(string3);
-}
-function append2(builder, second2) {
-  return append_builder(builder, from_string(second2));
-}
-function to_string4(builder) {
-  return identity(builder);
-}
-function split2(iodata, pattern) {
-  return split(iodata, pattern);
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
-var DecodeError = class extends CustomType {
-  constructor(expected, found, path) {
-    super();
-    this.expected = expected;
-    this.found = found;
-    this.path = path;
-  }
-};
-function from(a2) {
-  return identity(a2);
-}
-function unsafe_coerce(a2) {
-  return identity(a2);
-}
-function string(data) {
-  return decode_string(data);
-}
-function classify(data) {
-  return classify_dynamic(data);
-}
-function int(data) {
-  return decode_int(data);
-}
-function shallow_list(value4) {
-  return decode_list(value4);
-}
-function any(decoders) {
-  return (data) => {
-    if (decoders.hasLength(0)) {
-      return new Error2(
-        toList([new DecodeError("another type", classify(data), toList([]))])
-      );
-    } else {
-      let decoder = decoders.head;
-      let decoders$1 = decoders.tail;
-      let $ = decoder(data);
-      if ($.isOk()) {
-        let decoded = $[0];
-        return new Ok2(decoded);
-      } else {
-        return any(decoders$1)(data);
-      }
-    }
-  };
-}
-function all_errors(result) {
-  if (result.isOk()) {
-    return toList([]);
-  } else {
-    let errors = result[0];
-    return errors;
-  }
-}
-function decode1(constructor, t1) {
-  return (value4) => {
-    let $ = t1(value4);
-    if ($.isOk()) {
-      let a2 = $[0];
-      return new Ok2(constructor(a2));
-    } else {
-      let a2 = $;
-      return new Error2(all_errors(a2));
-    }
-  };
-}
-function push_path(error, name2) {
-  let name$1 = from(name2);
-  let decoder = any(
-    toList([string, (x) => {
-      return map4(int(x), to_string3);
-    }])
-  );
-  let name$2 = (() => {
-    let $ = decoder(name$1);
-    if ($.isOk()) {
-      let name$22 = $[0];
-      return name$22;
-    } else {
-      let _pipe = toList(["<", classify(name$1), ">"]);
-      let _pipe$1 = from_strings(_pipe);
-      return to_string4(_pipe$1);
-    }
-  })();
-  return error.withFields({ path: prepend(name$2, error.path) });
-}
-function list(decoder_type) {
-  return (dynamic2) => {
-    return try$(
-      shallow_list(dynamic2),
-      (list2) => {
-        let _pipe = list2;
-        let _pipe$1 = try_map(_pipe, decoder_type);
-        return map_errors(
-          _pipe$1,
-          (_capture) => {
-            return push_path(_capture, "*");
-          }
-        );
-      }
-    );
-  };
-}
-function map_errors(result, f) {
-  return map_error(
-    result,
-    (_capture) => {
-      return map3(_capture, f);
-    }
-  );
-}
-function field(name2, inner_type) {
-  return (value4) => {
-    let missing_field_error = new DecodeError("field", "nothing", toList([]));
-    return try$(
-      decode_field(value4, name2),
-      (maybe_inner) => {
-        let _pipe = maybe_inner;
-        let _pipe$1 = to_result(_pipe, toList([missing_field_error]));
-        let _pipe$2 = try$(_pipe$1, inner_type);
-        return map_errors(
-          _pipe$2,
-          (_capture) => {
-            return push_path(_capture, name2);
-          }
-        );
-      }
-    );
-  };
-}
-function optional_field(name2, inner_type) {
-  return (value4) => {
-    return try$(
-      decode_field(value4, name2),
-      (maybe_inner) => {
-        if (maybe_inner instanceof None) {
-          return new Ok2(new None());
-        } else {
-          let dynamic_inner = maybe_inner[0];
-          let _pipe = dynamic_inner;
-          let _pipe$1 = decode_option(_pipe, inner_type);
-          return map_errors(
-            _pipe$1,
-            (_capture) => {
-              return push_path(_capture, name2);
-            }
-          );
-        }
-      }
-    );
-  };
-}
-function dict(key_type, value_type) {
-  return (value4) => {
-    return try$(
-      decode_map(value4),
-      (map6) => {
-        return try$(
-          (() => {
-            let _pipe = map6;
-            let _pipe$1 = map_to_list(_pipe);
-            return try_map(
-              _pipe$1,
-              (pair) => {
-                let k = pair[0];
-                let v = pair[1];
-                return try$(
-                  (() => {
-                    let _pipe$2 = key_type(k);
-                    return map_errors(
-                      _pipe$2,
-                      (_capture) => {
-                        return push_path(_capture, "keys");
-                      }
-                    );
-                  })(),
-                  (k2) => {
-                    return try$(
-                      (() => {
-                        let _pipe$2 = value_type(v);
-                        return map_errors(
-                          _pipe$2,
-                          (_capture) => {
-                            return push_path(_capture, "values");
-                          }
-                        );
-                      })(),
-                      (v2) => {
-                        return new Ok2([k2, v2]);
-                      }
-                    );
-                  }
-                );
-              }
-            );
-          })(),
-          (pairs) => {
-            return new Ok2(from_list(pairs));
-          }
-        );
-      }
-    );
-  };
-}
-function decode2(constructor, t1, t2) {
-  return (value4) => {
-    let $ = t1(value4);
-    let $1 = t2(value4);
-    if ($.isOk() && $1.isOk()) {
-      let a2 = $[0];
-      let b = $1[0];
-      return new Ok2(constructor(a2, b));
-    } else {
-      let a2 = $;
-      let b = $1;
-      return new Error2(concat2(toList([all_errors(a2), all_errors(b)])));
-    }
-  };
-}
-function decode4(constructor, t1, t2, t3, t4) {
-  return (x) => {
-    let $ = t1(x);
-    let $1 = t2(x);
-    let $2 = t3(x);
-    let $3 = t4(x);
-    if ($.isOk() && $1.isOk() && $2.isOk() && $3.isOk()) {
-      let a2 = $[0];
-      let b = $1[0];
-      let c = $2[0];
-      let d = $3[0];
-      return new Ok2(constructor(a2, b, c, d));
-    } else {
-      let a2 = $;
-      let b = $1;
-      let c = $2;
-      let d = $3;
-      return new Error2(
-        concat2(
-          toList([all_errors(a2), all_errors(b), all_errors(c), all_errors(d)])
-        )
-      );
-    }
-  };
-}
-function decode9(constructor, t1, t2, t3, t4, t5, t6, t7, t8, t9) {
-  return (x) => {
-    let $ = t1(x);
-    let $1 = t2(x);
-    let $2 = t3(x);
-    let $3 = t4(x);
-    let $4 = t5(x);
-    let $5 = t6(x);
-    let $6 = t7(x);
-    let $7 = t8(x);
-    let $8 = t9(x);
-    if ($.isOk() && $1.isOk() && $2.isOk() && $3.isOk() && $4.isOk() && $5.isOk() && $6.isOk() && $7.isOk() && $8.isOk()) {
-      let a2 = $[0];
-      let b = $1[0];
-      let c = $2[0];
-      let d = $3[0];
-      let e = $4[0];
-      let f = $5[0];
-      let g = $6[0];
-      let h = $7[0];
-      let i = $8[0];
-      return new Ok2(constructor(a2, b, c, d, e, f, g, h, i));
-    } else {
-      let a2 = $;
-      let b = $1;
-      let c = $2;
-      let d = $3;
-      let e = $4;
-      let f = $5;
-      let g = $6;
-      let h = $7;
-      let i = $8;
-      return new Error2(
-        concat2(
-          toList([
-            all_errors(a2),
-            all_errors(b),
-            all_errors(c),
-            all_errors(d),
-            all_errors(e),
-            all_errors(f),
-            all_errors(g),
-            all_errors(h),
-            all_errors(i)
-          ])
-        )
-      );
-    }
-  };
-}
-
-// build/dev/javascript/gleam_javascript/gleam/javascript/promise.mjs
-function tap(promise, callback) {
-  let _pipe = promise;
-  return map_promise(
-    _pipe,
-    (a2) => {
-      callback(a2);
-      return a2;
-    }
-  );
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/iterator.mjs
@@ -2238,7 +2180,7 @@ function take2(iterator, desired) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/string.mjs
-function length3(string3) {
+function length2(string3) {
   return string_length(string3);
 }
 function replace(string3, pattern, substitute) {
@@ -2253,7 +2195,7 @@ function lowercase2(string3) {
 function append4(first3, second2) {
   let _pipe = first3;
   let _pipe$1 = from_string(_pipe);
-  let _pipe$2 = append2(_pipe$1, second2);
+  let _pipe$2 = append(_pipe$1, second2);
   return to_string4(_pipe$2);
 }
 function concat3(strings) {
@@ -2286,60 +2228,6 @@ function split3(x, substring) {
 function inspect2(term) {
   let _pipe = inspect(term);
   return to_string4(_pipe);
-}
-
-// build/dev/javascript/gleam_json/gleam_json_ffi.mjs
-function object(entries) {
-  return Object.fromEntries(entries);
-}
-function identity2(x) {
-  return x;
-}
-function do_null() {
-  return null;
-}
-
-// build/dev/javascript/gleam_json/gleam/json.mjs
-function string2(input2) {
-  return identity2(input2);
-}
-function null$() {
-  return do_null();
-}
-function nullable(input2, inner_type) {
-  if (input2 instanceof Some) {
-    let value4 = input2[0];
-    return inner_type(value4);
-  } else {
-    return null$();
-  }
-}
-function object2(entries) {
-  return object(entries);
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/bool.mjs
-function to_string6(bool3) {
-  if (!bool3) {
-    return "False";
-  } else {
-    return "True";
-  }
-}
-function guard(requirement, consequence, alternative) {
-  if (requirement) {
-    return consequence;
-  } else {
-    return alternative();
-  }
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/io.mjs
-function debug(term) {
-  let _pipe = term;
-  let _pipe$1 = inspect2(_pipe);
-  print_debug(_pipe$1);
-  return term;
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
@@ -2394,114 +2282,50 @@ function path_segments(path) {
   return remove_dot_segments(split3(path, "/"));
 }
 
-// build/dev/javascript/justin/justin.mjs
-function add2(words, word) {
-  if (word === "") {
-    return words;
+// build/dev/javascript/gleam_stdlib/gleam/bool.mjs
+function to_string5(bool3) {
+  if (!bool3) {
+    return "False";
   } else {
-    return prepend(word, words);
+    return "True";
   }
 }
-function is_upper(g) {
-  return lowercase2(g) !== g;
-}
-function split4(loop$in, loop$up, loop$word, loop$words) {
-  while (true) {
-    let in$ = loop$in;
-    let up = loop$up;
-    let word = loop$word;
-    let words = loop$words;
-    if (in$.hasLength(0) && word === "") {
-      return reverse(words);
-    } else if (in$.hasLength(0)) {
-      return reverse(add2(words, word));
-    } else if (in$.atLeastLength(1) && in$.head === "\n") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "	") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "!") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "?") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "#") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === ".") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "-") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "_") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === " ") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else {
-      let g = in$.head;
-      let in$1 = in$.tail;
-      let $ = is_upper(g);
-      if (!$) {
-        loop$in = in$1;
-        loop$up = false;
-        loop$word = word + g;
-        loop$words = words;
-      } else if ($ && up) {
-        loop$in = in$1;
-        loop$up = up;
-        loop$word = word + g;
-        loop$words = words;
-      } else {
-        loop$in = in$1;
-        loop$up = true;
-        loop$word = g;
-        loop$words = add2(words, word);
-      }
-    }
+function guard(requirement, consequence, alternative) {
+  if (requirement) {
+    return consequence;
+  } else {
+    return alternative();
   }
 }
-function split_words(text3) {
-  let _pipe = text3;
-  let _pipe$1 = graphemes(_pipe);
-  return split4(_pipe$1, false, "", toList([]));
+
+// build/dev/javascript/gleam_json/gleam_json_ffi.mjs
+function object(entries) {
+  return Object.fromEntries(entries);
 }
-function kebab_case(text3) {
-  let _pipe = text3;
-  let _pipe$1 = split_words(_pipe);
-  let _pipe$2 = join2(_pipe$1, "-");
-  return lowercase2(_pipe$2);
+function identity2(x) {
+  return x;
+}
+function do_null() {
+  return null;
+}
+
+// build/dev/javascript/gleam_json/gleam/json.mjs
+function string2(input2) {
+  return identity2(input2);
+}
+function null$() {
+  return do_null();
+}
+function nullable(input2, inner_type) {
+  if (input2 instanceof Some) {
+    let value4 = input2[0];
+    return inner_type(value4);
+  } else {
+    return null$();
+  }
+}
+function object2(entries) {
+  return object(entries);
 }
 
 // build/dev/javascript/lustre/lustre/effect.mjs
@@ -2526,7 +2350,21 @@ function batch(effects) {
       toList([]),
       (b, _use1) => {
         let a2 = _use1.all;
-        return append(b, a2);
+        return append2(b, a2);
+      }
+    )
+  );
+}
+function map4(effect, f) {
+  return new Effect(
+    map3(
+      effect.all,
+      (eff) => {
+        return (dispatch2, emit2) => {
+          return eff((msg) => {
+            return dispatch2(f(msg));
+          }, emit2);
+        };
       }
     )
   );
@@ -2589,6 +2427,20 @@ function property(name2, value4) {
 }
 function on(name2, handler) {
   return new Event("on" + name2, handler);
+}
+function map5(attr, f) {
+  if (attr instanceof Attribute) {
+    let name$1 = attr[0];
+    let value$1 = attr[1];
+    let as_property = attr.as_property;
+    return new Attribute(name$1, value$1, as_property);
+  } else {
+    let on$1 = attr[0];
+    let handler = attr[1];
+    return new Event(on$1, (e) => {
+      return map2(handler(e), f);
+    });
+  }
 }
 function class$(name2) {
   return attribute("class", name2);
@@ -2751,7 +2603,7 @@ function flatten_fragment_elements(elements) {
     (new_elements, element2) => {
       if (element2 instanceof Fragment) {
         let fr_elements = element2.elements;
-        return append(fr_elements, new_elements);
+        return append2(fr_elements, new_elements);
       } else {
         let el2 = element2;
         return prepend(el2, new_elements);
@@ -2762,6 +2614,66 @@ function flatten_fragment_elements(elements) {
 function fragment(elements) {
   let _pipe = flatten_fragment_elements(elements);
   return new Fragment(_pipe, "");
+}
+function map6(element2, f) {
+  if (element2 instanceof Text) {
+    let content = element2.content;
+    return new Text(content);
+  } else if (element2 instanceof Map2) {
+    let subtree = element2.subtree;
+    return new Map2(() => {
+      return map6(subtree(), f);
+    });
+  } else if (element2 instanceof Element) {
+    let key2 = element2.key;
+    let namespace = element2.namespace;
+    let tag = element2.tag;
+    let attrs = element2.attrs;
+    let children = element2.children;
+    let self_closing = element2.self_closing;
+    let void$ = element2.void;
+    return new Map2(
+      () => {
+        return new Element(
+          key2,
+          namespace,
+          tag,
+          map3(
+            attrs,
+            (_capture) => {
+              return map5(_capture, f);
+            }
+          ),
+          map3(children, (_capture) => {
+            return map6(_capture, f);
+          }),
+          self_closing,
+          void$
+        );
+      }
+    );
+  } else {
+    let elements = element2.elements;
+    let key2 = element2.key;
+    return new Map2(
+      () => {
+        return new Fragment(
+          map3(elements, (_capture) => {
+            return map6(_capture, f);
+          }),
+          key2
+        );
+      }
+    );
+  }
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/io.mjs
+function debug(term) {
+  let _pipe = term;
+  let _pipe$1 = inspect2(_pipe);
+  print_debug(_pipe$1);
+  return term;
 }
 
 // build/dev/javascript/lustre/lustre/internals/runtime.mjs
@@ -3408,7 +3320,7 @@ function on_input(msg) {
     "input",
     (event2) => {
       let _pipe = value2(event2);
-      return map4(_pipe, msg);
+      return map2(_pipe, msg);
     }
   );
 }
@@ -3467,6 +3379,39 @@ function isBrowser() {
 // build/dev/javascript/sketch/sketch/error.mjs
 var NotABrowser2 = class extends CustomType {
 };
+
+// build/dev/javascript/gleam_javascript/ffi.mjs
+function toArray(list2) {
+  return list2.toArray();
+}
+var PromiseLayer = class _PromiseLayer {
+  constructor(promise) {
+    this.promise = promise;
+  }
+  static wrap(value4) {
+    return value4 instanceof Promise ? new _PromiseLayer(value4) : value4;
+  }
+  static unwrap(value4) {
+    return value4 instanceof _PromiseLayer ? value4.promise : value4;
+  }
+};
+function map_promise(promise, fn) {
+  return promise.then(
+    (value4) => PromiseLayer.wrap(fn(PromiseLayer.unwrap(value4)))
+  );
+}
+
+// build/dev/javascript/gleam_javascript/gleam/javascript/promise.mjs
+function tap(promise, callback) {
+  let _pipe = promise;
+  return map_promise(
+    _pipe,
+    (a2) => {
+      callback(a2);
+      return a2;
+    }
+  );
+}
 
 // build/dev/javascript/plinth/element_ffi.mjs
 function setAttribute(element2, name2, value4) {
@@ -3995,7 +3940,7 @@ function handle_pseudo_selector(props, style2) {
   let _pipe$1 = ((_capture) => {
     return prepend2(computed_props.pseudo_selectors, _capture);
   })(_pipe);
-  let _pipe$2 = append(_pipe$1, props.pseudo_selectors);
+  let _pipe$2 = append2(_pipe$1, props.pseudo_selectors);
   return ((p) => {
     return props.withFields({ pseudo_selectors: p });
   })(_pipe$2);
@@ -4093,34 +4038,34 @@ function percent(value4) {
 function to_string8(size) {
   if (size instanceof Px) {
     let value4 = size[0];
-    return append4(to_string2(value4), "px");
+    return append4(to_string(value4), "px");
   } else if (size instanceof Pt) {
     let value4 = size[0];
-    return append4(to_string2(value4), "pt");
+    return append4(to_string(value4), "pt");
   } else if (size instanceof Pct) {
     let value4 = size[0];
-    return append4(to_string2(value4), "%");
+    return append4(to_string(value4), "%");
   } else if (size instanceof Vh) {
     let value4 = size[0];
-    return append4(to_string2(value4), "vh");
+    return append4(to_string(value4), "vh");
   } else if (size instanceof Vw) {
     let value4 = size[0];
-    return append4(to_string2(value4), "vw");
+    return append4(to_string(value4), "vw");
   } else if (size instanceof Em) {
     let value4 = size[0];
-    return append4(to_string2(value4), "em");
+    return append4(to_string(value4), "em");
   } else if (size instanceof Rem) {
     let value4 = size[0];
-    return append4(to_string2(value4), "rem");
+    return append4(to_string(value4), "rem");
   } else if (size instanceof Lh) {
     let value4 = size[0];
-    return append4(to_string2(value4), "lh");
+    return append4(to_string(value4), "lh");
   } else if (size instanceof Rlh) {
     let value4 = size[0];
-    return append4(to_string2(value4), "rlh");
+    return append4(to_string(value4), "rlh");
   } else {
     let value4 = size[0];
-    return append4(to_string2(value4), "ch");
+    return append4(to_string(value4), "ch");
   }
 }
 
@@ -4415,7 +4360,7 @@ function choose_color_scheme() {
       return getItem(_capture, settings_key);
     }
   );
-  let _pipe$2 = map4(_pipe$1, cs_from_string);
+  let _pipe$2 = map2(_pipe$1, cs_from_string);
   return unwrap2(_pipe$2, new Gleam());
 }
 function save_color_scheme(color_scheme) {
@@ -4782,7 +4727,7 @@ function get2(debuggers, debugger_) {
       return first(item) === debugger_;
     }
   );
-  return map4(_pipe$1, second);
+  return map2(_pipe$1, second);
 }
 function unselect(debugger_) {
   return debugger_.withFields({ selected_step: new None() });
@@ -4970,9 +4915,9 @@ function inspect3(v) {
   }
   return inspectObject2(v);
 }
-function inspectDict2(map6) {
+function inspectDict2(map8) {
   const data = [];
-  map6.forEach((value4, key2) => data.push([inspect3(key2), inspect3(value4)]));
+  map8.forEach((value4, key2) => data.push([inspect3(key2), inspect3(value4)]));
   return new DataDict(List.fromArray(data));
 }
 function inspectObject2(v) {
@@ -5343,7 +5288,7 @@ function frozen_panel() {
 function view_data_line(indent2, prefix, text3, color2) {
   let idt = repeat2(" ", indent2);
   let text_color2 = text_color(color2);
-  let $ = length3(prefix);
+  let $ = length2(prefix);
   if ($ === 0) {
     return div(toList([text_color2]), toList([text2(idt + text3)]));
   } else {
@@ -5726,7 +5671,7 @@ var Instance = class extends CustomType {
   }
 };
 function activate(result, instance) {
-  return map4(
+  return map2(
     result,
     (dispatch2) => {
       let dispatcher = instance[0][0];
@@ -5779,7 +5724,7 @@ function update2(model, msg) {
             fst_step,
             (step) => {
               let _pipe$13 = d.dispatcher;
-              let _pipe$22 = map2(
+              let _pipe$22 = map(
                 _pipe$13,
                 (_capture) => {
                   return apply1(_capture, step.model);
@@ -5830,7 +5775,7 @@ function update2(model, msg) {
         _pipe$12,
         (d) => {
           let _pipe$23 = d.dispatcher;
-          let _pipe$3 = map2(
+          let _pipe$3 = map(
             _pipe$23,
             (_capture) => {
               return apply1(_capture, item.model);
@@ -6041,13 +5986,13 @@ function setup2() {
   let shadow_root = $[0];
   let lustre_root = $[1];
   let _pipe = start_sketch(shadow_root);
-  let _pipe$1 = map4(
+  let _pipe$1 = map2(
     _pipe,
     (_capture) => {
       return compose2(view, _capture);
     }
   );
-  let _pipe$2 = map4(
+  let _pipe$2 = map2(
     _pipe$1,
     (_capture) => {
       return application(init5, update2, _capture);
@@ -6059,7 +6004,7 @@ function setup2() {
       return start_lustre(lustre_root, _capture);
     }
   );
-  return map4(_pipe$3, (dispatch2) => {
+  return map2(_pipe$3, (dispatch2) => {
     return new Tardis(dispatch2);
   });
 }
@@ -6079,7 +6024,7 @@ function application2(instance, name2) {
 }
 function single2(name2) {
   let _pipe = setup2();
-  return map4(
+  return map2(
     _pipe,
     (_capture) => {
       return application2(_capture, name2);
@@ -6087,7 +6032,7 @@ function single2(name2) {
   );
 }
 
-// build/dev/javascript/mealstack_client/components/page_title.mjs
+// build/dev/javascript/app/components/page_title.mjs
 function page_title(title, styles) {
   return div(
     toList([
@@ -6110,6 +6055,116 @@ function page_title(title, styles) {
   );
 }
 
+// build/dev/javascript/justin/justin.mjs
+function add2(words, word) {
+  if (word === "") {
+    return words;
+  } else {
+    return prepend(word, words);
+  }
+}
+function is_upper(g) {
+  return lowercase2(g) !== g;
+}
+function split4(loop$in, loop$up, loop$word, loop$words) {
+  while (true) {
+    let in$ = loop$in;
+    let up = loop$up;
+    let word = loop$word;
+    let words = loop$words;
+    if (in$.hasLength(0) && word === "") {
+      return reverse(words);
+    } else if (in$.hasLength(0)) {
+      return reverse(add2(words, word));
+    } else if (in$.atLeastLength(1) && in$.head === "\n") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add2(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "	") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add2(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "!") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add2(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "?") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add2(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "#") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add2(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === ".") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add2(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "-") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add2(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "_") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add2(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === " ") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add2(words, word);
+    } else {
+      let g = in$.head;
+      let in$1 = in$.tail;
+      let $ = is_upper(g);
+      if (!$) {
+        loop$in = in$1;
+        loop$up = false;
+        loop$word = word + g;
+        loop$words = words;
+      } else if ($ && up) {
+        loop$in = in$1;
+        loop$up = up;
+        loop$word = word + g;
+        loop$words = words;
+      } else {
+        loop$in = in$1;
+        loop$up = true;
+        loop$word = g;
+        loop$words = add2(words, word);
+      }
+    }
+  }
+}
+function split_words(text3) {
+  let _pipe = text3;
+  let _pipe$1 = graphemes(_pipe);
+  return split4(_pipe$1, false, "", toList([]));
+}
+function kebab_case(text3) {
+  let _pipe = text3;
+  let _pipe$1 = split_words(_pipe);
+  let _pipe$2 = join2(_pipe$1, "-");
+  return lowercase2(_pipe$2);
+}
+
 // node_modules/nanoid/url-alphabet/index.js
 var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
 
@@ -6123,7 +6178,7 @@ var nanoid = (size = 21) => {
   return id2;
 };
 
-// build/dev/javascript/mealstack_client/seed.ts
+// build/dev/javascript/app/seed.ts
 var TagOptionSeed = [
   {
     name: "Cuisine",
@@ -6216,7 +6271,7 @@ async function seedDb() {
   console.log("finishing seedDb");
 }
 
-// build/dev/javascript/mealstack_client/db.ts
+// build/dev/javascript/app/db.ts
 var sqliteWasm = await import("https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0");
 var sqlite = await sqliteWasm.default(
   () => "https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0/dist/crsqlite.wasm"
@@ -6321,25 +6376,28 @@ async function do_get_recipes() {
   return result;
 }
 
-// build/dev/javascript/mealstack_client/lib/types.mjs
-var OnRouteChange = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
+// build/dev/javascript/app/lib/utils.mjs
+function dict_update(dict2, key2, fun) {
+  let item = (() => {
+    let _pipe = dict2;
+    let _pipe$1 = get(_pipe, key2);
+    return from_result(_pipe$1);
+  })();
+  if (item instanceof Some) {
+    let item$1 = item[0];
+    let _pipe = item$1;
+    let _pipe$1 = fun(_pipe);
+    return ((_capture) => {
+      return insert(dict2, key2, _capture);
+    })(
+      _pipe$1
+    );
+  } else {
+    return dict2;
   }
-};
-var DbRetrievedRecipes = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserSavedUpdatedRecipe = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
+}
+
+// build/dev/javascript/app/pages/recipe.mjs
 var UserUpdatedRecipeTitle = class extends CustomType {
   constructor(x0) {
     super();
@@ -6383,28 +6441,50 @@ var UserUpdatedIngredientNameAtIndex = class extends CustomType {
     this[1] = x1;
   }
 };
-var Model2 = class extends CustomType {
-  constructor(current_route, current_recipe, recipes) {
+var UserSavedUpdatedRecipe = class extends CustomType {
+  constructor(x0) {
     super();
-    this.current_route = current_route;
-    this.current_recipe = current_recipe;
-    this.recipes = recipes;
+    this[0] = x0;
   }
 };
-var Home = class extends CustomType {
-};
-var RecipeDetail = class extends CustomType {
-  constructor(slug) {
+var DbSavedUpdatedRecipe = class extends CustomType {
+  constructor(x0) {
     super();
-    this.slug = slug;
+    this[0] = x0;
   }
 };
-var RecipeBook = class extends CustomType {
-};
-var EditRecipe = class extends CustomType {
-  constructor(slug) {
+var DbRetrievedRecipes = class extends CustomType {
+  constructor(x0) {
     super();
+    this[0] = x0;
+  }
+};
+var JSRecipe = class extends CustomType {
+  constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
+    super();
+    this.id = id2;
+    this.title = title;
     this.slug = slug;
+    this.cook_time = cook_time;
+    this.prep_time = prep_time;
+    this.serves = serves;
+    this.tags = tags;
+    this.ingredients = ingredients;
+    this.method_steps = method_steps;
+  }
+};
+var Recipe = class extends CustomType {
+  constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
+    super();
+    this.id = id2;
+    this.title = title;
+    this.slug = slug;
+    this.cook_time = cook_time;
+    this.prep_time = prep_time;
+    this.serves = serves;
+    this.tags = tags;
+    this.ingredients = ingredients;
+    this.method_steps = method_steps;
   }
 };
 var MethodStep = class extends CustomType {
@@ -6429,140 +6509,84 @@ var Ingredient = class extends CustomType {
     this.units = units;
   }
 };
-var Recipe = class extends CustomType {
-  constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
-    super();
-    this.id = id2;
-    this.title = title;
-    this.slug = slug;
-    this.cook_time = cook_time;
-    this.prep_time = prep_time;
-    this.serves = serves;
-    this.tags = tags;
-    this.ingredients = ingredients;
-    this.method_steps = method_steps;
-  }
-};
-
-// build/dev/javascript/mealstack_client/lib/decoders.mjs
-function decode_stringed_int(d) {
-  let decoder = string;
-  let _pipe = decoder(d);
-  let _pipe$1 = map4(_pipe, parse);
-  let _pipe$2 = map4(
-    _pipe$1,
-    (_capture) => {
-      return map_error(
-        _capture,
-        (_) => {
-          return toList([
-            new DecodeError(
-              "a stringed int",
-              "something else",
-              toList([""])
-            )
-          ]);
-        }
-      );
-    }
+function list_update(model, msg) {
+  let recipes = msg[0];
+  return [recipes, none()];
+}
+function view_recipe_summary(recipe) {
+  return div(
+    toList([
+      class$(
+        "col-span-full flex flex-wrap items-baseline justify-start my-1 text-base"
+      )
+    ]),
+    toList([
+      div(
+        toList([
+          class$("text-xl flex flex-nowrap gap-1 my-1 ml-2 items-baseline")
+        ]),
+        toList([
+          a(
+            toList([href(append4("/recipes/", recipe.slug))]),
+            toList([
+              span(toList([]), toList([text(recipe.title)])),
+              span(
+                toList([class$("text-sm")]),
+                toList([
+                  text(" \u2022 "),
+                  text(
+                    (() => {
+                      let _pipe = floor_divide(
+                        recipe.prep_time + recipe.cook_time,
+                        60
+                      );
+                      let _pipe$1 = unwrap2(_pipe, 0);
+                      return to_string3(_pipe$1);
+                    })()
+                  ),
+                  text("h"),
+                  text(
+                    (() => {
+                      let _pipe = remainderInt(
+                        recipe.prep_time + recipe.cook_time,
+                        60
+                      );
+                      return to_string3(_pipe);
+                    })()
+                  ),
+                  text("m")
+                ])
+              )
+            ])
+          )
+        ])
+      )
+    ])
   );
-  return flatten(_pipe$2);
 }
-function decode_stringed_bool(d) {
-  let _pipe = string(d);
-  return map4(
-    _pipe,
-    (a2) => {
-      if (a2 === "True") {
-        return true;
-      } else {
-        return false;
-      }
-    }
+function view_recipe_list(model) {
+  return section(
+    toList([
+      class$(
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr]"
+      )
+    ]),
+    toList([
+      page_title("Recipe Book", "underline-green"),
+      nav(
+        toList([
+          class$(
+            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
+          )
+        ]),
+        toList([
+          a(toList([href("/"), class$("text-center")]), toList([text("\u{1F3E0}")]))
+        ])
+      ),
+      div(toList([class$("contents")]), map3(model, view_recipe_summary))
+    ])
   );
 }
-function decode_ingredient(d) {
-  let decoder = decode4(
-    (var0, var1, var2, var3) => {
-      return new Ingredient(var0, var1, var2, var3);
-    },
-    optional_field("name", string),
-    optional_field("ismain", decode_stringed_bool),
-    optional_field("quantity", string),
-    optional_field("units", string)
-  );
-  return decoder(d);
-}
-function decode_tag(d) {
-  let decoder = decode2(
-    (var0, var1) => {
-      return new Tag(var0, var1);
-    },
-    field("name", string),
-    field("value", string)
-  );
-  return decoder(d);
-}
-function decode_method_step(d) {
-  let decoder = decode1(
-    (var0) => {
-      return new MethodStep(var0);
-    },
-    field("step_text", string)
-  );
-  return decoder(d);
-}
-function decode_recipe(d) {
-  let decoder = decode9(
-    (var0, var1, var2, var3, var4, var5, var6, var7, var8) => {
-      return new Recipe(
-        var0,
-        var1,
-        var2,
-        var3,
-        var4,
-        var5,
-        var6,
-        var7,
-        var8
-      );
-    },
-    optional_field("id", string),
-    field("title", string),
-    field("slug", string),
-    field("cook_time", int),
-    field("prep_time", int),
-    field("serves", int),
-    optional_field("tags", list(decode_tag)),
-    optional_field("ingredients", dict(decode_stringed_int, decode_ingredient)),
-    optional_field("method_steps", list(decode_method_step))
-  );
-  debug(d);
-  return decoder(d);
-}
-
-// build/dev/javascript/mealstack_client/lib/utils.mjs
-function dict_update(dict2, key2, fun) {
-  let item = (() => {
-    let _pipe = dict2;
-    let _pipe$1 = get(_pipe, key2);
-    return from_result(_pipe$1);
-  })();
-  if (item instanceof Some) {
-    let item$1 = item[0];
-    let _pipe = item$1;
-    let _pipe$1 = fun(_pipe);
-    return ((_capture) => {
-      return insert(dict2, key2, _capture);
-    })(
-      _pipe$1
-    );
-  } else {
-    return dict2;
-  }
-}
-
-// build/dev/javascript/mealstack_client/components/ingredient_input.mjs
 function ingredient_input(ingredient, index3) {
   let with_index = curry2(
     (var0, var1) => {
@@ -6688,8 +6712,6 @@ function ingredient_input(ingredient, index3) {
     ])
   );
 }
-
-// build/dev/javascript/mealstack_client/components/method_step_input.mjs
 function method_step_input(method_step, index3) {
   return div(
     toList([class$("flex w-full items-baseline col-span-full px-1 mb-1")]),
@@ -6725,8 +6747,8 @@ function method_step_input(method_step, index3) {
         ]),
         (() => {
           if (method_step instanceof Some) {
-            let a2 = method_step[0];
-            return a2.step_text;
+            let a$1 = method_step[0];
+            return a$1.step_text;
           } else {
             return "";
           }
@@ -6751,9 +6773,7 @@ function method_step_input(method_step, index3) {
     ])
   );
 }
-
-// build/dev/javascript/mealstack_client/pages/edit_recipe.mjs
-function edit_recipe(recipe) {
+function edit_recipe_detail(recipe) {
   return form(
     toList([
       class$(
@@ -7016,7 +7036,7 @@ function edit_recipe(recipe) {
           ),
           (() => {
             let _pipe = recipe.ingredients;
-            let _pipe$1 = map2(
+            let _pipe$1 = map(
               _pipe,
               (_capture) => {
                 return map_values(
@@ -7027,8 +7047,8 @@ function edit_recipe(recipe) {
                 );
               }
             );
-            let _pipe$2 = map2(_pipe$1, values);
-            let _pipe$3 = map2(_pipe$2, fragment);
+            let _pipe$2 = map(_pipe$1, values);
+            let _pipe$3 = map(_pipe$2, fragment);
             return unwrap(_pipe$3, none3());
           })()
         ])
@@ -7046,7 +7066,7 @@ function edit_recipe(recipe) {
           ),
           (() => {
             let _pipe = recipe.method_steps;
-            let _pipe$1 = map2(
+            let _pipe$1 = map(
               _pipe,
               (_capture) => {
                 return map3(
@@ -7057,13 +7077,13 @@ function edit_recipe(recipe) {
                 );
               }
             );
-            let _pipe$2 = map2(
+            let _pipe$2 = map(
               _pipe$1,
               (_capture) => {
                 return index_map(_capture, method_step_input);
               }
             );
-            let _pipe$3 = map2(_pipe$2, fragment);
+            let _pipe$3 = map(_pipe$2, fragment);
             return unwrap(_pipe$3, none3());
           })()
         ])
@@ -7071,8 +7091,14 @@ function edit_recipe(recipe) {
     ])
   );
 }
-
-// build/dev/javascript/mealstack_client/pages/view_recipe.mjs
+function lookup_and_edit_recipe(maybe_recipe) {
+  if (maybe_recipe instanceof Some) {
+    let a$1 = maybe_recipe[0];
+    return edit_recipe_detail(a$1);
+  } else {
+    return page_title("Recipe not found", "");
+  }
+}
 function view_ingredient(ingredient) {
   return div(
     toList([class$("flex justify-start col-span-6 text-sm items-baseline")]),
@@ -7081,7 +7107,7 @@ function view_ingredient(ingredient) {
         toList([class$("flex-grow-[2] text-left flex justify-start")]),
         toList([
           unwrap(
-            map2(
+            map(
               ingredient.name,
               (_capture) => {
                 return text(_capture);
@@ -7095,7 +7121,7 @@ function view_ingredient(ingredient) {
         toList([class$("col-span-1 text-xs")]),
         toList([
           unwrap(
-            map2(
+            map(
               ingredient.quantity,
               (_capture) => {
                 return text(_capture);
@@ -7109,7 +7135,7 @@ function view_ingredient(ingredient) {
         toList([class$("col-span-1 text-xs")]),
         toList([
           unwrap(
-            map2(
+            map(
               ingredient.units,
               (_capture) => {
                 return text(_capture);
@@ -7155,7 +7181,7 @@ function view_tag(tag) {
     ])
   );
 }
-function view_recipe(recipe) {
+function view_recipe_detail(recipe) {
   return section(
     toList([
       class$(
@@ -7275,7 +7301,7 @@ function view_recipe(recipe) {
           ),
           (() => {
             let _pipe = recipe.ingredients;
-            let _pipe$1 = map2(
+            let _pipe$1 = map(
               _pipe,
               (_capture) => {
                 return map_values(
@@ -7286,8 +7312,8 @@ function view_recipe(recipe) {
                 );
               }
             );
-            let _pipe$2 = map2(_pipe$1, values);
-            let _pipe$3 = map2(_pipe$2, fragment);
+            let _pipe$2 = map(_pipe$1, values);
+            let _pipe$3 = map(_pipe$2, fragment);
             return unwrap(_pipe$3, none3());
           })()
         ])
@@ -7312,7 +7338,7 @@ function view_recipe(recipe) {
             toList([
               (() => {
                 let _pipe = recipe.method_steps;
-                let _pipe$1 = map2(
+                let _pipe$1 = map(
                   _pipe,
                   (_capture) => {
                     return map3(_capture, view_method_step);
@@ -7328,64 +7354,13 @@ function view_recipe(recipe) {
     ])
   );
 }
-
-// build/dev/javascript/mealstack_client/mealstack_client.mjs
-var JSRecipe = class extends CustomType {
-  constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
-    super();
-    this.id = id2;
-    this.title = title;
-    this.slug = slug;
-    this.cook_time = cook_time;
-    this.prep_time = prep_time;
-    this.serves = serves;
-    this.tags = tags;
-    this.ingredients = ingredients;
-    this.method_steps = method_steps;
-  }
-};
-function merge_recipe_into_model(recipe, model) {
-  return model.withFields({
-    recipes: (() => {
-      let _pipe = model.recipes;
-      let _pipe$1 = map3(_pipe, (a2) => {
-        return [a2.id, a2];
-      });
-      let _pipe$2 = from_list(_pipe$1);
-      let _pipe$3 = merge(
-        _pipe$2,
-        from_list(toList([[recipe.id, recipe]]))
-      );
-      return values(_pipe$3);
-    })()
-  });
-}
-function lookup_recipe_by_slug(model, slug) {
-  return from_result(
-    find2(model.recipes, (a2) => {
-      return a2.slug === slug;
-    })
-  );
-}
-function on_route_change(uri) {
-  let $ = path_segments(uri.path);
-  if ($.hasLength(3) && $.head === "recipes" && $.tail.tail.head === "edit") {
-    let slug = $.tail.head;
-    return new OnRouteChange(new EditRecipe(slug));
-  } else if ($.hasLength(2) && $.head === "recipes") {
-    let slug = $.tail.head;
-    return new OnRouteChange(new RecipeDetail(slug));
-  } else if ($.hasLength(1) && $.head === "recipes") {
-    return new OnRouteChange(new RecipeBook());
+function lookup_and_view_recipe(maybe_recipe) {
+  if (maybe_recipe instanceof Some) {
+    let a$1 = maybe_recipe[0];
+    return view_recipe_detail(a$1);
   } else {
-    return new OnRouteChange(new Home());
+    return page_title("Recipe not found", "");
   }
-}
-function init6(_) {
-  return [
-    new Model2(new Home(), new None(), toList([])),
-    init2(on_route_change)
-  ];
 }
 function json_encode_ingredient(ingredient) {
   return object2(
@@ -7395,7 +7370,7 @@ function json_encode_ingredient(ingredient) {
       ["units", string2(unwrap(ingredient.units, ""))],
       [
         "ismain",
-        string2(to_string6(unwrap(ingredient.ismain, false)))
+        string2(to_string5(unwrap(ingredient.ismain, false)))
       ]
     ])
   );
@@ -7420,7 +7395,7 @@ function save_recipe(recipe) {
     recipe.prep_time,
     recipe.serves,
     unwrap(
-      map2(recipe.tags, toArray),
+      map(recipe.tags, toArray),
       toArray(toList([]))
     ),
     (() => {
@@ -7428,16 +7403,273 @@ function save_recipe(recipe) {
       return nullable(_pipe, json_encode_ingredient_list);
     })(),
     unwrap(
-      map2(recipe.method_steps, toArray),
+      map(recipe.method_steps, toArray),
       toArray(toList([]))
     )
   );
   return from2(
-    (_) => {
+    (dispatch2) => {
       addOrUpdateRecipe(js_recipe);
-      return void 0;
+      let _pipe = new DbSavedUpdatedRecipe(recipe);
+      return dispatch2(_pipe);
     }
   );
+}
+function detail_update(model, msg) {
+  if (msg instanceof UserUpdatedRecipeTitle) {
+    let newtitle = msg[0];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [new Some(a$1.withFields({ title: newtitle })), none()];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedRecipePrepTimeHrs) {
+    let newpreptimehrs = msg[0];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            prep_time: (() => {
+              let _pipe = newpreptimehrs;
+              let _pipe$1 = parse(_pipe);
+              let _pipe$2 = map2(
+                _pipe$1,
+                (b) => {
+                  return b * 60 + remainderInt(a$1.prep_time, 60);
+                }
+              );
+              return unwrap2(_pipe$2, 0);
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedRecipePrepTimeMins) {
+    let newpreptimemins = msg[0];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            prep_time: (() => {
+              let _pipe = newpreptimemins;
+              let _pipe$1 = parse(_pipe);
+              let _pipe$2 = map2(
+                _pipe$1,
+                (b) => {
+                  return a$1.prep_time - remainderInt(a$1.prep_time, 60) + b;
+                }
+              );
+              return unwrap2(_pipe$2, 0);
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedRecipeCookTimeHrs) {
+    let newcooktimehrs = msg[0];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            cook_time: (() => {
+              let _pipe = newcooktimehrs;
+              let _pipe$1 = parse(_pipe);
+              let _pipe$2 = map2(
+                _pipe$1,
+                (b) => {
+                  return b * 60 + remainderInt(a$1.cook_time, 60);
+                }
+              );
+              return unwrap2(_pipe$2, 0);
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedRecipeCookTimeMins) {
+    let newcooktimemins = msg[0];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            cook_time: (() => {
+              let _pipe = newcooktimemins;
+              let _pipe$1 = parse(_pipe);
+              let _pipe$2 = map2(
+                _pipe$1,
+                (b) => {
+                  return a$1.cook_time - remainderInt(a$1.cook_time, 60) + b;
+                }
+              );
+              return unwrap2(_pipe$2, 0);
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedRecipeServes) {
+    let newserves = msg[0];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            serves: (() => {
+              let _pipe = newserves;
+              let _pipe$1 = parse(_pipe);
+              return unwrap2(_pipe$1, 0);
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedIngredientNameAtIndex) {
+    let i = msg[0];
+    let new_ingredient_name = msg[1];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            ingredients: (() => {
+              let _pipe = a$1.ingredients;
+              return map(
+                _pipe,
+                (_capture) => {
+                  return dict_update(
+                    _capture,
+                    i,
+                    (ing) => {
+                      return ing.withFields({
+                        name: new Some(new_ingredient_name)
+                      });
+                    }
+                  );
+                }
+              );
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserSavedUpdatedRecipe) {
+    let recipe = msg[0];
+    return [
+      new Some(recipe),
+      save_recipe(recipe.withFields({ slug: kebab_case(recipe.title) }))
+    ];
+  } else {
+    let recipe = msg[0];
+    return [new Some(recipe), none()];
+  }
+}
+function decode_stringed_int(d) {
+  let decoder = string;
+  let _pipe = decoder(d);
+  let _pipe$1 = map2(_pipe, parse);
+  let _pipe$2 = map2(
+    _pipe$1,
+    (_capture) => {
+      return map_error(
+        _capture,
+        (_) => {
+          return toList([
+            new DecodeError(
+              "a stringed int",
+              "something else",
+              toList([""])
+            )
+          ]);
+        }
+      );
+    }
+  );
+  return flatten(_pipe$2);
+}
+function decode_stringed_bool(d) {
+  let _pipe = string(d);
+  return map2(
+    _pipe,
+    (a2) => {
+      if (a2 === "True") {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  );
+}
+function decode_ingredient(d) {
+  let decoder = decode4(
+    (var0, var1, var2, var3) => {
+      return new Ingredient(var0, var1, var2, var3);
+    },
+    optional_field("name", string),
+    optional_field("ismain", decode_stringed_bool),
+    optional_field("quantity", string),
+    optional_field("units", string)
+  );
+  return decoder(d);
+}
+function decode_tag(d) {
+  let decoder = decode2(
+    (var0, var1) => {
+      return new Tag(var0, var1);
+    },
+    field("name", string),
+    field("value", string)
+  );
+  return decoder(d);
+}
+function decode_method_step(d) {
+  let decoder = decode1(
+    (var0) => {
+      return new MethodStep(var0);
+    },
+    field("step_text", string)
+  );
+  return decoder(d);
+}
+function decode_recipe(d) {
+  let decoder = decode9(
+    (var0, var1, var2, var3, var4, var5, var6, var7, var8) => {
+      return new Recipe(var0, var1, var2, var3, var4, var5, var6, var7, var8);
+    },
+    optional_field("id", string),
+    field("title", string),
+    field("slug", string),
+    field("cook_time", int),
+    field("prep_time", int),
+    field("serves", int),
+    optional_field("tags", list(decode_tag)),
+    optional_field("ingredients", dict(decode_stringed_int, decode_ingredient)),
+    optional_field("method_steps", list(decode_method_step))
+  );
+  debug(d);
+  return decoder(d);
 }
 function get_recipes() {
   return from2(
@@ -7455,7 +7687,7 @@ function get_recipes() {
       let _pipe$5 = map_promise(
         _pipe$4,
         (_capture) => {
-          return map4(
+          return map2(
             _capture,
             (var0) => {
               return new DbRetrievedRecipes(var0);
@@ -7466,33 +7698,89 @@ function get_recipes() {
       tap(
         _pipe$5,
         (_capture) => {
-          return map4(_capture, dispatch2);
+          return map2(_capture, dispatch2);
         }
       );
       return void 0;
     }
   );
 }
+
+// build/dev/javascript/app/app.mjs
+var Model2 = class extends CustomType {
+  constructor(current_route, current_recipe, recipes) {
+    super();
+    this.current_route = current_route;
+    this.current_recipe = current_recipe;
+    this.recipes = recipes;
+  }
+};
+var Home = class extends CustomType {
+};
+var ViewRecipeDetail = class extends CustomType {
+  constructor(slug) {
+    super();
+    this.slug = slug;
+  }
+};
+var EditRecipeDetail = class extends CustomType {
+  constructor(slug) {
+    super();
+    this.slug = slug;
+  }
+};
+var ViewRecipeList = class extends CustomType {
+};
+var OnRouteChange = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var RecipeDetail = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var RecipeList = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+function lookup_recipe_by_slug(model, slug) {
+  return from_result(
+    find2(model.recipes, (a2) => {
+      return a2.slug === slug;
+    })
+  );
+}
 function update3(model, msg) {
-  if (msg instanceof OnRouteChange && msg[0] instanceof RecipeBook) {
+  if (msg instanceof OnRouteChange && msg[0] instanceof ViewRecipeList) {
     return [
-      model.withFields({ current_route: new RecipeBook() }),
-      get_recipes()
+      model.withFields({ current_route: new ViewRecipeList() }),
+      map4(
+        get_recipes(),
+        (var0) => {
+          return new RecipeList(var0);
+        }
+      )
     ];
-  } else if (msg instanceof OnRouteChange && msg[0] instanceof RecipeDetail) {
+  } else if (msg instanceof OnRouteChange && msg[0] instanceof ViewRecipeDetail) {
     let slug = msg[0].slug;
     return [
       model.withFields({
-        current_route: new RecipeDetail(slug),
+        current_route: new ViewRecipeDetail(slug),
         current_recipe: lookup_recipe_by_slug(model, slug)
       }),
       none()
     ];
-  } else if (msg instanceof OnRouteChange && msg[0] instanceof EditRecipe) {
+  } else if (msg instanceof OnRouteChange && msg[0] instanceof EditRecipeDetail) {
     let slug = msg[0].slug;
     return [
       model.withFields({
-        current_route: new EditRecipe(slug),
+        current_route: new EditRecipeDetail(slug),
         current_recipe: lookup_recipe_by_slug(model, slug)
       }),
       none()
@@ -7503,203 +7791,72 @@ function update3(model, msg) {
       model.withFields({ current_route: route, current_recipe: new None() }),
       none()
     ];
-  } else if (msg instanceof DbRetrievedRecipes) {
-    let recipes = msg[0];
-    return [model.withFields({ recipes }), none()];
-  } else if (msg instanceof UserUpdatedRecipeTitle) {
-    let newtitle = msg[0];
-    let $ = model.current_recipe;
-    if ($ instanceof Some) {
-      let a$1 = $[0];
-      return [
-        model.withFields({
-          current_recipe: new Some(
-            a$1.withFields({ title: newtitle, slug: kebab_case(newtitle) })
-          )
-        }),
-        none()
-      ];
-    } else {
-      return [model, none()];
-    }
-  } else if (msg instanceof UserUpdatedRecipePrepTimeHrs) {
-    let newpreptimehrs = msg[0];
-    let $ = model.current_recipe;
-    if ($ instanceof Some) {
-      let a$1 = $[0];
-      return [
-        model.withFields({
-          current_recipe: new Some(
-            a$1.withFields({
-              prep_time: (() => {
-                let _pipe = newpreptimehrs;
-                let _pipe$1 = parse(_pipe);
-                let _pipe$2 = map4(
-                  _pipe$1,
-                  (b) => {
-                    return b * 60 + remainderInt(a$1.prep_time, 60);
-                  }
-                );
-                return unwrap2(_pipe$2, 0);
-              })()
-            })
-          )
-        }),
-        none()
-      ];
-    } else {
-      return [model, none()];
-    }
-  } else if (msg instanceof UserUpdatedRecipePrepTimeMins) {
-    let newpreptimemins = msg[0];
-    let $ = model.current_recipe;
-    if ($ instanceof Some) {
-      let a$1 = $[0];
-      return [
-        model.withFields({
-          current_recipe: new Some(
-            a$1.withFields({
-              prep_time: (() => {
-                let _pipe = newpreptimemins;
-                let _pipe$1 = parse(_pipe);
-                let _pipe$2 = map4(
-                  _pipe$1,
-                  (b) => {
-                    return a$1.prep_time - remainderInt(a$1.prep_time, 60) + b;
-                  }
-                );
-                return unwrap2(_pipe$2, 0);
-              })()
-            })
-          )
-        }),
-        none()
-      ];
-    } else {
-      return [model, none()];
-    }
-  } else if (msg instanceof UserUpdatedRecipeCookTimeHrs) {
-    let newcooktimehrs = msg[0];
-    let $ = model.current_recipe;
-    if ($ instanceof Some) {
-      let a$1 = $[0];
-      return [
-        model.withFields({
-          current_recipe: new Some(
-            a$1.withFields({
-              cook_time: (() => {
-                let _pipe = newcooktimehrs;
-                let _pipe$1 = parse(_pipe);
-                let _pipe$2 = map4(
-                  _pipe$1,
-                  (b) => {
-                    return b * 60 + remainderInt(a$1.cook_time, 60);
-                  }
-                );
-                return unwrap2(_pipe$2, 0);
-              })()
-            })
-          )
-        }),
-        none()
-      ];
-    } else {
-      return [model, none()];
-    }
-  } else if (msg instanceof UserUpdatedRecipeCookTimeMins) {
-    let newcooktimemins = msg[0];
-    let $ = model.current_recipe;
-    if ($ instanceof Some) {
-      let a$1 = $[0];
-      return [
-        model.withFields({
-          current_recipe: new Some(
-            a$1.withFields({
-              cook_time: (() => {
-                let _pipe = newcooktimemins;
-                let _pipe$1 = parse(_pipe);
-                let _pipe$2 = map4(
-                  _pipe$1,
-                  (b) => {
-                    return a$1.cook_time - remainderInt(a$1.cook_time, 60) + b;
-                  }
-                );
-                return unwrap2(_pipe$2, 0);
-              })()
-            })
-          )
-        }),
-        none()
-      ];
-    } else {
-      return [model, none()];
-    }
-  } else if (msg instanceof UserUpdatedRecipeServes) {
-    let newserves = msg[0];
-    let $ = model.current_recipe;
-    if ($ instanceof Some) {
-      let a$1 = $[0];
-      return [
-        model.withFields({
-          current_recipe: new Some(
-            a$1.withFields({
-              serves: (() => {
-                let _pipe = newserves;
-                let _pipe$1 = parse(_pipe);
-                return unwrap2(_pipe$1, 0);
-              })()
-            })
-          )
-        }),
-        none()
-      ];
-    } else {
-      return [model, none()];
-    }
-  } else if (msg instanceof UserUpdatedIngredientNameAtIndex) {
-    let i = msg[0];
-    let new_ingredient_name = msg[1];
-    let $ = model.current_recipe;
-    if ($ instanceof Some) {
-      let a$1 = $[0];
-      return [
-        model.withFields({
-          current_recipe: new Some(
-            a$1.withFields({
-              ingredients: (() => {
-                let _pipe = a$1.ingredients;
-                return map2(
-                  _pipe,
-                  (_capture) => {
-                    return dict_update(
-                      _capture,
-                      i,
-                      (ing) => {
-                        return ing.withFields({
-                          name: new Some(new_ingredient_name)
-                        });
-                      }
-                    );
-                  }
-                );
-              })()
-            })
-          )
-        }),
-        none()
-      ];
-    } else {
-      return [model, none()];
-    }
-  } else {
-    let recipe = msg[0];
+  } else if (msg instanceof RecipeList) {
+    let list_msg = msg[0];
+    let $ = list_update(model.recipes, list_msg);
+    let child_model = $[0];
+    let child_effect = $[1];
     return [
-      merge_recipe_into_model(recipe, model).withFields({
-        current_route: new RecipeDetail(recipe.slug)
-      }),
-      save_recipe(recipe)
+      model.withFields({ recipes: child_model }),
+      map4(child_effect, (var0) => {
+        return new RecipeList(var0);
+      })
+    ];
+  } else if (msg instanceof RecipeDetail && msg[0] instanceof DbSavedUpdatedRecipe) {
+    let new_recipe = msg[0][0];
+    return [
+      model,
+      batch(
+        toList([
+          map4(
+            get_recipes(),
+            (var0) => {
+              return new RecipeList(var0);
+            }
+          ),
+          from2(
+            (dispatch2) => {
+              let _pipe = new OnRouteChange(
+                new ViewRecipeDetail(new_recipe.slug)
+              );
+              return dispatch2(_pipe);
+            }
+          )
+        ])
+      )
+    ];
+  } else {
+    let detail_msg = msg[0];
+    let $ = detail_update(model.current_recipe, detail_msg);
+    let child_model = $[0];
+    let child_effect = $[1];
+    return [
+      model.withFields({ current_recipe: child_model }),
+      map4(child_effect, (var0) => {
+        return new RecipeDetail(var0);
+      })
     ];
   }
+}
+function on_route_change(uri) {
+  let $ = path_segments(uri.path);
+  if ($.hasLength(3) && $.head === "recipes" && $.tail.tail.head === "edit") {
+    let slug = $.tail.head;
+    return new OnRouteChange(new EditRecipeDetail(slug));
+  } else if ($.hasLength(2) && $.head === "recipes") {
+    let slug = $.tail.head;
+    return new OnRouteChange(new ViewRecipeDetail(slug));
+  } else if ($.hasLength(1) && $.head === "recipes") {
+    return new OnRouteChange(new ViewRecipeList());
+  } else {
+    return new OnRouteChange(new Home());
+  }
+}
+function init6(_) {
+  return [
+    new Model2(new Home(), new None(), toList([])),
+    init2(on_route_change)
+  ];
 }
 function view_base(children) {
   return main(
@@ -7782,110 +7939,32 @@ function view_home() {
     ])
   );
 }
-function view_recipe_summary(recipe) {
-  return div(
-    toList([
-      class$(
-        "col-span-full flex flex-wrap items-baseline justify-start my-1 text-base"
-      )
-    ]),
-    toList([
-      div(
-        toList([
-          class$("text-xl flex flex-nowrap gap-1 my-1 ml-2 items-baseline")
-        ]),
-        toList([
-          a(
-            toList([href(append4("/recipes/", recipe.slug))]),
-            toList([
-              span(toList([]), toList([text(recipe.title)])),
-              span(
-                toList([class$("text-sm")]),
-                toList([
-                  text(" \u2022 "),
-                  text(
-                    (() => {
-                      let _pipe = floor_divide(
-                        recipe.prep_time + recipe.cook_time,
-                        60
-                      );
-                      let _pipe$1 = unwrap2(_pipe, 0);
-                      return to_string3(_pipe$1);
-                    })()
-                  ),
-                  text("h"),
-                  text(
-                    (() => {
-                      let _pipe = remainderInt(
-                        recipe.prep_time + recipe.cook_time,
-                        60
-                      );
-                      return to_string3(_pipe);
-                    })()
-                  ),
-                  text("m")
-                ])
-              )
-            ])
-          )
-        ])
-      )
-    ])
-  );
-}
-function view_recipe_list(model) {
-  return section(
-    toList([
-      class$(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr]"
-      )
-    ]),
-    toList([
-      page_title("Recipe Book", "underline-green"),
-      nav(
-        toList([
-          class$(
-            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
-          )
-        ]),
-        toList([
-          a(toList([href("/"), class$("text-center")]), toList([text("\u{1F3E0}")]))
-        ])
-      ),
-      div(
-        toList([class$("contents")]),
-        map3(model.recipes, view_recipe_summary)
-      )
-    ])
-  );
-}
-function lookup_and_view_recipe(maybe_recipe) {
-  if (maybe_recipe instanceof Some) {
-    let a$1 = maybe_recipe[0];
-    return view_recipe(a$1);
-  } else {
-    return page_title("Recipe not found", "");
-  }
-}
-function lookup_and_edit_recipe(maybe_recipe) {
-  if (maybe_recipe instanceof Some) {
-    let a$1 = maybe_recipe[0];
-    return edit_recipe(a$1);
-  } else {
-    return page_title("Recipe not found", "");
-  }
-}
 function view2(model) {
   let page = (() => {
     let $ = model.current_route;
     if ($ instanceof Home) {
       return view_home();
-    } else if ($ instanceof RecipeBook) {
-      return view_recipe_list(model);
-    } else if ($ instanceof RecipeDetail) {
-      return lookup_and_view_recipe(model.current_recipe);
+    } else if ($ instanceof ViewRecipeList) {
+      return map6(
+        view_recipe_list(model.recipes),
+        (var0) => {
+          return new RecipeList(var0);
+        }
+      );
+    } else if ($ instanceof ViewRecipeDetail) {
+      return map6(
+        lookup_and_view_recipe(model.current_recipe),
+        (var0) => {
+          return new RecipeDetail(var0);
+        }
+      );
     } else {
-      return lookup_and_edit_recipe(model.current_recipe);
+      return map6(
+        lookup_and_edit_recipe(model.current_recipe),
+        (var0) => {
+          return new RecipeDetail(var0);
+        }
+      );
     }
   })();
   return view_base(page);
@@ -7895,8 +7974,8 @@ function main2() {
   if (!$.isOk()) {
     throw makeError(
       "assignment_no_match",
-      "mealstack_client",
-      50,
+      "app",
+      26,
       "main",
       "Assignment pattern did not match",
       { value: $ }

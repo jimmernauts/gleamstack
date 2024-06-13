@@ -1,4 +1,4 @@
-name = "mealstack_client"
+name = "app"
 target = "javascript"
 version = "1.0.0"
 
