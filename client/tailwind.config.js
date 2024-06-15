@@ -165,8 +165,6 @@ export default {
                     borderBottomWidth: '0px',
                     paddingTop: '0px',
                     paddingBottom: '0px',
-                    marginLeft: '0.25rem',
-                    marginRight: '0.25rem',
                     lineHeight: 'inherit',
                     backgroundColor: 'transparent',
                 },

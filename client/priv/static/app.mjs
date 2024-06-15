@@ -1740,6 +1740,31 @@ function do_values(dict2) {
 function values(dict2) {
   return do_values(dict2);
 }
+function insert_pair(dict2, pair) {
+  return insert(dict2, pair[0], pair[1]);
+}
+function fold_inserts(loop$new_entries, loop$dict) {
+  while (true) {
+    let new_entries = loop$new_entries;
+    let dict2 = loop$dict;
+    if (new_entries.hasLength(0)) {
+      return dict2;
+    } else {
+      let x = new_entries.head;
+      let xs = new_entries.tail;
+      loop$new_entries = xs;
+      loop$dict = insert_pair(dict2, x);
+    }
+  }
+}
+function do_merge(dict2, new_entries) {
+  let _pipe = new_entries;
+  let _pipe$1 = map_to_list(_pipe);
+  return fold_inserts(_pipe$1, dict2);
+}
+function merge(dict2, new_entries) {
+  return do_merge(dict2, new_entries);
+}
 function do_fold(loop$list, loop$initial, loop$fun) {
   while (true) {
     let list2 = loop$list;
@@ -6509,6 +6534,18 @@ var Ingredient = class extends CustomType {
     this.units = units;
   }
 };
+function merge_recipe_into_model(recipe, model) {
+  let _pipe = model;
+  let _pipe$1 = map3(_pipe, (a2) => {
+    return [a2.id, a2];
+  });
+  let _pipe$2 = from_list(_pipe$1);
+  let _pipe$3 = merge(
+    _pipe$2,
+    from_list(toList([[recipe.id, recipe]]))
+  );
+  return values(_pipe$3);
+}
 function list_update(model, msg) {
   let recipes = msg[0];
   return [recipes, none()];
@@ -6814,7 +6851,7 @@ function edit_recipe_detail(recipe) {
         ]),
         toList([
           fieldset(
-            toList([class$("flex flex-wrap items-baseline mb-2")]),
+            toList([class$("flex flex-wrap items-baseline mb-1")]),
             toList([
               label(
                 toList([
@@ -6835,7 +6872,7 @@ function edit_recipe_detail(recipe) {
                         toList([
                           id("prep_time_hrs"),
                           class$(
-                            "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base"
+                            "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[2ch] text-right text-base"
                           ),
                           type_("number"),
                           name("prep_time_hrs"),
@@ -6869,7 +6906,7 @@ function edit_recipe_detail(recipe) {
                         toList([
                           id("prep_time_mins"),
                           class$(
-                            "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base"
+                            "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[3ch] text-right text-base"
                           ),
                           type_("number"),
                           name("prep_time_mins"),
@@ -6915,7 +6952,7 @@ function edit_recipe_detail(recipe) {
                         toList([
                           id("cook_time_hrs"),
                           class$(
-                            "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base"
+                            "bg-ecru-white-100 input-base input-focus pr-0.5 w-[2ch] text-right text-base"
                           ),
                           type_("number"),
                           name("cook_time_hrs"),
@@ -7805,24 +7842,14 @@ function update3(model, msg) {
   } else if (msg instanceof RecipeDetail && msg[0] instanceof DbSavedUpdatedRecipe) {
     let new_recipe = msg[0][0];
     return [
-      model,
-      batch(
-        toList([
-          map4(
-            get_recipes(),
-            (var0) => {
-              return new RecipeList(var0);
-            }
-          ),
-          from2(
-            (dispatch2) => {
-              let _pipe = new OnRouteChange(
-                new ViewRecipeDetail(new_recipe.slug)
-              );
-              return dispatch2(_pipe);
-            }
-          )
-        ])
+      model.withFields({
+        recipes: merge_recipe_into_model(new_recipe, model.recipes)
+      }),
+      from2(
+        (dispatch2) => {
+          let _pipe = new OnRouteChange(new ViewRecipeDetail(new_recipe.slug));
+          return dispatch2(_pipe);
+        }
       )
     ];
   } else {

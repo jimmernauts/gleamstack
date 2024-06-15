@@ -580,8 +580,6 @@ input[type="number"] {
   border-bottom-width: 0px;
   padding-top: 0px;
   padding-bottom: 0px;
-  margin-left: 0.25rem;
-  margin-right: 0.25rem;
   line-height: inherit;
   background-color: transparent;
 }
@@ -759,6 +757,10 @@ fieldset {
   margin-right: 0px;
 }
 
+.mr-0\.5 {
+  margin-right: 0.125rem;
+}
+
 .mr-1 {
   margin-right: 0.25rem;
 }
@@ -809,6 +811,10 @@ fieldset {
 
 .w-\[16ch\] {
   width: 16ch;
+}
+
+.w-\[2ch\] {
+  width: 2ch;
 }
 
 .w-\[3ch\] {

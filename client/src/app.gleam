@@ -99,15 +99,15 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
     RecipeDetail(recipe.DbSavedUpdatedRecipe(new_recipe)) -> {
       #(
-        model,
+        Model(
+          ..model,
+          recipes: recipe.merge_recipe_into_model(new_recipe, model.recipes),
+        ),
         // TODO: Better handle navigating in response to the updated data
-        effect.batch([
-          effect.map(recipe.get_recipes(), RecipeList),
-          {
-            use dispatch <- effect.from
-            OnRouteChange(ViewRecipeDetail(slug: new_recipe.slug)) |> dispatch
-          },
-        ]),
+        {
+          use dispatch <- effect.from
+          OnRouteChange(ViewRecipeDetail(slug: new_recipe.slug)) |> dispatch
+        },
       )
     }
     RecipeDetail(detail_msg) -> {

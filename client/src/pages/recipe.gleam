@@ -53,7 +53,7 @@ pub type RecipeDetail =
 
 //-UPDATE---------------------------------------------
 
-fn merge_recipe_into_model(recipe: Recipe, model: RecipeList) -> RecipeList {
+pub fn merge_recipe_into_model(recipe: Recipe, model: RecipeList) -> RecipeList {
   model
   |> list.map(fn(a) { #(a.id, a) })
   |> dict.from_list
@@ -337,7 +337,7 @@ pub fn edit_recipe_detail(recipe: Recipe) -> Element(RecipeDetailMsg) {
           ),
         ],
         [
-          fieldset([class("flex flex-wrap items-baseline mb-2")], [
+          fieldset([class("flex flex-wrap items-baseline mb-1")], [
             label(
               [class("justify-self-start font-mono italic"), for("prep_time")],
               [text("Prep:")],
@@ -347,7 +347,7 @@ pub fn edit_recipe_detail(recipe: Recipe) -> Element(RecipeDetailMsg) {
                 input([
                   id("prep_time_hrs"),
                   class(
-                    "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base",
+                    "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[2ch] text-right text-base",
                   ),
                   type_("number"),
                   name("prep_time_hrs"),
@@ -365,7 +365,7 @@ pub fn edit_recipe_detail(recipe: Recipe) -> Element(RecipeDetailMsg) {
                 input([
                   id("prep_time_mins"),
                   class(
-                    "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base",
+                    "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[3ch] text-right text-base",
                   ),
                   type_("number"),
                   name("prep_time_mins"),
@@ -389,7 +389,7 @@ pub fn edit_recipe_detail(recipe: Recipe) -> Element(RecipeDetailMsg) {
                 input([
                   id("cook_time_hrs"),
                   class(
-                    "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base",
+                    "bg-ecru-white-100 input-base input-focus pr-0.5 w-[2ch] text-right text-base",
                   ),
                   type_("number"),
                   name("cook_time_hrs"),
