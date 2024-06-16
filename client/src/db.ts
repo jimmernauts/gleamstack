@@ -129,7 +129,6 @@ export async function addOrUpdateRecipe(recipe: Recipe) {
 		 method_steps=excluded.method_steps, \
 		 tags=excluded.tags, \
 		 shortlisted=excluded.shortlisted;`
-	console.log("query: ",query)
 	const result = await db.execA(query
 		);
 	return new Ok();

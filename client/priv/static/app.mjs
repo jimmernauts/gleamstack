@@ -293,6 +293,14 @@ function or(first3, second2) {
   }
 }
 
+// build/dev/javascript/gleam_stdlib/gleam/order.mjs
+var Lt = class extends CustomType {
+};
+var Eq = class extends CustomType {
+};
+var Gt = class extends CustomType {
+};
+
 // build/dev/javascript/gleam_stdlib/gleam/float.mjs
 function to_string(x) {
   return float_to_string(x);
@@ -307,6 +315,19 @@ function to_string3(x) {
 }
 function to_float(x) {
   return identity(x);
+}
+function compare(a2, b) {
+  let $ = a2 === b;
+  if ($) {
+    return new Eq();
+  } else {
+    let $1 = a2 < b;
+    if ($1) {
+      return new Lt();
+    } else {
+      return new Gt();
+    }
+  }
 }
 function floor_divide(dividend, divisor) {
   if (divisor === 0) {
@@ -416,6 +437,9 @@ function classify(data) {
 }
 function int(data) {
   return decode_int(data);
+}
+function bool(data) {
+  return decode_bool(data);
 }
 function shallow_list(value4) {
   return decode_list(value4);
@@ -1543,6 +1567,9 @@ function decode_string(data) {
 function decode_int(data) {
   return Number.isInteger(data) ? new Ok2(data) : decoder_error("Int", data);
 }
+function decode_bool(data) {
+  return typeof data === "boolean" ? new Ok2(data) : decoder_error("Bool", data);
+}
 function decode_list(data) {
   if (Array.isArray(data)) {
     return new Ok2(List.fromArray(data));
@@ -1812,6 +1839,10 @@ function new$2(first3, second2) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
+var Ascending = class extends CustomType {
+};
+var Descending = class extends CustomType {
+};
 function do_reverse(loop$remaining, loop$accumulator) {
   while (true) {
     let remaining = loop$remaining;
@@ -2083,6 +2114,329 @@ function find2(loop$haystack, loop$is_desired) {
         loop$is_desired = is_desired;
       }
     }
+  }
+}
+function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$prev, loop$acc) {
+  while (true) {
+    let list2 = loop$list;
+    let compare3 = loop$compare;
+    let growing = loop$growing;
+    let direction = loop$direction;
+    let prev = loop$prev;
+    let acc = loop$acc;
+    let growing$1 = prepend(prev, growing);
+    if (list2.hasLength(0)) {
+      if (direction instanceof Ascending) {
+        return prepend(do_reverse(growing$1, toList([])), acc);
+      } else {
+        return prepend(growing$1, acc);
+      }
+    } else {
+      let new$1 = list2.head;
+      let rest$1 = list2.tail;
+      let $ = compare3(prev, new$1);
+      if ($ instanceof Gt && direction instanceof Descending) {
+        loop$list = rest$1;
+        loop$compare = compare3;
+        loop$growing = growing$1;
+        loop$direction = direction;
+        loop$prev = new$1;
+        loop$acc = acc;
+      } else if ($ instanceof Lt && direction instanceof Ascending) {
+        loop$list = rest$1;
+        loop$compare = compare3;
+        loop$growing = growing$1;
+        loop$direction = direction;
+        loop$prev = new$1;
+        loop$acc = acc;
+      } else if ($ instanceof Eq && direction instanceof Ascending) {
+        loop$list = rest$1;
+        loop$compare = compare3;
+        loop$growing = growing$1;
+        loop$direction = direction;
+        loop$prev = new$1;
+        loop$acc = acc;
+      } else if ($ instanceof Gt && direction instanceof Ascending) {
+        let acc$1 = (() => {
+          if (direction instanceof Ascending) {
+            return prepend(do_reverse(growing$1, toList([])), acc);
+          } else {
+            return prepend(growing$1, acc);
+          }
+        })();
+        if (rest$1.hasLength(0)) {
+          return prepend(toList([new$1]), acc$1);
+        } else {
+          let next = rest$1.head;
+          let rest$2 = rest$1.tail;
+          let direction$1 = (() => {
+            let $1 = compare3(new$1, next);
+            if ($1 instanceof Lt) {
+              return new Ascending();
+            } else if ($1 instanceof Eq) {
+              return new Ascending();
+            } else {
+              return new Descending();
+            }
+          })();
+          loop$list = rest$2;
+          loop$compare = compare3;
+          loop$growing = toList([new$1]);
+          loop$direction = direction$1;
+          loop$prev = next;
+          loop$acc = acc$1;
+        }
+      } else if ($ instanceof Lt && direction instanceof Descending) {
+        let acc$1 = (() => {
+          if (direction instanceof Ascending) {
+            return prepend(do_reverse(growing$1, toList([])), acc);
+          } else {
+            return prepend(growing$1, acc);
+          }
+        })();
+        if (rest$1.hasLength(0)) {
+          return prepend(toList([new$1]), acc$1);
+        } else {
+          let next = rest$1.head;
+          let rest$2 = rest$1.tail;
+          let direction$1 = (() => {
+            let $1 = compare3(new$1, next);
+            if ($1 instanceof Lt) {
+              return new Ascending();
+            } else if ($1 instanceof Eq) {
+              return new Ascending();
+            } else {
+              return new Descending();
+            }
+          })();
+          loop$list = rest$2;
+          loop$compare = compare3;
+          loop$growing = toList([new$1]);
+          loop$direction = direction$1;
+          loop$prev = next;
+          loop$acc = acc$1;
+        }
+      } else {
+        let acc$1 = (() => {
+          if (direction instanceof Ascending) {
+            return prepend(do_reverse(growing$1, toList([])), acc);
+          } else {
+            return prepend(growing$1, acc);
+          }
+        })();
+        if (rest$1.hasLength(0)) {
+          return prepend(toList([new$1]), acc$1);
+        } else {
+          let next = rest$1.head;
+          let rest$2 = rest$1.tail;
+          let direction$1 = (() => {
+            let $1 = compare3(new$1, next);
+            if ($1 instanceof Lt) {
+              return new Ascending();
+            } else if ($1 instanceof Eq) {
+              return new Ascending();
+            } else {
+              return new Descending();
+            }
+          })();
+          loop$list = rest$2;
+          loop$compare = compare3;
+          loop$growing = toList([new$1]);
+          loop$direction = direction$1;
+          loop$prev = next;
+          loop$acc = acc$1;
+        }
+      }
+    }
+  }
+}
+function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
+  while (true) {
+    let list1 = loop$list1;
+    let list2 = loop$list2;
+    let compare3 = loop$compare;
+    let acc = loop$acc;
+    if (list1.hasLength(0)) {
+      let list3 = list2;
+      return do_reverse(list3, acc);
+    } else if (list2.hasLength(0)) {
+      let list3 = list1;
+      return do_reverse(list3, acc);
+    } else {
+      let first1 = list1.head;
+      let rest1 = list1.tail;
+      let first22 = list2.head;
+      let rest2 = list2.tail;
+      let $ = compare3(first1, first22);
+      if ($ instanceof Lt) {
+        loop$list1 = rest1;
+        loop$list2 = list2;
+        loop$compare = compare3;
+        loop$acc = prepend(first1, acc);
+      } else if ($ instanceof Gt) {
+        loop$list1 = list1;
+        loop$list2 = rest2;
+        loop$compare = compare3;
+        loop$acc = prepend(first22, acc);
+      } else {
+        loop$list1 = list1;
+        loop$list2 = rest2;
+        loop$compare = compare3;
+        loop$acc = prepend(first22, acc);
+      }
+    }
+  }
+}
+function merge_ascending_pairs(loop$sequences, loop$compare, loop$acc) {
+  while (true) {
+    let sequences2 = loop$sequences;
+    let compare3 = loop$compare;
+    let acc = loop$acc;
+    if (sequences2.hasLength(0)) {
+      return do_reverse(acc, toList([]));
+    } else if (sequences2.hasLength(1)) {
+      let sequence = sequences2.head;
+      return do_reverse(
+        prepend(do_reverse(sequence, toList([])), acc),
+        toList([])
+      );
+    } else {
+      let ascending1 = sequences2.head;
+      let ascending2 = sequences2.tail.head;
+      let rest$1 = sequences2.tail.tail;
+      let descending = merge_ascendings(
+        ascending1,
+        ascending2,
+        compare3,
+        toList([])
+      );
+      loop$sequences = rest$1;
+      loop$compare = compare3;
+      loop$acc = prepend(descending, acc);
+    }
+  }
+}
+function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
+  while (true) {
+    let list1 = loop$list1;
+    let list2 = loop$list2;
+    let compare3 = loop$compare;
+    let acc = loop$acc;
+    if (list1.hasLength(0)) {
+      let list3 = list2;
+      return do_reverse(list3, acc);
+    } else if (list2.hasLength(0)) {
+      let list3 = list1;
+      return do_reverse(list3, acc);
+    } else {
+      let first1 = list1.head;
+      let rest1 = list1.tail;
+      let first22 = list2.head;
+      let rest2 = list2.tail;
+      let $ = compare3(first1, first22);
+      if ($ instanceof Lt) {
+        loop$list1 = list1;
+        loop$list2 = rest2;
+        loop$compare = compare3;
+        loop$acc = prepend(first22, acc);
+      } else if ($ instanceof Gt) {
+        loop$list1 = rest1;
+        loop$list2 = list2;
+        loop$compare = compare3;
+        loop$acc = prepend(first1, acc);
+      } else {
+        loop$list1 = rest1;
+        loop$list2 = list2;
+        loop$compare = compare3;
+        loop$acc = prepend(first1, acc);
+      }
+    }
+  }
+}
+function merge_descending_pairs(loop$sequences, loop$compare, loop$acc) {
+  while (true) {
+    let sequences2 = loop$sequences;
+    let compare3 = loop$compare;
+    let acc = loop$acc;
+    if (sequences2.hasLength(0)) {
+      return do_reverse(acc, toList([]));
+    } else if (sequences2.hasLength(1)) {
+      let sequence = sequences2.head;
+      return do_reverse(
+        prepend(do_reverse(sequence, toList([])), acc),
+        toList([])
+      );
+    } else {
+      let descending1 = sequences2.head;
+      let descending2 = sequences2.tail.head;
+      let rest$1 = sequences2.tail.tail;
+      let ascending = merge_descendings(
+        descending1,
+        descending2,
+        compare3,
+        toList([])
+      );
+      loop$sequences = rest$1;
+      loop$compare = compare3;
+      loop$acc = prepend(ascending, acc);
+    }
+  }
+}
+function merge_all(loop$sequences, loop$direction, loop$compare) {
+  while (true) {
+    let sequences2 = loop$sequences;
+    let direction = loop$direction;
+    let compare3 = loop$compare;
+    if (sequences2.hasLength(0)) {
+      return toList([]);
+    } else if (sequences2.hasLength(1) && direction instanceof Ascending) {
+      let sequence = sequences2.head;
+      return sequence;
+    } else if (sequences2.hasLength(1) && direction instanceof Descending) {
+      let sequence = sequences2.head;
+      return do_reverse(sequence, toList([]));
+    } else if (direction instanceof Ascending) {
+      let sequences$1 = merge_ascending_pairs(sequences2, compare3, toList([]));
+      loop$sequences = sequences$1;
+      loop$direction = new Descending();
+      loop$compare = compare3;
+    } else {
+      let sequences$1 = merge_descending_pairs(sequences2, compare3, toList([]));
+      loop$sequences = sequences$1;
+      loop$direction = new Ascending();
+      loop$compare = compare3;
+    }
+  }
+}
+function sort(list2, compare3) {
+  if (list2.hasLength(0)) {
+    return toList([]);
+  } else if (list2.hasLength(1)) {
+    let x = list2.head;
+    return toList([x]);
+  } else {
+    let x = list2.head;
+    let y = list2.tail.head;
+    let rest$1 = list2.tail.tail;
+    let direction = (() => {
+      let $ = compare3(x, y);
+      if ($ instanceof Lt) {
+        return new Ascending();
+      } else if ($ instanceof Eq) {
+        return new Ascending();
+      } else {
+        return new Descending();
+      }
+    })();
+    let sequences$1 = sequences(
+      rest$1,
+      compare3,
+      toList([x]),
+      direction,
+      y,
+      toList([])
+    );
+    return merge_all(sequences$1, new Ascending(), compare3);
   }
 }
 function key_set(list2, key2, value4) {
@@ -3345,6 +3699,21 @@ function on_input(msg) {
     "input",
     (event2) => {
       let _pipe = value2(event2);
+      return map2(_pipe, msg);
+    }
+  );
+}
+function checked2(event2) {
+  let _pipe = event2;
+  return field("target", field("checked", bool))(
+    _pipe
+  );
+}
+function on_check(msg) {
+  return on2(
+    "change",
+    (event2) => {
+      let _pipe = checked2(event2);
       return map2(_pipe, msg);
     }
   );
@@ -6388,7 +6757,6 @@ async function addOrUpdateRecipe(recipe) {
   const query = ` 		INSERT INTO recipes 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
 			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(recipe.ingredients, replacer)}',
 			'${JSON.stringify(recipe.method_steps)}', '${JSON.stringify(recipe.tags)}', '${recipe.shortlisted}') 		 ON CONFLICT(id) DO UPDATE SET		 slug=excluded.slug, 		 title=excluded.title, 		 cook_time=excluded.cook_time, 		 prep_time=excluded.prep_time, 		 serves=excluded.serves, 		 ingredients=excluded.ingredients, 		 method_steps=excluded.method_steps, 		 tags=excluded.tags, 		 shortlisted=excluded.shortlisted;`;
-  console.log("query: ", query);
   const result = await db.execA(
     query
   );
@@ -6460,6 +6828,27 @@ var UserUpdatedRecipeServes = class extends CustomType {
   }
 };
 var UserUpdatedIngredientNameAtIndex = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var UserUpdatedIngredientMainAtIndex = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var UserUpdatedIngredientQtyAtIndex = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var UserUpdatedIngredientUnitsAtIndex = class extends CustomType {
   constructor(x0, x1) {
     super();
     this[0] = x0;
@@ -6624,10 +7013,25 @@ function view_recipe_list(model) {
     ])
   );
 }
-function ingredient_input(ingredient, index3) {
-  let with_index = curry2(
+function ingredient_input(index3, ingredient) {
+  let update_name_with_index = curry2(
     (var0, var1) => {
       return new UserUpdatedIngredientNameAtIndex(var0, var1);
+    }
+  );
+  let update_main_with_index = curry2(
+    (var0, var1) => {
+      return new UserUpdatedIngredientMainAtIndex(var0, var1);
+    }
+  );
+  let update_qty_with_index = curry2(
+    (var0, var1) => {
+      return new UserUpdatedIngredientQtyAtIndex(var0, var1);
+    }
+  );
+  let update_units_with_index = curry2(
+    (var0, var1) => {
+      return new UserUpdatedIngredientUnitsAtIndex(var0, var1);
     }
   );
   return div(
@@ -6652,7 +7056,7 @@ function ingredient_input(ingredient, index3) {
               }
             })()
           ),
-          on_input(with_index(index3))
+          on_input(update_name_with_index(index3))
         ])
       ),
       div(
@@ -6674,7 +7078,8 @@ function ingredient_input(ingredient, index3) {
                     return "";
                   }
                 })()
-              )
+              ),
+              on_input(update_qty_with_index(index3))
             ])
           ),
           input(
@@ -6695,7 +7100,8 @@ function ingredient_input(ingredient, index3) {
                     return "";
                   }
                 })()
-              )
+              ),
+              on_input(update_units_with_index(index3))
             ])
           ),
           div(
@@ -6720,7 +7126,8 @@ function ingredient_input(ingredient, index3) {
                         })()
                       ),
                       name("`ingredient-main-" + to_string3(index3)),
-                      type_("checkbox")
+                      type_("checkbox"),
+                      on_check(update_main_with_index(index3))
                     ])
                   ),
                   span(toList([]), toList([]))
@@ -7072,21 +7479,35 @@ function edit_recipe_detail(recipe) {
             toList([text("Ingredients")])
           ),
           (() => {
-            let _pipe = recipe.ingredients;
-            let _pipe$1 = map(
-              _pipe,
-              (_capture) => {
-                return map_values(
-                  _capture,
-                  (i, item) => {
-                    return ingredient_input(new Some(item), i);
+            let $ = recipe.ingredients;
+            if ($ instanceof Some) {
+              let ings = $[0];
+              let children = (() => {
+                let _pipe = ings;
+                let _pipe$1 = map_to_list(_pipe);
+                let _pipe$2 = sort(
+                  _pipe$1,
+                  (a2, b) => {
+                    return compare(first(a2), first(b));
                   }
                 );
-              }
-            );
-            let _pipe$2 = map(_pipe$1, values);
-            let _pipe$3 = map(_pipe$2, fragment);
-            return unwrap(_pipe$3, none3());
+                return map3(
+                  _pipe$2,
+                  (a2) => {
+                    return [
+                      to_string3(first(a2)),
+                      ingredient_input(
+                        first(a2),
+                        new Some(second(a2))
+                      )
+                    ];
+                  }
+                );
+              })();
+              return keyed(fragment, children);
+            } else {
+              return ingredient_input(0, new None());
+            }
           })()
         ])
       ),
@@ -7599,6 +8020,102 @@ function detail_update(model, msg) {
                     (ing) => {
                       return ing.withFields({
                         name: new Some(new_ingredient_name)
+                      });
+                    }
+                  );
+                }
+              );
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedIngredientMainAtIndex) {
+    let i = msg[0];
+    let new_ingredient_ismain = msg[1];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            ingredients: (() => {
+              let _pipe = a$1.ingredients;
+              return map(
+                _pipe,
+                (_capture) => {
+                  return dict_update(
+                    _capture,
+                    i,
+                    (ing) => {
+                      return ing.withFields({
+                        ismain: new Some(new_ingredient_ismain)
+                      });
+                    }
+                  );
+                }
+              );
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedIngredientQtyAtIndex) {
+    let i = msg[0];
+    let new_ingredient_qty = msg[1];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            ingredients: (() => {
+              let _pipe = a$1.ingredients;
+              return map(
+                _pipe,
+                (_capture) => {
+                  return dict_update(
+                    _capture,
+                    i,
+                    (ing) => {
+                      return ing.withFields({
+                        quantity: new Some(new_ingredient_qty)
+                      });
+                    }
+                  );
+                }
+              );
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedIngredientUnitsAtIndex) {
+    let i = msg[0];
+    let new_ingredient_units = msg[1];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            ingredients: (() => {
+              let _pipe = a$1.ingredients;
+              return map(
+                _pipe,
+                (_capture) => {
+                  return dict_update(
+                    _capture,
+                    i,
+                    (ing) => {
+                      return ing.withFields({
+                        units: new Some(new_ingredient_units)
                       });
                     }
                   );

@@ -12,6 +12,7 @@ import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/pair
 import gleam/result
 import gleam/string
 import justin.{kebab_case}
@@ -25,7 +26,7 @@ import lustre/element/html.{
   a, button, div, fieldset, form, input, label, legend, li, nav, ol, section,
   span, textarea,
 }
-import lustre/event.{on_input}
+import lustre/event.{on_check, on_input}
 
 //-MODEL---------------------------------------------
 
@@ -37,6 +38,9 @@ pub type RecipeDetailMsg {
   UserUpdatedRecipeCookTimeMins(String)
   UserUpdatedRecipeServes(String)
   UserUpdatedIngredientNameAtIndex(Int, String)
+  UserUpdatedIngredientMainAtIndex(Int, Bool)
+  UserUpdatedIngredientQtyAtIndex(Int, String)
+  UserUpdatedIngredientUnitsAtIndex(Int, String)
   UserSavedUpdatedRecipe(Recipe)
   DbSavedUpdatedRecipe(Recipe)
 }
@@ -229,6 +233,75 @@ pub fn detail_update(
                   _,
                   i,
                   fn(ing) { Ingredient(..ing, name: Some(new_ingredient_name)) },
+                ))
+              },
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserUpdatedIngredientMainAtIndex(i, new_ingredient_ismain) -> {
+      case model {
+        Some(a) -> #(
+          Some(
+            Recipe(
+              ..a,
+              ingredients: {
+                a.ingredients
+                |> option.map(utils.dict_update(
+                  _,
+                  i,
+                  fn(ing) {
+                    Ingredient(..ing, ismain: Some(new_ingredient_ismain))
+                  },
+                ))
+              },
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserUpdatedIngredientQtyAtIndex(i, new_ingredient_qty) -> {
+      case model {
+        Some(a) -> #(
+          Some(
+            Recipe(
+              ..a,
+              ingredients: {
+                a.ingredients
+                |> option.map(utils.dict_update(
+                  _,
+                  i,
+                  fn(ing) {
+                    Ingredient(..ing, quantity: Some(new_ingredient_qty))
+                  },
+                ))
+              },
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserUpdatedIngredientUnitsAtIndex(i, new_ingredient_units) -> {
+      case model {
+        Some(a) -> #(
+          Some(
+            Recipe(
+              ..a,
+              ingredients: {
+                a.ingredients
+                |> option.map(utils.dict_update(
+                  _,
+                  i,
+                  fn(ing) {
+                    Ingredient(..ing, units: Some(new_ingredient_units))
+                  },
                 ))
               },
             ),
@@ -461,13 +534,24 @@ pub fn edit_recipe_detail(recipe: Recipe) -> Element(RecipeDetailMsg) {
         ],
         [
           legend([class("mx-2 px-1 font-mono italic")], [text("Ingredients")]),
-          recipe.ingredients
-            |> option.map(dict.map_values(_, fn(i, item) {
-              ingredient_input(Some(item), i)
-            }))
-            |> option.map(dict.values)
-            |> option.map(fragment)
-            |> option.unwrap(element.none()),
+          case recipe.ingredients {
+            Some(ings) -> {
+              let children =
+                ings
+                |> dict.to_list
+                |> list.sort(by: fn(a, b) {
+                  int.compare(pair.first(a), pair.first(b))
+                })
+                |> list.map(fn(a) {
+                  #(
+                    int.to_string(pair.first(a)),
+                    ingredient_input(pair.first(a), Some(pair.second(a))),
+                  )
+                })
+              element.keyed(fragment, children)
+            }
+            _ -> ingredient_input(0, None)
+          },
         ],
       ),
       fieldset(
@@ -645,8 +729,12 @@ fn view_recipe_summary(recipe: Recipe) {
   )
 }
 
-fn ingredient_input(ingredient: Option(Ingredient), index: Int) {
-  let with_index = function.curry2(UserUpdatedIngredientNameAtIndex)
+fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
+  let update_name_with_index = function.curry2(UserUpdatedIngredientNameAtIndex)
+  let update_main_with_index = function.curry2(UserUpdatedIngredientMainAtIndex)
+  let update_qty_with_index = function.curry2(UserUpdatedIngredientQtyAtIndex)
+  let update_units_with_index =
+    function.curry2(UserUpdatedIngredientUnitsAtIndex)
 
   div([class("my-0.5 w-full flex justify-between items-baseline")], [
     input([
@@ -661,7 +749,7 @@ fn ingredient_input(ingredient: Option(Ingredient), index: Int) {
         Some(ing) -> option.unwrap(ing.name, "")
         _ -> ""
       }),
-      on_input(with_index(index)),
+      on_input(update_name_with_index(index)),
     ]),
     div([class("flex justify-end gap-1 items-baseline")], [
       input([
@@ -674,6 +762,7 @@ fn ingredient_input(ingredient: Option(Ingredient), index: Int) {
           Some(ing) -> option.unwrap(ing.quantity, "")
           _ -> ""
         }),
+        on_input(update_qty_with_index(index)),
       ]),
       input([
         attribute("aria-label", "Enter ingredient units"),
@@ -685,6 +774,7 @@ fn ingredient_input(ingredient: Option(Ingredient), index: Int) {
           Some(ing) -> option.unwrap(ing.units, "")
           _ -> ""
         }),
+        on_input(update_units_with_index(index)),
       ]),
       div([class("flex text-xs items-baseline")], [
         label(
@@ -700,6 +790,7 @@ fn ingredient_input(ingredient: Option(Ingredient), index: Int) {
               }),
               name("`ingredient-main-" <> int.to_string(index)),
               type_("checkbox"),
+              on_check(update_main_with_index(index)),
             ]),
             span([], []),
           ],
