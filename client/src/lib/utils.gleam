@@ -1,5 +1,8 @@
 import gleam/dict.{type Dict}
+import gleam/int
+import gleam/list
 import gleam/option.{Some}
+import gleam/pair
 import lustre/effect.{type Effect}
 
 pub fn dict_update(
@@ -15,6 +18,14 @@ pub fn dict_update(
     Some(item) -> item |> fun |> dict.insert(dict, key, _)
     _ -> dict
   }
+}
+
+pub fn dict_reindex(in dict: Dict(Int, v)) -> Dict(Int, v) {
+  dict
+  |> dict.to_list
+  |> list.sort(by: fn(a, b) { int.compare(pair.first(a), pair.first(b)) })
+  |> list.index_map(fn(x, i) { #(i, pair.second(x)) })
+  |> dict.from_list
 }
 
 /// Update child view of a given view.

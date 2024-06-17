@@ -1512,8 +1512,14 @@ function print_debug(string3) {
 function new_map() {
   return Dict.new();
 }
+function map_size(map8) {
+  return map8.size;
+}
 function map_to_list(map8) {
   return List.fromArray(map8.entries());
+}
+function map_remove(key2, map8) {
+  return map8.delete(key2);
 }
 function map_get(map8, key2) {
   const value4 = map8.get(key2, NOT_FOUND);
@@ -1792,37 +1798,22 @@ function do_merge(dict2, new_entries) {
 function merge(dict2, new_entries) {
   return do_merge(dict2, new_entries);
 }
-function do_fold(loop$list, loop$initial, loop$fun) {
+function delete$(dict2, key2) {
+  return map_remove(key2, dict2);
+}
+function drop(loop$dict, loop$disallowed_keys) {
   while (true) {
-    let list2 = loop$list;
-    let initial = loop$initial;
-    let fun = loop$fun;
-    if (list2.hasLength(0)) {
-      return initial;
+    let dict2 = loop$dict;
+    let disallowed_keys = loop$disallowed_keys;
+    if (disallowed_keys.hasLength(0)) {
+      return dict2;
     } else {
-      let k = list2.head[0];
-      let v = list2.head[1];
-      let rest = list2.tail;
-      loop$list = rest;
-      loop$initial = fun(initial, k, v);
-      loop$fun = fun;
+      let x = disallowed_keys.head;
+      let xs = disallowed_keys.tail;
+      loop$dict = delete$(dict2, x);
+      loop$disallowed_keys = xs;
     }
   }
-}
-function fold(dict2, initial, fun) {
-  let _pipe = dict2;
-  let _pipe$1 = map_to_list(_pipe);
-  return do_fold(_pipe$1, initial, fun);
-}
-function do_map_values(f, dict2) {
-  let f$1 = (dict3, k, v) => {
-    return insert(dict3, k, f(k, v));
-  };
-  let _pipe = dict2;
-  return fold(_pipe, new$(), f$1);
-}
-function map_values(dict2, fun) {
-  return do_map_values(fun, dict2);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/pair.mjs
@@ -2072,7 +2063,7 @@ function flat_map(list2, fun) {
   let _pipe = map3(list2, fun);
   return concat2(_pipe);
 }
-function fold2(loop$list, loop$initial, loop$fun) {
+function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
     let list2 = loop$list;
     let initial = loop$initial;
@@ -2503,7 +2494,7 @@ function repeat(x) {
     return x;
   });
 }
-function do_fold2(loop$continuation, loop$f, loop$accumulator) {
+function do_fold(loop$continuation, loop$f, loop$accumulator) {
   while (true) {
     let continuation = loop$continuation;
     let f = loop$f;
@@ -2520,13 +2511,13 @@ function do_fold2(loop$continuation, loop$f, loop$accumulator) {
     }
   }
 }
-function fold3(iterator, initial, f) {
+function fold2(iterator, initial, f) {
   let _pipe = iterator.continuation;
-  return do_fold2(_pipe, f, initial);
+  return do_fold(_pipe, f, initial);
 }
 function to_list(iterator) {
   let _pipe = iterator;
-  let _pipe$1 = fold3(
+  let _pipe$1 = fold2(
     _pipe,
     toList([]),
     (acc, e) => {
@@ -2724,7 +2715,7 @@ function none() {
 }
 function batch(effects) {
   return new Effect(
-    fold2(
+    fold(
       effects,
       toList([]),
       (b, _use1) => {
@@ -5739,13 +5730,13 @@ function count_data(data) {
   } else if (data instanceof DataTuple) {
     let vs = data[0];
     let _pipe = map3(vs, count_data);
-    return fold2(_pipe, 2, (acc, val) => {
+    return fold(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   } else if (data instanceof DataList) {
     let vs = data[0];
     let _pipe = map3(vs, count_data);
-    return fold2(_pipe, 2, (acc, val) => {
+    return fold(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   } else if (data instanceof DataCustomType) {
@@ -5753,7 +5744,7 @@ function count_data(data) {
     let _pipe = map3(vs, (d) => {
       return count_data(second(d));
     });
-    return fold2(_pipe, 2, (acc, val) => {
+    return fold(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   } else if (data instanceof DataDict) {
@@ -5761,7 +5752,7 @@ function count_data(data) {
     let _pipe = map3(vs, (d) => {
       return count_data(second(d));
     });
-    return fold2(_pipe, 2, (acc, val) => {
+    return fold(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   } else if (data instanceof DataSet) {
@@ -5769,7 +5760,7 @@ function count_data(data) {
     let _pipe = map3(vs, (d) => {
       return count_data(d);
     });
-    return fold2(_pipe, 2, (acc, val) => {
+    return fold(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   } else {
@@ -5777,7 +5768,7 @@ function count_data(data) {
     let _pipe = map3(vs, (d) => {
       return count_data(second(d));
     });
-    return fold2(_pipe, 2, (acc, val) => {
+    return fold(_pipe, 2, (acc, val) => {
       return acc + val;
     });
   }
@@ -5963,7 +5954,7 @@ function view_data_custom_type(name2, values2, p, i) {
   if (values2.atLeastLength(2)) {
     return body_type(true);
   } else if (values2.atLeastLength(1)) {
-    let v = fold2(
+    let v = fold(
       values2,
       0,
       (acc, d) => {
@@ -6789,6 +6780,23 @@ function dict_update(dict2, key2, fun) {
     return dict2;
   }
 }
+function dict_reindex(dict2) {
+  let _pipe = dict2;
+  let _pipe$1 = map_to_list(_pipe);
+  let _pipe$2 = sort(
+    _pipe$1,
+    (a2, b) => {
+      return compare(first(a2), first(b));
+    }
+  );
+  let _pipe$3 = index_map(
+    _pipe$2,
+    (x, i) => {
+      return [i, second(x)];
+    }
+  );
+  return from_list(_pipe$3);
+}
 
 // build/dev/javascript/app/pages/recipe.mjs
 var UserUpdatedRecipeTitle = class extends CustomType {
@@ -6853,6 +6861,18 @@ var UserUpdatedIngredientUnitsAtIndex = class extends CustomType {
     super();
     this[0] = x0;
     this[1] = x1;
+  }
+};
+var UserRemovedIngredientAtIndex = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserAddedIngredientAtIndex = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
   }
 };
 var UserSavedUpdatedRecipe = class extends CustomType {
@@ -7137,7 +7157,8 @@ function ingredient_input(index3, ingredient) {
                 toList([
                   class$("text-ecru-white-950"),
                   type_("button"),
-                  id("remove-ingredient-input")
+                  id("remove-ingredient-input"),
+                  on_click(new UserRemovedIngredientAtIndex(index3))
                 ]),
                 toList([text("\u2796")])
               ),
@@ -7145,7 +7166,8 @@ function ingredient_input(index3, ingredient) {
                 toList([
                   class$("text-ecru-white-950"),
                   type_("button"),
-                  id("add-ingredient-input")
+                  id("add-ingredient-input"),
+                  on_click(new UserAddedIngredientAtIndex(index3))
                 ]),
                 toList([text("\u2795")])
               )
@@ -7504,7 +7526,12 @@ function edit_recipe_detail(recipe) {
                   }
                 );
               })();
-              return keyed(fragment, children);
+              return keyed(
+                (_capture) => {
+                  return div(toList([]), _capture);
+                },
+                children
+              );
             } else {
               return ingredient_input(0, new None());
             }
@@ -7558,11 +7585,19 @@ function lookup_and_edit_recipe(maybe_recipe) {
   }
 }
 function view_ingredient(ingredient) {
+  let bold = (() => {
+    let $ = ingredient.ismain;
+    if ($ instanceof Some && $[0]) {
+      return " font-bold";
+    } else {
+      return "";
+    }
+  })();
   return div(
     toList([class$("flex justify-start col-span-6 text-sm items-baseline")]),
     toList([
       div(
-        toList([class$("flex-grow-[2] text-left flex justify-start")]),
+        toList([class$("flex-grow-[2] text-left flex justify-start" + bold)]),
         toList([
           unwrap(
             map(
@@ -7758,21 +7793,37 @@ function view_recipe_detail(recipe) {
             toList([text("Ingredients")])
           ),
           (() => {
-            let _pipe = recipe.ingredients;
-            let _pipe$1 = map(
-              _pipe,
-              (_capture) => {
-                return map_values(
-                  _capture,
-                  (_, item) => {
-                    return view_ingredient(item);
+            let $ = recipe.ingredients;
+            if ($ instanceof Some) {
+              let ings = $[0];
+              let children = (() => {
+                let _pipe = ings;
+                let _pipe$1 = map_to_list(_pipe);
+                let _pipe$2 = sort(
+                  _pipe$1,
+                  (a2, b) => {
+                    return compare(first(a2), first(b));
                   }
                 );
-              }
-            );
-            let _pipe$2 = map(_pipe$1, values);
-            let _pipe$3 = map(_pipe$2, fragment);
-            return unwrap(_pipe$3, none3());
+                return map3(
+                  _pipe$2,
+                  (a2) => {
+                    return [
+                      to_string3(first(a2)),
+                      view_ingredient(second(a2))
+                    ];
+                  }
+                );
+              })();
+              return keyed(
+                (_capture) => {
+                  return div(toList([]), _capture);
+                },
+                children
+              );
+            } else {
+              return none3();
+            }
           })()
         ])
       ),
@@ -8121,6 +8172,77 @@ function detail_update(model, msg) {
                   );
                 }
               );
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserRemovedIngredientAtIndex) {
+    let i = msg[0];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            ingredients: (() => {
+              let _pipe = a$1.ingredients;
+              let _pipe$1 = map(
+                _pipe,
+                (_capture) => {
+                  return drop(_capture, toList([i]));
+                }
+              );
+              return map(_pipe$1, dict_reindex);
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserAddedIngredientAtIndex) {
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            ingredients: (() => {
+              let $ = a$1.ingredients;
+              if ($ instanceof Some) {
+                let b = $[0];
+                return new Some(
+                  insert(
+                    b,
+                    map_size(b),
+                    new Ingredient(
+                      new None(),
+                      new None(),
+                      new None(),
+                      new None()
+                    )
+                  )
+                );
+              } else {
+                return new Some(
+                  from_list(
+                    toList([
+                      [
+                        0,
+                        new Ingredient(
+                          new None(),
+                          new None(),
+                          new None(),
+                          new None()
+                        )
+                      ]
+                    ])
+                  )
+                );
+              }
             })()
           })
         ),

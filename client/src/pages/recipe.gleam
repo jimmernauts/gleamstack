@@ -26,7 +26,7 @@ import lustre/element/html.{
   a, button, div, fieldset, form, input, label, legend, li, nav, ol, section,
   span, textarea,
 }
-import lustre/event.{on_check, on_input}
+import lustre/event.{on_check, on_click, on_input}
 
 //-MODEL---------------------------------------------
 
@@ -41,6 +41,8 @@ pub type RecipeDetailMsg {
   UserUpdatedIngredientMainAtIndex(Int, Bool)
   UserUpdatedIngredientQtyAtIndex(Int, String)
   UserUpdatedIngredientUnitsAtIndex(Int, String)
+  UserRemovedIngredientAtIndex(Int)
+  UserAddedIngredientAtIndex(Int)
   UserSavedUpdatedRecipe(Recipe)
   DbSavedUpdatedRecipe(Recipe)
 }
@@ -311,6 +313,47 @@ pub fn detail_update(
         _ -> #(model, effect.none())
       }
     }
+    UserRemovedIngredientAtIndex(i) -> {
+      case model {
+        Some(a) -> #(
+          Some(
+            Recipe(
+              ..a,
+              ingredients: a.ingredients
+                |> option.map(dict.drop(_, [i]))
+                |> option.map(utils.dict_reindex),
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserAddedIngredientAtIndex(_i) -> {
+      case model {
+        Some(a) -> #(
+          Some(
+            Recipe(
+              ..a,
+              ingredients: case a.ingredients {
+                Some(b) ->
+                  Some(dict.insert(
+                    b,
+                    dict.size(b),
+                    Ingredient(None, None, None, None),
+                  ))
+                _ ->
+                  Some(
+                    dict.from_list([#(0, Ingredient(None, None, None, None))]),
+                  )
+              },
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
     UserSavedUpdatedRecipe(recipe) -> {
       #(Some(recipe), {
         save_recipe(Recipe(..recipe, slug: kebab_case(recipe.title)))
@@ -548,7 +591,7 @@ pub fn edit_recipe_detail(recipe: Recipe) -> Element(RecipeDetailMsg) {
                     ingredient_input(pair.first(a), Some(pair.second(a))),
                   )
                 })
-              element.keyed(fragment, children)
+              element.keyed(html.div([], _), children)
             }
             _ -> ingredient_input(0, None)
           },
@@ -660,13 +703,24 @@ pub fn view_recipe_detail(recipe: Recipe) {
         ],
         [
           legend([class("mx-2 px-1 font-mono italic")], [text("Ingredients")]),
-          recipe.ingredients
-            |> option.map(dict.map_values(_, fn(_i, item) {
-              view_ingredient(item)
-            }))
-            |> option.map(dict.values)
-            |> option.map(fragment)
-            |> option.unwrap(element.none()),
+          case recipe.ingredients {
+            Some(ings) -> {
+              let children =
+                ings
+                |> dict.to_list
+                |> list.sort(by: fn(a, b) {
+                  int.compare(pair.first(a), pair.first(b))
+                })
+                |> list.map(fn(a) {
+                  #(
+                    int.to_string(pair.first(a)),
+                    view_ingredient(pair.second(a)),
+                  )
+                })
+              element.keyed(html.div([], _), children)
+            }
+            _ -> element.none()
+          },
         ],
       ),
       fieldset(
@@ -800,6 +854,7 @@ fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
             class("text-ecru-white-950"),
             type_("button"),
             id("remove-ingredient-input"),
+            on_click(UserRemovedIngredientAtIndex(index)),
           ],
           [text("➖")],
         ),
@@ -808,6 +863,7 @@ fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
             class("text-ecru-white-950"),
             type_("button"),
             id("add-ingredient-input"),
+            on_click(UserAddedIngredientAtIndex(index)),
           ],
           [text("➕")],
         ),
@@ -852,8 +908,12 @@ fn method_step_input(method_step: Option(MethodStep), index: Int) {
 }
 
 fn view_ingredient(ingredient: Ingredient) {
+  let bold = case ingredient.ismain {
+    Some(True) -> " font-bold"
+    _ -> ""
+  }
   div([class("flex justify-start col-span-6 text-sm items-baseline")], [
-    div([class("flex-grow-[2] text-left flex justify-start")], [
+    div([class("flex-grow-[2] text-left flex justify-start" <> bold)], [
       option.unwrap(option.map(ingredient.name, text(_)), element.none()),
     ]),
     div([class("col-span-1 text-xs")], [
