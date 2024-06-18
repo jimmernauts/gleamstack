@@ -6955,7 +6955,7 @@ function merge_recipe_into_model(recipe, model) {
   );
   return values(_pipe$3);
 }
-function list_update(model, msg) {
+function list_update(_, msg) {
   let recipes = msg[0];
   return [recipes, none()];
 }

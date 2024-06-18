@@ -41,8 +41,11 @@ pub type RecipeDetailMsg {
   UserUpdatedIngredientMainAtIndex(Int, Bool)
   UserUpdatedIngredientQtyAtIndex(Int, String)
   UserUpdatedIngredientUnitsAtIndex(Int, String)
-  UserRemovedIngredientAtIndex(Int)
   UserAddedIngredientAtIndex(Int)
+  UserRemovedIngredientAtIndex(Int)
+  UserUpdatedMethodStepAtIndex(Int, String)
+  UserAddedMethodStepAtIndex(Int)
+  UserRemovedMethodStepAtIndex(Int)
   UserSavedUpdatedRecipe(Recipe)
   DbSavedUpdatedRecipe(Recipe)
 }
@@ -313,6 +316,31 @@ pub fn detail_update(
         _ -> #(model, effect.none())
       }
     }
+    UserAddedIngredientAtIndex(_i) -> {
+      case model {
+        Some(a) -> #(
+          Some(
+            Recipe(
+              ..a,
+              ingredients: case a.ingredients {
+                Some(b) ->
+                  Some(dict.insert(
+                    b,
+                    dict.size(b),
+                    Ingredient(None, None, None, None),
+                  ))
+                _ ->
+                  Some(
+                    dict.from_list([#(0, Ingredient(None, None, None, None))]),
+                  )
+              },
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
     UserRemovedIngredientAtIndex(i) -> {
       case model {
         Some(a) -> #(
@@ -354,6 +382,22 @@ pub fn detail_update(
         _ -> #(model, effect.none())
       }
     }
+    UserRemovedMethodStepAtIndex(i) -> {
+      case model {
+        Some(a) -> #(
+          Some(
+            Recipe(
+              ..a,
+              ingredients: a.ingredients
+                |> option.map(dict.drop(_, [i]))
+                |> option.map(utils.dict_reindex),
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
     UserSavedUpdatedRecipe(recipe) -> {
       #(Some(recipe), {
         save_recipe(Recipe(..recipe, slug: kebab_case(recipe.title)))
@@ -366,7 +410,7 @@ pub fn detail_update(
 }
 
 pub fn list_update(
-  model: RecipeList,
+  _model: RecipeList,
   msg: RecipeListMsg,
 ) -> #(RecipeList, Effect(RecipeListMsg)) {
   case msg {
@@ -605,11 +649,24 @@ pub fn edit_recipe_detail(recipe: Recipe) -> Element(RecipeDetailMsg) {
         ],
         [
           legend([class("mx-2 px-1 font-mono italic")], [text("Method")]),
-          recipe.method_steps
-            |> option.map(list.map(_, Some(_)))
-            |> option.map(list.index_map(_, method_step_input))
-            |> option.map(fragment)
-            |> option.unwrap(element.none()),
+          case recipe.method_steps {
+            Some(steps) -> {
+              let children =
+                steps
+                |> dict.to_list
+                |> list.sort(by: fn(a, b) {
+                  int.compare(pair.first(a), pair.first(b))
+                })
+                |> list.map(fn(a) {
+                  #(
+                    int.to_string(pair.first(a)),
+                    method_step_input(pair.first(a), Some(pair.second(a))),
+                  )
+                })
+              element.keyed(html.div([], _), children)
+            }
+            _ -> ingredient_input(0, None)
+          },
         ],
       ),
     ],
@@ -872,7 +929,8 @@ fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
   ])
 }
 
-fn method_step_input(method_step: Option(MethodStep), index: Int) {
+fn method_step_input(index: Int, method_step: Option(MethodStep)) {
+  let update_methodstep_at_index = function.curry2(UserUpdatedMethodStepAtIndex)
   div([class("flex w-full items-baseline col-span-full px-1 mb-1")], [
     label([class("font-mono")], [text(index + 1 |> int.to_string)]),
     textarea(
@@ -882,6 +940,7 @@ fn method_step_input(method_step: Option(MethodStep), index: Int) {
         class(
           "px-2 py-1 bg-ecru-white-100 w-full input-focus text-base resize-none",
         ),
+        on_input(update_methodstep_at_index(index)),
       ],
       case method_step {
         Some(a) -> a.step_text
@@ -890,7 +949,7 @@ fn method_step_input(method_step: Option(MethodStep), index: Int) {
     ),
     button(
       [
-        class("text-ecru-white-950"),
+        class("text-ecru-white-950 text-xs"),
         type_("button"),
         id("remove-ingredient-input"),
       ],
@@ -898,7 +957,7 @@ fn method_step_input(method_step: Option(MethodStep), index: Int) {
     ),
     button(
       [
-        class("text-ecru-white-950"),
+        class("text-ecru-white-950 text-xs"),
         type_("button"),
         id("add-ingredient-input"),
       ],
@@ -969,7 +1028,7 @@ pub type Recipe {
     serves: Int,
     tags: Option(List(Tag)),
     ingredients: Option(Dict(Int, Ingredient)),
-    method_steps: Option(List(MethodStep)),
+    method_steps: Option(Dict(Int, MethodStep)),
   )
 }
 
