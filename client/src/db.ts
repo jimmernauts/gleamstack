@@ -102,7 +102,7 @@ export async function listRecipes() {
 	const mapped = result.map(recipe=>{
 		recipe.tags = JSON.parse(recipe.tags)
 		recipe.ingredients = JSON.parse(recipe.ingredients,reviver)
-		recipe.method_steps = JSON.parse(recipe.method_steps)
+		recipe.method_steps = JSON.parse(recipe.method_steps, reviver)
 		return recipe
 	})		
 	console.log("mapped: ",mapped)
@@ -118,7 +118,7 @@ export async function addOrUpdateRecipe(recipe: Recipe) {
 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) \
 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
 			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(recipe.ingredients,replacer)}',
-			'${JSON.stringify(recipe.method_steps)}', '${JSON.stringify(recipe.tags)}', '${recipe.shortlisted}') \
+			'${JSON.stringify(recipe.method_steps,replacer)}', '${JSON.stringify(recipe.tags)}', '${recipe.shortlisted}') \
 		 ON CONFLICT(id) DO UPDATE SET\
 		 slug=excluded.slug, \
 		 title=excluded.title, \

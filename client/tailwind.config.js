@@ -108,17 +108,9 @@ export default {
     },
     plugins: [
         require('tailwindcss-fluid-type'),
-        ({ addComponents }) => {
+        ({ addComponents, addUtilities }) => {
             addComponents({
-                '.font-transitional':{
-                    'font-family':"Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif"
-                },
-                '.font-old-style':{
-                    'font-family':"'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif"
-                },
-                '.font-mono':{
-                    'font-family':"ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace"
-                },
+
                 '.wrapper': {
                     display: 'grid',
                     'grid-template-columns': '1fr min(85ch, 100%) 1fr',
@@ -245,6 +237,17 @@ export default {
                     content: "'❗'",
                     alignSelf:"baseline",
                   }
+            })
+            addUtilities({
+                '.font-transitional':{
+                    'font-family':"Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif"
+                },
+                '.font-old-style':{
+                    'font-family':"'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif"
+                },
+                '.font-mono':{
+                    'font-family':"ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace"
+                },
             })
         }
     ],

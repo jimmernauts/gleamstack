@@ -2602,7 +2602,7 @@ function inspect2(term) {
 
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
 var Uri = class extends CustomType {
-  constructor(scheme, userinfo, host, port, path, query, fragment2) {
+  constructor(scheme, userinfo, host, port, path, query, fragment) {
     super();
     this.scheme = scheme;
     this.userinfo = userinfo;
@@ -2610,7 +2610,7 @@ var Uri = class extends CustomType {
     this.port = port;
     this.path = path;
     this.query = query;
-    this.fragment = fragment2;
+    this.fragment = fragment;
   }
 };
 function do_remove_dot_segments(loop$input, loop$accumulator) {
@@ -2965,25 +2965,6 @@ function text(content) {
 }
 function none3() {
   return new Text("");
-}
-function flatten_fragment_elements(elements) {
-  return fold_right(
-    elements,
-    toList([]),
-    (new_elements, element2) => {
-      if (element2 instanceof Fragment) {
-        let fr_elements = element2.elements;
-        return append2(fr_elements, new_elements);
-      } else {
-        let el2 = element2;
-        return prepend(el2, new_elements);
-      }
-    }
-  );
-}
-function fragment(elements) {
-  let _pipe = flatten_fragment_elements(elements);
-  return new Fragment(_pipe, "");
 }
 function map6(element2, f) {
   if (element2 instanceof Text) {
@@ -6610,25 +6591,30 @@ var RecipeSeed = [{
   serves: 4,
   shortlisted: false,
   ingredients: /* @__PURE__ */ new Map([
-    [0, { units: "g", quantity: "600", name: "Baby potato" }],
-    [1, { units: "pc", quantity: "1 / 2", name: "Red Cabbage" }],
-    [2, { units: "g", quantity: "200", name: "Pomegranate seeds" }],
-    [3, { units: "tin", quantity: "1", name: "Butter Beans" }],
-    [4, { units: "g", quantity: "100", name: "Mayonnaise" }],
-    [5, { units: "g", quantity: "50", name: "Yoghurt" }],
-    [6, { units: "tbsp", quantity: "3", name: "Extra Virgin Olive Oil" }],
-    [7, { units: "pc", quantity: "1 / 2", name: "Lemon juice" }],
-    [8, { units: "g", quantity: "15", name: "Flat - leaf parsley" }]
+    ["0", { units: "g", quantity: "600", name: "Baby potato" }],
+    ["1", { units: "pc", quantity: "1 / 2", name: "Red Cabbage" }],
+    ["2", { units: "g", quantity: "200", name: "Pomegranate seeds" }],
+    ["3", { units: "tin", quantity: "1", name: "Butter Beans" }],
+    ["4", { units: "g", quantity: "100", name: "Mayonnaise" }],
+    ["5", { units: "g", quantity: "50", name: "Yoghurt" }],
+    ["6", { units: "tbsp", quantity: "3", name: "Extra Virgin Olive Oil" }],
+    ["7", { units: "pc", quantity: "1 / 2", name: "Lemon juice" }],
+    ["8", { units: "g", quantity: "15", name: "Flat - leaf parsley" }]
   ]),
-  method_steps: [{
-    step_text: "Boil the potatoes in salted water for 10 minutes, until they are just cooked through, then drain and rinse under running cold water to cool."
-  }, {
-    step_text: "While the potatoes are cooking, shred the cabbage, deseed the pomegranate (or open the packet), and drain and rinse the beans."
-  }, {
-    step_text: "In a bowl, mix the mayonnaise, yoghurt, lemon juice, oil, a teaspoon of flaky sea salt and plenty of pepper, then taste and adjust the seasoning accordingly."
-  }, {
-    step_text: "Put the cooled, drained potatoes, red cabbage, pomegranate, beans and the dressing in a large bowl, then taste and adjust the seasoning if necessary. Arrange on a large plate, scatter over the parsley and serve at room temperature."
-  }],
+  method_steps: /* @__PURE__ */ new Map([
+    ["0", {
+      step_text: "Boil the potatoes in salted water for 10 minutes, until they are just cooked through, then drain and rinse under running cold water to cool."
+    }],
+    ["1", {
+      step_text: "While the potatoes are cooking, shred the cabbage, deseed the pomegranate (or open the packet), and drain and rinse the beans."
+    }],
+    ["2", {
+      step_text: "In a bowl, mix the mayonnaise, yoghurt, lemon juice, oil, a teaspoon of flaky sea salt and plenty of pepper, then taste and adjust the seasoning accordingly."
+    }],
+    ["3", {
+      step_text: "Put the cooled, drained potatoes, red cabbage, pomegranate, beans and the dressing in a large bowl, then taste and adjust the seasoning if necessary. Arrange on a large plate, scatter over the parsley and serve at room temperature."
+    }]
+  ]),
   tags: [{ name: "Cuisine", value: "Australian" }, {
     name: "Style",
     value: "Salad"
@@ -6737,7 +6723,7 @@ async function listRecipes() {
   const mapped = result.map((recipe) => {
     recipe.tags = JSON.parse(recipe.tags);
     recipe.ingredients = JSON.parse(recipe.ingredients, reviver);
-    recipe.method_steps = JSON.parse(recipe.method_steps);
+    recipe.method_steps = JSON.parse(recipe.method_steps, reviver);
     return recipe;
   });
   console.log("mapped: ", mapped);
@@ -6747,7 +6733,7 @@ async function addOrUpdateRecipe(recipe) {
   console.log("addOrUpdateRecipe: ", recipe);
   const query = ` 		INSERT INTO recipes 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
 			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(recipe.ingredients, replacer)}',
-			'${JSON.stringify(recipe.method_steps)}', '${JSON.stringify(recipe.tags)}', '${recipe.shortlisted}') 		 ON CONFLICT(id) DO UPDATE SET		 slug=excluded.slug, 		 title=excluded.title, 		 cook_time=excluded.cook_time, 		 prep_time=excluded.prep_time, 		 serves=excluded.serves, 		 ingredients=excluded.ingredients, 		 method_steps=excluded.method_steps, 		 tags=excluded.tags, 		 shortlisted=excluded.shortlisted;`;
+			'${JSON.stringify(recipe.method_steps, replacer)}', '${JSON.stringify(recipe.tags)}', '${recipe.shortlisted}') 		 ON CONFLICT(id) DO UPDATE SET		 slug=excluded.slug, 		 title=excluded.title, 		 cook_time=excluded.cook_time, 		 prep_time=excluded.prep_time, 		 serves=excluded.serves, 		 ingredients=excluded.ingredients, 		 method_steps=excluded.method_steps, 		 tags=excluded.tags, 		 shortlisted=excluded.shortlisted;`;
   const result = await db.execA(
     query
   );
@@ -6863,13 +6849,32 @@ var UserUpdatedIngredientUnitsAtIndex = class extends CustomType {
     this[1] = x1;
   }
 };
+var UserAddedIngredientAtIndex = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
 var UserRemovedIngredientAtIndex = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
   }
 };
-var UserAddedIngredientAtIndex = class extends CustomType {
+var UserUpdatedMethodStepAtIndex = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var UserAddedMethodStepAtIndex = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserRemovedMethodStepAtIndex = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
@@ -6980,17 +6985,23 @@ function view_recipe_summary(recipe) {
                 toList([class$("text-sm")]),
                 toList([
                   text(" \u2022 "),
-                  text(
-                    (() => {
-                      let _pipe = floor_divide(
-                        recipe.prep_time + recipe.cook_time,
-                        60
+                  (() => {
+                    let $ = recipe.prep_time + recipe.cook_time > 59;
+                    if ($) {
+                      return text(
+                        (() => {
+                          let _pipe = floor_divide(
+                            recipe.prep_time + recipe.cook_time,
+                            60
+                          );
+                          let _pipe$1 = unwrap2(_pipe, 0);
+                          return to_string3(_pipe$1);
+                        })() + "h"
                       );
-                      let _pipe$1 = unwrap2(_pipe, 0);
-                      return to_string3(_pipe$1);
-                    })()
-                  ),
-                  text("h"),
+                    } else {
+                      return none3();
+                    }
+                  })(),
                   text(
                     (() => {
                       let _pipe = remainderInt(
@@ -7055,7 +7066,9 @@ function ingredient_input(index3, ingredient) {
     }
   );
   return div(
-    toList([class$("my-0.5 w-full flex justify-between items-baseline")]),
+    toList([
+      class$("my-0.5 w-full flex justify-between items-baseline  text-base")
+    ]),
     toList([
       input(
         toList([
@@ -7064,7 +7077,7 @@ function ingredient_input(index3, ingredient) {
           type_("text"),
           placeholder("Ingredient"),
           class$(
-            "pt-0.5 w-[16ch] xxs:w-[23ch] xs:w-[28ch] sm:w-[16ch] md:w-[23ch] lg:w-[28ch] text-base input-base input-focus bg-ecru-white-100"
+            "w-[16ch] xxs:w-[23ch] xs:w-[28ch] sm:w-[16ch] md:w-[23ch] lg:w-[28ch] text-base input-base input-focus bg-ecru-white-100"
           ),
           value(
             (() => {
@@ -7178,18 +7191,25 @@ function ingredient_input(index3, ingredient) {
     ])
   );
 }
-function method_step_input(method_step, index3) {
+function method_step_input(index3, method_step) {
+  let update_methodstep_at_index = curry2(
+    (var0, var1) => {
+      return new UserUpdatedMethodStepAtIndex(var0, var1);
+    }
+  );
   return div(
-    toList([class$("flex w-full items-baseline col-span-full px-1 mb-1")]),
+    toList([
+      class$("flex w-full items-baseline col-span-full px-1 mb-1 text-base")
+    ]),
     toList([
       label(
-        toList([class$("font-mono")]),
+        toList([class$("font-mono text-sm")]),
         toList([
           text(
             (() => {
               let _pipe = index3 + 1;
               return to_string3(_pipe);
-            })()
+            })() + "."
           )
         ])
       ),
@@ -7208,8 +7228,10 @@ function method_step_input(method_step, index3) {
             })()
           ),
           class$(
-            "px-2 py-1 bg-ecru-white-100 w-full input-focus text-base resize-none"
-          )
+            "mx-3 bg-ecru-white-100 w-full input-focus text-base resize-none"
+          ),
+          attribute("rows", "3"),
+          on_input(update_methodstep_at_index(index3))
         ]),
         (() => {
           if (method_step instanceof Some) {
@@ -7222,17 +7244,19 @@ function method_step_input(method_step, index3) {
       ),
       button(
         toList([
-          class$("text-ecru-white-950"),
+          class$("text-ecru-white-950 text-xs"),
           type_("button"),
-          id("remove-ingredient-input")
+          id("remove-ingredient-input"),
+          on_click(new UserRemovedMethodStepAtIndex(index3))
         ]),
         toList([text("\u2796")])
       ),
       button(
         toList([
-          class$("text-ecru-white-950"),
+          class$("text-ecru-white-950 text-xs"),
           type_("button"),
-          id("add-ingredient-input")
+          id("add-ingredient-input"),
+          on_click(new UserAddedMethodStepAtIndex(index3))
         ]),
         toList([text("\u2795")])
       )
@@ -7243,7 +7267,7 @@ function edit_recipe_detail(recipe) {
   return form(
     toList([
       class$(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr]"
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
       ),
       id("create_recipe_form"),
       on_submit(new UserSavedUpdatedRecipe(recipe))
@@ -7261,7 +7285,7 @@ function edit_recipe_detail(recipe) {
               id("title"),
               name("title"),
               class$(
-                "placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] sm:max-h-[170px] overflow-x-hidden px-0 pb-1 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100"
+                "placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-x-hidden px-0 pb-1 ml-2 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100"
               ),
               attribute("title", "recipe title"),
               on_input((var0) => {
@@ -7275,12 +7299,14 @@ function edit_recipe_detail(recipe) {
       fieldset(
         toList([
           class$(
-            "mx-2 sm:mx-0 mt-0 sm:mt-4 flex sm:flex-wrap justify-between row-start-2 col-span-full sm:row-start-1 sm:col-span-3 sm:col-start-9"
+            "mt-0 sm:mt-4 sm:mx-4 row-start-2 col-span-5 col-start-8 sm:row-start-1 sm:col-span-3 sm:col-start-9"
           )
         ]),
         toList([
           fieldset(
-            toList([class$("flex flex-wrap items-baseline mb-1")]),
+            toList([
+              class$("flex flex-wrap justify-between items-baseline mb-2")
+            ]),
             toList([
               label(
                 toList([
@@ -7294,7 +7320,7 @@ function edit_recipe_detail(recipe) {
                 toList([
                   div(
                     toList([
-                      class$("after:content-['h'] after:text-xs inline-block")
+                      class$("after:content-['h'] after:text-base inline-block")
                     ]),
                     toList([
                       input(
@@ -7328,7 +7354,7 @@ function edit_recipe_detail(recipe) {
                   ),
                   div(
                     toList([
-                      class$("after:content-['m'] after:text-xs inline-block")
+                      class$("after:content-['m'] after:text-base inline-block")
                     ]),
                     toList([
                       input(
@@ -7360,7 +7386,9 @@ function edit_recipe_detail(recipe) {
             ])
           ),
           fieldset(
-            toList([class$("flex flex-wrap items-baseline mb-2")]),
+            toList([
+              class$("flex flex-wrap justify-between items-baseline mb-2")
+            ]),
             toList([
               label(
                 toList([
@@ -7374,7 +7402,7 @@ function edit_recipe_detail(recipe) {
                 toList([
                   div(
                     toList([
-                      class$("after:content-['h'] after:text-xs inline-block")
+                      class$("after:content-['h'] after:text-base inline-block")
                     ]),
                     toList([
                       input(
@@ -7408,7 +7436,7 @@ function edit_recipe_detail(recipe) {
                   ),
                   div(
                     toList([
-                      class$("after:content-['m'] after:text-xs inline-block")
+                      class$("after:content-['m'] after:text-base inline-block")
                     ]),
                     toList([
                       input(
@@ -7440,7 +7468,9 @@ function edit_recipe_detail(recipe) {
             ])
           ),
           fieldset(
-            toList([class$("flex flex-wrap items-baseline mb-2")]),
+            toList([
+              class$("flex flex-wrap justify-between items-baseline mb-2")
+            ]),
             toList([
               label(
                 toList([
@@ -7453,7 +7483,7 @@ function edit_recipe_detail(recipe) {
                 toList([
                   id("serves"),
                   class$(
-                    "bg-ecru-white-100 justify-self-start col-span-3 input-base input-focus pr-0.5 w-[3ch] text-right text-base"
+                    "pr-0.5 mr-2 sm:mr-4  justify-self-start col-span-3 input-base input-focus w-[3ch] text-right text-base bg-ecru-white-100"
                   ),
                   type_("number"),
                   name("serves"),
@@ -7492,7 +7522,7 @@ function edit_recipe_detail(recipe) {
       fieldset(
         toList([
           class$(
-            "col-span-full my-1 mb-6 pt-1 pb-2 px-1 mr-1 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-6 [box-shadow:1px_1px_0_#9edef1]"
+            "col-span-full my-1 mb-6 pt-1 pb-2 px-2 mr-1 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]"
           )
         ]),
         toList([
@@ -7541,7 +7571,7 @@ function edit_recipe_detail(recipe) {
       fieldset(
         toList([
           class$(
-            "col-span-full my-1 mb-6 pt-1 pb-2 px-1 mr-1 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-6 [box-shadow:1px_1px_0_#9edef1]"
+            "col-span-full my-1 mb-6 pt-1 pb-2 px-2 ml-1 mr-1 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]"
           )
         ]),
         toList([
@@ -7550,26 +7580,40 @@ function edit_recipe_detail(recipe) {
             toList([text("Method")])
           ),
           (() => {
-            let _pipe = recipe.method_steps;
-            let _pipe$1 = map(
-              _pipe,
-              (_capture) => {
-                return map3(
-                  _capture,
-                  (_capture2) => {
-                    return new Some(_capture2);
+            let $ = recipe.method_steps;
+            if ($ instanceof Some) {
+              let steps = $[0];
+              let children = (() => {
+                let _pipe = steps;
+                let _pipe$1 = map_to_list(_pipe);
+                let _pipe$2 = sort(
+                  _pipe$1,
+                  (a2, b) => {
+                    return compare(first(a2), first(b));
                   }
                 );
-              }
-            );
-            let _pipe$2 = map(
-              _pipe$1,
-              (_capture) => {
-                return index_map(_capture, method_step_input);
-              }
-            );
-            let _pipe$3 = map(_pipe$2, fragment);
-            return unwrap(_pipe$3, none3());
+                return map3(
+                  _pipe$2,
+                  (a2) => {
+                    return [
+                      to_string3(first(a2)),
+                      method_step_input(
+                        first(a2),
+                        new Some(second(a2))
+                      )
+                    ];
+                  }
+                );
+              })();
+              return keyed(
+                (_capture) => {
+                  return div(toList([]), _capture);
+                },
+                children
+              );
+            } else {
+              return ingredient_input(0, new None());
+            }
           })()
         ])
       )
@@ -7594,7 +7638,7 @@ function view_ingredient(ingredient) {
     }
   })();
   return div(
-    toList([class$("flex justify-start col-span-6 text-sm items-baseline")]),
+    toList([class$("flex justify-start col-span-6 items-baseline")]),
     toList([
       div(
         toList([class$("flex-grow-[2] text-left flex justify-start" + bold)]),
@@ -7611,7 +7655,7 @@ function view_ingredient(ingredient) {
         ])
       ),
       div(
-        toList([class$("col-span-1 text-xs")]),
+        toList([class$("col-span-1 text-sm")]),
         toList([
           unwrap(
             map(
@@ -7625,7 +7669,7 @@ function view_ingredient(ingredient) {
         ])
       ),
       div(
-        toList([class$("col-span-1 text-xs")]),
+        toList([class$("col-span-1 text-sm")]),
         toList([
           unwrap(
             map(
@@ -7644,9 +7688,7 @@ function view_ingredient(ingredient) {
 function view_method_step(method_step) {
   return li(
     toList([
-      class$(
-        "marker:text-base w-full justify-self-start list-decimal text-left pl-1 ml-2 leading-snug my-2"
-      )
+      class$("w-full justify-self-start list-decimal text-left ml-8 pr-6")
     ]),
     toList([text(method_step.step_text)])
   );
@@ -7678,7 +7720,7 @@ function view_recipe_detail(recipe) {
   return section(
     toList([
       class$(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr]"
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
       )
     ]),
     toList([
@@ -7686,60 +7728,89 @@ function view_recipe_detail(recipe) {
       fieldset(
         toList([
           class$(
-            "mx-2 sm:mx-0 mt-0 sm:mt-4 flex sm:flex-wrap justify-between row-start-2 col-span-full sm:row-start-1 sm:col-span-3 sm:col-start-9"
+            "sm:mt-4 lg:mx-4 row-start-2 col-start-9 col-span-4 sm:row-start-1 sm:col-span-3 sm:col-start-9"
           )
         ]),
         toList([
           fieldset(
             toList([
-              class$("flex flex-wrap sm:justify-between items-baseline mb-2")
+              class$("flex flex-wrap justify-between items-baseline mb-2")
             ]),
             toList([
               label(
-                toList([
-                  for$("prep_time"),
-                  class$("justify-self-start font-mono italic")
-                ]),
+                toList([for$("prep_time"), class$("font-mono italic")]),
                 toList([text("Prep:")])
               ),
               div(
-                toList([class$("mx-4 justify-self-start")]),
-                toList([text(to_string3(recipe.prep_time))])
+                toList([class$("text-base")]),
+                toList([
+                  text(
+                    (() => {
+                      let $ = recipe.prep_time > 59;
+                      if ($) {
+                        return (() => {
+                          let _pipe = floor_divide(recipe.prep_time, 60);
+                          let _pipe$1 = unwrap2(_pipe, 0);
+                          let _pipe$2 = to_string3(_pipe$1);
+                          return replace(_pipe$2, "0", "");
+                        })() + "h ";
+                      } else {
+                        return "";
+                      }
+                    })() + (() => {
+                      let _pipe = remainderInt(recipe.prep_time, 60);
+                      return to_string3(_pipe);
+                    })() + "m"
+                  )
+                ])
               )
             ])
           ),
           fieldset(
             toList([
-              class$("flex flex-wrap sm:justify-between items-baseline mb-2")
+              class$("flex flex-wrap justify-between items-baseline mb-2")
             ]),
             toList([
               label(
-                toList([
-                  for$("cook_time"),
-                  class$("justify-self-start font-mono italic")
-                ]),
+                toList([for$("cook_time"), class$("font-mono italic")]),
                 toList([text("Cook:")])
               ),
               div(
-                toList([class$("mx-4 justify-self-start")]),
-                toList([text(to_string3(recipe.cook_time))])
+                toList([class$("text-base")]),
+                toList([
+                  text(
+                    (() => {
+                      let $ = recipe.cook_time > 59;
+                      if ($) {
+                        return (() => {
+                          let _pipe = floor_divide(recipe.cook_time, 60);
+                          let _pipe$1 = unwrap2(_pipe, 0);
+                          let _pipe$2 = to_string3(_pipe$1);
+                          return replace(_pipe$2, "0", "");
+                        })() + "h ";
+                      } else {
+                        return "";
+                      }
+                    })() + (() => {
+                      let _pipe = remainderInt(recipe.cook_time, 60);
+                      return to_string3(_pipe);
+                    })() + "m"
+                  )
+                ])
               )
             ])
           ),
           fieldset(
             toList([
-              class$("flex flex-wrap sm:justify-between items-baseline mb-2")
+              class$("flex flex-wrap justify-between items-baseline mb-2")
             ]),
             toList([
               label(
-                toList([
-                  for$("cook_time"),
-                  class$("justify-self-start font-mono italic")
-                ]),
+                toList([for$("cook_time"), class$("font-mono italic")]),
                 toList([text("Serves:")])
               ),
               div(
-                toList([class$("mx-4 justify-self-start")]),
+                toList([class$("mr-2 sm:mr-4 text-base")]),
                 toList([text(to_string3(recipe.serves))])
               )
             ])
@@ -7766,7 +7837,7 @@ function view_recipe_detail(recipe) {
       fieldset(
         toList([
           class$(
-            "flex flex-wrap gap-1 items-baseline mx-1 col-span-full gap-x-3"
+            "col-span-7 row-start-2 content-start sm:col-span-full flex flex-wrap gap-1 items-baseline mx-1 gap-3"
           )
         ]),
         (() => {
@@ -7784,12 +7855,12 @@ function view_recipe_detail(recipe) {
       fieldset(
         toList([
           class$(
-            "col-span-full my-1 mb-6 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-6 [box-shadow:1px_1px_0_#a3d2ab] mr-1"
+            "col-span-full text-base my-1 mb-6 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#a3d2ab] mr-1"
           )
         ]),
         toList([
           legend(
-            toList([class$("mx-2 px-1 font-mono italic")]),
+            toList([class$("mx-2 px-1 text-lg font-mono italic")]),
             toList([text("Ingredients")])
           ),
           (() => {
@@ -7830,7 +7901,7 @@ function view_recipe_detail(recipe) {
       fieldset(
         toList([
           class$(
-            "flex justify-start flex-wrap col-span-full my-1 mb-6 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-6 [box-shadow:1px_1px_0_#a3d2ab] mr-1"
+            "flex justify-start flex-wrap col-span-full my-1 mb-6 pt-1 mr-1 sm:mr-2 ml-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#a3d2ab]"
           )
         ]),
         toList([
@@ -7841,20 +7912,42 @@ function view_recipe_detail(recipe) {
           ol(
             toList([
               class$(
-                "list-decimal flex flex-wrap w-full items-baseline col-span-full pr-1 pl-2 ml-1 mb-1"
+                "flex flex-wrap w-full mb-1 list-decimal marker:text-sm marker:font-mono text-base items-baseline col-span-full"
               )
             ]),
             toList([
               (() => {
-                let _pipe = recipe.method_steps;
-                let _pipe$1 = map(
-                  _pipe,
-                  (_capture) => {
-                    return map3(_capture, view_method_step);
-                  }
-                );
-                let _pipe$2 = unwrap(_pipe$1, toList([none3()]));
-                return fragment(_pipe$2);
+                let $ = recipe.method_steps;
+                if ($ instanceof Some) {
+                  let steps = $[0];
+                  let children = (() => {
+                    let _pipe = steps;
+                    let _pipe$1 = map_to_list(_pipe);
+                    let _pipe$2 = sort(
+                      _pipe$1,
+                      (a2, b) => {
+                        return compare(first(a2), first(b));
+                      }
+                    );
+                    return map3(
+                      _pipe$2,
+                      (a2) => {
+                        return [
+                          to_string3(first(a2)),
+                          view_method_step(second(a2))
+                        ];
+                      }
+                    );
+                  })();
+                  return keyed(
+                    (_capture) => {
+                      return div(toList([]), _capture);
+                    },
+                    children
+                  );
+                } else {
+                  return none3();
+                }
               })()
             ])
           )
@@ -7895,6 +7988,22 @@ function json_encode_ingredient_list(dict2) {
   );
   return object2(_pipe$2);
 }
+function json_encode_method_step(method_step) {
+  return object2(
+    toList([["step_text", string2(method_step.step_text)]])
+  );
+}
+function json_encode_method_step_list(dict2) {
+  let _pipe = dict2;
+  let _pipe$1 = map_to_list(_pipe);
+  let _pipe$2 = map3(
+    _pipe$1,
+    (pair) => {
+      return [to_string3(pair[0]), json_encode_method_step(pair[1])];
+    }
+  );
+  return object2(_pipe$2);
+}
 function save_recipe(recipe) {
   let js_recipe = new JSRecipe(
     unwrap(recipe.id, ""),
@@ -7911,10 +8020,10 @@ function save_recipe(recipe) {
       let _pipe = recipe.ingredients;
       return nullable(_pipe, json_encode_ingredient_list);
     })(),
-    unwrap(
-      map(recipe.method_steps, toArray),
-      toArray(toList([]))
-    )
+    (() => {
+      let _pipe = recipe.method_steps;
+      return nullable(_pipe, json_encode_method_step_list);
+    })()
   );
   return from2(
     (dispatch2) => {
@@ -8180,30 +8289,6 @@ function detail_update(model, msg) {
     } else {
       return [model, none()];
     }
-  } else if (msg instanceof UserRemovedIngredientAtIndex) {
-    let i = msg[0];
-    if (model instanceof Some) {
-      let a$1 = model[0];
-      return [
-        new Some(
-          a$1.withFields({
-            ingredients: (() => {
-              let _pipe = a$1.ingredients;
-              let _pipe$1 = map(
-                _pipe,
-                (_capture) => {
-                  return drop(_capture, toList([i]));
-                }
-              );
-              return map(_pipe$1, dict_reindex);
-            })()
-          })
-        ),
-        none()
-      ];
-    } else {
-      return [model, none()];
-    }
   } else if (msg instanceof UserAddedIngredientAtIndex) {
     if (model instanceof Some) {
       let a$1 = model[0];
@@ -8243,6 +8328,110 @@ function detail_update(model, msg) {
                   )
                 );
               }
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserRemovedIngredientAtIndex) {
+    let i = msg[0];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            ingredients: (() => {
+              let _pipe = a$1.ingredients;
+              let _pipe$1 = map(
+                _pipe,
+                (_capture) => {
+                  return drop(_capture, toList([i]));
+                }
+              );
+              return map(_pipe$1, dict_reindex);
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserAddedMethodStepAtIndex) {
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            method_steps: (() => {
+              let $ = a$1.method_steps;
+              if ($ instanceof Some) {
+                let b = $[0];
+                return new Some(
+                  insert(b, map_size(b), new MethodStep(""))
+                );
+              } else {
+                return new Some(
+                  from_list(toList([[0, new MethodStep("")]]))
+                );
+              }
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserRemovedMethodStepAtIndex) {
+    let i = msg[0];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            method_steps: (() => {
+              let _pipe = a$1.method_steps;
+              let _pipe$1 = map(
+                _pipe,
+                (_capture) => {
+                  return drop(_capture, toList([i]));
+                }
+              );
+              return map(_pipe$1, dict_reindex);
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedMethodStepAtIndex) {
+    let i = msg[0];
+    let new_method_step = msg[1];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            method_steps: (() => {
+              let _pipe = a$1.method_steps;
+              return map(
+                _pipe,
+                (_capture) => {
+                  return dict_update(
+                    _capture,
+                    i,
+                    (_) => {
+                      return new MethodStep(new_method_step);
+                    }
+                  );
+                }
+              );
             })()
           })
         ),
@@ -8342,7 +8531,10 @@ function decode_recipe(d) {
     field("serves", int),
     optional_field("tags", list(decode_tag)),
     optional_field("ingredients", dict(decode_stringed_int, decode_ingredient)),
-    optional_field("method_steps", list(decode_method_step))
+    optional_field(
+      "method_steps",
+      dict(decode_stringed_int, decode_method_step)
+    )
   );
   debug(d);
   return decoder(d);
@@ -8528,7 +8720,7 @@ function view_base(children) {
   return main(
     toList([
       class$(
-        "grid ml-1 mr-2 gap-2\n    2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_105ch_[main-end]_3fr_[full-end]_1fr_[end]]\n    xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95ch_[main-end]_3fr_[full-end]_1fr_[end]]\n    lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_85ch_[main-end]_3fr_[full-end]_1fr_[end]]\n    md:grid-cols-[[start_full-start]_1fr_[main-start]_85ch_[main-end]_1fr_[full-end_end]]\n    grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]\n    min-h-[90vh]"
+        "grid ml-1 mr-2 gap-2\n    2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_105ch_[main-end]_3fr_[full-end]_1fr_[end]]\n    xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95ch_[main-end]_3fr_[full-end]_1fr_[end]]\n    lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_85ch_[main-end]_3fr_[full-end]_1fr_[end]]\n    md:grid-cols-[[start_full-start]_1fr_[main-start]_70ch_[main-end]_1fr_[full-end_end]]\n    grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]\n    min-h-[90vh]"
       )
     ]),
     toList([children])
