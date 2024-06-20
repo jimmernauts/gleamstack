@@ -5,9 +5,9 @@ export type Recipe = {
 	cook_time: number;
 	prep_time: number;
 	serves: number;
-	ingredients?: Map<number,Ingredient>;
-	method_steps?: MethodStep[];
-	tags?: Tag[];
+	ingredients?: Map<string,Ingredient>;
+	method_steps?: Map<string,MethodStep>;
+	tags?: Map<string,Tag>;
 	shortlisted?: boolean;
 };
 
@@ -26,11 +26,11 @@ export type TagOption = {
 
 export type Ingredient = {
 	name?: string;
-	isMain?: boolean;
+	isMain?: string;
 	quantity?: string;
 	units?: string;
 };
 
 export type MethodStep = {
-	stepText?: string;
+	step_text?: string;
 };

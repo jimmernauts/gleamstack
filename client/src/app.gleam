@@ -71,7 +71,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     OnRouteChange(ViewRecipeList) -> #(
       Model(..model, current_route: ViewRecipeList),
-      effect.map(recipe.get_recipes(), RecipeList),
+      effect.batch([
+        effect.map(recipe.get_recipes(), RecipeList),
+        effect.map(recipe.get_tag_options(), RecipeList),
+      ]),
     )
     OnRouteChange(ViewRecipeDetail(slug: slug)) -> #(
       Model(

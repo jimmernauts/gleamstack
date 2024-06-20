@@ -27,7 +27,7 @@ import lustre/element/html.{
   a, button, div, fieldset, form, input, label, legend, li, nav, ol, option,
   section, select, span, textarea,
 }
-import lustre/event.{on_check, on_click, on_input}
+import lustre/event.{on, on_check, on_click, on_input}
 
 //-MODEL---------------------------------------------
 
@@ -38,6 +38,10 @@ pub type RecipeDetailMsg {
   UserUpdatedRecipeCookTimeHrs(String)
   UserUpdatedRecipeCookTimeMins(String)
   UserUpdatedRecipeServes(String)
+  UserAddedTagAtIndex(Int)
+  UserRemovedTagAtIndex(Int)
+  UserUpdatedTagNameAtIndex(Int, String)
+  UserUpdatedTagValueAtIndex(Int, String)
   UserUpdatedIngredientNameAtIndex(Int, String)
   UserUpdatedIngredientMainAtIndex(Int, Bool)
   UserUpdatedIngredientQtyAtIndex(Int, String)
@@ -95,6 +99,7 @@ pub fn get_tag_options() -> Effect(RecipeListMsg) {
   do_get_tagoptions()
   |> promise.map(array.to_list)
   |> promise.map(list.map(_, decode_tag_option))
+  |> promise.map(io.debug)
   |> promise.map(result.all)
   |> promise.map(result.map(_, DbRetrievedTagOptions))
   |> promise.tap(result.map(_, dispatch))
@@ -113,10 +118,7 @@ fn save_recipe(recipe: Recipe) -> Effect(RecipeDetailMsg) {
       cook_time: recipe.cook_time,
       prep_time: recipe.prep_time,
       serves: recipe.serves,
-      tags: option.unwrap(
-        option.map(recipe.tags, array.from_list),
-        array.from_list([]),
-      ),
+      tags: recipe.tags |> json.nullable(json_encode_tag_list),
       ingredients: recipe.ingredients
         |> json.nullable(json_encode_ingredient_list),
       method_steps: recipe.method_steps
@@ -138,7 +140,7 @@ type JSRecipe {
     cook_time: Int,
     prep_time: Int,
     serves: Int,
-    tags: Array(Tag),
+    tags: Json,
     ingredients: Json,
     method_steps: Json,
   )
@@ -236,6 +238,83 @@ pub fn detail_update(
               serves: newserves
                 |> int.parse
                 |> result.unwrap(0),
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserUpdatedTagNameAtIndex(i, new_tag_name) -> {
+      case model {
+        Some(a) -> #(
+          Some(
+            Recipe(
+              ..a,
+              tags: {
+                a.tags
+                |> option.map(utils.dict_update(
+                  _,
+                  i,
+                  fn(_tag) { Tag(name: new_tag_name, value: "") },
+                ))
+              },
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserUpdatedTagValueAtIndex(i, new_tag_value) -> {
+      case model {
+        Some(a) -> #(
+          Some(
+            Recipe(
+              ..a,
+              tags: {
+                a.tags
+                |> option.map(utils.dict_update(
+                  _,
+                  i,
+                  fn(tag) { Tag(..tag, value: new_tag_value) },
+                ))
+              },
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserAddedTagAtIndex(_i) -> {
+      case model {
+        Some(a) -> #(
+          Some(
+            Recipe(
+              ..a,
+              tags: case a.tags {
+                Some(b) -> Some(dict.insert(b, dict.size(b), Tag("", "")))
+                _ -> Some(dict.from_list([#(0, Tag("", ""))]))
+              },
+            ),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+    UserRemovedTagAtIndex(i) -> {
+      case model {
+        Some(a) -> #(
+          Some(
+            Recipe(
+              ..a,
+              tags: {
+                a.tags
+                |> option.map(dict.drop(_, [i]))
+                |> option.map(utils.dict_reindex)
+              },
             ),
           ),
           effect.none(),
@@ -683,15 +762,27 @@ pub fn edit_recipe_detail(
             "col-span-7 row-start-2 content-start sm:col-span-full flex flex-wrap gap-1 items-baseline mx-1 gap-3",
           ),
         ],
-        case recipe.tags {
-          Some(a) ->
-            list.index_map(a, fn(tag, i) {
-              tag_input(tag_options, i, Some(tag))
-            })
-          _ -> [element.none()]
-        },
+        [
+          case recipe.tags {
+            Some(tags) -> {
+              let children =
+                tags
+                |> dict.to_list
+                |> list.sort(by: fn(a, b) {
+                  int.compare(pair.first(a), pair.first(b))
+                })
+                |> list.map(fn(a) {
+                  #(
+                    int.to_string(pair.first(a)),
+                    tag_input(tag_options, pair.first(a), Some(pair.second(a))),
+                  )
+                })
+              element.keyed(html.div([class("contents")], _), children)
+            }
+            _ -> tag_input(tag_options, 0, None)
+          },
+        ],
       ),
-      //TODO : TAG PICKER HERE
       fieldset(
         [
           class(
@@ -714,7 +805,7 @@ pub fn edit_recipe_detail(
                     ingredient_input(pair.first(a), Some(pair.second(a))),
                   )
                 })
-              element.keyed(html.div([], _), children)
+              element.keyed(html.div([class("contents")], _), children)
             }
             _ -> ingredient_input(0, None)
           },
@@ -742,7 +833,7 @@ pub fn edit_recipe_detail(
                     method_step_input(pair.first(a), Some(pair.second(a))),
                   )
                 })
-              element.keyed(html.div([], _), children)
+              element.keyed(html.div([class("contents")], _), children)
             }
             _ -> ingredient_input(0, None)
           },
@@ -849,10 +940,23 @@ pub fn view_recipe_detail(recipe: Recipe) {
             "col-span-7 row-start-2 content-start sm:col-span-full flex flex-wrap gap-1 items-baseline mx-1 gap-3",
           ),
         ],
-        case recipe.tags {
-          Some(a) -> list.map(a, fn(tag) { view_tag(tag) })
-          _ -> [element.none()]
-        },
+        [
+          case recipe.tags {
+            Some(tags) -> {
+              let children =
+                tags
+                |> dict.to_list
+                |> list.sort(by: fn(a, b) {
+                  int.compare(pair.first(a), pair.first(b))
+                })
+                |> list.map(fn(a) {
+                  #(int.to_string(pair.first(a)), view_tag(pair.second(a)))
+                })
+              element.keyed(html.div([class("contents")], _), children)
+            }
+            _ -> element.none()
+          },
+        ],
       ),
       fieldset(
         [
@@ -878,7 +982,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
                     view_ingredient(pair.second(a)),
                   )
                 })
-              element.keyed(html.div([], _), children)
+              element.keyed(html.div([class("contents")], _), children)
             }
             _ -> element.none()
           },
@@ -913,7 +1017,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
                         view_method_step(pair.second(a)),
                       )
                     })
-                  element.keyed(html.div([], _), children)
+                  element.keyed(html.div([class("contents")], _), children)
                 }
                 _ -> element.none()
               },
@@ -958,6 +1062,186 @@ fn view_recipe_summary(recipe: Recipe) {
           ]),
         ]),
       ]),
+    ],
+  )
+}
+
+fn view_ingredient(ingredient: Ingredient) {
+  let bold = case ingredient.ismain {
+    Some(True) -> " font-bold"
+    _ -> ""
+  }
+  div([class("flex justify-start col-span-6 items-baseline")], [
+    div([class("flex-grow-[2] text-left flex justify-start" <> bold)], [
+      option.unwrap(option.map(ingredient.name, text(_)), element.none()),
+    ]),
+    div([class("col-span-1 text-sm")], [
+      option.unwrap(option.map(ingredient.quantity, text(_)), element.none()),
+    ]),
+    div([class("col-span-1 text-sm")], [
+      option.unwrap(option.map(ingredient.units, text(_)), element.none()),
+    ]),
+  ])
+}
+
+fn view_method_step(method_step: MethodStep) {
+  li([class("w-full justify-self-start list-decimal text-left ml-8 pr-2")], [
+    text(method_step.step_text),
+  ])
+}
+
+fn view_tag(tag: Tag) {
+  div([class("flex")], [
+    div(
+      [
+        class(
+          "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+        ),
+      ],
+      [text(tag.name)],
+    ),
+    div(
+      [
+        class(
+          "font-mono bg-ecru-white-50 border border-l-0 border-ecru-white-950  px-1 text-xs",
+        ),
+      ],
+      [text(tag.value)],
+    ),
+  ])
+}
+
+fn tag_input(
+  available_tags: List(TagOption),
+  index: Int,
+  input: Option(Tag),
+) -> Element(RecipeDetailMsg) {
+  let update_name_with_index = function.curry2(UserUpdatedTagNameAtIndex)
+  let update_value_with_index = function.curry2(UserUpdatedTagValueAtIndex)
+
+  let tagnames = list.map(available_tags, fn(x) { x.name })
+  let tag = option.unwrap(input, Tag("", ""))
+  fieldset(
+    [
+      id("tag-input-" <> int.to_string(index)),
+      class("flex col-span-6 sm:col-span-4 min-w-0"),
+    ],
+    [
+      select(
+        [
+          style([
+            case string.length(tag.name) {
+              num if num > 0 -> #("width", int.to_string(num + 1) <> "ch")
+              _ -> #("width", "5ch")
+            },
+          ]),
+          class(
+            "inline bg-ecru-white-100 col-span-4 row-span-1 pl-1 p-0 text-xs font-mono custom-select",
+          ),
+          id("tag-name-selector"),
+          name("tag-name-" <> int.to_string(index)),
+          value(tag.name),
+          on_input(update_name_with_index(index)),
+        ],
+        [
+          option(
+            [
+              class(
+                "text-xs font-mono custom-select input-focus bg-ecru-white-100",
+              ),
+              attribute("hidden", ""),
+              disabled(True),
+              value(""),
+              selected(string.is_empty(tag.name)),
+            ],
+            "",
+          ),
+          fragment(
+            list.map(tagnames, fn(tag_name) {
+              option(
+                [
+                  value(tag_name),
+                  selected(tag_name == tag.name),
+                  class(
+                    "text-xs font-mono custom-select input-focus bg-ecru-white-50",
+                  ),
+                ],
+                tag_name,
+              )
+            }),
+          ),
+        ],
+      ),
+      {
+        select(
+          [
+            style([
+              case string.length(tag.value) {
+                num if num > 0 -> #("width", int.to_string(num + 1) <> "ch")
+                _ -> #("width", "5ch")
+              },
+            ]),
+            class(
+              "inline bg-ecru-white-50 col-span-4 row-span-1 pl-1 p-0 text-xs font-mono custom-select",
+            ),
+            on_input(update_value_with_index(index)),
+            value(tag.value),
+          ],
+          [
+            option(
+              [
+                class(
+                  "text-xs font-mono custom-select input-focus bg-ecru-white-50",
+                ),
+                attribute("hidden", ""),
+                disabled(True),
+                value(""),
+                selected(string.is_empty(tag.value)),
+              ],
+              "",
+            ),
+            {
+              let is_selected = fn(x: TagOption) { x.name == tag.name }
+              let options = fn(x: TagOption) {
+                list.map(x.options, fn(a) {
+                  option(
+                    [
+                      value(a),
+                      selected(a == tag.value),
+                      class(
+                        "text-xs font-mono custom-select input-focus bg-ecru-white-50",
+                      ),
+                    ],
+                    a,
+                  )
+                })
+              }
+              list.find(available_tags, is_selected)
+              |> result.map(options)
+              |> result.unwrap([element.none()])
+              |> fragment
+            },
+          ],
+        )
+      },
+      button(
+        [
+          class("col-span-1 mb-1 text-ecru-white-950 text-xs"),
+          id("remove-tag-input"),
+          type_("button"),
+          on_click(UserRemovedTagAtIndex(index)),
+        ],
+        [text("➖")],
+      ),
+      button(
+        [
+          class("col-span-1 mb-1 text-ecru-white-950 text-xs"),
+          id("add-tag-input"),
+          type_("button"),
+          on_click(UserAddedTagAtIndex(index)),
+        ],
+        [text("➕")],
+      ),
     ],
   )
 }
@@ -1091,184 +1375,6 @@ fn method_step_input(index: Int, method_step: Option(MethodStep)) {
   ])
 }
 
-fn view_ingredient(ingredient: Ingredient) {
-  let bold = case ingredient.ismain {
-    Some(True) -> " font-bold"
-    _ -> ""
-  }
-  div([class("flex justify-start col-span-6 items-baseline")], [
-    div([class("flex-grow-[2] text-left flex justify-start" <> bold)], [
-      option.unwrap(option.map(ingredient.name, text(_)), element.none()),
-    ]),
-    div([class("col-span-1 text-sm")], [
-      option.unwrap(option.map(ingredient.quantity, text(_)), element.none()),
-    ]),
-    div([class("col-span-1 text-sm")], [
-      option.unwrap(option.map(ingredient.units, text(_)), element.none()),
-    ]),
-  ])
-}
-
-fn view_method_step(method_step: MethodStep) {
-  li([class("w-full justify-self-start list-decimal text-left ml-8 pr-6")], [
-    text(method_step.step_text),
-  ])
-}
-
-fn view_tag(tag: Tag) {
-  div([class("flex")], [
-    div(
-      [
-        class(
-          "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
-        ),
-      ],
-      [text(tag.name)],
-    ),
-    div(
-      [
-        class(
-          "font-mono bg-ecru-white-50 border border-l-0 border-ecru-white-950  px-1 text-xs",
-        ),
-      ],
-      [text(tag.value)],
-    ),
-  ])
-}
-
-fn tag_input(
-  available_tags: List(TagOption),
-  index: Int,
-  input: Option(Tag),
-) -> Element(RecipeDetailMsg) {
-  let selected_name = case input {
-    Some(a) -> a.name
-    _ -> ""
-  }
-  let tagnames = list.map(available_tags, fn(x) { x.name })
-  fieldset(
-    [
-      id("tag-input-" <> int.to_string(index)),
-      class("flex col-span-6 sm:col-span-4 min-w-0"),
-    ],
-    [
-      select(
-        [
-          attribute("style", "width: auto;"),
-          class(
-            "inline bg-ecru-white-100 col-span-4 row-span-1 pl-1 p-0 mb-1 text-xs font-mono custom-select",
-          ),
-          id("tag-name-selector"),
-          name("tag-name-" <> int.to_string(index)),
-        ],
-        [
-          option(
-            [
-              class(
-                "text-xs font-mono custom-select input-focus bg-ecru-white-100",
-              ),
-              attribute("hidden", ""),
-              disabled(True),
-              value(""),
-              selected(string.is_empty(selected_name)),
-            ],
-            "",
-          ),
-          fragment(
-            list.map(tagnames, fn(tag_name) {
-              option(
-                [
-                  value(tag_name),
-                  selected(tag_name == selected_name),
-                  class(
-                    "text-xs font-mono custom-select input-focus bg-ecru-white-50",
-                  ),
-                ],
-                tag_name,
-              )
-            }),
-          ),
-        ],
-      ),
-      case input {
-        Some(input) -> {
-          select(
-            [
-              style([
-                case string.length(input.value) > 7 {
-                  True -> #(
-                    "width",
-                    int.to_string(string.length(input.value)) <> "ch",
-                  )
-                  _ -> #(
-                    "width",
-                    int.to_string(string.length(input.value) + 1) <> "ch",
-                  )
-                },
-              ]),
-              class(
-                "inline bg-ecru-white-100 col-span-4 row-span-1 pl-1 p-0 mb-1 text-xs font-mono custom-select",
-              ),
-            ],
-            [
-              option(
-                [
-                  class(
-                    "text-xs font-mono custom-select input-focus bg-ecru-white-100",
-                  ),
-                  attribute("hidden", ""),
-                  disabled(True),
-                  value(""),
-                  selected(string.is_empty(selected_name)),
-                ],
-                "",
-              ),
-              {
-                let is_selected = fn(x: TagOption) { x.name == selected_name }
-                let options = fn(x: TagOption) {
-                  list.map(x.options, fn(a) {
-                    option(
-                      [
-                        value(a),
-                        selected(a == selected_name),
-                        class(
-                          "text-xs font-mono custom-select input-focus bg-ecru-white-50",
-                        ),
-                      ],
-                      a,
-                    )
-                  })
-                }
-                list.find(available_tags, is_selected)
-                |> result.map(options)
-                |> result.unwrap([element.none()])
-                |> fragment
-              },
-            ],
-          )
-        }
-        _ -> element.none()
-      },
-      button(
-        [
-          class("col-span-1 mb-1 text-ecru-white-950 text-xs"),
-          id("remove-tag-input"),
-          type_("button"),
-        ],
-        [text("➖")],
-      ),
-      button(
-        [
-          class("col-span-1 mb-1 text-ecru-white-950 text-xs"),
-          id("add-tag-input"),
-          type_("button"),
-        ],
-        [text("➕")],
-      ),
-    ],
-  )
-}
-
 //-TYPES-------------------------------------------------------------
 
 pub type Recipe {
@@ -1279,7 +1385,7 @@ pub type Recipe {
     cook_time: Int,
     prep_time: Int,
     serves: Int,
-    tags: Option(List(Tag)),
+    tags: Option(Dict(Int, Tag)),
     ingredients: Option(Dict(Int, Ingredient)),
     method_steps: Option(Dict(Int, MethodStep)),
   )
@@ -1342,6 +1448,26 @@ fn json_encode_method_step_list(dict: Dict(Int, MethodStep)) -> Json {
   |> json.object
 }
 
+fn json_encode_tag(tag: Tag) -> Json {
+  json.object([
+    #("name", json.string(tag.name)),
+    #("value", json.string(tag.value)),
+  ])
+}
+
+fn json_encode_tag_list(dict: Dict(Int, Tag)) -> Json {
+  dict
+  |> dict.to_list
+  |> list.map(fn(pair: #(Int, Tag)) {
+    #(int.to_string(pair.0), json_encode_tag(pair.1))
+  })
+  |> json.object
+}
+
+fn json_encode_tag_option_list(tag_options: List(String)) -> Json {
+  json.array(tag_options, json.string)
+}
+
 pub fn decode_recipe(d: Dynamic) -> Result(Recipe, dynamic.DecodeErrors) {
   let decoder =
     dynamic.decode9(
@@ -1352,7 +1478,7 @@ pub fn decode_recipe(d: Dynamic) -> Result(Recipe, dynamic.DecodeErrors) {
       field("cook_time", of: int),
       field("prep_time", of: int),
       field("serves", of: int),
-      optional_field("tags", of: list(decode_tag)),
+      optional_field("tags", of: dict(decode_stringed_int, decode_tag)),
       optional_field(
         "ingredients",
         of: dict(decode_stringed_int, decode_ingredient),
@@ -1362,7 +1488,6 @@ pub fn decode_recipe(d: Dynamic) -> Result(Recipe, dynamic.DecodeErrors) {
         of: dict(decode_stringed_int, decode_method_step),
       ),
     )
-  io.debug(d)
   decoder(d)
 }
 
@@ -1423,5 +1548,6 @@ fn decode_tag_option(d: Dynamic) -> Result(TagOption, dynamic.DecodeErrors) {
       field("name", of: string),
       field("options", of: list(of: string)),
     )
-  decoder(d)
+  let f = decoder(d)
+  io.debug(f)
 }

@@ -70,10 +70,10 @@ const RecipeSeed = [{
     step_text:
       "Put the cooled, drained potatoes, red cabbage, pomegranate, beans and the dressing in a large bowl, then taste and adjust the seasoning if necessary. Arrange on a large plate, scatter over the parsley and serve at room temperature.",
   }]]),
-  tags: [{ name: "Cuisine", value: "Australian" }, {
+  tags: new Map([["0",{ name: "Cuisine", value: "Australian" }],["1",{
     name: "Style",
     value: "Salad",
-  }, { name: "Label", value: "Light" }],
+  }], ["2",{ name: "Label", value: "Light" }]]),
 }];
 
 export async function seedDb() {
@@ -83,8 +83,8 @@ export async function seedDb() {
   console.log(tagoptions[0])
 	const recipes = await listRecipes();
   console.log(recipes[0])
-  console.log("tagoptions.length: ",tagoptions[0].length)
-	if (tagoptions[0].length === 0) {
+  console.log("tagoptions.length: ",tagoptions.length)
+	if (tagoptions.length === 0) {
 		for (const item of TagOptionSeed) {
 			const res = await addTagOption(item);
 		}

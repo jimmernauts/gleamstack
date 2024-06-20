@@ -636,6 +636,26 @@ function decode2(constructor, t1, t2) {
     }
   };
 }
+function decode3(constructor, t1, t2, t3) {
+  return (value4) => {
+    let $ = t1(value4);
+    let $1 = t2(value4);
+    let $2 = t3(value4);
+    if ($.isOk() && $1.isOk() && $2.isOk()) {
+      let a2 = $[0];
+      let b = $1[0];
+      let c = $2[0];
+      return new Ok2(constructor(a2, b, c));
+    } else {
+      let a2 = $;
+      let b = $1;
+      let c = $2;
+      return new Error2(
+        concat2(toList([all_errors(a2), all_errors(b), all_errors(c)]))
+      );
+    }
+  };
+}
 function decode4(constructor, t1, t2, t3, t4) {
   return (x) => {
     let $ = t1(x);
@@ -3786,9 +3806,6 @@ var NotABrowser2 = class extends CustomType {
 };
 
 // build/dev/javascript/gleam_javascript/ffi.mjs
-function toArray(list2) {
-  return list2.toArray();
-}
 var PromiseLayer = class _PromiseLayer {
   constructor(promise) {
     this.promise = promise;
@@ -6451,7 +6468,7 @@ function page_title(title, styles) {
         toList([
           id("title"),
           class$(
-            "min-h-[56px] max-h-[140px] sm:max-h-[170px] overflow-hidden px-0 pb-1 w-full font-transitional font-bold italic text-ecru-white-950"
+            "min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 w-full font-transitional font-bold italic text-ecru-white-950"
           )
         ]),
         toList([text(title)])
@@ -6654,10 +6671,10 @@ var RecipeSeed = [{
       step_text: "Put the cooled, drained potatoes, red cabbage, pomegranate, beans and the dressing in a large bowl, then taste and adjust the seasoning if necessary. Arrange on a large plate, scatter over the parsley and serve at room temperature."
     }]
   ]),
-  tags: [{ name: "Cuisine", value: "Australian" }, {
+  tags: /* @__PURE__ */ new Map([["0", { name: "Cuisine", value: "Australian" }], ["1", {
     name: "Style",
     value: "Salad"
-  }, { name: "Label", value: "Light" }]
+  }], ["2", { name: "Label", value: "Light" }]])
 }];
 async function seedDb() {
   console.log("beginning seedDb");
@@ -6666,8 +6683,8 @@ async function seedDb() {
   console.log(tagoptions[0]);
   const recipes = await listRecipes();
   console.log(recipes[0]);
-  console.log("tagoptions.length: ", tagoptions[0].length);
-  if (tagoptions[0].length === 0) {
+  console.log("tagoptions.length: ", tagoptions.length);
+  if (tagoptions.length === 0) {
     for (const item of TagOptionSeed) {
       const res = await addTagOption(item);
     }
@@ -6731,13 +6748,18 @@ async function prepareTables() {
 }
 async function listTagOptions() {
   console.log("listTagOptions");
-  const findRows = await db.execA("SELECT EXISTS(SELECT 1 FROM tag_options)");
-  const exists = findRows[0][0];
+  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM tag_options)");
+  const exists = findRows[0];
   if (!exists) {
     return new Ok2([]);
   }
-  const result = await db.execA("SELECT * FROM tag_options");
-  return result ? new Ok2(result) : new Error2(void 0);
+  const result = await db.execO("SELECT * FROM tag_options");
+  const mapped = result.map((x) => {
+    x.options = JSON.parse(x.options);
+    return x;
+  });
+  console.log("tagoptions mapped: ", mapped);
+  return mapped;
 }
 async function addTagOption(tagOption) {
   console.log("addTagOption: ", tagOption);
@@ -6760,19 +6782,19 @@ async function listRecipes() {
   }
   const result = await db.execO("SELECT id, title, slug, prep_time, cook_time, serves, tags, ingredients, method_steps FROM recipes");
   const mapped = result.map((recipe) => {
-    recipe.tags = JSON.parse(recipe.tags);
+    recipe.tags = JSON.parse(recipe.tags, reviver);
     recipe.ingredients = JSON.parse(recipe.ingredients, reviver);
     recipe.method_steps = JSON.parse(recipe.method_steps, reviver);
     return recipe;
   });
-  console.log("mapped: ", mapped);
+  console.log("recipes mapped: ", mapped);
   return mapped;
 }
 async function addOrUpdateRecipe(recipe) {
   console.log("addOrUpdateRecipe: ", recipe);
   const query = ` 		INSERT INTO recipes 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
 			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(recipe.ingredients, replacer)}',
-			'${JSON.stringify(recipe.method_steps, replacer)}', '${JSON.stringify(recipe.tags)}', '${recipe.shortlisted}') 		 ON CONFLICT(id) DO UPDATE SET		 slug=excluded.slug, 		 title=excluded.title, 		 cook_time=excluded.cook_time, 		 prep_time=excluded.prep_time, 		 serves=excluded.serves, 		 ingredients=excluded.ingredients, 		 method_steps=excluded.method_steps, 		 tags=excluded.tags, 		 shortlisted=excluded.shortlisted;`;
+			'${JSON.stringify(recipe.method_steps, replacer)}', '${JSON.stringify(recipe.tags, replacer)}', '${recipe.shortlisted}') 		 ON CONFLICT(id) DO UPDATE SET		 slug=excluded.slug, 		 title=excluded.title, 		 cook_time=excluded.cook_time, 		 prep_time=excluded.prep_time, 		 serves=excluded.serves, 		 ingredients=excluded.ingredients, 		 method_steps=excluded.method_steps, 		 tags=excluded.tags, 		 shortlisted=excluded.shortlisted;`;
   const result = await db.execA(
     query
   );
@@ -6781,7 +6803,12 @@ async function addOrUpdateRecipe(recipe) {
 async function do_get_recipes() {
   const _seed = await seedDb();
   const result = await listRecipes();
-  console.log("result from ffi: ", result);
+  console.log("recipe result from ffi: ", result);
+  return result;
+}
+async function do_get_tagoptions() {
+  const result = await listTagOptions();
+  console.log("tagoption result from ffi: ", result);
   return result;
 }
 
@@ -6858,6 +6885,32 @@ var UserUpdatedRecipeServes = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
+  }
+};
+var UserAddedTagAtIndex = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserRemovedTagAtIndex = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserUpdatedTagNameAtIndex = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var UserUpdatedTagValueAtIndex = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
   }
 };
 var UserUpdatedIngredientNameAtIndex = class extends CustomType {
@@ -6937,6 +6990,12 @@ var DbRetrievedRecipes = class extends CustomType {
     this[0] = x0;
   }
 };
+var DbRetrievedTagOptions = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
 var RecipeList = class extends CustomType {
   constructor(recipes, tag_options) {
     super();
@@ -6970,6 +7029,14 @@ var Recipe = class extends CustomType {
     this.tags = tags;
     this.ingredients = ingredients;
     this.method_steps = method_steps;
+  }
+};
+var TagOption = class extends CustomType {
+  constructor(id2, name2, options) {
+    super();
+    this.id = id2;
+    this.name = name2;
+    this.options = options;
   }
 };
 var MethodStep = class extends CustomType {
@@ -7098,6 +7165,525 @@ function view_recipe_list(model) {
       div(
         toList([class$("contents")]),
         map3(model.recipes, view_recipe_summary)
+      )
+    ])
+  );
+}
+function view_ingredient(ingredient) {
+  let bold = (() => {
+    let $ = ingredient.ismain;
+    if ($ instanceof Some && $[0]) {
+      return " font-bold";
+    } else {
+      return "";
+    }
+  })();
+  return div(
+    toList([class$("flex justify-start col-span-6 items-baseline")]),
+    toList([
+      div(
+        toList([class$("flex-grow-[2] text-left flex justify-start" + bold)]),
+        toList([
+          unwrap(
+            map(
+              ingredient.name,
+              (_capture) => {
+                return text(_capture);
+              }
+            ),
+            none3()
+          )
+        ])
+      ),
+      div(
+        toList([class$("col-span-1 text-sm")]),
+        toList([
+          unwrap(
+            map(
+              ingredient.quantity,
+              (_capture) => {
+                return text(_capture);
+              }
+            ),
+            none3()
+          )
+        ])
+      ),
+      div(
+        toList([class$("col-span-1 text-sm")]),
+        toList([
+          unwrap(
+            map(
+              ingredient.units,
+              (_capture) => {
+                return text(_capture);
+              }
+            ),
+            none3()
+          )
+        ])
+      )
+    ])
+  );
+}
+function view_method_step(method_step) {
+  return li(
+    toList([
+      class$("w-full justify-self-start list-decimal text-left ml-8 pr-2")
+    ]),
+    toList([text(method_step.step_text)])
+  );
+}
+function view_tag(tag) {
+  return div(
+    toList([class$("flex")]),
+    toList([
+      div(
+        toList([
+          class$(
+            "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs"
+          )
+        ]),
+        toList([text(tag.name)])
+      ),
+      div(
+        toList([
+          class$(
+            "font-mono bg-ecru-white-50 border border-l-0 border-ecru-white-950  px-1 text-xs"
+          )
+        ]),
+        toList([text(tag.value)])
+      )
+    ])
+  );
+}
+function view_recipe_detail(recipe) {
+  return section(
+    toList([
+      class$(
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
+      )
+    ]),
+    toList([
+      page_title(recipe.title, "underline-green"),
+      fieldset(
+        toList([
+          class$(
+            "sm:mt-4 lg:mx-4 row-start-2 col-start-9 col-span-4 sm:row-start-1 sm:col-span-3 sm:col-start-9"
+          )
+        ]),
+        toList([
+          fieldset(
+            toList([
+              class$("flex flex-wrap justify-between items-baseline mb-2")
+            ]),
+            toList([
+              label(
+                toList([for$("prep_time"), class$("font-mono italic")]),
+                toList([text("Prep:")])
+              ),
+              div(
+                toList([class$("text-base")]),
+                toList([
+                  text(
+                    (() => {
+                      let $ = recipe.prep_time > 59;
+                      if ($) {
+                        return (() => {
+                          let _pipe = floor_divide(recipe.prep_time, 60);
+                          let _pipe$1 = unwrap2(_pipe, 0);
+                          let _pipe$2 = to_string3(_pipe$1);
+                          return replace(_pipe$2, "0", "");
+                        })() + "h ";
+                      } else {
+                        return "";
+                      }
+                    })() + (() => {
+                      let _pipe = remainderInt(recipe.prep_time, 60);
+                      return to_string3(_pipe);
+                    })() + "m"
+                  )
+                ])
+              )
+            ])
+          ),
+          fieldset(
+            toList([
+              class$("flex flex-wrap justify-between items-baseline mb-2")
+            ]),
+            toList([
+              label(
+                toList([for$("cook_time"), class$("font-mono italic")]),
+                toList([text("Cook:")])
+              ),
+              div(
+                toList([class$("text-base")]),
+                toList([
+                  text(
+                    (() => {
+                      let $ = recipe.cook_time > 59;
+                      if ($) {
+                        return (() => {
+                          let _pipe = floor_divide(recipe.cook_time, 60);
+                          let _pipe$1 = unwrap2(_pipe, 0);
+                          let _pipe$2 = to_string3(_pipe$1);
+                          return replace(_pipe$2, "0", "");
+                        })() + "h ";
+                      } else {
+                        return "";
+                      }
+                    })() + (() => {
+                      let _pipe = remainderInt(recipe.cook_time, 60);
+                      return to_string3(_pipe);
+                    })() + "m"
+                  )
+                ])
+              )
+            ])
+          ),
+          fieldset(
+            toList([
+              class$("flex flex-wrap justify-between items-baseline mb-2")
+            ]),
+            toList([
+              label(
+                toList([for$("cook_time"), class$("font-mono italic")]),
+                toList([text("Serves:")])
+              ),
+              div(
+                toList([class$("mr-2 sm:mr-4 text-base")]),
+                toList([text(to_string3(recipe.serves))])
+              )
+            ])
+          )
+        ])
+      ),
+      nav(
+        toList([
+          class$(
+            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
+          )
+        ]),
+        toList([
+          a(toList([href("/"), class$("text-center")]), toList([text("\u{1F3E0}")])),
+          a(
+            toList([
+              href("/recipes/" + recipe.slug + "/edit"),
+              class$("text-center")
+            ]),
+            toList([text("\u270F\uFE0F")])
+          )
+        ])
+      ),
+      fieldset(
+        toList([
+          class$(
+            "col-span-7 row-start-2 content-start sm:col-span-full flex flex-wrap gap-1 items-baseline mx-1 gap-3"
+          )
+        ]),
+        toList([
+          (() => {
+            let $ = recipe.tags;
+            if ($ instanceof Some) {
+              let tags = $[0];
+              let children = (() => {
+                let _pipe = tags;
+                let _pipe$1 = map_to_list(_pipe);
+                let _pipe$2 = sort(
+                  _pipe$1,
+                  (a2, b) => {
+                    return compare(first(a2), first(b));
+                  }
+                );
+                return map3(
+                  _pipe$2,
+                  (a2) => {
+                    return [
+                      to_string3(first(a2)),
+                      view_tag(second(a2))
+                    ];
+                  }
+                );
+              })();
+              return keyed(
+                (_capture) => {
+                  return div(toList([class$("contents")]), _capture);
+                },
+                children
+              );
+            } else {
+              return none3();
+            }
+          })()
+        ])
+      ),
+      fieldset(
+        toList([
+          class$(
+            "col-span-full text-base my-1 mb-6 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#a3d2ab] mr-1"
+          )
+        ]),
+        toList([
+          legend(
+            toList([class$("mx-2 px-1 text-lg font-mono italic")]),
+            toList([text("Ingredients")])
+          ),
+          (() => {
+            let $ = recipe.ingredients;
+            if ($ instanceof Some) {
+              let ings = $[0];
+              let children = (() => {
+                let _pipe = ings;
+                let _pipe$1 = map_to_list(_pipe);
+                let _pipe$2 = sort(
+                  _pipe$1,
+                  (a2, b) => {
+                    return compare(first(a2), first(b));
+                  }
+                );
+                return map3(
+                  _pipe$2,
+                  (a2) => {
+                    return [
+                      to_string3(first(a2)),
+                      view_ingredient(second(a2))
+                    ];
+                  }
+                );
+              })();
+              return keyed(
+                (_capture) => {
+                  return div(toList([class$("contents")]), _capture);
+                },
+                children
+              );
+            } else {
+              return none3();
+            }
+          })()
+        ])
+      ),
+      fieldset(
+        toList([
+          class$(
+            "flex justify-start flex-wrap col-span-full my-1 mb-6 pt-1 mr-1 sm:mr-2 ml-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#a3d2ab]"
+          )
+        ]),
+        toList([
+          legend(
+            toList([class$("mx-2 px-1 font-mono italic")]),
+            toList([text("Method")])
+          ),
+          ol(
+            toList([
+              class$(
+                "flex flex-wrap w-full mb-1 list-decimal marker:text-sm marker:font-mono text-base items-baseline col-span-full"
+              )
+            ]),
+            toList([
+              (() => {
+                let $ = recipe.method_steps;
+                if ($ instanceof Some) {
+                  let steps = $[0];
+                  let children = (() => {
+                    let _pipe = steps;
+                    let _pipe$1 = map_to_list(_pipe);
+                    let _pipe$2 = sort(
+                      _pipe$1,
+                      (a2, b) => {
+                        return compare(first(a2), first(b));
+                      }
+                    );
+                    return map3(
+                      _pipe$2,
+                      (a2) => {
+                        return [
+                          to_string3(first(a2)),
+                          view_method_step(second(a2))
+                        ];
+                      }
+                    );
+                  })();
+                  return keyed(
+                    (_capture) => {
+                      return div(toList([class$("contents")]), _capture);
+                    },
+                    children
+                  );
+                } else {
+                  return none3();
+                }
+              })()
+            ])
+          )
+        ])
+      )
+    ])
+  );
+}
+function lookup_and_view_recipe(maybe_recipe) {
+  if (maybe_recipe instanceof Some) {
+    let a$1 = maybe_recipe[0];
+    return view_recipe_detail(a$1);
+  } else {
+    return page_title("Recipe not found", "");
+  }
+}
+function tag_input(available_tags, index3, input2) {
+  let update_name_with_index = curry2(
+    (var0, var1) => {
+      return new UserUpdatedTagNameAtIndex(var0, var1);
+    }
+  );
+  let update_value_with_index = curry2(
+    (var0, var1) => {
+      return new UserUpdatedTagValueAtIndex(var0, var1);
+    }
+  );
+  let tagnames = map3(available_tags, (x) => {
+    return x.name;
+  });
+  let tag = unwrap(input2, new Tag("", ""));
+  return fieldset(
+    toList([
+      id("tag-input-" + to_string3(index3)),
+      class$("flex col-span-6 sm:col-span-4 min-w-0")
+    ]),
+    toList([
+      select(
+        toList([
+          style(
+            toList([
+              (() => {
+                let $ = length2(tag.name);
+                if ($ > 0) {
+                  let num = $;
+                  return ["width", to_string3(num + 1) + "ch"];
+                } else {
+                  return ["width", "5ch"];
+                }
+              })()
+            ])
+          ),
+          class$(
+            "inline bg-ecru-white-100 col-span-4 row-span-1 pl-1 p-0 text-xs font-mono custom-select"
+          ),
+          id("tag-name-selector"),
+          name("tag-name-" + to_string3(index3)),
+          value(tag.name),
+          on_input(update_name_with_index(index3))
+        ]),
+        toList([
+          option(
+            toList([
+              class$(
+                "text-xs font-mono custom-select input-focus bg-ecru-white-100"
+              ),
+              attribute("hidden", ""),
+              disabled(true),
+              value(""),
+              selected(is_empty2(tag.name))
+            ]),
+            ""
+          ),
+          fragment(
+            map3(
+              tagnames,
+              (tag_name) => {
+                return option(
+                  toList([
+                    value(tag_name),
+                    selected(tag_name === tag.name),
+                    class$(
+                      "text-xs font-mono custom-select input-focus bg-ecru-white-50"
+                    )
+                  ]),
+                  tag_name
+                );
+              }
+            )
+          )
+        ])
+      ),
+      select(
+        toList([
+          style(
+            toList([
+              (() => {
+                let $ = length2(tag.value);
+                if ($ > 0) {
+                  let num = $;
+                  return ["width", to_string3(num + 1) + "ch"];
+                } else {
+                  return ["width", "5ch"];
+                }
+              })()
+            ])
+          ),
+          class$(
+            "inline bg-ecru-white-50 col-span-4 row-span-1 pl-1 p-0 text-xs font-mono custom-select"
+          ),
+          on_input(update_value_with_index(index3)),
+          value(tag.value)
+        ]),
+        toList([
+          option(
+            toList([
+              class$(
+                "text-xs font-mono custom-select input-focus bg-ecru-white-50"
+              ),
+              attribute("hidden", ""),
+              disabled(true),
+              value(""),
+              selected(is_empty2(tag.value))
+            ]),
+            ""
+          ),
+          (() => {
+            let is_selected = (x) => {
+              return x.name === tag.name;
+            };
+            let options = (x) => {
+              return map3(
+                x.options,
+                (a2) => {
+                  return option(
+                    toList([
+                      value(a2),
+                      selected(a2 === tag.value),
+                      class$(
+                        "text-xs font-mono custom-select input-focus bg-ecru-white-50"
+                      )
+                    ]),
+                    a2
+                  );
+                }
+              );
+            };
+            let _pipe = find2(available_tags, is_selected);
+            let _pipe$1 = map2(_pipe, options);
+            let _pipe$2 = unwrap2(_pipe$1, toList([none3()]));
+            return fragment(_pipe$2);
+          })()
+        ])
+      ),
+      button(
+        toList([
+          class$("col-span-1 mb-1 text-ecru-white-950 text-xs"),
+          id("remove-tag-input"),
+          type_("button"),
+          on_click(new UserRemovedTagAtIndex(index3))
+        ]),
+        toList([text("\u2796")])
+      ),
+      button(
+        toList([
+          class$("col-span-1 mb-1 text-ecru-white-950 text-xs"),
+          id("add-tag-input"),
+          type_("button"),
+          on_click(new UserAddedTagAtIndex(index3))
+        ]),
+        toList([text("\u2795")])
       )
     ])
   );
@@ -7315,492 +7901,6 @@ function method_step_input(index3, method_step) {
           type_("button"),
           id("add-ingredient-input"),
           on_click(new UserAddedMethodStepAtIndex(index3))
-        ]),
-        toList([text("\u2795")])
-      )
-    ])
-  );
-}
-function view_ingredient(ingredient) {
-  let bold = (() => {
-    let $ = ingredient.ismain;
-    if ($ instanceof Some && $[0]) {
-      return " font-bold";
-    } else {
-      return "";
-    }
-  })();
-  return div(
-    toList([class$("flex justify-start col-span-6 items-baseline")]),
-    toList([
-      div(
-        toList([class$("flex-grow-[2] text-left flex justify-start" + bold)]),
-        toList([
-          unwrap(
-            map(
-              ingredient.name,
-              (_capture) => {
-                return text(_capture);
-              }
-            ),
-            none3()
-          )
-        ])
-      ),
-      div(
-        toList([class$("col-span-1 text-sm")]),
-        toList([
-          unwrap(
-            map(
-              ingredient.quantity,
-              (_capture) => {
-                return text(_capture);
-              }
-            ),
-            none3()
-          )
-        ])
-      ),
-      div(
-        toList([class$("col-span-1 text-sm")]),
-        toList([
-          unwrap(
-            map(
-              ingredient.units,
-              (_capture) => {
-                return text(_capture);
-              }
-            ),
-            none3()
-          )
-        ])
-      )
-    ])
-  );
-}
-function view_method_step(method_step) {
-  return li(
-    toList([
-      class$("w-full justify-self-start list-decimal text-left ml-8 pr-6")
-    ]),
-    toList([text(method_step.step_text)])
-  );
-}
-function view_tag(tag) {
-  return div(
-    toList([class$("flex")]),
-    toList([
-      div(
-        toList([
-          class$(
-            "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs"
-          )
-        ]),
-        toList([text(tag.name)])
-      ),
-      div(
-        toList([
-          class$(
-            "font-mono bg-ecru-white-50 border border-l-0 border-ecru-white-950  px-1 text-xs"
-          )
-        ]),
-        toList([text(tag.value)])
-      )
-    ])
-  );
-}
-function view_recipe_detail(recipe) {
-  return section(
-    toList([
-      class$(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
-      )
-    ]),
-    toList([
-      page_title(recipe.title, "underline-green"),
-      fieldset(
-        toList([
-          class$(
-            "sm:mt-4 lg:mx-4 row-start-2 col-start-9 col-span-4 sm:row-start-1 sm:col-span-3 sm:col-start-9"
-          )
-        ]),
-        toList([
-          fieldset(
-            toList([
-              class$("flex flex-wrap justify-between items-baseline mb-2")
-            ]),
-            toList([
-              label(
-                toList([for$("prep_time"), class$("font-mono italic")]),
-                toList([text("Prep:")])
-              ),
-              div(
-                toList([class$("text-base")]),
-                toList([
-                  text(
-                    (() => {
-                      let $ = recipe.prep_time > 59;
-                      if ($) {
-                        return (() => {
-                          let _pipe = floor_divide(recipe.prep_time, 60);
-                          let _pipe$1 = unwrap2(_pipe, 0);
-                          let _pipe$2 = to_string3(_pipe$1);
-                          return replace(_pipe$2, "0", "");
-                        })() + "h ";
-                      } else {
-                        return "";
-                      }
-                    })() + (() => {
-                      let _pipe = remainderInt(recipe.prep_time, 60);
-                      return to_string3(_pipe);
-                    })() + "m"
-                  )
-                ])
-              )
-            ])
-          ),
-          fieldset(
-            toList([
-              class$("flex flex-wrap justify-between items-baseline mb-2")
-            ]),
-            toList([
-              label(
-                toList([for$("cook_time"), class$("font-mono italic")]),
-                toList([text("Cook:")])
-              ),
-              div(
-                toList([class$("text-base")]),
-                toList([
-                  text(
-                    (() => {
-                      let $ = recipe.cook_time > 59;
-                      if ($) {
-                        return (() => {
-                          let _pipe = floor_divide(recipe.cook_time, 60);
-                          let _pipe$1 = unwrap2(_pipe, 0);
-                          let _pipe$2 = to_string3(_pipe$1);
-                          return replace(_pipe$2, "0", "");
-                        })() + "h ";
-                      } else {
-                        return "";
-                      }
-                    })() + (() => {
-                      let _pipe = remainderInt(recipe.cook_time, 60);
-                      return to_string3(_pipe);
-                    })() + "m"
-                  )
-                ])
-              )
-            ])
-          ),
-          fieldset(
-            toList([
-              class$("flex flex-wrap justify-between items-baseline mb-2")
-            ]),
-            toList([
-              label(
-                toList([for$("cook_time"), class$("font-mono italic")]),
-                toList([text("Serves:")])
-              ),
-              div(
-                toList([class$("mr-2 sm:mr-4 text-base")]),
-                toList([text(to_string3(recipe.serves))])
-              )
-            ])
-          )
-        ])
-      ),
-      nav(
-        toList([
-          class$(
-            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
-          )
-        ]),
-        toList([
-          a(toList([href("/"), class$("text-center")]), toList([text("\u{1F3E0}")])),
-          a(
-            toList([
-              href("/recipes/" + recipe.slug + "/edit"),
-              class$("text-center")
-            ]),
-            toList([text("\u270F\uFE0F")])
-          )
-        ])
-      ),
-      fieldset(
-        toList([
-          class$(
-            "col-span-7 row-start-2 content-start sm:col-span-full flex flex-wrap gap-1 items-baseline mx-1 gap-3"
-          )
-        ]),
-        (() => {
-          let $ = recipe.tags;
-          if ($ instanceof Some) {
-            let a$1 = $[0];
-            return map3(a$1, (tag) => {
-              return view_tag(tag);
-            });
-          } else {
-            return toList([none3()]);
-          }
-        })()
-      ),
-      fieldset(
-        toList([
-          class$(
-            "col-span-full text-base my-1 mb-6 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#a3d2ab] mr-1"
-          )
-        ]),
-        toList([
-          legend(
-            toList([class$("mx-2 px-1 text-lg font-mono italic")]),
-            toList([text("Ingredients")])
-          ),
-          (() => {
-            let $ = recipe.ingredients;
-            if ($ instanceof Some) {
-              let ings = $[0];
-              let children = (() => {
-                let _pipe = ings;
-                let _pipe$1 = map_to_list(_pipe);
-                let _pipe$2 = sort(
-                  _pipe$1,
-                  (a2, b) => {
-                    return compare(first(a2), first(b));
-                  }
-                );
-                return map3(
-                  _pipe$2,
-                  (a2) => {
-                    return [
-                      to_string3(first(a2)),
-                      view_ingredient(second(a2))
-                    ];
-                  }
-                );
-              })();
-              return keyed(
-                (_capture) => {
-                  return div(toList([]), _capture);
-                },
-                children
-              );
-            } else {
-              return none3();
-            }
-          })()
-        ])
-      ),
-      fieldset(
-        toList([
-          class$(
-            "flex justify-start flex-wrap col-span-full my-1 mb-6 pt-1 mr-1 sm:mr-2 ml-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#a3d2ab]"
-          )
-        ]),
-        toList([
-          legend(
-            toList([class$("mx-2 px-1 font-mono italic")]),
-            toList([text("Method")])
-          ),
-          ol(
-            toList([
-              class$(
-                "flex flex-wrap w-full mb-1 list-decimal marker:text-sm marker:font-mono text-base items-baseline col-span-full"
-              )
-            ]),
-            toList([
-              (() => {
-                let $ = recipe.method_steps;
-                if ($ instanceof Some) {
-                  let steps = $[0];
-                  let children = (() => {
-                    let _pipe = steps;
-                    let _pipe$1 = map_to_list(_pipe);
-                    let _pipe$2 = sort(
-                      _pipe$1,
-                      (a2, b) => {
-                        return compare(first(a2), first(b));
-                      }
-                    );
-                    return map3(
-                      _pipe$2,
-                      (a2) => {
-                        return [
-                          to_string3(first(a2)),
-                          view_method_step(second(a2))
-                        ];
-                      }
-                    );
-                  })();
-                  return keyed(
-                    (_capture) => {
-                      return div(toList([]), _capture);
-                    },
-                    children
-                  );
-                } else {
-                  return none3();
-                }
-              })()
-            ])
-          )
-        ])
-      )
-    ])
-  );
-}
-function lookup_and_view_recipe(maybe_recipe) {
-  if (maybe_recipe instanceof Some) {
-    let a$1 = maybe_recipe[0];
-    return view_recipe_detail(a$1);
-  } else {
-    return page_title("Recipe not found", "");
-  }
-}
-function tag_input(available_tags, index3, input2) {
-  let selected_name = (() => {
-    if (input2 instanceof Some) {
-      let a$1 = input2[0];
-      return a$1.name;
-    } else {
-      return "";
-    }
-  })();
-  let tagnames = map3(available_tags, (x) => {
-    return x.name;
-  });
-  return fieldset(
-    toList([
-      id("tag-input-" + to_string3(index3)),
-      class$("flex col-span-6 sm:col-span-4 min-w-0")
-    ]),
-    toList([
-      select(
-        toList([
-          attribute("style", "width: auto;"),
-          class$(
-            "inline bg-ecru-white-100 col-span-4 row-span-1 pl-1 p-0 mb-1 text-xs font-mono custom-select"
-          ),
-          id("tag-name-selector"),
-          name("tag-name-" + to_string3(index3))
-        ]),
-        toList([
-          option(
-            toList([
-              class$(
-                "text-xs font-mono custom-select input-focus bg-ecru-white-100"
-              ),
-              attribute("hidden", ""),
-              disabled(true),
-              value(""),
-              selected(is_empty2(selected_name))
-            ]),
-            ""
-          ),
-          fragment(
-            map3(
-              tagnames,
-              (tag_name) => {
-                return option(
-                  toList([
-                    value(tag_name),
-                    selected(tag_name === selected_name),
-                    class$(
-                      "text-xs font-mono custom-select input-focus bg-ecru-white-50"
-                    )
-                  ]),
-                  tag_name
-                );
-              }
-            )
-          )
-        ])
-      ),
-      (() => {
-        if (input2 instanceof Some) {
-          let input$1 = input2[0];
-          return select(
-            toList([
-              style(
-                toList([
-                  (() => {
-                    let $ = length2(input$1.value) > 7;
-                    if ($) {
-                      return [
-                        "width",
-                        to_string3(length2(input$1.value)) + "ch"
-                      ];
-                    } else {
-                      return [
-                        "width",
-                        to_string3(length2(input$1.value) + 1) + "ch"
-                      ];
-                    }
-                  })()
-                ])
-              ),
-              class$(
-                "inline bg-ecru-white-100 col-span-4 row-span-1 pl-1 p-0 mb-1 text-xs font-mono custom-select"
-              )
-            ]),
-            toList([
-              option(
-                toList([
-                  class$(
-                    "text-xs font-mono custom-select input-focus bg-ecru-white-100"
-                  ),
-                  attribute("hidden", ""),
-                  disabled(true),
-                  value(""),
-                  selected(is_empty2(selected_name))
-                ]),
-                ""
-              ),
-              (() => {
-                let is_selected = (x) => {
-                  return x.name === selected_name;
-                };
-                let options = (x) => {
-                  return map3(
-                    x.options,
-                    (a2) => {
-                      return option(
-                        toList([
-                          value(a2),
-                          selected(a2 === selected_name),
-                          class$(
-                            "text-xs font-mono custom-select input-focus bg-ecru-white-50"
-                          )
-                        ]),
-                        a2
-                      );
-                    }
-                  );
-                };
-                let _pipe = find2(available_tags, is_selected);
-                let _pipe$1 = map2(_pipe, options);
-                let _pipe$2 = unwrap2(_pipe$1, toList([none3()]));
-                return fragment(_pipe$2);
-              })()
-            ])
-          );
-        } else {
-          return none3();
-        }
-      })(),
-      button(
-        toList([
-          class$("col-span-1 mb-1 text-ecru-white-950 text-xs"),
-          id("remove-tag-input"),
-          type_("button")
-        ]),
-        toList([text("\u2796")])
-      ),
-      button(
-        toList([
-          class$("col-span-1 mb-1 text-ecru-white-950 text-xs"),
-          id("add-tag-input"),
-          type_("button")
         ]),
         toList([text("\u2795")])
       )
@@ -8069,20 +8169,45 @@ function edit_recipe_detail(recipe, tag_options) {
             "col-span-7 row-start-2 content-start sm:col-span-full flex flex-wrap gap-1 items-baseline mx-1 gap-3"
           )
         ]),
-        (() => {
-          let $ = recipe.tags;
-          if ($ instanceof Some) {
-            let a$1 = $[0];
-            return index_map(
-              a$1,
-              (tag, i) => {
-                return tag_input(tag_options, i, new Some(tag));
-              }
-            );
-          } else {
-            return toList([none3()]);
-          }
-        })()
+        toList([
+          (() => {
+            let $ = recipe.tags;
+            if ($ instanceof Some) {
+              let tags = $[0];
+              let children = (() => {
+                let _pipe = tags;
+                let _pipe$1 = map_to_list(_pipe);
+                let _pipe$2 = sort(
+                  _pipe$1,
+                  (a2, b) => {
+                    return compare(first(a2), first(b));
+                  }
+                );
+                return map3(
+                  _pipe$2,
+                  (a2) => {
+                    return [
+                      to_string3(first(a2)),
+                      tag_input(
+                        tag_options,
+                        first(a2),
+                        new Some(second(a2))
+                      )
+                    ];
+                  }
+                );
+              })();
+              return keyed(
+                (_capture) => {
+                  return div(toList([class$("contents")]), _capture);
+                },
+                children
+              );
+            } else {
+              return tag_input(tag_options, 0, new None());
+            }
+          })()
+        ])
       ),
       fieldset(
         toList([
@@ -8123,7 +8248,7 @@ function edit_recipe_detail(recipe, tag_options) {
               })();
               return keyed(
                 (_capture) => {
-                  return div(toList([]), _capture);
+                  return div(toList([class$("contents")]), _capture);
                 },
                 children
               );
@@ -8172,7 +8297,7 @@ function edit_recipe_detail(recipe, tag_options) {
               })();
               return keyed(
                 (_capture) => {
-                  return div(toList([]), _capture);
+                  return div(toList([class$("contents")]), _capture);
                 },
                 children
               );
@@ -8233,6 +8358,25 @@ function json_encode_method_step_list(dict2) {
   );
   return object2(_pipe$2);
 }
+function json_encode_tag(tag) {
+  return object2(
+    toList([
+      ["name", string2(tag.name)],
+      ["value", string2(tag.value)]
+    ])
+  );
+}
+function json_encode_tag_list(dict2) {
+  let _pipe = dict2;
+  let _pipe$1 = map_to_list(_pipe);
+  let _pipe$2 = map3(
+    _pipe$1,
+    (pair) => {
+      return [to_string3(pair[0]), json_encode_tag(pair[1])];
+    }
+  );
+  return object2(_pipe$2);
+}
 function save_recipe(recipe) {
   let js_recipe = new JSRecipe(
     unwrap(recipe.id, ""),
@@ -8241,10 +8385,10 @@ function save_recipe(recipe) {
     recipe.cook_time,
     recipe.prep_time,
     recipe.serves,
-    unwrap(
-      map(recipe.tags, toArray),
-      toArray(toList([]))
-    ),
+    (() => {
+      let _pipe = recipe.tags;
+      return nullable(_pipe, json_encode_tag_list);
+    })(),
     (() => {
       let _pipe = recipe.ingredients;
       return nullable(_pipe, json_encode_ingredient_list);
@@ -8382,6 +8526,112 @@ function detail_update(model, msg) {
               let _pipe = newserves;
               let _pipe$1 = parse(_pipe);
               return unwrap2(_pipe$1, 0);
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedTagNameAtIndex) {
+    let i = msg[0];
+    let new_tag_name = msg[1];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            tags: (() => {
+              let _pipe = a$1.tags;
+              return map(
+                _pipe,
+                (_capture) => {
+                  return dict_update(
+                    _capture,
+                    i,
+                    (_) => {
+                      return new Tag(new_tag_name, "");
+                    }
+                  );
+                }
+              );
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserUpdatedTagValueAtIndex) {
+    let i = msg[0];
+    let new_tag_value = msg[1];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            tags: (() => {
+              let _pipe = a$1.tags;
+              return map(
+                _pipe,
+                (_capture) => {
+                  return dict_update(
+                    _capture,
+                    i,
+                    (tag) => {
+                      return tag.withFields({ value: new_tag_value });
+                    }
+                  );
+                }
+              );
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserAddedTagAtIndex) {
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            tags: (() => {
+              let $ = a$1.tags;
+              if ($ instanceof Some) {
+                let b = $[0];
+                return new Some(insert(b, map_size(b), new Tag("", "")));
+              } else {
+                return new Some(from_list(toList([[0, new Tag("", "")]])));
+              }
+            })()
+          })
+        ),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserRemovedTagAtIndex) {
+    let i = msg[0];
+    if (model instanceof Some) {
+      let a$1 = model[0];
+      return [
+        new Some(
+          a$1.withFields({
+            tags: (() => {
+              let _pipe = a$1.tags;
+              let _pipe$1 = map(
+                _pipe,
+                (_capture) => {
+                  return drop(_capture, toList([i]));
+                }
+              );
+              return map(_pipe$1, dict_reindex);
             })()
           })
         ),
@@ -8758,14 +9008,13 @@ function decode_recipe(d) {
     field("cook_time", int),
     field("prep_time", int),
     field("serves", int),
-    optional_field("tags", list(decode_tag)),
+    optional_field("tags", dict(decode_stringed_int, decode_tag)),
     optional_field("ingredients", dict(decode_stringed_int, decode_ingredient)),
     optional_field(
       "method_steps",
       dict(decode_stringed_int, decode_method_step)
     )
   );
-  debug(d);
   return decoder(d);
 }
 function get_recipes() {
@@ -8793,6 +9042,52 @@ function get_recipes() {
       );
       tap(
         _pipe$4,
+        (_capture) => {
+          return map2(_capture, dispatch2);
+        }
+      );
+      return void 0;
+    }
+  );
+}
+function decode_tag_option(d) {
+  let decoder = decode3(
+    (var0, var1, var2) => {
+      return new TagOption(var0, var1, var2);
+    },
+    optional_field("id", string),
+    field("name", string),
+    field("options", list(string))
+  );
+  let f = decoder(d);
+  return debug(f);
+}
+function get_tag_options() {
+  return from2(
+    (dispatch2) => {
+      let _pipe = do_get_tagoptions();
+      let _pipe$1 = map_promise(_pipe, toList);
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map3(_capture, decode_tag_option);
+        }
+      );
+      let _pipe$3 = map_promise(_pipe$2, debug);
+      let _pipe$4 = map_promise(_pipe$3, all);
+      let _pipe$5 = map_promise(
+        _pipe$4,
+        (_capture) => {
+          return map2(
+            _capture,
+            (var0) => {
+              return new DbRetrievedTagOptions(var0);
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$5,
         (_capture) => {
           return map2(_capture, dispatch2);
         }
@@ -8856,11 +9151,21 @@ function update3(model, msg) {
   if (msg instanceof OnRouteChange && msg[0] instanceof ViewRecipeList) {
     return [
       model.withFields({ current_route: new ViewRecipeList() }),
-      map4(
-        get_recipes(),
-        (var0) => {
-          return new RecipeList2(var0);
-        }
+      batch(
+        toList([
+          map4(
+            get_recipes(),
+            (var0) => {
+              return new RecipeList2(var0);
+            }
+          ),
+          map4(
+            get_tag_options(),
+            (var0) => {
+              return new RecipeList2(var0);
+            }
+          )
+        ])
       )
     ];
   } else if (msg instanceof OnRouteChange && msg[0] instanceof ViewRecipeDetail) {

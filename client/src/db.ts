@@ -70,13 +70,18 @@ export async function prepareTables() {
 
 export async function listTagOptions() {
 	console.log("listTagOptions");
-	const findRows = await db.execA("SELECT EXISTS(SELECT 1 FROM tag_options)");
-	const exists = findRows[0][0];
+	const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM tag_options)");
+	const exists = findRows[0];
 	if (!exists) {
 		return new Ok([]);
 	}
-	const result = await db.execA("SELECT * FROM tag_options");
-	return result ? new Ok(result) : new Error(undefined);
+	const result = await db.execO("SELECT * FROM tag_options");
+	const mapped = result.map(x => {
+		x.options = JSON.parse(x.options)
+		return x
+	})
+	console.log("tagoptions mapped: ",mapped)
+	return mapped;
 }
 
 export async function addTagOption(tagOption: TagOption) {
@@ -100,12 +105,12 @@ export async function listRecipes() {
 	}
 	const result = await db.execO("SELECT id, title, slug, prep_time, cook_time, serves, tags, ingredients, method_steps FROM recipes")
 	const mapped = result.map(recipe=>{
-		recipe.tags = JSON.parse(recipe.tags)
+		recipe.tags = JSON.parse(recipe.tags,reviver)
 		recipe.ingredients = JSON.parse(recipe.ingredients,reviver)
 		recipe.method_steps = JSON.parse(recipe.method_steps, reviver)
 		return recipe
 	})		
-	console.log("mapped: ",mapped)
+	console.log("recipes mapped: ",mapped)
 	return mapped
 }
 
@@ -118,7 +123,7 @@ export async function addOrUpdateRecipe(recipe: Recipe) {
 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) \
 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
 			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(recipe.ingredients,replacer)}',
-			'${JSON.stringify(recipe.method_steps,replacer)}', '${JSON.stringify(recipe.tags)}', '${recipe.shortlisted}') \
+			'${JSON.stringify(recipe.method_steps,replacer)}', '${JSON.stringify(recipe.tags,replacer)}', '${recipe.shortlisted}') \
 		 ON CONFLICT(id) DO UPDATE SET\
 		 slug=excluded.slug, \
 		 title=excluded.title, \
@@ -137,12 +142,12 @@ export async function addOrUpdateRecipe(recipe: Recipe) {
 export async function do_get_recipes() {
 	const _seed = await seedDb();
 	const result = await listRecipes();
-	console.log("result from ffi: ",result)
+	console.log("recipe result from ffi: ",result)
 	return result;
 }
 
 export async function do_get_tagoptions() {
 	const result = await listTagOptions();
-	console.log("result from ffi: ",result)
+	console.log("tagoption result from ffi: ",result)
 	return result
 }

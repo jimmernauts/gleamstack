@@ -1029,12 +1029,12 @@ fieldset {
   padding-right: 0.125rem;
 }
 
-.pr-4 {
-  padding-right: 1rem;
+.pr-2 {
+  padding-right: 0.5rem;
 }
 
-.pr-6 {
-  padding-right: 1.5rem;
+.pr-4 {
+  padding-right: 1rem;
 }
 
 .pt-0 {
@@ -1283,10 +1283,6 @@ fieldset {
 
   .sm\:mt-4 {
     margin-top: 1rem;
-  }
-
-  .sm\:max-h-\[170px\] {
-    max-height: 170px;
   }
 
   .sm\:w-\[16ch\] {
