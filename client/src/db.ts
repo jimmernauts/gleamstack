@@ -140,3 +140,9 @@ export async function do_get_recipes() {
 	console.log("result from ffi: ",result)
 	return result;
 }
+
+export async function do_get_tagoptions() {
+	const result = await listTagOptions();
+	console.log("result from ffi: ",result)
+	return result
+}

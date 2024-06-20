@@ -609,6 +609,17 @@ input[type="number"] {
           text-decoration: underline solid 6px #fce68b;
 }
 
+.custom-select {
+  -webkit-appearance: none;;
+  -moz-appearance: none;;
+  width: 100%;;
+  background: rgb(253 253 251);;
+  --tw-border-opacity: 1;
+  border-color: rgb(80 156 94 / var(--tw-border-opacity));
+  border-width: 1px;
+  cursor: pointer;;
+}
+
 fieldset {
   min-width: 0;
 }
@@ -690,6 +701,10 @@ fieldset {
 
 .col-start-\[main-start\] {
   grid-column-start: main-start;
+}
+
+.row-span-1 {
+  grid-row: span 1 / span 1;
 }
 
 .row-start-2 {
@@ -788,6 +803,10 @@ fieldset {
   display: inline-block;
 }
 
+.inline {
+  display: inline;
+}
+
 .flex {
   display: flex;
 }
@@ -802,6 +821,10 @@ fieldset {
 
 .contents {
   display: contents;
+}
+
+.hidden {
+  display: none;
 }
 
 .max-h-\[140px\] {
@@ -838,6 +861,10 @@ fieldset {
 
 .w-full {
   width: 100%;
+}
+
+.min-w-0 {
+  min-width: 0px;
 }
 
 .flex-grow-\[2\] {
@@ -963,6 +990,10 @@ fieldset {
   background-color: rgb(253 253 251 / var(--tw-bg-opacity));
 }
 
+.p-0 {
+  padding: 0px;
+}
+
 .px-0 {
   padding-left: 0px;
   padding-right: 0px;
@@ -984,6 +1015,10 @@ fieldset {
 
 .pb-2 {
   padding-bottom: 0.5rem;
+}
+
+.pl-1 {
+  padding-left: 0.25rem;
 }
 
 .pr-0 {
@@ -1187,6 +1222,10 @@ fieldset {
 @media (min-width: 640px) {
   .sm\:col-span-3 {
     grid-column: span 3 / span 3;
+  }
+
+  .sm\:col-span-4 {
+    grid-column: span 4 / span 4;
   }
 
   .sm\:col-span-5 {

@@ -33,7 +33,11 @@ pub fn main() {
 
 fn init(_flags) -> #(Model, Effect(Msg)) {
   #(
-    Model(current_route: Home, current_recipe: None, recipes: []),
+    Model(
+      current_route: Home,
+      current_recipe: None,
+      recipes: recipe.RecipeList(recipes: [], tag_options: []),
+    ),
     modem.init(on_route_change),
   )
 }
@@ -122,7 +126,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 }
 
 fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(recipe.Recipe) {
-  option.from_result(list.find(model.recipes, fn(a) { a.slug == slug }))
+  option.from_result(list.find(model.recipes.recipes, fn(a) { a.slug == slug }))
 }
 
 fn on_route_change(uri: Uri) -> Msg {
@@ -148,7 +152,10 @@ fn view(model: Model) -> Element(Msg) {
       )
     EditRecipeDetail(slug: _slug) ->
       element.map(
-        recipe.lookup_and_edit_recipe(model.current_recipe),
+        recipe.lookup_and_edit_recipe(
+          model.current_recipe,
+          model.recipes.tag_options,
+        ),
         RecipeDetail,
       )
   }

@@ -18,13 +18,14 @@ import gleam/string
 import justin.{kebab_case}
 import lib/utils
 import lustre/attribute.{
-  attribute, checked, class, for, href, id, name, placeholder, type_, value,
+  attribute, checked, class, disabled, for, href, id, name, placeholder,
+  selected, style, type_, value,
 }
 import lustre/effect.{type Effect}
-import lustre/element.{type Element, text}
+import lustre/element.{type Element, fragment, text}
 import lustre/element/html.{
-  a, button, div, fieldset, form, input, label, legend, li, nav, ol, section,
-  span, textarea,
+  a, button, div, fieldset, form, input, label, legend, li, nav, ol, option,
+  section, select, span, textarea,
 }
 import lustre/event.{on_check, on_click, on_input}
 
@@ -52,10 +53,12 @@ pub type RecipeDetailMsg {
 
 pub type RecipeListMsg {
   DbRetrievedRecipes(List(Recipe))
+  DbRetrievedTagOptions(List(TagOption))
 }
 
-pub type RecipeList =
-  List(Recipe)
+pub type RecipeList {
+  RecipeList(recipes: List(Recipe), tag_options: List(TagOption))
+}
 
 pub type RecipeDetail =
   Option(Recipe)
@@ -63,11 +66,14 @@ pub type RecipeDetail =
 //-UPDATE---------------------------------------------
 
 pub fn merge_recipe_into_model(recipe: Recipe, model: RecipeList) -> RecipeList {
-  model
-  |> list.map(fn(a) { #(a.id, a) })
-  |> dict.from_list
-  |> dict.merge(dict.from_list([#(recipe.id, recipe)]))
-  |> dict.values()
+  RecipeList(
+    ..model,
+    recipes: model.recipes
+      |> list.map(fn(a) { #(a.id, a) })
+      |> dict.from_list
+      |> dict.merge(dict.from_list([#(recipe.id, recipe)]))
+      |> dict.values(),
+  )
 }
 
 pub fn get_recipes() -> Effect(RecipeListMsg) {
@@ -75,7 +81,6 @@ pub fn get_recipes() -> Effect(RecipeListMsg) {
   do_get_recipes()
   |> promise.map(array.to_list)
   |> promise.map(list.map(_, decode_recipe))
-  |> promise.map(io.debug)
   |> promise.map(result.all)
   |> promise.map(result.map(_, DbRetrievedRecipes))
   |> promise.tap(result.map(_, dispatch))
@@ -84,6 +89,20 @@ pub fn get_recipes() -> Effect(RecipeListMsg) {
 
 @external(javascript, ".././db.ts", "do_get_recipes")
 fn do_get_recipes() -> Promise(Array(Dynamic))
+
+pub fn get_tag_options() -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_get_tagoptions()
+  |> promise.map(array.to_list)
+  |> promise.map(list.map(_, decode_tag_option))
+  |> promise.map(result.all)
+  |> promise.map(result.map(_, DbRetrievedTagOptions))
+  |> promise.tap(result.map(_, dispatch))
+  Nil
+}
+
+@external(javascript, ".././db.ts", "do_get_tagoptions")
+fn do_get_tagoptions() -> Promise(Array(Dynamic))
 
 fn save_recipe(recipe: Recipe) -> Effect(RecipeDetailMsg) {
   let js_recipe =
@@ -421,11 +440,18 @@ pub fn detail_update(
 }
 
 pub fn list_update(
-  _model: RecipeList,
+  model: RecipeList,
   msg: RecipeListMsg,
 ) -> #(RecipeList, Effect(RecipeListMsg)) {
   case msg {
-    DbRetrievedRecipes(recipes) -> #(recipes, effect.none())
+    DbRetrievedRecipes(recipes) -> #(
+      RecipeList(..model, recipes: recipes),
+      effect.none(),
+    )
+    DbRetrievedTagOptions(tag_options) -> #(
+      RecipeList(..model, tag_options: tag_options),
+      effect.none(),
+    )
   }
 }
 
@@ -451,7 +477,7 @@ pub fn view_recipe_list(model: RecipeList) {
       // div([class("col-span-full flex flex-wrap items-center justify-start gap-3")],[
       // TODO: Group By tag buttons go here
       //])
-      div([class("contents")], list.map(model, view_recipe_summary)),
+      div([class("contents")], list.map(model.recipes, view_recipe_summary)),
     ],
   )
 }
@@ -463,14 +489,20 @@ pub fn lookup_and_view_recipe(maybe_recipe: RecipeDetail) {
   }
 }
 
-pub fn lookup_and_edit_recipe(maybe_recipe: RecipeDetail) {
+pub fn lookup_and_edit_recipe(
+  maybe_recipe: RecipeDetail,
+  tag_options: List(TagOption),
+) {
   case maybe_recipe {
-    Some(a) -> edit_recipe_detail(a)
+    Some(a) -> edit_recipe_detail(a, tag_options)
     _ -> page_title("Recipe not found", "")
   }
 }
 
-pub fn edit_recipe_detail(recipe: Recipe) -> Element(RecipeDetailMsg) {
+pub fn edit_recipe_detail(
+  recipe: Recipe,
+  tag_options: List(TagOption),
+) -> Element(RecipeDetailMsg) {
   form(
     [
       class(
@@ -644,6 +676,20 @@ pub fn edit_recipe_detail(recipe: Recipe) -> Element(RecipeDetailMsg) {
           ]),
           button([type_("submit"), class("")], [text("💾")]),
         ],
+      ),
+      fieldset(
+        [
+          class(
+            "col-span-7 row-start-2 content-start sm:col-span-full flex flex-wrap gap-1 items-baseline mx-1 gap-3",
+          ),
+        ],
+        case recipe.tags {
+          Some(a) ->
+            list.index_map(a, fn(tag, i) {
+              tag_input(tag_options, i, Some(tag))
+            })
+          _ -> [element.none()]
+        },
       ),
       //TODO : TAG PICKER HERE
       fieldset(
@@ -1088,6 +1134,139 @@ fn view_tag(tag: Tag) {
       [text(tag.value)],
     ),
   ])
+}
+
+fn tag_input(
+  available_tags: List(TagOption),
+  index: Int,
+  input: Option(Tag),
+) -> Element(RecipeDetailMsg) {
+  let selected_name = case input {
+    Some(a) -> a.name
+    _ -> ""
+  }
+  let tagnames = list.map(available_tags, fn(x) { x.name })
+  fieldset(
+    [
+      id("tag-input-" <> int.to_string(index)),
+      class("flex col-span-6 sm:col-span-4 min-w-0"),
+    ],
+    [
+      select(
+        [
+          attribute("style", "width: auto;"),
+          class(
+            "inline bg-ecru-white-100 col-span-4 row-span-1 pl-1 p-0 mb-1 text-xs font-mono custom-select",
+          ),
+          id("tag-name-selector"),
+          name("tag-name-" <> int.to_string(index)),
+        ],
+        [
+          option(
+            [
+              class(
+                "text-xs font-mono custom-select input-focus bg-ecru-white-100",
+              ),
+              attribute("hidden", ""),
+              disabled(True),
+              value(""),
+              selected(string.is_empty(selected_name)),
+            ],
+            "",
+          ),
+          fragment(
+            list.map(tagnames, fn(tag_name) {
+              option(
+                [
+                  value(tag_name),
+                  selected(tag_name == selected_name),
+                  class(
+                    "text-xs font-mono custom-select input-focus bg-ecru-white-50",
+                  ),
+                ],
+                tag_name,
+              )
+            }),
+          ),
+        ],
+      ),
+      case input {
+        Some(input) -> {
+          select(
+            [
+              style([
+                case string.length(input.value) > 7 {
+                  True -> #(
+                    "width",
+                    int.to_string(string.length(input.value)) <> "ch",
+                  )
+                  _ -> #(
+                    "width",
+                    int.to_string(string.length(input.value) + 1) <> "ch",
+                  )
+                },
+              ]),
+              class(
+                "inline bg-ecru-white-100 col-span-4 row-span-1 pl-1 p-0 mb-1 text-xs font-mono custom-select",
+              ),
+            ],
+            [
+              option(
+                [
+                  class(
+                    "text-xs font-mono custom-select input-focus bg-ecru-white-100",
+                  ),
+                  attribute("hidden", ""),
+                  disabled(True),
+                  value(""),
+                  selected(string.is_empty(selected_name)),
+                ],
+                "",
+              ),
+              {
+                let is_selected = fn(x: TagOption) { x.name == selected_name }
+                let options = fn(x: TagOption) {
+                  list.map(x.options, fn(a) {
+                    option(
+                      [
+                        value(a),
+                        selected(a == selected_name),
+                        class(
+                          "text-xs font-mono custom-select input-focus bg-ecru-white-50",
+                        ),
+                      ],
+                      a,
+                    )
+                  })
+                }
+                list.find(available_tags, is_selected)
+                |> result.map(options)
+                |> result.unwrap([element.none()])
+                |> fragment
+              },
+            ],
+          )
+        }
+        _ -> element.none()
+      },
+      button(
+        [
+          class("col-span-1 mb-1 text-ecru-white-950 text-xs"),
+          id("remove-tag-input"),
+          type_("button"),
+        ],
+        [text("➖")],
+      ),
+      button(
+        [
+          class("col-span-1 mb-1 text-ecru-white-950 text-xs"),
+          id("add-tag-input"),
+          type_("button"),
+        ],
+        [text("➕")],
+      ),
+    ],
+  )
 }
 
 //-TYPES-------------------------------------------------------------
