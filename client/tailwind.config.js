@@ -132,11 +132,6 @@ export default {
                     display: 'grid',
                     'grid-template-rows': 'subgrid'
                 },
-                '.grid-8': {
-                    display: 'grid',
-                    'grid-template-columns': 'repeat(auto-fit, minmax(2rem, 1fr))',
-                    'grid-gap': '2px'
-                },
                 '.grid-rows-auto': {
                     gridAutoRows: 'minmax(100px, max-content)'
                 },
@@ -151,7 +146,6 @@ export default {
                     },
                     '-moz-appearance': 'textfield'
                 },
-
                 '.input-base': {
                     borderWidth: '0px',
                     borderBottomWidth: '0px',
@@ -200,6 +194,9 @@ export default {
                 },
                 '.underline-dark-blue': {
                     textDecoration: 'underline solid 6px #287CA1'
+                },
+                '.shadow-orange': {
+                    boxShadow:'1px_1px_0_#ff776a'
                 },
                 '.custom-select': {
                     '-webkit-appearance': 'none;',

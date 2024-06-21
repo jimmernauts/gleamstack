@@ -46,8 +46,8 @@ var List = class {
     return length6;
   }
 };
-function prepend(element2, tail) {
-  return new NonEmpty(element2, tail);
+function prepend(element3, tail) {
+  return new NonEmpty(element3, tail);
 }
 function toList(elements, tail) {
   return List.fromArray(elements, tail);
@@ -285,12 +285,55 @@ function map(option2, fun) {
     return new None();
   }
 }
-function or(first3, second2) {
-  if (first3 instanceof Some) {
-    return first3;
+function flatten(option2) {
+  if (option2 instanceof Some) {
+    let x = option2[0];
+    return x;
   } else {
-    return second2;
+    return new None();
   }
+}
+function or(first5, second3) {
+  if (first5 instanceof Some) {
+    return first5;
+  } else {
+    return second3;
+  }
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/regex.mjs
+var Match = class extends CustomType {
+  constructor(content, submatches) {
+    super();
+    this.content = content;
+    this.submatches = submatches;
+  }
+};
+var CompileError = class extends CustomType {
+  constructor(error, byte_index) {
+    super();
+    this.error = error;
+    this.byte_index = byte_index;
+  }
+};
+var Options = class extends CustomType {
+  constructor(case_insensitive, multi_line) {
+    super();
+    this.case_insensitive = case_insensitive;
+    this.multi_line = multi_line;
+  }
+};
+function compile(pattern, options) {
+  return compile_regex(pattern, options);
+}
+function from_string(pattern) {
+  return compile(pattern, new Options(false, false));
+}
+function split(regex, string3) {
+  return regex_split(regex, string3);
+}
+function scan(regex, string3) {
+  return regex_scan(regex, string3);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/order.mjs
@@ -307,6 +350,14 @@ function to_string(x) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/int.mjs
+function absolute_value(x) {
+  let $ = x >= 0;
+  if ($) {
+    return x;
+  } else {
+    return x * -1;
+  }
+}
 function parse(string3) {
   return parse_int(string3);
 }
@@ -362,7 +413,7 @@ function map_error(result, fun) {
     return new Error2(fun(error));
   }
 }
-function flatten(result) {
+function flatten2(result) {
   if (result.isOk()) {
     let x = result[0];
     return x;
@@ -379,6 +430,9 @@ function try$(result, fun) {
     let e = result[0];
     return new Error2(e);
   }
+}
+function then$(result, fun) {
+  return try$(result, fun);
 }
 function unwrap2(result, default$) {
   if (result.isOk()) {
@@ -401,17 +455,17 @@ function append_builder(builder, suffix) {
 function from_strings(strings) {
   return concat(strings);
 }
-function from_string(string3) {
+function from_string2(string3) {
   return identity(string3);
 }
-function append(builder, second2) {
-  return append_builder(builder, from_string(second2));
+function append(builder, second3) {
+  return append_builder(builder, from_string2(second3));
 }
 function to_string4(builder) {
   return identity(builder);
 }
-function split2(iodata, pattern) {
-  return split(iodata, pattern);
+function split3(iodata, pattern) {
+  return split2(iodata, pattern);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
@@ -504,11 +558,11 @@ function push_path(error, name2) {
   return error.withFields({ path: prepend(name$2, error.path) });
 }
 function list(decoder_type) {
-  return (dynamic2) => {
+  return (dynamic3) => {
     return try$(
-      shallow_list(dynamic2),
-      (list2) => {
-        let _pipe = list2;
+      shallow_list(dynamic3),
+      (list3) => {
+        let _pipe = list3;
         let _pipe$1 = try_map(_pipe, decoder_type);
         return map_errors(
           _pipe$1,
@@ -905,7 +959,7 @@ function spliceOut(arr, at) {
   }
   return out;
 }
-function createNode(shift, key1, val1, key2hash, key2, val2) {
+function createNode(shift, key1, val1, key2hash, key22, val2) {
   const key1hash = getHash(key1);
   if (key1hash === key2hash) {
     return {
@@ -913,7 +967,7 @@ function createNode(shift, key1, val1, key2hash, key2, val2) {
       hash: key1hash,
       array: [
         { type: ENTRY, k: key1, v: val1 },
-        { type: ENTRY, k: key2, v: val2 }
+        { type: ENTRY, k: key22, v: val2 }
       ]
     };
   }
@@ -922,22 +976,22 @@ function createNode(shift, key1, val1, key2hash, key2, val2) {
     assocIndex(EMPTY, shift, key1hash, key1, val1, addedLeaf),
     shift,
     key2hash,
-    key2,
+    key22,
     val2,
     addedLeaf
   );
 }
-function assoc(root2, shift, hash, key2, val, addedLeaf) {
+function assoc(root2, shift, hash, key3, val, addedLeaf) {
   switch (root2.type) {
     case ARRAY_NODE:
-      return assocArray(root2, shift, hash, key2, val, addedLeaf);
+      return assocArray(root2, shift, hash, key3, val, addedLeaf);
     case INDEX_NODE:
-      return assocIndex(root2, shift, hash, key2, val, addedLeaf);
+      return assocIndex(root2, shift, hash, key3, val, addedLeaf);
     case COLLISION_NODE:
-      return assocCollision(root2, shift, hash, key2, val, addedLeaf);
+      return assocCollision(root2, shift, hash, key3, val, addedLeaf);
   }
 }
-function assocArray(root2, shift, hash, key2, val, addedLeaf) {
+function assocArray(root2, shift, hash, key3, val, addedLeaf) {
   const idx = mask(hash, shift);
   const node = root2.array[idx];
   if (node === void 0) {
@@ -945,11 +999,11 @@ function assocArray(root2, shift, hash, key2, val, addedLeaf) {
     return {
       type: ARRAY_NODE,
       size: root2.size + 1,
-      array: cloneAndSet(root2.array, idx, { type: ENTRY, k: key2, v: val })
+      array: cloneAndSet(root2.array, idx, { type: ENTRY, k: key3, v: val })
     };
   }
   if (node.type === ENTRY) {
-    if (isEqual(key2, node.k)) {
+    if (isEqual(key3, node.k)) {
       if (val === node.v) {
         return root2;
       }
@@ -958,7 +1012,7 @@ function assocArray(root2, shift, hash, key2, val, addedLeaf) {
         size: root2.size,
         array: cloneAndSet(root2.array, idx, {
           type: ENTRY,
-          k: key2,
+          k: key3,
           v: val
         })
       };
@@ -970,11 +1024,11 @@ function assocArray(root2, shift, hash, key2, val, addedLeaf) {
       array: cloneAndSet(
         root2.array,
         idx,
-        createNode(shift + SHIFT, node.k, node.v, hash, key2, val)
+        createNode(shift + SHIFT, node.k, node.v, hash, key3, val)
       )
     };
   }
-  const n = assoc(node, shift + SHIFT, hash, key2, val, addedLeaf);
+  const n = assoc(node, shift + SHIFT, hash, key3, val, addedLeaf);
   if (n === node) {
     return root2;
   }
@@ -984,13 +1038,13 @@ function assocArray(root2, shift, hash, key2, val, addedLeaf) {
     array: cloneAndSet(root2.array, idx, n)
   };
 }
-function assocIndex(root2, shift, hash, key2, val, addedLeaf) {
+function assocIndex(root2, shift, hash, key3, val, addedLeaf) {
   const bit = bitpos(hash, shift);
   const idx = index(root2.bitmap, bit);
   if ((root2.bitmap & bit) !== 0) {
     const node = root2.array[idx];
     if (node.type !== ENTRY) {
-      const n = assoc(node, shift + SHIFT, hash, key2, val, addedLeaf);
+      const n = assoc(node, shift + SHIFT, hash, key3, val, addedLeaf);
       if (n === node) {
         return root2;
       }
@@ -1001,7 +1055,7 @@ function assocIndex(root2, shift, hash, key2, val, addedLeaf) {
       };
     }
     const nodeKey = node.k;
-    if (isEqual(key2, nodeKey)) {
+    if (isEqual(key3, nodeKey)) {
       if (val === node.v) {
         return root2;
       }
@@ -1010,7 +1064,7 @@ function assocIndex(root2, shift, hash, key2, val, addedLeaf) {
         bitmap: root2.bitmap,
         array: cloneAndSet(root2.array, idx, {
           type: ENTRY,
-          k: key2,
+          k: key3,
           v: val
         })
       };
@@ -1022,7 +1076,7 @@ function assocIndex(root2, shift, hash, key2, val, addedLeaf) {
       array: cloneAndSet(
         root2.array,
         idx,
-        createNode(shift + SHIFT, nodeKey, node.v, hash, key2, val)
+        createNode(shift + SHIFT, nodeKey, node.v, hash, key3, val)
       )
     };
   } else {
@@ -1030,7 +1084,7 @@ function assocIndex(root2, shift, hash, key2, val, addedLeaf) {
     if (n >= MAX_INDEX_NODE) {
       const nodes = new Array(32);
       const jdx = mask(hash, shift);
-      nodes[jdx] = assocIndex(EMPTY, shift + SHIFT, hash, key2, val, addedLeaf);
+      nodes[jdx] = assocIndex(EMPTY, shift + SHIFT, hash, key3, val, addedLeaf);
       let j = 0;
       let bitmap = root2.bitmap;
       for (let i = 0; i < 32; i++) {
@@ -1048,7 +1102,7 @@ function assocIndex(root2, shift, hash, key2, val, addedLeaf) {
     } else {
       const newArray = spliceIn(root2.array, idx, {
         type: ENTRY,
-        k: key2,
+        k: key3,
         v: val
       });
       addedLeaf.val = true;
@@ -1060,9 +1114,9 @@ function assocIndex(root2, shift, hash, key2, val, addedLeaf) {
     }
   }
 }
-function assocCollision(root2, shift, hash, key2, val, addedLeaf) {
+function assocCollision(root2, shift, hash, key3, val, addedLeaf) {
   if (hash === root2.hash) {
-    const idx = collisionIndexOf(root2, key2);
+    const idx = collisionIndexOf(root2, key3);
     if (idx !== -1) {
       const entry = root2.array[idx];
       if (entry.v === val) {
@@ -1071,15 +1125,15 @@ function assocCollision(root2, shift, hash, key2, val, addedLeaf) {
       return {
         type: COLLISION_NODE,
         hash,
-        array: cloneAndSet(root2.array, idx, { type: ENTRY, k: key2, v: val })
+        array: cloneAndSet(root2.array, idx, { type: ENTRY, k: key3, v: val })
       };
     }
-    const size = root2.array.length;
+    const size2 = root2.array.length;
     addedLeaf.val = true;
     return {
       type: COLLISION_NODE,
       hash,
-      array: cloneAndSet(root2.array, size, { type: ENTRY, k: key2, v: val })
+      array: cloneAndSet(root2.array, size2, { type: ENTRY, k: key3, v: val })
     };
   }
   return assoc(
@@ -1090,45 +1144,45 @@ function assocCollision(root2, shift, hash, key2, val, addedLeaf) {
     },
     shift,
     hash,
-    key2,
+    key3,
     val,
     addedLeaf
   );
 }
-function collisionIndexOf(root2, key2) {
-  const size = root2.array.length;
-  for (let i = 0; i < size; i++) {
-    if (isEqual(key2, root2.array[i].k)) {
+function collisionIndexOf(root2, key3) {
+  const size2 = root2.array.length;
+  for (let i = 0; i < size2; i++) {
+    if (isEqual(key3, root2.array[i].k)) {
       return i;
     }
   }
   return -1;
 }
-function find(root2, shift, hash, key2) {
+function find(root2, shift, hash, key3) {
   switch (root2.type) {
     case ARRAY_NODE:
-      return findArray(root2, shift, hash, key2);
+      return findArray(root2, shift, hash, key3);
     case INDEX_NODE:
-      return findIndex(root2, shift, hash, key2);
+      return findIndex(root2, shift, hash, key3);
     case COLLISION_NODE:
-      return findCollision(root2, key2);
+      return findCollision(root2, key3);
   }
 }
-function findArray(root2, shift, hash, key2) {
+function findArray(root2, shift, hash, key3) {
   const idx = mask(hash, shift);
   const node = root2.array[idx];
   if (node === void 0) {
     return void 0;
   }
   if (node.type !== ENTRY) {
-    return find(node, shift + SHIFT, hash, key2);
+    return find(node, shift + SHIFT, hash, key3);
   }
-  if (isEqual(key2, node.k)) {
+  if (isEqual(key3, node.k)) {
     return node;
   }
   return void 0;
 }
-function findIndex(root2, shift, hash, key2) {
+function findIndex(root2, shift, hash, key3) {
   const bit = bitpos(hash, shift);
   if ((root2.bitmap & bit) === 0) {
     return void 0;
@@ -1136,31 +1190,31 @@ function findIndex(root2, shift, hash, key2) {
   const idx = index(root2.bitmap, bit);
   const node = root2.array[idx];
   if (node.type !== ENTRY) {
-    return find(node, shift + SHIFT, hash, key2);
+    return find(node, shift + SHIFT, hash, key3);
   }
-  if (isEqual(key2, node.k)) {
+  if (isEqual(key3, node.k)) {
     return node;
   }
   return void 0;
 }
-function findCollision(root2, key2) {
-  const idx = collisionIndexOf(root2, key2);
+function findCollision(root2, key3) {
+  const idx = collisionIndexOf(root2, key3);
   if (idx < 0) {
     return void 0;
   }
   return root2.array[idx];
 }
-function without(root2, shift, hash, key2) {
+function without(root2, shift, hash, key3) {
   switch (root2.type) {
     case ARRAY_NODE:
-      return withoutArray(root2, shift, hash, key2);
+      return withoutArray(root2, shift, hash, key3);
     case INDEX_NODE:
-      return withoutIndex(root2, shift, hash, key2);
+      return withoutIndex(root2, shift, hash, key3);
     case COLLISION_NODE:
-      return withoutCollision(root2, key2);
+      return withoutCollision(root2, key3);
   }
 }
-function withoutArray(root2, shift, hash, key2) {
+function withoutArray(root2, shift, hash, key3) {
   const idx = mask(hash, shift);
   const node = root2.array[idx];
   if (node === void 0) {
@@ -1168,11 +1222,11 @@ function withoutArray(root2, shift, hash, key2) {
   }
   let n = void 0;
   if (node.type === ENTRY) {
-    if (!isEqual(node.k, key2)) {
+    if (!isEqual(node.k, key3)) {
       return root2;
     }
   } else {
-    n = without(node, shift + SHIFT, hash, key2);
+    n = without(node, shift + SHIFT, hash, key3);
     if (n === node) {
       return root2;
     }
@@ -1221,7 +1275,7 @@ function withoutArray(root2, shift, hash, key2) {
     array: cloneAndSet(root2.array, idx, n)
   };
 }
-function withoutIndex(root2, shift, hash, key2) {
+function withoutIndex(root2, shift, hash, key3) {
   const bit = bitpos(hash, shift);
   if ((root2.bitmap & bit) === 0) {
     return root2;
@@ -1229,7 +1283,7 @@ function withoutIndex(root2, shift, hash, key2) {
   const idx = index(root2.bitmap, bit);
   const node = root2.array[idx];
   if (node.type !== ENTRY) {
-    const n = without(node, shift + SHIFT, hash, key2);
+    const n = without(node, shift + SHIFT, hash, key3);
     if (n === node) {
       return root2;
     }
@@ -1249,7 +1303,7 @@ function withoutIndex(root2, shift, hash, key2) {
       array: spliceOut(root2.array, idx)
     };
   }
-  if (isEqual(key2, node.k)) {
+  if (isEqual(key3, node.k)) {
     if (root2.bitmap === bit) {
       return void 0;
     }
@@ -1261,8 +1315,8 @@ function withoutIndex(root2, shift, hash, key2) {
   }
   return root2;
 }
-function withoutCollision(root2, key2) {
-  const idx = collisionIndexOf(root2, key2);
+function withoutCollision(root2, key3) {
+  const idx = collisionIndexOf(root2, key3);
   if (idx < 0) {
     return root2;
   }
@@ -1280,8 +1334,8 @@ function forEach(root2, fn) {
     return;
   }
   const items = root2.array;
-  const size = items.length;
-  for (let i = 0; i < size; i++) {
+  const size2 = items.length;
+  for (let i = 0; i < size2; i++) {
     const item = items[i];
     if (item === void 0) {
       continue;
@@ -1327,9 +1381,9 @@ var Dict = class _Dict {
    * @param {undefined | Node<K,V>} root
    * @param {number} size
    */
-  constructor(root2, size) {
+  constructor(root2, size2) {
     this.root = root2;
-    this.size = size;
+    this.size = size2;
   }
   /**
    * @template NotFound
@@ -1337,11 +1391,11 @@ var Dict = class _Dict {
    * @param {NotFound} notFound
    * @returns {NotFound | V}
    */
-  get(key2, notFound) {
+  get(key3, notFound) {
     if (this.root === void 0) {
       return notFound;
     }
-    const found = find(this.root, 0, getHash(key2), key2);
+    const found = find(this.root, 0, getHash(key3), key3);
     if (found === void 0) {
       return notFound;
     }
@@ -1352,10 +1406,10 @@ var Dict = class _Dict {
    * @param {V} val
    * @returns {Dict<K,V>}
    */
-  set(key2, val) {
+  set(key3, val) {
     const addedLeaf = { val: false };
     const root2 = this.root === void 0 ? EMPTY : this.root;
-    const newRoot = assoc(root2, 0, getHash(key2), key2, val, addedLeaf);
+    const newRoot = assoc(root2, 0, getHash(key3), key3, val, addedLeaf);
     if (newRoot === this.root) {
       return this;
     }
@@ -1365,11 +1419,11 @@ var Dict = class _Dict {
    * @param {K} key
    * @returns {Dict<K,V>}
    */
-  delete(key2) {
+  delete(key3) {
     if (this.root === void 0) {
       return this;
     }
-    const newRoot = without(this.root, 0, getHash(key2), key2);
+    const newRoot = without(this.root, 0, getHash(key3), key3);
     if (newRoot === this.root) {
       return this;
     }
@@ -1382,11 +1436,11 @@ var Dict = class _Dict {
    * @param {K} key
    * @returns {boolean}
    */
-  has(key2) {
+  has(key3) {
     if (this.root === void 0) {
       return false;
     }
-    return find(this.root, 0, getHash(key2), key2) !== void 0;
+    return find(this.root, 0, getHash(key3), key3) !== void 0;
   }
   /**
    * @returns {[K,V][]}
@@ -1491,13 +1545,27 @@ function graphemes_iterator(string3) {
     return new Intl.Segmenter().segment(string3)[Symbol.iterator]();
   }
 }
+function pop_grapheme(string3) {
+  let first5;
+  const iterator = graphemes_iterator(string3);
+  if (iterator) {
+    first5 = iterator.next().value?.segment;
+  } else {
+    first5 = string3.match(/./su)?.[0];
+  }
+  if (first5) {
+    return new Ok2([first5, string3.slice(first5.length)]);
+  } else {
+    return new Error2(Nil2);
+  }
+}
 function lowercase(string3) {
   return string3.toLowerCase();
 }
 function add(a2, b) {
   return a2 + b;
 }
-function split(xs, pattern) {
+function split2(xs, pattern) {
   return List.fromArray(xs.split(pattern));
 }
 function join(xs, separator) {
@@ -1517,6 +1585,9 @@ function concat(xs) {
   }
   return result;
 }
+function contains_string(haystack, needle) {
+  return haystack.indexOf(needle) >= 0;
+}
 function trim(string3) {
   return string3.trim();
 }
@@ -1529,6 +1600,48 @@ function print_debug(string3) {
     console.log(string3);
   }
 }
+function codepoint(int3) {
+  return new UtfCodepoint(int3);
+}
+function string_to_codepoint_integer_list(string3) {
+  return List.fromArray(Array.from(string3).map((item) => item.codePointAt(0)));
+}
+function utf_codepoint_to_int(utf_codepoint) {
+  return utf_codepoint.value;
+}
+function compile_regex(pattern, options) {
+  try {
+    let flags = "gu";
+    if (options.case_insensitive)
+      flags += "i";
+    if (options.multi_line)
+      flags += "m";
+    return new Ok2(new RegExp(pattern, flags));
+  } catch (error) {
+    const number = (error.columnNumber || 0) | 0;
+    return new Error2(new CompileError(error.message, number));
+  }
+}
+function regex_split(regex, string3) {
+  return List.fromArray(string3.split(regex).map((item) => item === void 0 ? "" : item));
+}
+function regex_scan(regex, string3) {
+  const matches = Array.from(string3.matchAll(regex)).map((match) => {
+    const content = match[0];
+    const submatches = [];
+    for (let n = match.length - 1; n > 0; n--) {
+      if (match[n]) {
+        submatches[n - 1] = new Some(match[n]);
+        continue;
+      }
+      if (submatches.length > 0) {
+        submatches[n - 1] = new None();
+      }
+    }
+    return new Match(content, List.fromArray(submatches));
+  });
+  return List.fromArray(matches);
+}
 function new_map() {
   return Dict.new();
 }
@@ -1538,18 +1651,18 @@ function map_size(map8) {
 function map_to_list(map8) {
   return List.fromArray(map8.entries());
 }
-function map_remove(key2, map8) {
-  return map8.delete(key2);
+function map_remove(key3, map8) {
+  return map8.delete(key3);
 }
-function map_get(map8, key2) {
-  const value4 = map8.get(key2, NOT_FOUND);
+function map_get(map8, key3) {
+  const value4 = map8.get(key3, NOT_FOUND);
   if (value4 === NOT_FOUND) {
     return new Error2(Nil2);
   }
   return new Ok2(value4);
 }
-function map_insert(key2, value4, map8) {
-  return map8.set(key2, value4);
+function map_insert(key3, value4, map8) {
+  return map8.set(key3, value4);
 }
 function classify_dynamic(data) {
   if (typeof data === "string") {
@@ -1695,12 +1808,12 @@ function inspect(v) {
 }
 function inspectDict(map8) {
   let body3 = "dict.from_list([";
-  let first3 = true;
-  map8.forEach((value4, key2) => {
-    if (!first3)
+  let first5 = true;
+  map8.forEach((value4, key3) => {
+    if (!first5)
       body3 = body3 + ", ";
-    body3 = body3 + "#(" + inspect(key2) + ", " + inspect(value4) + ")";
-    first3 = false;
+    body3 = body3 + "#(" + inspect(key3) + ", " + inspect(value4) + ")";
+    first5 = false;
   });
   return body3 + "])";
 }
@@ -1721,8 +1834,8 @@ function inspectCustomType(record) {
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
-function inspectList(list2) {
-  return `[${list2.toArray().map(inspect).join(", ")}]`;
+function inspectList(list3) {
+  return `[${list3.toArray().map(inspect).join(", ")}]`;
 }
 function inspectBitArray(bits) {
   return `<<${Array.from(bits.buffer).join(", ")}>>`;
@@ -1738,25 +1851,25 @@ function new$() {
 function get(from3, get3) {
   return map_get(from3, get3);
 }
-function insert(dict2, key2, value4) {
-  return map_insert(key2, value4, dict2);
+function insert(dict2, key3, value4) {
+  return map_insert(key3, value4, dict2);
 }
 function fold_list_of_pair(loop$list, loop$initial) {
   while (true) {
-    let list2 = loop$list;
+    let list3 = loop$list;
     let initial = loop$initial;
-    if (list2.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return initial;
     } else {
-      let x = list2.head;
-      let rest = list2.tail;
-      loop$list = rest;
+      let x = list3.head;
+      let rest2 = list3.tail;
+      loop$list = rest2;
       loop$initial = insert(initial, x[0], x[1]);
     }
   }
 }
-function from_list(list2) {
-  return fold_list_of_pair(list2, new$());
+function from_list(list3) {
+  return fold_list_of_pair(list3, new$());
 }
 function reverse_and_concat(loop$remaining, loop$accumulator) {
   while (true) {
@@ -1766,21 +1879,42 @@ function reverse_and_concat(loop$remaining, loop$accumulator) {
       return accumulator;
     } else {
       let item = remaining.head;
-      let rest = remaining.tail;
-      loop$remaining = rest;
+      let rest2 = remaining.tail;
+      loop$remaining = rest2;
       loop$accumulator = prepend(item, accumulator);
     }
   }
 }
-function do_values_acc(loop$list, loop$acc) {
+function do_keys_acc(loop$list, loop$acc) {
   while (true) {
-    let list2 = loop$list;
+    let list3 = loop$list;
     let acc = loop$acc;
-    if (list2.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return reverse_and_concat(acc, toList([]));
     } else {
-      let x = list2.head;
-      let xs = list2.tail;
+      let x = list3.head;
+      let xs = list3.tail;
+      loop$list = xs;
+      loop$acc = prepend(x[0], acc);
+    }
+  }
+}
+function do_keys(dict2) {
+  let list_of_pairs = map_to_list(dict2);
+  return do_keys_acc(list_of_pairs, toList([]));
+}
+function keys(dict2) {
+  return do_keys(dict2);
+}
+function do_values_acc(loop$list, loop$acc) {
+  while (true) {
+    let list3 = loop$list;
+    let acc = loop$acc;
+    if (list3.hasLength(0)) {
+      return reverse_and_concat(acc, toList([]));
+    } else {
+      let x = list3.head;
+      let xs = list3.tail;
       loop$list = xs;
       loop$acc = prepend(x[1], acc);
     }
@@ -1818,8 +1952,8 @@ function do_merge(dict2, new_entries) {
 function merge(dict2, new_entries) {
   return do_merge(dict2, new_entries);
 }
-function delete$(dict2, key2) {
-  return map_remove(key2, dict2);
+function delete$(dict2, key3) {
+  return map_remove(key3, dict2);
 }
 function drop(loop$dict, loop$disallowed_keys) {
   while (true) {
@@ -1845,8 +1979,8 @@ function second(pair) {
   let a2 = pair[1];
   return a2;
 }
-function new$2(first3, second2) {
-  return [first3, second2];
+function new$2(first5, second3) {
+  return [first5, second3];
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
@@ -1871,27 +2005,43 @@ function do_reverse(loop$remaining, loop$accumulator) {
 function reverse(xs) {
   return do_reverse(xs, toList([]));
 }
-function is_empty(list2) {
-  return isEqual(list2, toList([]));
+function is_empty(list3) {
+  return isEqual(list3, toList([]));
 }
-function first2(list2) {
-  if (list2.hasLength(0)) {
+function contains(loop$list, loop$elem) {
+  while (true) {
+    let list3 = loop$list;
+    let elem = loop$elem;
+    if (list3.hasLength(0)) {
+      return false;
+    } else if (list3.atLeastLength(1) && isEqual(list3.head, elem)) {
+      let first$1 = list3.head;
+      return true;
+    } else {
+      let rest$1 = list3.tail;
+      loop$list = rest$1;
+      loop$elem = elem;
+    }
+  }
+}
+function first2(list3) {
+  if (list3.hasLength(0)) {
     return new Error2(void 0);
   } else {
-    let x = list2.head;
+    let x = list3.head;
     return new Ok2(x);
   }
 }
 function do_filter(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list2 = loop$list;
+    let list3 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list2.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return reverse(acc);
     } else {
-      let x = list2.head;
-      let xs = list2.tail;
+      let x = list3.head;
+      let xs = list3.tail;
       let new_acc = (() => {
         let $ = fun(x);
         if ($) {
@@ -1906,19 +2056,19 @@ function do_filter(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function filter(list2, predicate) {
-  return do_filter(list2, predicate, toList([]));
+function filter(list3, predicate) {
+  return do_filter(list3, predicate, toList([]));
 }
 function do_filter_map(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list2 = loop$list;
+    let list3 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list2.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return reverse(acc);
     } else {
-      let x = list2.head;
-      let xs = list2.tail;
+      let x = list3.head;
+      let xs = list3.tail;
       let new_acc = (() => {
         let $ = fun(x);
         if ($.isOk()) {
@@ -1934,39 +2084,39 @@ function do_filter_map(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function filter_map(list2, fun) {
-  return do_filter_map(list2, fun, toList([]));
+function filter_map(list3, fun) {
+  return do_filter_map(list3, fun, toList([]));
 }
 function do_map(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list2 = loop$list;
+    let list3 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list2.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return reverse(acc);
     } else {
-      let x = list2.head;
-      let xs = list2.tail;
+      let x = list3.head;
+      let xs = list3.tail;
       loop$list = xs;
       loop$fun = fun;
       loop$acc = prepend(fun(x), acc);
     }
   }
 }
-function map3(list2, fun) {
-  return do_map(list2, fun, toList([]));
+function map3(list3, fun) {
+  return do_map(list3, fun, toList([]));
 }
 function do_index_map(loop$list, loop$fun, loop$index, loop$acc) {
   while (true) {
-    let list2 = loop$list;
+    let list3 = loop$list;
     let fun = loop$fun;
     let index3 = loop$index;
     let acc = loop$acc;
-    if (list2.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return reverse(acc);
     } else {
-      let x = list2.head;
-      let xs = list2.tail;
+      let x = list3.head;
+      let xs = list3.tail;
       let acc$1 = prepend(fun(x, index3), acc);
       loop$list = xs;
       loop$fun = fun;
@@ -1975,19 +2125,19 @@ function do_index_map(loop$list, loop$fun, loop$index, loop$acc) {
     }
   }
 }
-function index_map(list2, fun) {
-  return do_index_map(list2, fun, 0, toList([]));
+function index_map(list3, fun) {
+  return do_index_map(list3, fun, 0, toList([]));
 }
 function do_try_map(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list2 = loop$list;
+    let list3 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list2.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return new Ok2(reverse(acc));
     } else {
-      let x = list2.head;
-      let xs = list2.tail;
+      let x = list3.head;
+      let xs = list3.tail;
       let $ = fun(x);
       if ($.isOk()) {
         let y = $[0];
@@ -2001,23 +2151,41 @@ function do_try_map(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function try_map(list2, fun) {
-  return do_try_map(list2, fun, toList([]));
+function try_map(list3, fun) {
+  return do_try_map(list3, fun, toList([]));
+}
+function drop2(loop$list, loop$n) {
+  while (true) {
+    let list3 = loop$list;
+    let n = loop$n;
+    let $ = n <= 0;
+    if ($) {
+      return list3;
+    } else {
+      if (list3.hasLength(0)) {
+        return toList([]);
+      } else {
+        let xs = list3.tail;
+        loop$list = xs;
+        loop$n = n - 1;
+      }
+    }
+  }
 }
 function do_take(loop$list, loop$n, loop$acc) {
   while (true) {
-    let list2 = loop$list;
+    let list3 = loop$list;
     let n = loop$n;
     let acc = loop$acc;
     let $ = n <= 0;
     if ($) {
       return reverse(acc);
     } else {
-      if (list2.hasLength(0)) {
+      if (list3.hasLength(0)) {
         return reverse(acc);
       } else {
-        let x = list2.head;
-        let xs = list2.tail;
+        let x = list3.head;
+        let xs = list3.tail;
         loop$list = xs;
         loop$n = n - 1;
         loop$acc = prepend(x, acc);
@@ -2025,28 +2193,28 @@ function do_take(loop$list, loop$n, loop$acc) {
     }
   }
 }
-function take(list2, n) {
-  return do_take(list2, n, toList([]));
+function take(list3, n) {
+  return do_take(list3, n, toList([]));
 }
 function do_append(loop$first, loop$second) {
   while (true) {
-    let first3 = loop$first;
-    let second2 = loop$second;
-    if (first3.hasLength(0)) {
-      return second2;
+    let first5 = loop$first;
+    let second3 = loop$second;
+    if (first5.hasLength(0)) {
+      return second3;
     } else {
-      let item = first3.head;
-      let rest$1 = first3.tail;
+      let item = first5.head;
+      let rest$1 = first5.tail;
       loop$first = rest$1;
-      loop$second = prepend(item, second2);
+      loop$second = prepend(item, second3);
     }
   }
 }
-function append2(first3, second2) {
-  return do_append(reverse(first3), second2);
+function append2(first5, second3) {
+  return do_append(reverse(first5), second3);
 }
-function prepend2(list2, item) {
-  return prepend(item, list2);
+function prepend2(list3, item) {
+  return prepend(item, list3);
 }
 function reverse_and_prepend(loop$prefix, loop$suffix) {
   while (true) {
@@ -2069,42 +2237,42 @@ function do_concat(loop$lists, loop$acc) {
     if (lists.hasLength(0)) {
       return reverse(acc);
     } else {
-      let list2 = lists.head;
+      let list3 = lists.head;
       let further_lists = lists.tail;
       loop$lists = further_lists;
-      loop$acc = reverse_and_prepend(list2, acc);
+      loop$acc = reverse_and_prepend(list3, acc);
     }
   }
 }
 function concat2(lists) {
   return do_concat(lists, toList([]));
 }
-function flat_map(list2, fun) {
-  let _pipe = map3(list2, fun);
+function flat_map(list3, fun) {
+  let _pipe = map3(list3, fun);
   return concat2(_pipe);
 }
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
-    let list2 = loop$list;
+    let list3 = loop$list;
     let initial = loop$initial;
     let fun = loop$fun;
-    if (list2.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return initial;
     } else {
-      let x = list2.head;
-      let rest$1 = list2.tail;
+      let x = list3.head;
+      let rest$1 = list3.tail;
       loop$list = rest$1;
       loop$initial = fun(initial, x);
       loop$fun = fun;
     }
   }
 }
-function fold_right(list2, initial, fun) {
-  if (list2.hasLength(0)) {
+function fold_right(list3, initial, fun) {
+  if (list3.hasLength(0)) {
     return initial;
   } else {
-    let x = list2.head;
-    let rest$1 = list2.tail;
+    let x = list3.head;
+    let rest$1 = list3.tail;
     return fun(fold_right(rest$1, initial, fun), x);
   }
 }
@@ -2127,42 +2295,61 @@ function find2(loop$haystack, loop$is_desired) {
     }
   }
 }
+function any2(loop$list, loop$predicate) {
+  while (true) {
+    let list3 = loop$list;
+    let predicate = loop$predicate;
+    if (list3.hasLength(0)) {
+      return false;
+    } else {
+      let first$1 = list3.head;
+      let rest$1 = list3.tail;
+      let $ = predicate(first$1);
+      if ($) {
+        return true;
+      } else {
+        loop$list = rest$1;
+        loop$predicate = predicate;
+      }
+    }
+  }
+}
 function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$prev, loop$acc) {
   while (true) {
-    let list2 = loop$list;
-    let compare3 = loop$compare;
+    let list3 = loop$list;
+    let compare4 = loop$compare;
     let growing = loop$growing;
     let direction = loop$direction;
     let prev = loop$prev;
     let acc = loop$acc;
     let growing$1 = prepend(prev, growing);
-    if (list2.hasLength(0)) {
+    if (list3.hasLength(0)) {
       if (direction instanceof Ascending) {
         return prepend(do_reverse(growing$1, toList([])), acc);
       } else {
         return prepend(growing$1, acc);
       }
     } else {
-      let new$1 = list2.head;
-      let rest$1 = list2.tail;
-      let $ = compare3(prev, new$1);
+      let new$1 = list3.head;
+      let rest$1 = list3.tail;
+      let $ = compare4(prev, new$1);
       if ($ instanceof Gt && direction instanceof Descending) {
         loop$list = rest$1;
-        loop$compare = compare3;
+        loop$compare = compare4;
         loop$growing = growing$1;
         loop$direction = direction;
         loop$prev = new$1;
         loop$acc = acc;
       } else if ($ instanceof Lt && direction instanceof Ascending) {
         loop$list = rest$1;
-        loop$compare = compare3;
+        loop$compare = compare4;
         loop$growing = growing$1;
         loop$direction = direction;
         loop$prev = new$1;
         loop$acc = acc;
       } else if ($ instanceof Eq && direction instanceof Ascending) {
         loop$list = rest$1;
-        loop$compare = compare3;
+        loop$compare = compare4;
         loop$growing = growing$1;
         loop$direction = direction;
         loop$prev = new$1;
@@ -2181,7 +2368,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           let next = rest$1.head;
           let rest$2 = rest$1.tail;
           let direction$1 = (() => {
-            let $1 = compare3(new$1, next);
+            let $1 = compare4(new$1, next);
             if ($1 instanceof Lt) {
               return new Ascending();
             } else if ($1 instanceof Eq) {
@@ -2191,7 +2378,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
             }
           })();
           loop$list = rest$2;
-          loop$compare = compare3;
+          loop$compare = compare4;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
           loop$prev = next;
@@ -2211,7 +2398,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           let next = rest$1.head;
           let rest$2 = rest$1.tail;
           let direction$1 = (() => {
-            let $1 = compare3(new$1, next);
+            let $1 = compare4(new$1, next);
             if ($1 instanceof Lt) {
               return new Ascending();
             } else if ($1 instanceof Eq) {
@@ -2221,7 +2408,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
             }
           })();
           loop$list = rest$2;
-          loop$compare = compare3;
+          loop$compare = compare4;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
           loop$prev = next;
@@ -2241,7 +2428,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           let next = rest$1.head;
           let rest$2 = rest$1.tail;
           let direction$1 = (() => {
-            let $1 = compare3(new$1, next);
+            let $1 = compare4(new$1, next);
             if ($1 instanceof Lt) {
               return new Ascending();
             } else if ($1 instanceof Eq) {
@@ -2251,7 +2438,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
             }
           })();
           loop$list = rest$2;
-          loop$compare = compare3;
+          loop$compare = compare4;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
           loop$prev = next;
@@ -2264,35 +2451,35 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
 function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
   while (true) {
     let list1 = loop$list1;
-    let list2 = loop$list2;
-    let compare3 = loop$compare;
+    let list22 = loop$list2;
+    let compare4 = loop$compare;
     let acc = loop$acc;
     if (list1.hasLength(0)) {
-      let list3 = list2;
+      let list3 = list22;
       return do_reverse(list3, acc);
-    } else if (list2.hasLength(0)) {
+    } else if (list22.hasLength(0)) {
       let list3 = list1;
       return do_reverse(list3, acc);
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
-      let first22 = list2.head;
-      let rest2 = list2.tail;
-      let $ = compare3(first1, first22);
+      let first22 = list22.head;
+      let rest2 = list22.tail;
+      let $ = compare4(first1, first22);
       if ($ instanceof Lt) {
         loop$list1 = rest1;
-        loop$list2 = list2;
-        loop$compare = compare3;
+        loop$list2 = list22;
+        loop$compare = compare4;
         loop$acc = prepend(first1, acc);
       } else if ($ instanceof Gt) {
         loop$list1 = list1;
         loop$list2 = rest2;
-        loop$compare = compare3;
+        loop$compare = compare4;
         loop$acc = prepend(first22, acc);
       } else {
         loop$list1 = list1;
         loop$list2 = rest2;
-        loop$compare = compare3;
+        loop$compare = compare4;
         loop$acc = prepend(first22, acc);
       }
     }
@@ -2301,7 +2488,7 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
 function merge_ascending_pairs(loop$sequences, loop$compare, loop$acc) {
   while (true) {
     let sequences2 = loop$sequences;
-    let compare3 = loop$compare;
+    let compare4 = loop$compare;
     let acc = loop$acc;
     if (sequences2.hasLength(0)) {
       return do_reverse(acc, toList([]));
@@ -2318,11 +2505,11 @@ function merge_ascending_pairs(loop$sequences, loop$compare, loop$acc) {
       let descending = merge_ascendings(
         ascending1,
         ascending2,
-        compare3,
+        compare4,
         toList([])
       );
       loop$sequences = rest$1;
-      loop$compare = compare3;
+      loop$compare = compare4;
       loop$acc = prepend(descending, acc);
     }
   }
@@ -2330,35 +2517,35 @@ function merge_ascending_pairs(loop$sequences, loop$compare, loop$acc) {
 function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
   while (true) {
     let list1 = loop$list1;
-    let list2 = loop$list2;
-    let compare3 = loop$compare;
+    let list22 = loop$list2;
+    let compare4 = loop$compare;
     let acc = loop$acc;
     if (list1.hasLength(0)) {
-      let list3 = list2;
+      let list3 = list22;
       return do_reverse(list3, acc);
-    } else if (list2.hasLength(0)) {
+    } else if (list22.hasLength(0)) {
       let list3 = list1;
       return do_reverse(list3, acc);
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
-      let first22 = list2.head;
-      let rest2 = list2.tail;
-      let $ = compare3(first1, first22);
+      let first22 = list22.head;
+      let rest2 = list22.tail;
+      let $ = compare4(first1, first22);
       if ($ instanceof Lt) {
         loop$list1 = list1;
         loop$list2 = rest2;
-        loop$compare = compare3;
+        loop$compare = compare4;
         loop$acc = prepend(first22, acc);
       } else if ($ instanceof Gt) {
         loop$list1 = rest1;
-        loop$list2 = list2;
-        loop$compare = compare3;
+        loop$list2 = list22;
+        loop$compare = compare4;
         loop$acc = prepend(first1, acc);
       } else {
         loop$list1 = rest1;
-        loop$list2 = list2;
-        loop$compare = compare3;
+        loop$list2 = list22;
+        loop$compare = compare4;
         loop$acc = prepend(first1, acc);
       }
     }
@@ -2367,7 +2554,7 @@ function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
 function merge_descending_pairs(loop$sequences, loop$compare, loop$acc) {
   while (true) {
     let sequences2 = loop$sequences;
-    let compare3 = loop$compare;
+    let compare4 = loop$compare;
     let acc = loop$acc;
     if (sequences2.hasLength(0)) {
       return do_reverse(acc, toList([]));
@@ -2384,11 +2571,11 @@ function merge_descending_pairs(loop$sequences, loop$compare, loop$acc) {
       let ascending = merge_descendings(
         descending1,
         descending2,
-        compare3,
+        compare4,
         toList([])
       );
       loop$sequences = rest$1;
-      loop$compare = compare3;
+      loop$compare = compare4;
       loop$acc = prepend(ascending, acc);
     }
   }
@@ -2397,7 +2584,7 @@ function merge_all(loop$sequences, loop$direction, loop$compare) {
   while (true) {
     let sequences2 = loop$sequences;
     let direction = loop$direction;
-    let compare3 = loop$compare;
+    let compare4 = loop$compare;
     if (sequences2.hasLength(0)) {
       return toList([]);
     } else if (sequences2.hasLength(1) && direction instanceof Ascending) {
@@ -2407,30 +2594,30 @@ function merge_all(loop$sequences, loop$direction, loop$compare) {
       let sequence = sequences2.head;
       return do_reverse(sequence, toList([]));
     } else if (direction instanceof Ascending) {
-      let sequences$1 = merge_ascending_pairs(sequences2, compare3, toList([]));
+      let sequences$1 = merge_ascending_pairs(sequences2, compare4, toList([]));
       loop$sequences = sequences$1;
       loop$direction = new Descending();
-      loop$compare = compare3;
+      loop$compare = compare4;
     } else {
-      let sequences$1 = merge_descending_pairs(sequences2, compare3, toList([]));
+      let sequences$1 = merge_descending_pairs(sequences2, compare4, toList([]));
       loop$sequences = sequences$1;
       loop$direction = new Ascending();
-      loop$compare = compare3;
+      loop$compare = compare4;
     }
   }
 }
-function sort(list2, compare3) {
-  if (list2.hasLength(0)) {
+function sort(list3, compare4) {
+  if (list3.hasLength(0)) {
     return toList([]);
-  } else if (list2.hasLength(1)) {
-    let x = list2.head;
+  } else if (list3.hasLength(1)) {
+    let x = list3.head;
     return toList([x]);
   } else {
-    let x = list2.head;
-    let y = list2.tail.head;
-    let rest$1 = list2.tail.tail;
+    let x = list3.head;
+    let y = list3.tail.head;
+    let rest$1 = list3.tail.tail;
     let direction = (() => {
-      let $ = compare3(x, y);
+      let $ = compare4(x, y);
       if ($ instanceof Lt) {
         return new Ascending();
       } else if ($ instanceof Eq) {
@@ -2441,26 +2628,26 @@ function sort(list2, compare3) {
     })();
     let sequences$1 = sequences(
       rest$1,
-      compare3,
+      compare4,
       toList([x]),
       direction,
       y,
       toList([])
     );
-    return merge_all(sequences$1, new Ascending(), compare3);
+    return merge_all(sequences$1, new Ascending(), compare4);
   }
 }
-function key_set(list2, key2, value4) {
-  if (list2.hasLength(0)) {
-    return toList([[key2, value4]]);
-  } else if (list2.atLeastLength(1) && isEqual(list2.head[0], key2)) {
-    let k = list2.head[0];
-    let rest$1 = list2.tail;
-    return prepend([key2, value4], rest$1);
+function key_set(list3, key3, value4) {
+  if (list3.hasLength(0)) {
+    return toList([[key3, value4]]);
+  } else if (list3.atLeastLength(1) && isEqual(list3.head[0], key3)) {
+    let k = list3.head[0];
+    let rest$1 = list3.tail;
+    return prepend([key3, value4], rest$1);
   } else {
-    let first$1 = list2.head;
-    let rest$1 = list2.tail;
-    return prepend(first$1, key_set(rest$1, key2, value4));
+    let first$1 = list3.head;
+    let rest$1 = list3.tail;
+    return prepend(first$1, key_set(rest$1, key3, value4));
   }
 }
 
@@ -2481,12 +2668,15 @@ var Iterator = class extends CustomType {
   }
 };
 var Next = class extends CustomType {
-  constructor(element2, accumulator) {
+  constructor(element3, accumulator) {
     super();
-    this.element = element2;
+    this.element = element3;
     this.accumulator = accumulator;
   }
 };
+function stop() {
+  return new Stop();
+}
 function do_unfold(initial, f) {
   return () => {
     let $ = f(initial);
@@ -2568,6 +2758,35 @@ function take2(iterator, desired) {
   let _pipe$1 = do_take2(_pipe, desired);
   return new Iterator(_pipe$1);
 }
+function do_append2(first5, second3) {
+  let $ = first5();
+  if ($ instanceof Continue2) {
+    let e = $[0];
+    let first$1 = $[1];
+    return new Continue2(e, () => {
+      return do_append2(first$1, second3);
+    });
+  } else {
+    return second3();
+  }
+}
+function append3(first5, second3) {
+  let _pipe = () => {
+    return do_append2(first5.continuation, second3.continuation);
+  };
+  return new Iterator(_pipe);
+}
+function once(f) {
+  let _pipe = () => {
+    return new Continue2(f(), stop);
+  };
+  return new Iterator(_pipe);
+}
+function single(elem) {
+  return once(() => {
+    return elem;
+  });
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/string.mjs
 function is_empty2(str) {
@@ -2578,17 +2797,17 @@ function length2(string3) {
 }
 function replace(string3, pattern, substitute) {
   let _pipe = string3;
-  let _pipe$1 = from_string(_pipe);
+  let _pipe$1 = from_string2(_pipe);
   let _pipe$2 = string_replace(_pipe$1, pattern, substitute);
   return to_string4(_pipe$2);
 }
 function lowercase2(string3) {
   return lowercase(string3);
 }
-function append4(first3, second2) {
-  let _pipe = first3;
-  let _pipe$1 = from_string(_pipe);
-  let _pipe$2 = append(_pipe$1, second2);
+function append4(first5, second3) {
+  let _pipe = first5;
+  let _pipe$1 = from_string2(_pipe);
+  let _pipe$2 = append(_pipe$1, second3);
   return to_string4(_pipe$2);
 }
 function concat3(strings) {
@@ -2608,14 +2827,91 @@ function join2(strings, separator) {
 function trim2(string3) {
   return trim(string3);
 }
-function split3(x, substring) {
+function pop_grapheme2(string3) {
+  return pop_grapheme(string3);
+}
+function do_slice(string3, idx, len) {
+  let _pipe = string3;
+  let _pipe$1 = graphemes(_pipe);
+  let _pipe$2 = drop2(_pipe$1, idx);
+  let _pipe$3 = take(_pipe$2, len);
+  return concat3(_pipe$3);
+}
+function slice(string3, idx, len) {
+  let $ = len < 0;
+  if ($) {
+    return "";
+  } else {
+    let $1 = idx < 0;
+    if ($1) {
+      let translated_idx = length2(string3) + idx;
+      let $2 = translated_idx < 0;
+      if ($2) {
+        return "";
+      } else {
+        return do_slice(string3, translated_idx, len);
+      }
+    } else {
+      return do_slice(string3, idx, len);
+    }
+  }
+}
+function split4(x, substring) {
   if (substring === "") {
     return graphemes(x);
   } else {
     let _pipe = x;
-    let _pipe$1 = from_string(_pipe);
-    let _pipe$2 = split2(_pipe$1, substring);
+    let _pipe$1 = from_string2(_pipe);
+    let _pipe$2 = split3(_pipe$1, substring);
     return map3(_pipe$2, to_string4);
+  }
+}
+function padding(size2, pad_string) {
+  let pad_length = length2(pad_string);
+  let num_pads = divideInt(size2, pad_length);
+  let extra = remainderInt(size2, pad_length);
+  let _pipe = repeat(pad_string);
+  let _pipe$1 = take2(_pipe, num_pads);
+  return append3(
+    _pipe$1,
+    single(slice(pad_string, 0, extra))
+  );
+}
+function pad_left(string3, desired_length, pad_string) {
+  let current_length = length2(string3);
+  let to_pad_length = desired_length - current_length;
+  let _pipe = padding(to_pad_length, pad_string);
+  let _pipe$1 = append3(_pipe, single(string3));
+  let _pipe$2 = to_list(_pipe$1);
+  return concat3(_pipe$2);
+}
+function pad_right(string3, desired_length, pad_string) {
+  let current_length = length2(string3);
+  let to_pad_length = desired_length - current_length;
+  let _pipe = single(string3);
+  let _pipe$1 = append3(_pipe, padding(to_pad_length, pad_string));
+  let _pipe$2 = to_list(_pipe$1);
+  return concat3(_pipe$2);
+}
+function do_to_utf_codepoints(string3) {
+  let _pipe = string3;
+  let _pipe$1 = string_to_codepoint_integer_list(_pipe);
+  return map3(_pipe$1, codepoint);
+}
+function to_utf_codepoints(string3) {
+  return do_to_utf_codepoints(string3);
+}
+function utf_codepoint_to_int2(cp) {
+  return utf_codepoint_to_int(cp);
+}
+function first3(s) {
+  let $ = pop_grapheme2(s);
+  if ($.isOk()) {
+    let first$1 = $[0][0];
+    return new Ok2(first$1);
+  } else {
+    let e = $[0];
+    return new Error2(e);
   }
 }
 function inspect2(term) {
@@ -2644,7 +2940,7 @@ function do_remove_dot_segments(loop$input, loop$accumulator) {
       return reverse(accumulator);
     } else {
       let segment = input2.head;
-      let rest = input2.tail;
+      let rest2 = input2.tail;
       let accumulator$1 = (() => {
         if (segment === "") {
           let accumulator$12 = accumulator;
@@ -2663,7 +2959,7 @@ function do_remove_dot_segments(loop$input, loop$accumulator) {
           return prepend(segment$1, accumulator$12);
         }
       })();
-      loop$input = rest;
+      loop$input = rest2;
       loop$accumulator = accumulator$1;
     }
   }
@@ -2672,7 +2968,7 @@ function remove_dot_segments(input2) {
   return do_remove_dot_segments(input2, toList([]));
 }
 function path_segments(path) {
-  return remove_dot_segments(split3(path, "/"));
+  return remove_dot_segments(split4(path, "/"));
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/bool.mjs
@@ -2723,9 +3019,9 @@ function object2(entries) {
 
 // build/dev/javascript/lustre/lustre/effect.mjs
 var Effect = class extends CustomType {
-  constructor(all2) {
+  constructor(all3) {
     super();
-    this.all = all2;
+    this.all = all3;
   }
 };
 function from2(effect) {
@@ -2771,9 +3067,9 @@ var Text = class extends CustomType {
   }
 };
 var Element = class extends CustomType {
-  constructor(key2, namespace, tag, attrs, children, self_closing, void$) {
+  constructor(key3, namespace, tag, attrs, children, self_closing, void$) {
     super();
-    this.key = key2;
+    this.key = key3;
     this.namespace = namespace;
     this.tag = tag;
     this.attrs = attrs;
@@ -2789,10 +3085,10 @@ var Map2 = class extends CustomType {
   }
 };
 var Fragment = class extends CustomType {
-  constructor(elements, key2) {
+  constructor(elements, key3) {
     super();
     this.elements = elements;
-    this.key = key2;
+    this.key = key3;
   }
 };
 var Attribute = class extends CustomType {
@@ -2940,7 +3236,7 @@ function element(tag, attrs, children) {
     return new Element("", "", tag, attrs, children, false, false);
   }
 }
-function do_keyed(el2, key2) {
+function do_keyed(el2, key3) {
   if (el2 instanceof Element) {
     let namespace = el2.namespace;
     let tag = el2.tag;
@@ -2949,7 +3245,7 @@ function do_keyed(el2, key2) {
     let self_closing = el2.self_closing;
     let void$ = el2.void;
     return new Element(
-      key2,
+      key3,
       namespace,
       tag,
       attrs,
@@ -2960,30 +3256,30 @@ function do_keyed(el2, key2) {
   } else if (el2 instanceof Map2) {
     let subtree = el2.subtree;
     return new Map2(() => {
-      return do_keyed(subtree(), key2);
+      return do_keyed(subtree(), key3);
     });
   } else if (el2 instanceof Fragment) {
     let elements = el2.elements;
     let _pipe = elements;
     let _pipe$1 = index_map(
       _pipe,
-      (element2, idx) => {
-        if (element2 instanceof Element) {
-          let el_key = element2.key;
+      (element3, idx) => {
+        if (element3 instanceof Element) {
+          let el_key = element3.key;
           let new_key = (() => {
             if (el_key === "") {
-              return key2 + "-" + to_string3(idx);
+              return key3 + "-" + to_string3(idx);
             } else {
-              return key2 + "-" + el_key;
+              return key3 + "-" + el_key;
             }
           })();
-          return do_keyed(element2, new_key);
+          return do_keyed(element3, new_key);
         } else {
-          return do_keyed(element2, key2);
+          return do_keyed(element3, key3);
         }
       }
     );
-    return new Fragment(_pipe$1, key2);
+    return new Fragment(_pipe$1, key3);
   } else {
     return el2;
   }
@@ -2993,9 +3289,9 @@ function keyed(el2, children) {
     map3(
       children,
       (_use0) => {
-        let key2 = _use0[0];
+        let key3 = _use0[0];
         let child = _use0[1];
-        return do_keyed(child, key2);
+        return do_keyed(child, key3);
       }
     )
   );
@@ -3010,12 +3306,12 @@ function flatten_fragment_elements(elements) {
   return fold_right(
     elements,
     toList([]),
-    (new_elements, element2) => {
-      if (element2 instanceof Fragment) {
-        let fr_elements = element2.elements;
+    (new_elements, element3) => {
+      if (element3 instanceof Fragment) {
+        let fr_elements = element3.elements;
         return append2(fr_elements, new_elements);
       } else {
-        let el2 = element2;
+        let el2 = element3;
         return prepend(el2, new_elements);
       }
     }
@@ -3025,27 +3321,27 @@ function fragment(elements) {
   let _pipe = flatten_fragment_elements(elements);
   return new Fragment(_pipe, "");
 }
-function map6(element2, f) {
-  if (element2 instanceof Text) {
-    let content = element2.content;
+function map6(element3, f) {
+  if (element3 instanceof Text) {
+    let content = element3.content;
     return new Text(content);
-  } else if (element2 instanceof Map2) {
-    let subtree = element2.subtree;
+  } else if (element3 instanceof Map2) {
+    let subtree = element3.subtree;
     return new Map2(() => {
       return map6(subtree(), f);
     });
-  } else if (element2 instanceof Element) {
-    let key2 = element2.key;
-    let namespace = element2.namespace;
-    let tag = element2.tag;
-    let attrs = element2.attrs;
-    let children = element2.children;
-    let self_closing = element2.self_closing;
-    let void$ = element2.void;
+  } else if (element3 instanceof Element) {
+    let key3 = element3.key;
+    let namespace = element3.namespace;
+    let tag = element3.tag;
+    let attrs = element3.attrs;
+    let children = element3.children;
+    let self_closing = element3.self_closing;
+    let void$ = element3.void;
     return new Map2(
       () => {
         return new Element(
-          key2,
+          key3,
           namespace,
           tag,
           map3(
@@ -3063,27 +3359,19 @@ function map6(element2, f) {
       }
     );
   } else {
-    let elements = element2.elements;
-    let key2 = element2.key;
+    let elements = element3.elements;
+    let key3 = element3.key;
     return new Map2(
       () => {
         return new Fragment(
           map3(elements, (_capture) => {
             return map6(_capture, f);
           }),
-          key2
+          key3
         );
       }
     );
   }
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/io.mjs
-function debug(term) {
-  let _pipe = term;
-  let _pipe$1 = inspect2(_pipe);
-  print_debug(_pipe$1);
-  return term;
 }
 
 // build/dev/javascript/lustre/lustre/internals/runtime.mjs
@@ -3204,7 +3492,7 @@ function createElementNode({ prev, next, dispatch: dispatch2, stack }) {
     } else if (name2 === "dangerous-unescaped-html") {
       innerHTML = value4;
     } else {
-      if (typeof value4 === "string")
+      if (el2.getAttribute(name2) !== value4)
         el2.setAttribute(name2, value4);
       if (name2 === "value" || name2 === "selected")
         el2[name2] = value4;
@@ -3289,7 +3577,7 @@ function lustreGenericEventHandler(event2) {
   handlersForEventTarget.get(event2.type)(event2);
 }
 function lustreServerEventHandler(event2) {
-  const el2 = event2.target;
+  const el2 = event2.currentTarget;
   const tag = el2.getAttribute(`data-lustre-on-${event2.type}`);
   const data = JSON.parse(el2.getAttribute("data-lustre-data") || "{}");
   const include = JSON.parse(el2.getAttribute("data-lustre-include") || "[]");
@@ -3324,9 +3612,9 @@ function getKeyedChildren(el2) {
   if (el2) {
     for (const child of el2.children) {
       iterateElement(child, (currElement) => {
-        const key2 = currElement?.key || currElement?.getAttribute?.("data-lustre-key");
-        if (key2)
-          keyedChildren.set(key2, currElement);
+        const key3 = currElement?.key || currElement?.getAttribute?.("data-lustre-key");
+        if (key3)
+          keyedChildren.set(key3, currElement);
       });
     }
   }
@@ -3371,13 +3659,13 @@ function diffKeyedChild(prevChild, child, el2, stack, incomingKeyedChildren, key
   stack.unshift({ prev: keyedChild, next: child, parent: el2 });
   return prevChild;
 }
-function iterateElement(element2, processElement) {
-  if (element2.elements !== void 0) {
-    for (const currElement of element2.elements) {
+function iterateElement(element3, processElement) {
+  if (element3.elements !== void 0) {
+    for (const currElement of element3.elements) {
       processElement(currElement);
     }
   } else {
-    processElement(element2);
+    processElement(element3);
   }
 }
 
@@ -3440,20 +3728,22 @@ var LustreClientApplication2 = class _LustreClientApplication {
   }
   #tick() {
     this.#flush_queue();
-    const vdom = this.#view(this.#model);
-    const dispatch2 = (handler) => (e) => {
-      const result = handler(e);
-      if (result instanceof Ok2) {
-        this.send(new Dispatch(result[0]));
-      }
-    };
-    this.#didUpdate = false;
-    this.#root = morph(this.#root, vdom, dispatch2, this.#isComponent);
+    if (this.#didUpdate) {
+      const vdom = this.#view(this.#model);
+      const dispatch2 = (handler) => (e) => {
+        const result = handler(e);
+        if (result instanceof Ok2) {
+          this.send(new Dispatch(result[0]));
+        }
+      };
+      this.#didUpdate = false;
+      this.#root = morph(this.#root, vdom, dispatch2, this.#isComponent);
+    }
   }
   #flush_queue(iterations = 0) {
     while (this.#queue.length) {
       const [next, effects] = this.#update(this.#model, this.#queue.shift());
-      this.#didUpdate ||= !isEqual(this.#model, next);
+      this.#didUpdate ||= this.#model !== next;
       this.#model = next;
       this.#effects = this.#effects.concat(effects.all.toArray());
     }
@@ -3508,7 +3798,7 @@ var start = (app, selector, flags) => LustreClientApplication2.start(
   app.update,
   app.view
 );
-var is_browser = () => window && window.document;
+var is_browser = () => globalThis.window && window.document;
 var prevent_default = (event2) => event2.preventDefault();
 
 // build/dev/javascript/lustre/lustre.mjs
@@ -3706,8 +3996,19 @@ function curry2(fun) {
     };
   };
 }
+function identity3(x) {
+  return x;
+}
 function apply1(fun, arg1) {
   return fun(arg1);
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/io.mjs
+function debug(term) {
+  let _pipe = term;
+  let _pipe$1 = inspect2(_pipe);
+  print_debug(_pipe$1);
+  return term;
 }
 
 // build/dev/javascript/lustre/lustre/event.mjs
@@ -3836,20 +4137,20 @@ function tap(promise, callback) {
 }
 
 // build/dev/javascript/plinth/element_ffi.mjs
-function setAttribute(element2, name2, value4) {
-  element2.setAttribute(name2, value4);
+function setAttribute(element3, name2, value4) {
+  element3.setAttribute(name2, value4);
 }
 function appendChild(parent, child) {
   parent.appendChild(child);
 }
 
 // build/dev/javascript/plinth/shadow_ffi.mjs
-function appendChild2(root2, element2) {
-  root2.appendChild(element2);
+function appendChild2(root2, element3) {
+  root2.appendChild(element3);
 }
-function attachShadow(element2, mode) {
+function attachShadow(element3, mode) {
   const shadowMode = mode instanceof Open ? "open" : "closed";
-  return element2.attachShadow({ mode: shadowMode });
+  return element3.attachShadow({ mode: shadowMode });
 }
 
 // build/dev/javascript/plinth/plinth/browser/shadow.mjs
@@ -3985,19 +4286,19 @@ var Cache = class _Cache {
   // Insert the keys defined by Keys(New) - C.
   diff() {
     const keys2 = /* @__PURE__ */ new Set();
-    for (const key2 of this.#activeCache.keys())
-      keys2.add(key2);
-    for (const key2 of this.#passiveCache.keys())
-      keys2.add(key2);
-    keys2.forEach((key2) => {
-      if (this.#activeCache.has(key2)) {
-        const klass = this.#activeCache.get(key2);
+    for (const key3 of this.#activeCache.keys())
+      keys2.add(key3);
+    for (const key3 of this.#passiveCache.keys())
+      keys2.add(key3);
+    keys2.forEach((key3) => {
+      if (this.#activeCache.has(key3)) {
+        const klass = this.#activeCache.get(key3);
         if (klass?.indexRules !== null)
           return;
         return this.#insertStyles(klass);
       }
-      if (this.#passiveCache.has(key2))
-        return this.#deleteStyles(this.#passiveCache.get(key2));
+      if (this.#passiveCache.has(key3))
+        return this.#deleteStyles(this.#passiveCache.get(key3));
     });
     this.#stylesheet.render();
   }
@@ -4165,9 +4466,9 @@ var PseudoSelector = class extends CustomType {
   }
 };
 var Property = class extends CustomType {
-  constructor(key2, value4, important) {
+  constructor(key3, value4, important) {
     super();
-    this.key = key2;
+    this.key = key3;
     this.value = value4;
     this.important = important;
   }
@@ -4206,7 +4507,7 @@ var ComputedClass = class extends CustomType {
     this.name = name2;
   }
 };
-function compute_property(indent2, key2, value4, important) {
+function compute_property(indent2, key3, value4, important) {
   let base_indent = indent(indent2);
   let important_ = (() => {
     if (important) {
@@ -4215,7 +4516,7 @@ function compute_property(indent2, key2, value4, important) {
       return "";
     }
   })();
-  return base_indent + key2 + ": " + value4 + important_ + ";";
+  return base_indent + key3 + ": " + value4 + important_ + ";";
 }
 function init_computed_properties(indent2) {
   return new ComputedProperties(
@@ -4241,10 +4542,10 @@ function handle_property(props, style3) {
       { value: style3 }
     );
   }
-  let key2 = style3.key;
+  let key3 = style3.key;
   let value4 = style3.value;
   let important = style3.important;
-  let css_property = compute_property(props.indent, key2, value4, important);
+  let css_property = compute_property(props.indent, key3, value4, important);
   let properties = prepend(css_property, props.properties);
   return props.withFields({ properties });
 }
@@ -4457,36 +4758,36 @@ function px(value4) {
 function percent(value4) {
   return new Pct(to_float(value4));
 }
-function to_string8(size) {
-  if (size instanceof Px) {
-    let value4 = size[0];
+function to_string8(size2) {
+  if (size2 instanceof Px) {
+    let value4 = size2[0];
     return append4(to_string(value4), "px");
-  } else if (size instanceof Pt) {
-    let value4 = size[0];
+  } else if (size2 instanceof Pt) {
+    let value4 = size2[0];
     return append4(to_string(value4), "pt");
-  } else if (size instanceof Pct) {
-    let value4 = size[0];
+  } else if (size2 instanceof Pct) {
+    let value4 = size2[0];
     return append4(to_string(value4), "%");
-  } else if (size instanceof Vh) {
-    let value4 = size[0];
+  } else if (size2 instanceof Vh) {
+    let value4 = size2[0];
     return append4(to_string(value4), "vh");
-  } else if (size instanceof Vw) {
-    let value4 = size[0];
+  } else if (size2 instanceof Vw) {
+    let value4 = size2[0];
     return append4(to_string(value4), "vw");
-  } else if (size instanceof Em) {
-    let value4 = size[0];
+  } else if (size2 instanceof Em) {
+    let value4 = size2[0];
     return append4(to_string(value4), "em");
-  } else if (size instanceof Rem) {
-    let value4 = size[0];
+  } else if (size2 instanceof Rem) {
+    let value4 = size2[0];
     return append4(to_string(value4), "rem");
-  } else if (size instanceof Lh) {
-    let value4 = size[0];
+  } else if (size2 instanceof Lh) {
+    let value4 = size2[0];
     return append4(to_string(value4), "lh");
-  } else if (size instanceof Rlh) {
-    let value4 = size[0];
+  } else if (size2 instanceof Rlh) {
+    let value4 = size2[0];
     return append4(to_string(value4), "rlh");
   } else {
-    let value4 = size[0];
+    let value4 = size2[0];
     return append4(to_string(value4), "ch");
   }
 }
@@ -4572,17 +4873,17 @@ function justify_self(justify) {
 function appearance(appearance2) {
   return property2("appearance", appearance2);
 }
-function top(size) {
-  return property2("top", to_string8(size));
+function top(size2) {
+  return property2("top", to_string8(size2));
 }
-function bottom(size) {
-  return property2("bottom", to_string8(size));
+function bottom(size2) {
+  return property2("bottom", to_string8(size2));
 }
-function right(size) {
-  return property2("right", to_string8(size));
+function right(size2) {
+  return property2("right", to_string8(size2));
 }
-function left(size) {
-  return property2("left", to_string8(size));
+function left(size2) {
+  return property2("left", to_string8(size2));
 }
 function box_shadow(box_shadow2) {
   return property2("box-shadow", box_shadow2);
@@ -4608,11 +4909,11 @@ function border_right(border_right2) {
 function border_radius(border_radius2) {
   return property2("border-radius", to_string8(border_radius2));
 }
-function padding(padding2) {
-  return property2("padding", to_string8(padding2));
+function padding2(padding3) {
+  return property2("padding", to_string8(padding3));
 }
-function padding_(padding2) {
-  return property2("padding", padding2);
+function padding_(padding3) {
+  return property2("padding", padding3);
 }
 function margin(margin2) {
   return property2("margin", to_string8(margin2));
@@ -4636,7 +4937,7 @@ function dynamic(id2, styles) {
 function to_lustre(class$3) {
   let _pipe = class$3;
   let _pipe$1 = toString(_pipe);
-  let _pipe$2 = split3(_pipe$1, " ");
+  let _pipe$2 = split4(_pipe$1, " ");
   let _pipe$3 = map3(_pipe$2, (value4) => {
     return [value4, true];
   });
@@ -4749,16 +5050,16 @@ function cs_to_string(color_scheme) {
     return "Gleam";
   }
 }
-function cs_from_string(key2) {
-  if (key2 === "Ayu Dark") {
+function cs_from_string(key3) {
+  if (key3 === "Ayu Dark") {
     return new AyuDark();
-  } else if (key2 === "Ayu Light") {
+  } else if (key3 === "Ayu Light") {
     return new AyuLight();
-  } else if (key2 === "Catpuccin Light") {
+  } else if (key3 === "Catpuccin Light") {
     return new CatpuccinLight();
-  } else if (key2 === "Catpuccin Frapp\xE9") {
+  } else if (key3 === "Catpuccin Frapp\xE9") {
     return new CatpuccinFrappe();
-  } else if (key2 === "Gleam") {
+  } else if (key3 === "Gleam") {
     return new Gleam();
   } else {
     return new Gleam();
@@ -5339,7 +5640,7 @@ function inspect3(v) {
 }
 function inspectDict2(map8) {
   const data = [];
-  map8.forEach((value4, key2) => data.push([inspect3(key2), inspect3(value4)]));
+  map8.forEach((value4, key3) => data.push([inspect3(key3), inspect3(value4)]));
   return new DataDict(List.fromArray(data));
 }
 function inspectObject2(v) {
@@ -5360,8 +5661,8 @@ function inspectCustomType2(record) {
   );
   return new DataCustomType(record.constructor.name, props);
 }
-function inspectList2(list2) {
-  return new DataList(List.fromArray(list2.toArray().map(inspect3)));
+function inspectList2(list3) {
+  return new DataList(List.fromArray(list3.toArray().map(inspect3)));
 }
 function inspectBitArray2(bits) {
   return new DataBitArray(`<<${Array.from(bits.buffer).join(", ")}>>`);
@@ -5387,12 +5688,12 @@ function updateLustre(application3, initMapper, updateMapper) {
 var stylesheet = "@font-face {\n  font-family: 'Lexend';\n  src: url(data:application/font-woff2;charset=utf-8;base64,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) format('woff2'),\n        url(data:application/font-woff;charset=utf-8;base64,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) format('woff');\n  font-weight: normal;\n  font-style: normal;\n}";
 
 // build/dev/javascript/tardis/tardis/internals/setup.mjs
-function instanciate_shadow_root(element2) {
+function instanciate_shadow_root(element3) {
   let div2 = createElement("div");
   let root2 = attachShadow(div2, new Open());
   appendChild(body(), div2);
   setAttribute(div2, "class", "tardis");
-  appendChild2(root2, element2);
+  appendChild2(root2, element3);
   return root2;
 }
 function instanciate_lustre_root() {
@@ -5525,7 +5826,7 @@ function header_() {
   return class$2(
     toList([
       background("var(--background)"),
-      padding(px(12)),
+      padding2(px(12)),
       display("flex"),
       align_items("center"),
       justify_content("space-between"),
@@ -5597,7 +5898,7 @@ function step_msg() {
     toList([
       overflow("hidden"),
       word_break("break-all"),
-      padding(px(9)),
+      padding2(px(9)),
       border_right("1px solid var(--gutter)")
     ])
   );
@@ -5608,7 +5909,7 @@ function step_model() {
     toList([
       overflow("hidden"),
       word_break("break-all"),
-      padding(px(6))
+      padding2(px(6))
     ])
   );
   return to_lustre(_pipe);
@@ -5668,7 +5969,7 @@ function subgrid_header() {
       font_size(px(14)),
       font_family("Lexend"),
       background("var(--background)"),
-      padding(px(9))
+      padding2(px(9))
     ])
   );
   return to_lustre(_pipe);
@@ -5678,7 +5979,7 @@ function select_cs() {
     toList([
       appearance("none"),
       background("transparent"),
-      padding(px(6)),
+      padding2(px(6)),
       margin(px(0)),
       width(percent(100)),
       font_size(px(12)),
@@ -6477,125 +6778,1352 @@ function page_title(title, styles) {
   );
 }
 
-// build/dev/javascript/justin/justin.mjs
-function add2(words, word) {
-  if (word === "") {
-    return words;
-  } else {
-    return prepend(word, words);
+// build/dev/javascript/birl/birl/duration.mjs
+var Duration = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
   }
+};
+var MicroSecond = class extends CustomType {
+};
+var MilliSecond = class extends CustomType {
+};
+var Second = class extends CustomType {
+};
+var Minute = class extends CustomType {
+};
+var Hour = class extends CustomType {
+};
+var Day = class extends CustomType {
+};
+var Week = class extends CustomType {
+};
+var Month = class extends CustomType {
+};
+var Year = class extends CustomType {
+};
+function extract(duration, unit_value) {
+  return [divideInt(duration, unit_value), remainderInt(duration, unit_value)];
 }
-function is_upper(g) {
-  return lowercase2(g) !== g;
+var milli_second = 1e3;
+var second2 = 1e6;
+var minute = 6e7;
+var hour = 36e8;
+var day = 864e8;
+function days(value4) {
+  return new Duration(value4 * day);
 }
-function split4(loop$in, loop$up, loop$word, loop$words) {
-  while (true) {
-    let in$ = loop$in;
-    let up = loop$up;
-    let word = loop$word;
-    let words = loop$words;
-    if (in$.hasLength(0) && word === "") {
-      return reverse(words);
-    } else if (in$.hasLength(0)) {
-      return reverse(add2(words, word));
-    } else if (in$.atLeastLength(1) && in$.head === "\n") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "	") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "!") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "?") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "#") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === ".") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "-") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "_") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === " ") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else {
-      let g = in$.head;
-      let in$1 = in$.tail;
-      let $ = is_upper(g);
-      if (!$) {
-        loop$in = in$1;
-        loop$up = false;
-        loop$word = word + g;
-        loop$words = words;
-      } else if ($ && up) {
-        loop$in = in$1;
-        loop$up = up;
-        loop$word = word + g;
-        loop$words = words;
+var week = 6048e8;
+var month = 2592e9;
+var year = 31536e9;
+function new$5(values2) {
+  let _pipe = values2;
+  let _pipe$1 = fold(
+    _pipe,
+    0,
+    (total, current) => {
+      if (current[1] instanceof MicroSecond) {
+        let amount = current[0];
+        return total + amount;
+      } else if (current[1] instanceof MilliSecond) {
+        let amount = current[0];
+        return total + amount * milli_second;
+      } else if (current[1] instanceof Second) {
+        let amount = current[0];
+        return total + amount * second2;
+      } else if (current[1] instanceof Minute) {
+        let amount = current[0];
+        return total + amount * minute;
+      } else if (current[1] instanceof Hour) {
+        let amount = current[0];
+        return total + amount * hour;
+      } else if (current[1] instanceof Day) {
+        let amount = current[0];
+        return total + amount * day;
+      } else if (current[1] instanceof Week) {
+        let amount = current[0];
+        return total + amount * week;
+      } else if (current[1] instanceof Month) {
+        let amount = current[0];
+        return total + amount * month;
       } else {
-        loop$in = in$1;
-        loop$up = true;
-        loop$word = g;
-        loop$words = add2(words, word);
+        let amount = current[0];
+        return total + amount * year;
       }
     }
+  );
+  return new Duration(_pipe$1);
+}
+function decompose(duration) {
+  let value4 = duration[0];
+  let absolute_value2 = absolute_value(value4);
+  let $ = extract(absolute_value2, year);
+  let years$1 = $[0];
+  let remaining = $[1];
+  let $1 = extract(remaining, month);
+  let months$1 = $1[0];
+  let remaining$1 = $1[1];
+  let $2 = extract(remaining$1, week);
+  let weeks$1 = $2[0];
+  let remaining$2 = $2[1];
+  let $3 = extract(remaining$2, day);
+  let days$1 = $3[0];
+  let remaining$3 = $3[1];
+  let $4 = extract(remaining$3, hour);
+  let hours$1 = $4[0];
+  let remaining$4 = $4[1];
+  let $5 = extract(remaining$4, minute);
+  let minutes$1 = $5[0];
+  let remaining$5 = $5[1];
+  let $6 = extract(remaining$5, second2);
+  let seconds$1 = $6[0];
+  let remaining$6 = $6[1];
+  let $7 = extract(remaining$6, milli_second);
+  let milli_seconds$1 = $7[0];
+  let remaining$7 = $7[1];
+  let _pipe = toList([
+    [years$1, new Year()],
+    [months$1, new Month()],
+    [weeks$1, new Week()],
+    [days$1, new Day()],
+    [hours$1, new Hour()],
+    [minutes$1, new Minute()],
+    [seconds$1, new Second()],
+    [milli_seconds$1, new MilliSecond()],
+    [remaining$7, new MicroSecond()]
+  ]);
+  let _pipe$1 = filter(_pipe, (item) => {
+    return item[0] > 0;
+  });
+  return map3(
+    _pipe$1,
+    (item) => {
+      let $8 = value4 < 0;
+      if ($8) {
+        return [-1 * item[0], item[1]];
+      } else {
+        return item;
+      }
+    }
+  );
+}
+var unit_values = toList([
+  [new Year(), year],
+  [new Month(), month],
+  [new Week(), week],
+  [new Day(), day],
+  [new Hour(), hour],
+  [new Minute(), minute],
+  [new Second(), second2],
+  [new MilliSecond(), milli_second],
+  [new MicroSecond(), 1]
+]);
+var year_units = toList(["y", "year", "years"]);
+var month_units = toList(["mon", "month", "months"]);
+var week_units = toList(["w", "week", "weeks"]);
+var day_units = toList(["d", "day", "days"]);
+var hour_units = toList(["h", "hour", "hours"]);
+var minute_units = toList(["m", "min", "minute", "minutes"]);
+var second_units = toList(["s", "sec", "secs", "second", "seconds"]);
+var milli_second_units = toList([
+  "ms",
+  "msec",
+  "msecs",
+  "millisecond",
+  "milliseconds",
+  "milli-second",
+  "milli-seconds",
+  "milli_second",
+  "milli_seconds"
+]);
+var units = toList([
+  [new Year(), year_units],
+  [new Month(), month_units],
+  [new Week(), week_units],
+  [new Day(), day_units],
+  [new Hour(), hour_units],
+  [new Minute(), minute_units],
+  [new Second(), second_units],
+  [new MilliSecond(), milli_second_units]
+]);
+
+// build/dev/javascript/birl/birl/zones.mjs
+var list2 = toList([
+  ["Africa/Abidjan", 0],
+  ["Africa/Algiers", 3600],
+  ["Africa/Bissau", 0],
+  ["Africa/Cairo", 7200],
+  ["Africa/Casablanca", 3600],
+  ["Africa/Ceuta", 3600],
+  ["Africa/El_Aaiun", 3600],
+  ["Africa/Johannesburg", 7200],
+  ["Africa/Juba", 7200],
+  ["Africa/Khartoum", 7200],
+  ["Africa/Lagos", 3600],
+  ["Africa/Maputo", 7200],
+  ["Africa/Monrovia", 0],
+  ["Africa/Nairobi", 10800],
+  ["Africa/Ndjamena", 3600],
+  ["Africa/Sao_Tome", 0],
+  ["Africa/Tripoli", 7200],
+  ["Africa/Tunis", 3600],
+  ["Africa/Windhoek", 7200],
+  ["America/Adak", -36e3],
+  ["America/Anchorage", -32400],
+  ["America/Araguaina", -10800],
+  ["America/Argentina/Buenos_Aires", -10800],
+  ["America/Argentina/Catamarca", -10800],
+  ["America/Argentina/Cordoba", -10800],
+  ["America/Argentina/Jujuy", -10800],
+  ["America/Argentina/La_Rioja", -10800],
+  ["America/Argentina/Mendoza", -10800],
+  ["America/Argentina/Rio_Gallegos", -10800],
+  ["America/Argentina/Salta", -10800],
+  ["America/Argentina/San_Juan", -10800],
+  ["America/Argentina/San_Luis", -10800],
+  ["America/Argentina/Tucuman", -10800],
+  ["America/Argentina/Ushuaia", -10800],
+  ["America/Asuncion", -14400],
+  ["America/Bahia", -10800],
+  ["America/Bahia_Banderas", -21600],
+  ["America/Barbados", -14400],
+  ["America/Belem", -10800],
+  ["America/Belize", -21600],
+  ["America/Boa_Vista", -14400],
+  ["America/Bogota", -18e3],
+  ["America/Boise", -25200],
+  ["America/Cambridge_Bay", -25200],
+  ["America/Campo_Grande", -14400],
+  ["America/Cancun", -18e3],
+  ["America/Caracas", -14400],
+  ["America/Cayenne", -10800],
+  ["America/Chicago", -21600],
+  ["America/Chihuahua", -21600],
+  ["America/Ciudad_Juarez", -25200],
+  ["America/Costa_Rica", -21600],
+  ["America/Cuiaba", -14400],
+  ["America/Danmarkshavn", 0],
+  ["America/Dawson", -25200],
+  ["America/Dawson_Creek", -25200],
+  ["America/Denver", -25200],
+  ["America/Detroit", -18e3],
+  ["America/Edmonton", -25200],
+  ["America/Eirunepe", -18e3],
+  ["America/El_Salvador", -21600],
+  ["America/Fort_Nelson", -25200],
+  ["America/Fortaleza", -10800],
+  ["America/Glace_Bay", -14400],
+  ["America/Goose_Bay", -14400],
+  ["America/Grand_Turk", -18e3],
+  ["America/Guatemala", -21600],
+  ["America/Guayaquil", -18e3],
+  ["America/Guyana", -14400],
+  ["America/Halifax", -14400],
+  ["America/Havana", -18e3],
+  ["America/Hermosillo", -25200],
+  ["America/Indiana/Indianapolis", -18e3],
+  ["America/Indiana/Knox", -21600],
+  ["America/Indiana/Marengo", -18e3],
+  ["America/Indiana/Petersburg", -18e3],
+  ["America/Indiana/Tell_City", -21600],
+  ["America/Indiana/Vevay", -18e3],
+  ["America/Indiana/Vincennes", -18e3],
+  ["America/Indiana/Winamac", -18e3],
+  ["America/Inuvik", -25200],
+  ["America/Iqaluit", -18e3],
+  ["America/Jamaica", -18e3],
+  ["America/Juneau", -32400],
+  ["America/Kentucky/Louisville", -18e3],
+  ["America/Kentucky/Monticello", -18e3],
+  ["America/La_Paz", -14400],
+  ["America/Lima", -18e3],
+  ["America/Los_Angeles", -28800],
+  ["America/Maceio", -10800],
+  ["America/Managua", -21600],
+  ["America/Manaus", -14400],
+  ["America/Martinique", -14400],
+  ["America/Matamoros", -21600],
+  ["America/Mazatlan", -25200],
+  ["America/Menominee", -21600],
+  ["America/Merida", -21600],
+  ["America/Metlakatla", -32400],
+  ["America/Mexico_City", -21600],
+  ["America/Miquelon", -10800],
+  ["America/Moncton", -14400],
+  ["America/Monterrey", -21600],
+  ["America/Montevideo", -10800],
+  ["America/New_York", -18e3],
+  ["America/Nome", -32400],
+  ["America/Noronha", -7200],
+  ["America/North_Dakota/Beulah", -21600],
+  ["America/North_Dakota/Center", -21600],
+  ["America/North_Dakota/New_Salem", -21600],
+  ["America/Nuuk", -7200],
+  ["America/Ojinaga", -21600],
+  ["America/Panama", -18e3],
+  ["America/Paramaribo", -10800],
+  ["America/Phoenix", -25200],
+  ["America/Port-au-Prince", -18e3],
+  ["America/Porto_Velho", -14400],
+  ["America/Puerto_Rico", -14400],
+  ["America/Punta_Arenas", -10800],
+  ["America/Rankin_Inlet", -21600],
+  ["America/Recife", -10800],
+  ["America/Regina", -21600],
+  ["America/Resolute", -21600],
+  ["America/Rio_Branco", -18e3],
+  ["America/Santarem", -10800],
+  ["America/Santiago", -14400],
+  ["America/Santo_Domingo", -14400],
+  ["America/Sao_Paulo", -10800],
+  ["America/Scoresbysund", -7200],
+  ["America/Sitka", -32400],
+  ["America/St_Johns", -12600],
+  ["America/Swift_Current", -21600],
+  ["America/Tegucigalpa", -21600],
+  ["America/Thule", -14400],
+  ["America/Tijuana", -28800],
+  ["America/Toronto", -18e3],
+  ["America/Vancouver", -28800],
+  ["America/Whitehorse", -25200],
+  ["America/Winnipeg", -21600],
+  ["America/Yakutat", -32400],
+  ["Antarctica/Casey", 28800],
+  ["Antarctica/Davis", 25200],
+  ["Antarctica/Macquarie", 36e3],
+  ["Antarctica/Mawson", 18e3],
+  ["Antarctica/Palmer", -10800],
+  ["Antarctica/Rothera", -10800],
+  ["Antarctica/Troll", 0],
+  ["Antarctica/Vostok", 18e3],
+  ["Asia/Almaty", 18e3],
+  ["Asia/Amman", 10800],
+  ["Asia/Anadyr", 43200],
+  ["Asia/Aqtau", 18e3],
+  ["Asia/Aqtobe", 18e3],
+  ["Asia/Ashgabat", 18e3],
+  ["Asia/Atyrau", 18e3],
+  ["Asia/Baghdad", 10800],
+  ["Asia/Baku", 14400],
+  ["Asia/Bangkok", 25200],
+  ["Asia/Barnaul", 25200],
+  ["Asia/Beirut", 7200],
+  ["Asia/Bishkek", 21600],
+  ["Asia/Chita", 32400],
+  ["Asia/Choibalsan", 28800],
+  ["Asia/Colombo", 19800],
+  ["Asia/Damascus", 10800],
+  ["Asia/Dhaka", 21600],
+  ["Asia/Dili", 32400],
+  ["Asia/Dubai", 14400],
+  ["Asia/Dushanbe", 18e3],
+  ["Asia/Famagusta", 7200],
+  ["Asia/Gaza", 7200],
+  ["Asia/Hebron", 7200],
+  ["Asia/Ho_Chi_Minh", 25200],
+  ["Asia/Hong_Kong", 28800],
+  ["Asia/Hovd", 25200],
+  ["Asia/Irkutsk", 28800],
+  ["Asia/Jakarta", 25200],
+  ["Asia/Jayapura", 32400],
+  ["Asia/Jerusalem", 7200],
+  ["Asia/Kabul", 16200],
+  ["Asia/Kamchatka", 43200],
+  ["Asia/Karachi", 18e3],
+  ["Asia/Kathmandu", 20700],
+  ["Asia/Khandyga", 32400],
+  ["Asia/Kolkata", 19800],
+  ["Asia/Krasnoyarsk", 25200],
+  ["Asia/Kuching", 28800],
+  ["Asia/Macau", 28800],
+  ["Asia/Magadan", 39600],
+  ["Asia/Makassar", 28800],
+  ["Asia/Manila", 28800],
+  ["Asia/Nicosia", 7200],
+  ["Asia/Novokuznetsk", 25200],
+  ["Asia/Novosibirsk", 25200],
+  ["Asia/Omsk", 21600],
+  ["Asia/Oral", 18e3],
+  ["Asia/Pontianak", 25200],
+  ["Asia/Pyongyang", 32400],
+  ["Asia/Qatar", 10800],
+  ["Asia/Qostanay", 18e3],
+  ["Asia/Qyzylorda", 18e3],
+  ["Asia/Riyadh", 10800],
+  ["Asia/Sakhalin", 39600],
+  ["Asia/Samarkand", 18e3],
+  ["Asia/Seoul", 32400],
+  ["Asia/Shanghai", 28800],
+  ["Asia/Singapore", 28800],
+  ["Asia/Srednekolymsk", 39600],
+  ["Asia/Taipei", 28800],
+  ["Asia/Tashkent", 18e3],
+  ["Asia/Tbilisi", 14400],
+  ["Asia/Tehran", 12600],
+  ["Asia/Thimphu", 21600],
+  ["Asia/Tokyo", 32400],
+  ["Asia/Tomsk", 25200],
+  ["Asia/Ulaanbaatar", 28800],
+  ["Asia/Urumqi", 21600],
+  ["Asia/Ust-Nera", 36e3],
+  ["Asia/Vladivostok", 36e3],
+  ["Asia/Yakutsk", 32400],
+  ["Asia/Yangon", 23400],
+  ["Asia/Yekaterinburg", 18e3],
+  ["Asia/Yerevan", 14400],
+  ["Atlantic/Azores", -3600],
+  ["Atlantic/Bermuda", -14400],
+  ["Atlantic/Canary", 0],
+  ["Atlantic/Cape_Verde", -3600],
+  ["Atlantic/Faroe", 0],
+  ["Atlantic/Madeira", 0],
+  ["Atlantic/South_Georgia", -7200],
+  ["Atlantic/Stanley", -10800],
+  ["Australia/Adelaide", 34200],
+  ["Australia/Brisbane", 36e3],
+  ["Australia/Broken_Hill", 34200],
+  ["Australia/Darwin", 34200],
+  ["Australia/Eucla", 31500],
+  ["Australia/Hobart", 36e3],
+  ["Australia/Lindeman", 36e3],
+  ["Australia/Lord_Howe", 37800],
+  ["Australia/Melbourne", 36e3],
+  ["Australia/Perth", 28800],
+  ["Australia/Sydney", 36e3],
+  ["CET", 3600],
+  ["CST6CDT", -21600],
+  ["EET", 7200],
+  ["EST", -18e3],
+  ["EST5EDT", -18e3],
+  ["Etc/GMT", 0],
+  ["Etc/GMT+1", -3600],
+  ["Etc/GMT+10", -36e3],
+  ["Etc/GMT+11", -39600],
+  ["Etc/GMT+12", -43200],
+  ["Etc/GMT+2", -7200],
+  ["Etc/GMT+3", -10800],
+  ["Etc/GMT+4", -14400],
+  ["Etc/GMT+5", -18e3],
+  ["Etc/GMT+6", -21600],
+  ["Etc/GMT+7", -25200],
+  ["Etc/GMT+8", -28800],
+  ["Etc/GMT+9", -32400],
+  ["Etc/GMT-1", 3600],
+  ["Etc/GMT-10", 36e3],
+  ["Etc/GMT-11", 39600],
+  ["Etc/GMT-12", 43200],
+  ["Etc/GMT-13", 46800],
+  ["Etc/GMT-14", 50400],
+  ["Etc/GMT-2", 7200],
+  ["Etc/GMT-3", 10800],
+  ["Etc/GMT-4", 14400],
+  ["Etc/GMT-5", 18e3],
+  ["Etc/GMT-6", 21600],
+  ["Etc/GMT-7", 25200],
+  ["Etc/GMT-8", 28800],
+  ["Etc/GMT-9", 32400],
+  ["Etc/UTC", 0],
+  ["Europe/Andorra", 3600],
+  ["Europe/Astrakhan", 14400],
+  ["Europe/Athens", 7200],
+  ["Europe/Belgrade", 3600],
+  ["Europe/Berlin", 3600],
+  ["Europe/Brussels", 3600],
+  ["Europe/Bucharest", 7200],
+  ["Europe/Budapest", 3600],
+  ["Europe/Chisinau", 7200],
+  ["Europe/Dublin", 3600],
+  ["Europe/Gibraltar", 3600],
+  ["Europe/Helsinki", 7200],
+  ["Europe/Istanbul", 10800],
+  ["Europe/Kaliningrad", 7200],
+  ["Europe/Kirov", 10800],
+  ["Europe/Kyiv", 7200],
+  ["Europe/Lisbon", 0],
+  ["Europe/London", 0],
+  ["Europe/Madrid", 3600],
+  ["Europe/Malta", 3600],
+  ["Europe/Minsk", 10800],
+  ["Europe/Moscow", 10800],
+  ["Europe/Paris", 3600],
+  ["Europe/Prague", 3600],
+  ["Europe/Riga", 7200],
+  ["Europe/Rome", 3600],
+  ["Europe/Samara", 14400],
+  ["Europe/Saratov", 14400],
+  ["Europe/Simferopol", 10800],
+  ["Europe/Sofia", 7200],
+  ["Europe/Tallinn", 7200],
+  ["Europe/Tirane", 3600],
+  ["Europe/Ulyanovsk", 14400],
+  ["Europe/Vienna", 3600],
+  ["Europe/Vilnius", 7200],
+  ["Europe/Volgograd", 10800],
+  ["Europe/Warsaw", 3600],
+  ["Europe/Zurich", 3600],
+  ["HST", -36e3],
+  ["Indian/Chagos", 21600],
+  ["Indian/Maldives", 18e3],
+  ["Indian/Mauritius", 14400],
+  ["MET", 3600],
+  ["MST", -25200],
+  ["MST7MDT", -25200],
+  ["PST8PDT", -28800],
+  ["Pacific/Apia", 46800],
+  ["Pacific/Auckland", 43200],
+  ["Pacific/Bougainville", 39600],
+  ["Pacific/Chatham", 45900],
+  ["Pacific/Easter", -21600],
+  ["Pacific/Efate", 39600],
+  ["Pacific/Fakaofo", 46800],
+  ["Pacific/Fiji", 43200],
+  ["Pacific/Galapagos", -21600],
+  ["Pacific/Gambier", -32400],
+  ["Pacific/Guadalcanal", 39600],
+  ["Pacific/Guam", 36e3],
+  ["Pacific/Honolulu", -36e3],
+  ["Pacific/Kanton", 46800],
+  ["Pacific/Kiritimati", 50400],
+  ["Pacific/Kosrae", 39600],
+  ["Pacific/Kwajalein", 43200],
+  ["Pacific/Marquesas", -34200],
+  ["Pacific/Nauru", 43200],
+  ["Pacific/Niue", -39600],
+  ["Pacific/Norfolk", 39600],
+  ["Pacific/Noumea", 39600],
+  ["Pacific/Pago_Pago", -39600],
+  ["Pacific/Palau", 32400],
+  ["Pacific/Pitcairn", -28800],
+  ["Pacific/Port_Moresby", 36e3],
+  ["Pacific/Rarotonga", -36e3],
+  ["Pacific/Tahiti", -36e3],
+  ["Pacific/Tarawa", 43200],
+  ["Pacific/Tongatapu", 46800],
+  ["WET", 0]
+]);
+
+// build/dev/javascript/birl/birl_ffi.mjs
+function now() {
+  return Date.now() * 1e3;
+}
+function local_offset() {
+  const date = /* @__PURE__ */ new Date();
+  return -date.getTimezoneOffset();
+}
+function local_timezone() {
+  return new Some(Intl.DateTimeFormat().resolvedOptions().timeZone);
+}
+function monotonic_now() {
+  return Math.floor(globalThis.performance.now() * 1e3);
+}
+function to_parts(timestamp, offset) {
+  const date = new Date((timestamp + offset) / 1e3);
+  return [
+    [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()],
+    [
+      date.getUTCHours(),
+      date.getUTCMinutes(),
+      date.getUTCSeconds(),
+      date.getUTCMilliseconds()
+    ]
+  ];
+}
+function from_parts(parts, offset) {
+  const date = new Date(
+    Date.UTC(
+      parts[0][0],
+      parts[0][1] - 1,
+      parts[0][2],
+      parts[1][0],
+      parts[1][1],
+      parts[1][2],
+      parts[1][3]
+    )
+  );
+  return date.getTime() * 1e3 - offset;
+}
+function weekday(timestamp, offset) {
+  const date = new Date((timestamp + offset) / 1e3);
+  return date.getUTCDay();
+}
+
+// build/dev/javascript/birl/birl.mjs
+var Time = class extends CustomType {
+  constructor(wall_time, offset, timezone, monotonic_time) {
+    super();
+    this.wall_time = wall_time;
+    this.offset = offset;
+    this.timezone = timezone;
+    this.monotonic_time = monotonic_time;
+  }
+};
+var TimeOfDay = class extends CustomType {
+  constructor(hour2, minute2, second3, milli_second2) {
+    super();
+    this.hour = hour2;
+    this.minute = minute2;
+    this.second = second3;
+    this.milli_second = milli_second2;
+  }
+};
+var Mon = class extends CustomType {
+};
+var Tue = class extends CustomType {
+};
+var Wed = class extends CustomType {
+};
+var Thu = class extends CustomType {
+};
+var Fri = class extends CustomType {
+};
+var Sat = class extends CustomType {
+};
+var Sun = class extends CustomType {
+};
+var Jan = class extends CustomType {
+};
+var Feb = class extends CustomType {
+};
+var Mar = class extends CustomType {
+};
+var Apr = class extends CustomType {
+};
+var May = class extends CustomType {
+};
+var Jun = class extends CustomType {
+};
+var Jul = class extends CustomType {
+};
+var Aug = class extends CustomType {
+};
+var Sep = class extends CustomType {
+};
+var Oct = class extends CustomType {
+};
+var Nov = class extends CustomType {
+};
+var Dec = class extends CustomType {
+};
+function add2(value4, duration) {
+  let wt = value4.wall_time;
+  let o = value4.offset;
+  let timezone = value4.timezone;
+  let mt = value4.monotonic_time;
+  let duration$1 = duration[0];
+  if (mt instanceof Some) {
+    let mt$1 = mt[0];
+    return new Time(
+      wt + duration$1,
+      o,
+      timezone,
+      new Some(mt$1 + duration$1)
+    );
+  } else {
+    return new Time(wt + duration$1, o, timezone, new None());
   }
 }
-function split_words(text3) {
-  let _pipe = text3;
-  let _pipe$1 = graphemes(_pipe);
-  return split4(_pipe$1, false, "", toList([]));
+function parse_offset(offset) {
+  return guard(
+    contains(toList(["Z", "z"]), offset),
+    new Ok2(0),
+    () => {
+      let $ = from_string("([+-])");
+      if (!$.isOk()) {
+        throw makeError(
+          "assignment_no_match",
+          "birl",
+          1326,
+          "",
+          "Assignment pattern did not match",
+          { value: $ }
+        );
+      }
+      let re = $[0];
+      return then$(
+        (() => {
+          let $1 = split(re, offset);
+          if ($1.hasLength(3) && $1.head === "" && $1.tail.head === "+") {
+            let offset$1 = $1.tail.tail.head;
+            return new Ok2([1, offset$1]);
+          } else if ($1.hasLength(3) && $1.head === "" && $1.tail.head === "-") {
+            let offset$1 = $1.tail.tail.head;
+            return new Ok2([-1, offset$1]);
+          } else if ($1.hasLength(1)) {
+            return new Ok2([1, offset]);
+          } else {
+            return new Error2(void 0);
+          }
+        })(),
+        (_use0) => {
+          let sign = _use0[0];
+          let offset$1 = _use0[1];
+          let $1 = split4(offset$1, ":");
+          if ($1.hasLength(2)) {
+            let hour_str = $1.head;
+            let minute_str = $1.tail.head;
+            return then$(
+              parse(hour_str),
+              (hour2) => {
+                return then$(
+                  parse(minute_str),
+                  (minute2) => {
+                    return new Ok2(sign * (hour2 * 60 + minute2) * 60 * 1e6);
+                  }
+                );
+              }
+            );
+          } else if ($1.hasLength(1)) {
+            let offset$2 = $1.head;
+            let $2 = length2(offset$2);
+            if ($2 === 1) {
+              return then$(
+                parse(offset$2),
+                (hour2) => {
+                  return new Ok2(sign * hour2 * 3600 * 1e6);
+                }
+              );
+            } else if ($2 === 2) {
+              return then$(
+                parse(offset$2),
+                (number) => {
+                  let $3 = number < 14;
+                  if ($3) {
+                    return new Ok2(sign * number * 3600 * 1e6);
+                  } else {
+                    return new Ok2(
+                      sign * (divideInt(number, 10) * 60 + remainderInt(
+                        number,
+                        10
+                      )) * 60 * 1e6
+                    );
+                  }
+                }
+              );
+            } else if ($2 === 3) {
+              let $3 = first3(offset$2);
+              if (!$3.isOk()) {
+                throw makeError(
+                  "assignment_no_match",
+                  "birl",
+                  1356,
+                  "",
+                  "Assignment pattern did not match",
+                  { value: $3 }
+                );
+              }
+              let hour_str = $3[0];
+              let minute_str = slice(offset$2, 1, 2);
+              return then$(
+                parse(hour_str),
+                (hour2) => {
+                  return then$(
+                    parse(minute_str),
+                    (minute2) => {
+                      return new Ok2(
+                        sign * (hour2 * 60 + minute2) * 60 * 1e6
+                      );
+                    }
+                  );
+                }
+              );
+            } else if ($2 === 4) {
+              let hour_str = slice(offset$2, 0, 2);
+              let minute_str = slice(offset$2, 2, 2);
+              return then$(
+                parse(hour_str),
+                (hour2) => {
+                  return then$(
+                    parse(minute_str),
+                    (minute2) => {
+                      return new Ok2(
+                        sign * (hour2 * 60 + minute2) * 60 * 1e6
+                      );
+                    }
+                  );
+                }
+              );
+            } else {
+              return new Error2(void 0);
+            }
+          } else {
+            return new Error2(void 0);
+          }
+        }
+      );
+    }
+  );
 }
-function kebab_case(text3) {
-  let _pipe = text3;
-  let _pipe$1 = split_words(_pipe);
-  let _pipe$2 = join2(_pipe$1, "-");
-  return lowercase2(_pipe$2);
+function generate_offset(offset) {
+  return guard(
+    offset === 0,
+    new Ok2("Z"),
+    () => {
+      let $ = (() => {
+        let _pipe = toList([[offset, new MicroSecond()]]);
+        let _pipe$1 = new$5(_pipe);
+        return decompose(_pipe$1);
+      })();
+      if ($.hasLength(2) && $.head[1] instanceof Hour && $.tail.head[1] instanceof Minute) {
+        let hour2 = $.head[0];
+        let minute2 = $.tail.head[0];
+        let _pipe = toList([
+          (() => {
+            let $1 = hour2 > 0;
+            if ($1) {
+              return concat3(
+                toList([
+                  "+",
+                  (() => {
+                    let _pipe2 = hour2;
+                    let _pipe$12 = to_string3(_pipe2);
+                    return pad_left(_pipe$12, 2, "0");
+                  })()
+                ])
+              );
+            } else {
+              return concat3(
+                toList([
+                  "-",
+                  (() => {
+                    let _pipe2 = hour2;
+                    let _pipe$12 = absolute_value(_pipe2);
+                    let _pipe$2 = to_string3(_pipe$12);
+                    return pad_left(_pipe$2, 2, "0");
+                  })()
+                ])
+              );
+            }
+          })(),
+          (() => {
+            let _pipe2 = minute2;
+            let _pipe$12 = absolute_value(_pipe2);
+            let _pipe$2 = to_string3(_pipe$12);
+            return pad_left(_pipe$2, 2, "0");
+          })()
+        ]);
+        let _pipe$1 = join2(_pipe, ":");
+        return new Ok2(_pipe$1);
+      } else if ($.hasLength(1) && $.head[1] instanceof Hour) {
+        let hour2 = $.head[0];
+        let _pipe = toList([
+          (() => {
+            let $1 = hour2 > 0;
+            if ($1) {
+              return concat3(
+                toList([
+                  "+",
+                  (() => {
+                    let _pipe2 = hour2;
+                    let _pipe$12 = to_string3(_pipe2);
+                    return pad_left(_pipe$12, 2, "0");
+                  })()
+                ])
+              );
+            } else {
+              return concat3(
+                toList([
+                  "-",
+                  (() => {
+                    let _pipe2 = hour2;
+                    let _pipe$12 = absolute_value(_pipe2);
+                    let _pipe$2 = to_string3(_pipe$12);
+                    return pad_left(_pipe$2, 2, "0");
+                  })()
+                ])
+              );
+            }
+          })(),
+          "00"
+        ]);
+        let _pipe$1 = join2(_pipe, ":");
+        return new Ok2(_pipe$1);
+      } else {
+        return new Error2(void 0);
+      }
+    }
+  );
+}
+function is_invalid_date(date) {
+  let _pipe = date;
+  let _pipe$1 = to_utf_codepoints(_pipe);
+  let _pipe$2 = map3(_pipe$1, utf_codepoint_to_int2);
+  return any2(
+    _pipe$2,
+    (code) => {
+      if (code === 45) {
+        return false;
+      } else if (code >= 48 && code <= 57) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+  );
+}
+function is_invalid_time(time) {
+  let _pipe = time;
+  let _pipe$1 = to_utf_codepoints(_pipe);
+  let _pipe$2 = map3(_pipe$1, utf_codepoint_to_int2);
+  return any2(
+    _pipe$2,
+    (code) => {
+      if (code >= 48 && code <= 58) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+  );
+}
+function parse_section(section2, pattern_string, default$) {
+  let $ = from_string(pattern_string);
+  if (!$.isOk()) {
+    throw makeError(
+      "assignment_no_match",
+      "birl",
+      1521,
+      "parse_section",
+      "Assignment pattern did not match",
+      { value: $ }
+    );
+  }
+  let pattern = $[0];
+  let $1 = scan(pattern, section2);
+  if ($1.hasLength(1) && $1.head instanceof Match && $1.head.submatches.hasLength(1) && $1.head.submatches.head instanceof Some) {
+    let major = $1.head.submatches.head[0];
+    return toList([parse(major), new Ok2(default$), new Ok2(default$)]);
+  } else if ($1.hasLength(1) && $1.head instanceof Match && $1.head.submatches.hasLength(2) && $1.head.submatches.head instanceof Some && $1.head.submatches.tail.head instanceof Some) {
+    let major = $1.head.submatches.head[0];
+    let middle = $1.head.submatches.tail.head[0];
+    return toList([parse(major), parse(middle), new Ok2(default$)]);
+  } else if ($1.hasLength(1) && $1.head instanceof Match && $1.head.submatches.hasLength(3) && $1.head.submatches.head instanceof Some && $1.head.submatches.tail.head instanceof Some && $1.head.submatches.tail.tail.head instanceof Some) {
+    let major = $1.head.submatches.head[0];
+    let middle = $1.head.submatches.tail.head[0];
+    let minor = $1.head.submatches.tail.tail.head[0];
+    return toList([parse(major), parse(middle), parse(minor)]);
+  } else {
+    return toList([new Error2(void 0)]);
+  }
+}
+function parse_date_section(date) {
+  return guard(
+    is_invalid_date(date),
+    new Error2(void 0),
+    () => {
+      let _pipe = (() => {
+        let $ = contains_string(date, "-");
+        if ($) {
+          let $1 = from_string(
+            "(\\d{4})(?:-(1[0-2]|0?[0-9]))?(?:-(3[0-1]|[1-2][0-9]|0?[0-9]))?"
+          );
+          if (!$1.isOk()) {
+            throw makeError(
+              "assignment_no_match",
+              "birl",
+              1441,
+              "",
+              "Assignment pattern did not match",
+              { value: $1 }
+            );
+          }
+          let dash_pattern = $1[0];
+          let $2 = scan(dash_pattern, date);
+          if ($2.hasLength(1) && $2.head instanceof Match && $2.head.submatches.hasLength(1) && $2.head.submatches.head instanceof Some) {
+            let major = $2.head.submatches.head[0];
+            return toList([parse(major), new Ok2(1), new Ok2(1)]);
+          } else if ($2.hasLength(1) && $2.head instanceof Match && $2.head.submatches.hasLength(2) && $2.head.submatches.head instanceof Some && $2.head.submatches.tail.head instanceof Some) {
+            let major = $2.head.submatches.head[0];
+            let middle = $2.head.submatches.tail.head[0];
+            return toList([parse(major), parse(middle), new Ok2(1)]);
+          } else if ($2.hasLength(1) && $2.head instanceof Match && $2.head.submatches.hasLength(3) && $2.head.submatches.head instanceof Some && $2.head.submatches.tail.head instanceof Some && $2.head.submatches.tail.tail.head instanceof Some) {
+            let major = $2.head.submatches.head[0];
+            let middle = $2.head.submatches.tail.head[0];
+            let minor = $2.head.submatches.tail.tail.head[0];
+            return toList([
+              parse(major),
+              parse(middle),
+              parse(minor)
+            ]);
+          } else {
+            return toList([new Error2(void 0)]);
+          }
+        } else {
+          return parse_section(
+            date,
+            "(\\d{4})(1[0-2]|0?[0-9])?(3[0-1]|[1-2][0-9]|0?[0-9])?",
+            1
+          );
+        }
+      })();
+      return try_map(_pipe, identity3);
+    }
+  );
+}
+function parse_time_section(time) {
+  return guard(
+    is_invalid_time(time),
+    new Error2(void 0),
+    () => {
+      let _pipe = parse_section(
+        time,
+        "(2[0-3]|1[0-9]|0?[0-9])([1-5][0-9]|0?[0-9])?([1-5][0-9]|0?[0-9])?",
+        0
+      );
+      return try_map(_pipe, identity3);
+    }
+  );
+}
+function weekday_from_int(weekday3) {
+  if (weekday3 === 0) {
+    return new Ok2(new Sun());
+  } else if (weekday3 === 1) {
+    return new Ok2(new Mon());
+  } else if (weekday3 === 2) {
+    return new Ok2(new Tue());
+  } else if (weekday3 === 3) {
+    return new Ok2(new Wed());
+  } else if (weekday3 === 4) {
+    return new Ok2(new Thu());
+  } else if (weekday3 === 5) {
+    return new Ok2(new Fri());
+  } else if (weekday3 === 6) {
+    return new Ok2(new Sat());
+  } else {
+    return new Error2(void 0);
+  }
+}
+function to_parts2(value4) {
+  let t = value4.wall_time;
+  let o = value4.offset;
+  let $ = to_parts(t, o);
+  let date = $[0];
+  let time = $[1];
+  let $1 = generate_offset(o);
+  if (!$1.isOk()) {
+    throw makeError(
+      "assignment_no_match",
+      "birl",
+      1318,
+      "to_parts",
+      "Assignment pattern did not match",
+      { value: $1 }
+    );
+  }
+  let offset = $1[0];
+  return [date, time, offset];
+}
+function to_naive_date_string(value4) {
+  let $ = to_parts2(value4);
+  let year2 = $[0][0];
+  let month$1 = $[0][1];
+  let day2 = $[0][2];
+  return to_string3(year2) + "-" + (() => {
+    let _pipe = month$1;
+    let _pipe$1 = to_string3(_pipe);
+    return pad_left(_pipe$1, 2, "0");
+  })() + "-" + (() => {
+    let _pipe = day2;
+    let _pipe$1 = to_string3(_pipe);
+    return pad_left(_pipe$1, 2, "0");
+  })();
+}
+function from_parts2(date, time, offset) {
+  return then$(
+    parse_offset(offset),
+    (offset_number) => {
+      let _pipe = from_parts([date, time], offset_number);
+      let _pipe$1 = new Time(
+        _pipe,
+        offset_number,
+        new None(),
+        new None()
+      );
+      return new Ok2(_pipe$1);
+    }
+  );
+}
+function from_naive(value4) {
+  let value$1 = trim2(value4);
+  return then$(
+    (() => {
+      let $ = split4(value$1, "T");
+      let $1 = split4(value$1, "t");
+      let $2 = split4(value$1, " ");
+      if ($.hasLength(2)) {
+        let day_string = $.head;
+        let time_string = $.tail.head;
+        return new Ok2([day_string, time_string]);
+      } else if ($1.hasLength(2)) {
+        let day_string = $1.head;
+        let time_string = $1.tail.head;
+        return new Ok2([day_string, time_string]);
+      } else if ($2.hasLength(2)) {
+        let day_string = $2.head;
+        let time_string = $2.tail.head;
+        return new Ok2([day_string, time_string]);
+      } else if ($.hasLength(1) && $1.hasLength(1) && $2.hasLength(1)) {
+        return new Ok2([value$1, "00"]);
+      } else {
+        return new Error2(void 0);
+      }
+    })(),
+    (_use0) => {
+      let day_string = _use0[0];
+      let time_string = _use0[1];
+      let day_string$1 = trim2(day_string);
+      let time_string$1 = trim2(time_string);
+      let time_string$2 = replace(time_string$1, ":", "");
+      return then$(
+        (() => {
+          let $ = split4(time_string$2, ".");
+          let $1 = split4(time_string$2, ",");
+          if ($.hasLength(1) && $1.hasLength(1)) {
+            return new Ok2([time_string$2, new Ok2(0)]);
+          } else if ($.hasLength(2) && $1.hasLength(1)) {
+            let time_string$3 = $.head;
+            let milli_seconds_string = $.tail.head;
+            return new Ok2(
+              [
+                time_string$3,
+                (() => {
+                  let _pipe = milli_seconds_string;
+                  let _pipe$1 = slice(_pipe, 0, 3);
+                  let _pipe$2 = pad_right(_pipe$1, 3, "0");
+                  return parse(_pipe$2);
+                })()
+              ]
+            );
+          } else if ($.hasLength(1) && $1.hasLength(2)) {
+            let time_string$3 = $1.head;
+            let milli_seconds_string = $1.tail.head;
+            return new Ok2(
+              [
+                time_string$3,
+                (() => {
+                  let _pipe = milli_seconds_string;
+                  let _pipe$1 = slice(_pipe, 0, 3);
+                  let _pipe$2 = pad_right(_pipe$1, 3, "0");
+                  return parse(_pipe$2);
+                })()
+              ]
+            );
+          } else {
+            return new Error2(void 0);
+          }
+        })(),
+        (_use02) => {
+          let time_string$3 = _use02[0];
+          let milli_seconds_result = _use02[1];
+          if (milli_seconds_result.isOk()) {
+            let milli_seconds = milli_seconds_result[0];
+            return then$(
+              parse_date_section(day_string$1),
+              (day2) => {
+                if (!day2.hasLength(3)) {
+                  throw makeError(
+                    "assignment_no_match",
+                    "birl",
+                    612,
+                    "",
+                    "Assignment pattern did not match",
+                    { value: day2 }
+                  );
+                }
+                let year2 = day2.head;
+                let month$1 = day2.tail.head;
+                let date = day2.tail.tail.head;
+                return then$(
+                  parse_time_section(time_string$3),
+                  (time_of_day) => {
+                    if (!time_of_day.hasLength(3)) {
+                      throw makeError(
+                        "assignment_no_match",
+                        "birl",
+                        615,
+                        "",
+                        "Assignment pattern did not match",
+                        { value: time_of_day }
+                      );
+                    }
+                    let hour2 = time_of_day.head;
+                    let minute2 = time_of_day.tail.head;
+                    let second3 = time_of_day.tail.tail.head;
+                    return from_parts2(
+                      [year2, month$1, date],
+                      [hour2, minute2, second3, milli_seconds],
+                      "Z"
+                    );
+                  }
+                );
+              }
+            );
+          } else {
+            return new Error2(void 0);
+          }
+        }
+      );
+    }
+  );
+}
+function set_time_of_day(value4, time) {
+  let $ = to_parts2(value4);
+  let date = $[0];
+  let offset = $[2];
+  let hour2 = time.hour;
+  let minute2 = time.minute;
+  let second3 = time.second;
+  let milli_second2 = time.milli_second;
+  let $1 = from_parts2(date, [hour2, minute2, second3, milli_second2], offset);
+  if (!$1.isOk()) {
+    throw makeError(
+      "assignment_no_match",
+      "birl",
+      1227,
+      "set_time_of_day",
+      "Assignment pattern did not match",
+      { value: $1 }
+    );
+  }
+  let new_value = $1[0];
+  return new Time(
+    new_value.wall_time,
+    new_value.offset,
+    value4.timezone,
+    value4.monotonic_time
+  );
+}
+function weekday2(value4) {
+  let t = value4.wall_time;
+  let o = value4.offset;
+  let $ = weekday_from_int(weekday(t, o));
+  if (!$.isOk()) {
+    throw makeError(
+      "assignment_no_match",
+      "birl",
+      1033,
+      "weekday",
+      "Assignment pattern did not match",
+      { value: $ }
+    );
+  }
+  let weekday$1 = $[0];
+  return weekday$1;
+}
+function now2() {
+  let now$1 = now();
+  let offset_in_minutes = local_offset();
+  let monotonic_now$1 = monotonic_now();
+  let timezone = local_timezone();
+  return new Time(
+    now$1,
+    offset_in_minutes * 6e7,
+    (() => {
+      let _pipe = map(
+        timezone,
+        (tz) => {
+          let $ = any2(list2, (item) => {
+            return item[0] === tz;
+          });
+          if ($) {
+            return new Some(tz);
+          } else {
+            return new None();
+          }
+        }
+      );
+      return flatten(_pipe);
+    })(),
+    new Some(monotonic_now$1)
+  );
+}
+var unix_epoch = new Time(0, 0, new None(), new None());
+var string_to_units = toList([
+  ["year", new Year()],
+  ["month", new Month()],
+  ["week", new Week()],
+  ["day", new Day()],
+  ["hour", new Hour()],
+  ["minute", new Minute()],
+  ["second", new Second()]
+]);
+var units_to_string = toList([
+  [new Year(), "year"],
+  [new Month(), "month"],
+  [new Week(), "week"],
+  [new Day(), "day"],
+  [new Hour(), "hour"],
+  [new Minute(), "minute"],
+  [new Second(), "second"]
+]);
+var weekday_strings = toList([
+  [new Mon(), ["Monday", "Mon"]],
+  [new Tue(), ["Tuesday", "Tue"]],
+  [new Wed(), ["Wednesday", "Wed"]],
+  [new Thu(), ["Thursday", "Thu"]],
+  [new Fri(), ["Friday", "Fri"]],
+  [new Sat(), ["Saturday", "Sat"]],
+  [new Sun(), ["Sunday", "Sun"]]
+]);
+var month_strings = toList([
+  [new Jan(), ["January", "Jan"]],
+  [new Feb(), ["February", "Feb"]],
+  [new Mar(), ["March", "Mar"]],
+  [new Apr(), ["April", "Apr"]],
+  [new May(), ["May", "May"]],
+  [new Jun(), ["June", "Jun"]],
+  [new Jul(), ["July", "Jul"]],
+  [new Aug(), ["August", "Aug"]],
+  [new Sep(), ["September", "Sep"]],
+  [new Oct(), ["October", "Oct"]],
+  [new Nov(), ["November", "Nov"]],
+  [new Dec(), ["December", "Dec"]]
+]);
+
+// build/dev/javascript/decipher/decipher.mjs
+function tagged_union(tag, variants) {
+  let switch$ = from_list(variants);
+  return (dynamic3) => {
+    return try$(
+      tag(dynamic3),
+      (kind) => {
+        let $ = get(switch$, kind);
+        if ($.isOk()) {
+          let decoder = $[0];
+          return decoder(dynamic3);
+        } else {
+          let tags = (() => {
+            let _pipe = keys(switch$);
+            let _pipe$1 = map3(_pipe, inspect2);
+            return join2(_pipe$1, " | ");
+          })();
+          let path = (() => {
+            let $1 = tag(from(void 0));
+            if (!$1.isOk() && $1[0].atLeastLength(1) && $1[0].head instanceof DecodeError) {
+              let path2 = $1[0].head.path;
+              return path2;
+            } else {
+              return toList([]);
+            }
+          })();
+          return new Error2(
+            toList([new DecodeError(tags, inspect2(tag), path)])
+          );
+        }
+      }
+    );
+  };
 }
 
 // node_modules/nanoid/url-alphabet/index.js
 var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
 
 // node_modules/nanoid/index.browser.js
-var nanoid = (size = 21) => {
+var nanoid = (size2 = 21) => {
   let id2 = "";
-  let bytes = crypto.getRandomValues(new Uint8Array(size));
-  while (size--) {
-    id2 += urlAlphabet[bytes[size] & 63];
+  let bytes = crypto.getRandomValues(new Uint8Array(size2));
+  while (size2--) {
+    id2 += urlAlphabet[bytes[size2] & 63];
   }
   return id2;
 };
@@ -6704,7 +8232,7 @@ var sqlite = await sqliteWasm.default(
   () => "https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0/dist/crsqlite.wasm"
 );
 var db = await sqlite.open("mealstack.db");
-function replacer(key2, value4) {
+function replacer(key3, value4) {
   if (value4 instanceof Map) {
     return {
       dataType: "Map",
@@ -6714,7 +8242,7 @@ function replacer(key2, value4) {
   }
   return value4;
 }
-function reviver(key2, value4) {
+function reviver(key3, value4) {
   if (typeof value4 === "object" && value4 !== null) {
     if (value4.dataType === "Map") {
       return new Map(value4.value);
@@ -6727,7 +8255,7 @@ async function prepareTables() {
     "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='tag_options')"
   );
   const tagOptionsTableExists = findTagOptionsTable[0][0];
-  console.log(tagOptionsTableExists);
+  console.log("tagoptions table exists? ", tagOptionsTableExists);
   if (!tagOptionsTableExists) {
     console.log("creating tag_options table...");
     await db.execA(
@@ -6738,11 +8266,22 @@ async function prepareTables() {
     "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='recipes')"
   );
   const recipesTableExists = findRecipesTable[0][0];
-  console.log(recipesTableExists);
+  console.log("recipes table exists? ", recipesTableExists);
   if (!recipesTableExists) {
     console.log("creating recipes table...");
     await db.execA(
       "CREATE TABLE `recipes` ( 			`id` text PRIMARY KEY NOT NULL, 			`slug` text, 			`title` text, 			`cook_time` integer, 			`prep_time` integer, 			`serves` integer, 			`ingredients` text, 			`method_steps` text, 			`tags` text, 			`shortlisted` integer 		)"
+    );
+  }
+  const findPlanTable = await db.execA(
+    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='plan')"
+  );
+  const planTableExists = findPlanTable[0][0];
+  console.log("plan Table exists? ", planTableExists);
+  if (!planTableExists) {
+    console.log("creating plan table...");
+    await db.execA(
+      "CREATE TABLE `plan` ( 			`date` date PRIMARY KEY NOT NULL, 			`lunch` text, 			`dinner` text 		)"
     );
   }
 }
@@ -6811,12 +8350,182 @@ async function do_get_tagoptions() {
   console.log("tagoption result from ffi: ", result);
   return result;
 }
+async function do_get_plan(startDate) {
+  console.log("do_get_plan");
+  const _seed = await seedDb();
+  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM plan)");
+  const exists = findRows[0];
+  if (!exists) {
+    return new Ok2([]);
+  }
+  const input2 = startDate ? startDate : `'now'`;
+  const result = await db.execO(`SELECT date(date),lunch,dinner FROM plan WHERE date > DATE(${input2},'localtime','weekday 0','-6 days') AND date < DATE(${input2},'localtime','weekday 1')`);
+  const mapped = result.map((day2) => {
+    day2.lunch = JSON.parse(day2.lunch);
+    day2.dinner = JSON.parse(day2.dinner);
+    return day2;
+  });
+  console.log("plan result from ffi: ", mapped);
+  return result;
+}
+
+// build/dev/javascript/app/lib/decoders.mjs
+function stringed_bool(d) {
+  let _pipe = string(d);
+  return map2(
+    _pipe,
+    (a2) => {
+      if (a2 === "True") {
+        return true;
+      } else if (a2 === "true") {
+        return true;
+      } else if (a2 === "1") {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  );
+}
+function stringed_int(d) {
+  let decoder = string;
+  let _pipe = decoder(d);
+  let _pipe$1 = map2(_pipe, parse);
+  let _pipe$2 = map2(
+    _pipe$1,
+    (_capture) => {
+      return map_error(
+        _capture,
+        (_) => {
+          return toList([
+            new DecodeError(
+              "a stringed int",
+              "something else",
+              toList([""])
+            )
+          ]);
+        }
+      );
+    }
+  );
+  return flatten2(_pipe$2);
+}
+
+// build/dev/javascript/justin/justin.mjs
+function add3(words, word) {
+  if (word === "") {
+    return words;
+  } else {
+    return prepend(word, words);
+  }
+}
+function is_upper(g) {
+  return lowercase2(g) !== g;
+}
+function split5(loop$in, loop$up, loop$word, loop$words) {
+  while (true) {
+    let in$ = loop$in;
+    let up = loop$up;
+    let word = loop$word;
+    let words = loop$words;
+    if (in$.hasLength(0) && word === "") {
+      return reverse(words);
+    } else if (in$.hasLength(0)) {
+      return reverse(add3(words, word));
+    } else if (in$.atLeastLength(1) && in$.head === "\n") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "	") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "!") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "?") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "#") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === ".") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "-") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "_") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === " ") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else {
+      let g = in$.head;
+      let in$1 = in$.tail;
+      let $ = is_upper(g);
+      if (!$) {
+        loop$in = in$1;
+        loop$up = false;
+        loop$word = word + g;
+        loop$words = words;
+      } else if ($ && up) {
+        loop$in = in$1;
+        loop$up = up;
+        loop$word = word + g;
+        loop$words = words;
+      } else {
+        loop$in = in$1;
+        loop$up = true;
+        loop$word = g;
+        loop$words = add3(words, word);
+      }
+    }
+  }
+}
+function split_words(text3) {
+  let _pipe = text3;
+  let _pipe$1 = graphemes(_pipe);
+  return split5(_pipe$1, false, "", toList([]));
+}
+function kebab_case(text3) {
+  let _pipe = text3;
+  let _pipe$1 = split_words(_pipe);
+  let _pipe$2 = join2(_pipe$1, "-");
+  return lowercase2(_pipe$2);
+}
 
 // build/dev/javascript/app/lib/utils.mjs
-function dict_update(dict2, key2, fun) {
+function dict_update(dict2, key3, fun) {
   let item = (() => {
     let _pipe = dict2;
-    let _pipe$1 = get(_pipe, key2);
+    let _pipe$1 = get(_pipe, key3);
     return from_result(_pipe$1);
   })();
   if (item instanceof Some) {
@@ -6824,7 +8533,7 @@ function dict_update(dict2, key2, fun) {
     let _pipe = item$1;
     let _pipe$1 = fun(_pipe);
     return ((_capture) => {
-      return insert(dict2, key2, _capture);
+      return insert(dict2, key3, _capture);
     })(
       _pipe$1
     );
@@ -7053,12 +8762,12 @@ var Tag = class extends CustomType {
   }
 };
 var Ingredient = class extends CustomType {
-  constructor(name2, ismain, quantity, units) {
+  constructor(name2, ismain, quantity, units2) {
     super();
     this.name = name2;
     this.ismain = ismain;
     this.quantity = quantity;
-    this.units = units;
+    this.units = units2;
   }
 };
 function merge_recipe_into_model(recipe, model) {
@@ -8930,49 +10639,13 @@ function detail_update(model, msg) {
     return [new Some(recipe), none()];
   }
 }
-function decode_stringed_int(d) {
-  let decoder = string;
-  let _pipe = decoder(d);
-  let _pipe$1 = map2(_pipe, parse);
-  let _pipe$2 = map2(
-    _pipe$1,
-    (_capture) => {
-      return map_error(
-        _capture,
-        (_) => {
-          return toList([
-            new DecodeError(
-              "a stringed int",
-              "something else",
-              toList([""])
-            )
-          ]);
-        }
-      );
-    }
-  );
-  return flatten(_pipe$2);
-}
-function decode_stringed_bool(d) {
-  let _pipe = string(d);
-  return map2(
-    _pipe,
-    (a2) => {
-      if (a2 === "True") {
-        return true;
-      } else {
-        return false;
-      }
-    }
-  );
-}
 function decode_ingredient(d) {
   let decoder = decode4(
     (var0, var1, var2, var3) => {
       return new Ingredient(var0, var1, var2, var3);
     },
     optional_field("name", string),
-    optional_field("ismain", decode_stringed_bool),
+    optional_field("ismain", stringed_bool),
     optional_field("quantity", string),
     optional_field("units", string)
   );
@@ -9008,11 +10681,14 @@ function decode_recipe(d) {
     field("cook_time", int),
     field("prep_time", int),
     field("serves", int),
-    optional_field("tags", dict(decode_stringed_int, decode_tag)),
-    optional_field("ingredients", dict(decode_stringed_int, decode_ingredient)),
+    optional_field("tags", dict(stringed_int, decode_tag)),
+    optional_field(
+      "ingredients",
+      dict(stringed_int, decode_ingredient)
+    ),
     optional_field(
       "method_steps",
-      dict(decode_stringed_int, decode_method_step)
+      dict(stringed_int, decode_method_step)
     )
   );
   return decoder(d);
@@ -9097,13 +10773,244 @@ function get_tag_options() {
   );
 }
 
+// build/dev/javascript/app/pages/planner.mjs
+var UserAddedMealToPlan = class extends CustomType {
+};
+var UserRemovedMealFromPlan = class extends CustomType {
+};
+var DbRetrievedPlan = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var PlanDay = class extends CustomType {
+  constructor(date, lunch, dinner) {
+    super();
+    this.date = date;
+    this.lunch = lunch;
+    this.dinner = dinner;
+  }
+};
+var RecipeWithStatus = class extends CustomType {
+  constructor(recipe_id, complete) {
+    super();
+    this.recipe_id = recipe_id;
+    this.complete = complete;
+  }
+};
+var MealWithStatus = class extends CustomType {
+  constructor(meal, complete) {
+    super();
+    this.meal = meal;
+    this.complete = complete;
+  }
+};
+function planner_update(model, msg) {
+  if (msg instanceof UserAddedMealToPlan) {
+    throw makeError(
+      "todo",
+      "pages/planner",
+      48,
+      "planner_update",
+      "This has not yet been implemented",
+      {}
+    );
+  } else if (msg instanceof UserRemovedMealFromPlan) {
+    throw makeError(
+      "todo",
+      "pages/planner",
+      51,
+      "planner_update",
+      "This has not yet been implemented",
+      {}
+    );
+  } else if (msg instanceof DbRetrievedPlan) {
+    let plan_week = msg[0];
+    return [plan_week, none()];
+  } else {
+    return [model, none()];
+  }
+}
+function view_planner(model) {
+  let start_of_week = (() => {
+    if (model.atLeastLength(1)) {
+      let first5 = model.head;
+      return to_naive_date_string(first5.date);
+    } else {
+      let today = set_time_of_day(
+        now2(),
+        new TimeOfDay(0, 0, 0, 0)
+      );
+      let day2 = (() => {
+        let $ = weekday2(now2());
+        if ($ instanceof Mon) {
+          return today;
+        } else if ($ instanceof Tue) {
+          return add2(today, days(-1));
+        } else if ($ instanceof Wed) {
+          return add2(today, days(-2));
+        } else if ($ instanceof Thu) {
+          return add2(today, days(-3));
+        } else if ($ instanceof Fri) {
+          return add2(today, days(-4));
+        } else if ($ instanceof Sat) {
+          return add2(today, days(-5));
+        } else {
+          return add2(today, days(-6));
+        }
+      })();
+      return to_naive_date_string(day2);
+    }
+  })();
+  return section(
+    toList([
+      class$(
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
+      )
+    ]),
+    toList([
+      page_title("Week of " + start_of_week, "underline-orange"),
+      nav(
+        toList([
+          class$(
+            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
+          )
+        ]),
+        toList([
+          a(toList([href("/"), class$("text-center")]), toList([text("\u{1F3E0}")])),
+          a(
+            toList([href("/planner/edit"), class$("text-center")]),
+            toList([text("\u270F\uFE0F")])
+          )
+        ])
+      ),
+      section(
+        toList([
+          id("active-week"),
+          class$(
+            "mb-2 text-sm p-1 \n        overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n        col-span-full row-start-3 grid gap-1 \n        grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n        snap-y scroll-pt-[9%]\n        xs:col-start-[full-start] xs:col-end-[full-end]\n        xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n        xs:snap-    x xs:scroll-pl-[9%] xs:scroll-pt-0"
+          )
+        ]),
+        toList([])
+      )
+    ])
+  );
+}
+function edit_planner(model) {
+  throw makeError(
+    "todo",
+    "pages/planner",
+    146,
+    "edit_planner",
+    "This has not yet been implemented",
+    {}
+  );
+}
+function decode_stringed_day(d) {
+  let decoder = string;
+  let _pipe = map2(
+    decoder(d),
+    (a2) => {
+      let _pipe2 = a2;
+      let _pipe$1 = from_naive(_pipe2);
+      return map_error(
+        _pipe$1,
+        (_) => {
+          return toList([
+            new DecodeError(
+              "a stringed day",
+              "something else",
+              toList(["*"])
+            )
+          ]);
+        }
+      );
+    }
+  );
+  return flatten2(_pipe);
+}
+function decode_meal_status(d) {
+  let decoder = tagged_union(
+    field("type", string),
+    toList([
+      [
+        "RecipeWithStatus",
+        decode2(
+          (var0, var1) => {
+            return new RecipeWithStatus(var0, var1);
+          },
+          field("recipe_id", string),
+          field("complete", stringed_bool)
+        )
+      ],
+      [
+        "MealWithStatus",
+        decode2(
+          (var0, var1) => {
+            return new MealWithStatus(var0, var1);
+          },
+          field("meal", string),
+          field("complete", stringed_bool)
+        )
+      ]
+    ])
+  );
+  return decoder(d);
+}
+function decode_plan_day(d) {
+  let decoder = decode3(
+    (var0, var1, var2) => {
+      return new PlanDay(var0, var1, var2);
+    },
+    field("date", decode_stringed_day),
+    field("lunch", decode_meal_status),
+    field("dinner", decode_meal_status)
+  );
+  return decoder(d);
+}
+function get_plan() {
+  return from2(
+    (dispatch2) => {
+      let _pipe = do_get_plan();
+      let _pipe$1 = map_promise(_pipe, toList);
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map3(_capture, decode_plan_day);
+        }
+      );
+      let _pipe$3 = map_promise(_pipe$2, all);
+      let _pipe$4 = map_promise(
+        _pipe$3,
+        (_capture) => {
+          return map2(
+            _capture,
+            (var0) => {
+              return new DbRetrievedPlan(var0);
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$4,
+        (_capture) => {
+          return map2(_capture, dispatch2);
+        }
+      );
+      return void 0;
+    }
+  );
+}
+
 // build/dev/javascript/app/app.mjs
 var Model2 = class extends CustomType {
-  constructor(current_route, current_recipe, recipes) {
+  constructor(current_route, current_recipe, recipes, planner) {
     super();
     this.current_route = current_route;
     this.current_recipe = current_recipe;
     this.recipes = recipes;
+    this.planner = planner;
   }
 };
 var Home = class extends CustomType {
@@ -9122,6 +11029,10 @@ var EditRecipeDetail = class extends CustomType {
 };
 var ViewRecipeList = class extends CustomType {
 };
+var ViewPlanner = class extends CustomType {
+};
+var EditPlanner = class extends CustomType {
+};
 var OnRouteChange = class extends CustomType {
   constructor(x0) {
     super();
@@ -9135,6 +11046,12 @@ var RecipeDetail = class extends CustomType {
   }
 };
 var RecipeList2 = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var Planner = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
@@ -9186,6 +11103,18 @@ function update3(model, msg) {
       }),
       none()
     ];
+  } else if (msg instanceof OnRouteChange && msg[0] instanceof ViewPlanner) {
+    return [
+      model.withFields({ current_route: new ViewPlanner() }),
+      map4(get_plan(), (var0) => {
+        return new Planner(var0);
+      })
+    ];
+  } else if (msg instanceof OnRouteChange && msg[0] instanceof EditPlanner) {
+    return [
+      model.withFields({ current_route: new EditPlanner() }),
+      none()
+    ];
   } else if (msg instanceof OnRouteChange) {
     let route = msg[0];
     return [
@@ -9216,7 +11145,7 @@ function update3(model, msg) {
         }
       )
     ];
-  } else {
+  } else if (msg instanceof RecipeDetail) {
     let detail_msg = msg[0];
     let $ = detail_update(model.current_recipe, detail_msg);
     let child_model = $[0];
@@ -9225,6 +11154,17 @@ function update3(model, msg) {
       model.withFields({ current_recipe: child_model }),
       map4(child_effect, (var0) => {
         return new RecipeDetail(var0);
+      })
+    ];
+  } else {
+    let planner_msg = msg[0];
+    let $ = planner_update(model.planner, planner_msg);
+    let child_model = $[0];
+    let child_effect = $[1];
+    return [
+      model.withFields({ planner: child_model }),
+      map4(child_effect, (var0) => {
+        return new Planner(var0);
       })
     ];
   }
@@ -9239,6 +11179,10 @@ function on_route_change(uri) {
     return new OnRouteChange(new ViewRecipeDetail(slug));
   } else if ($.hasLength(1) && $.head === "recipes") {
     return new OnRouteChange(new ViewRecipeList());
+  } else if ($.hasLength(2) && $.head === "planner" && $.tail.head === "edit") {
+    return new OnRouteChange(new EditPlanner());
+  } else if ($.hasLength(1) && $.head === "planner") {
+    return new OnRouteChange(new ViewPlanner());
   } else {
     return new OnRouteChange(new Home());
   }
@@ -9248,7 +11192,8 @@ function init6(_) {
     new Model2(
       new Home(),
       new None(),
-      new RecipeList(toList([]), toList([]))
+      new RecipeList(toList([]), toList([])),
+      toList([])
     ),
     init2(on_route_change)
   ];
@@ -9353,7 +11298,7 @@ function view2(model) {
           return new RecipeDetail(var0);
         }
       );
-    } else {
+    } else if ($ instanceof EditRecipeDetail) {
       return map6(
         lookup_and_edit_recipe(
           model.current_recipe,
@@ -9363,6 +11308,10 @@ function view2(model) {
           return new RecipeDetail(var0);
         }
       );
+    } else if ($ instanceof ViewPlanner) {
+      return view_planner(model.planner);
+    } else {
+      return edit_planner(model.planner);
     }
   })();
   return view_base(page);
@@ -9373,7 +11322,7 @@ function main2() {
     throw makeError(
       "assignment_no_match",
       "app",
-      26,
+      27,
       "main",
       "Assignment pattern did not match",
       { value: $ }

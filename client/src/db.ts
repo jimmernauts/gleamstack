@@ -1,7 +1,8 @@
 import { Ok, Error } from "./gleam.mjs";
 import { nanoid } from "nanoid";
-import type { Recipe, TagOption } from "./types.ts";
+import type { Recipe, TagOption, PlanDay } from "./types.ts";
 import { seedDb } from "./seed.ts";
+import { CompressionType } from "@aws-sdk/client-s3";
 
 const sqliteWasm = await import("https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0");
 const sqlite = await sqliteWasm.default(
@@ -33,7 +34,7 @@ export async function prepareTables() {
 		"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='tag_options')",
 	);
 	const tagOptionsTableExists = findTagOptionsTable[0][0];
-	console.log(tagOptionsTableExists);
+	console.log("tagoptions table exists? ",tagOptionsTableExists);
 	if (!tagOptionsTableExists) {
 		console.log("creating tag_options table...");
 		await db.execA(
@@ -48,7 +49,7 @@ export async function prepareTables() {
 		"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='recipes')",
 	);
 	const recipesTableExists = findRecipesTable[0][0];
-	console.log(recipesTableExists);
+	console.log("recipes table exists? ",recipesTableExists);
 	if (!recipesTableExists) {
 		console.log("creating recipes table...");
 		await db.execA(
@@ -65,6 +66,21 @@ export async function prepareTables() {
 			`shortlisted` integer \
 		)",
 		);
+	}
+	const findPlanTable = await db.execA(
+		"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='plan')",
+	)
+	const planTableExists = findPlanTable[0][0]
+	console.log("plan Table exists? ",planTableExists)
+	if (!planTableExists) {
+		console.log("creating plan table...")
+		await db.execA(
+			"CREATE TABLE `plan` ( \
+			`date` date PRIMARY KEY NOT NULL, \
+			`lunch` text, \
+			`dinner` text \
+		)"
+		)
 	}
 }
 
@@ -115,7 +131,7 @@ export async function listRecipes() {
 }
 
 
-
+//TODO: either wrap all the ffi functions, or unwrap them
 export async function addOrUpdateRecipe(recipe: Recipe) {
 	console.log("addOrUpdateRecipe: ",recipe);
 	const query = ` \
@@ -150,4 +166,39 @@ export async function do_get_tagoptions() {
 	const result = await listTagOptions();
 	console.log("tagoption result from ffi: ",result)
 	return result
+}
+
+export async function do_get_plan(startDate) {
+	console.log("do_get_plan")
+	const _seed = await seedDb();
+	const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM plan)")
+	const exists = findRows[0]
+	if (!exists) {
+		return new Ok([])
+	}
+	const input = startDate ? startDate : `'now'`
+	const result = await db.execO(`SELECT date(date),lunch,dinner FROM plan WHERE date > DATE(${input},'localtime','weekday 0','-6 days') AND date < DATE(${input},'localtime','weekday 1')`)
+	const mapped = result.map(day => {
+		day.lunch = JSON.parse(day.lunch)
+		day.dinner = JSON.parse(day.dinner)
+		return day
+	})
+	console.log("plan result from ffi: ",mapped)
+	return result
+}
+
+export async function do_save_plan(plan: PlanDay[]) {
+	console.log("do_save_plan: ",plan)
+	for (const day of plan) {
+		const result = await db.execO(`
+			INSERT INTO plan \
+			(date,lunch,dinner) \
+			VALUES ('${day.date}','${day.lunch}','${day.dinner}') \
+			ON CONFLICT(id) DO UPDATE SET \
+			lunch = excluded.lunch, \
+			dinner = excluded.dinner \
+			`,)
+			console.log("inserted planday: ",result)
+	}
+	return new Ok();
 }

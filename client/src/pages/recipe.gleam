@@ -16,6 +16,7 @@ import gleam/pair
 import gleam/result
 import gleam/string
 import justin.{kebab_case}
+import lib/decoders
 import lib/utils
 import lustre/attribute.{
   attribute, checked, class, disabled, for, href, id, name, placeholder,
@@ -1478,43 +1479,17 @@ pub fn decode_recipe(d: Dynamic) -> Result(Recipe, dynamic.DecodeErrors) {
       field("cook_time", of: int),
       field("prep_time", of: int),
       field("serves", of: int),
-      optional_field("tags", of: dict(decode_stringed_int, decode_tag)),
+      optional_field("tags", of: dict(decoders.stringed_int, decode_tag)),
       optional_field(
         "ingredients",
-        of: dict(decode_stringed_int, decode_ingredient),
+        of: dict(decoders.stringed_int, decode_ingredient),
       ),
       optional_field(
         "method_steps",
-        of: dict(decode_stringed_int, decode_method_step),
+        of: dict(decoders.stringed_int, decode_method_step),
       ),
     )
   decoder(d)
-}
-
-fn decode_stringed_int(d: Dynamic) -> Result(Int, dynamic.DecodeErrors) {
-  let decoder = dynamic.string
-  decoder(d)
-  |> result.map(int.parse)
-  |> result.map(result.map_error(_, fn(_x) {
-    [
-      dynamic.DecodeError(
-        expected: "a stringed int",
-        found: "something else",
-        path: [""],
-      ),
-    ]
-  }))
-  |> result.flatten
-}
-
-fn decode_stringed_bool(d: Dynamic) -> Result(Bool, dynamic.DecodeErrors) {
-  dynamic.string(d)
-  |> result.map(fn(a) {
-    case a {
-      "True" -> True
-      _ -> False
-    }
-  })
 }
 
 fn decode_ingredient(d: Dynamic) -> Result(Ingredient, dynamic.DecodeErrors) {
@@ -1522,7 +1497,7 @@ fn decode_ingredient(d: Dynamic) -> Result(Ingredient, dynamic.DecodeErrors) {
     dynamic.decode4(
       Ingredient,
       optional_field("name", of: string),
-      optional_field("ismain", of: decode_stringed_bool),
+      optional_field("ismain", of: decoders.stringed_bool),
       optional_field("quantity", of: string),
       optional_field("units", of: string),
     )

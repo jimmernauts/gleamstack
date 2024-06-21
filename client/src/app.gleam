@@ -8,6 +8,7 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{a, nav, section, span}
 import modem
+import pages/planner
 import pages/recipe
 import tardis
 
@@ -37,6 +38,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
       current_route: Home,
       current_recipe: None,
       recipes: recipe.RecipeList(recipes: [], tag_options: []),
+      planner: [],
     ),
     modem.init(on_route_change),
   )
@@ -49,6 +51,7 @@ pub type Model {
     current_route: Route,
     current_recipe: recipe.RecipeDetail,
     recipes: recipe.RecipeList,
+    planner: planner.PlanWeek,
   )
 }
 
@@ -57,12 +60,15 @@ pub type Route {
   ViewRecipeDetail(slug: String)
   EditRecipeDetail(slug: String)
   ViewRecipeList
+  ViewPlanner
+  EditPlanner
 }
 
 pub type Msg {
   OnRouteChange(Route)
   RecipeDetail(recipe.RecipeDetailMsg)
   RecipeList(recipe.RecipeListMsg)
+  Planner(planner.PlannerMsg)
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -90,6 +96,14 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         current_route: EditRecipeDetail(slug: slug),
         current_recipe: lookup_recipe_by_slug(model, slug),
       ),
+      effect.none(),
+    )
+    OnRouteChange(ViewPlanner) -> #(
+      Model(..model, current_route: ViewPlanner),
+      effect.map(planner.get_plan(), Planner),
+    )
+    OnRouteChange(EditPlanner) -> #(
+      Model(..model, current_route: EditPlanner),
       effect.none(),
     )
     OnRouteChange(route) -> #(
@@ -125,6 +139,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(child_effect, RecipeDetail),
       )
     }
+    Planner(planner_msg) -> {
+      let #(child_model, child_effect) =
+        planner.planner_update(model.planner, planner_msg)
+      #(Model(..model, planner: child_model), effect.map(child_effect, Planner))
+    }
   }
 }
 
@@ -137,6 +156,8 @@ fn on_route_change(uri: Uri) -> Msg {
     ["recipes", slug, "edit"] -> OnRouteChange(EditRecipeDetail(slug: slug))
     ["recipes", slug] -> OnRouteChange(ViewRecipeDetail(slug: slug))
     ["recipes"] -> OnRouteChange(ViewRecipeList)
+    ["planner", "edit"] -> OnRouteChange(EditPlanner)
+    ["planner"] -> OnRouteChange(ViewPlanner)
     _ -> OnRouteChange(Home)
   }
 }
@@ -161,6 +182,8 @@ fn view(model: Model) -> Element(Msg) {
         ),
         RecipeDetail,
       )
+    ViewPlanner -> planner.view_planner(model.planner)
+    EditPlanner -> planner.edit_planner(model.planner)
   }
   view_base(page)
 }

@@ -1,5 +1,5 @@
 export type Recipe = {
-	id?: number;
+	id?: string;
 	title: string;
 	slug: string;
 	cook_time: number;
@@ -19,7 +19,7 @@ export type Tag = {
 };
 
 export type TagOption = {
-	id?: number;
+	id?: string;
 	name: string;
 	options: string[];
 };
@@ -34,3 +34,19 @@ export type Ingredient = {
 export type MethodStep = {
 	step_text?: string;
 };
+
+export type PlanDay = {
+	date: string;
+	lunch: {
+		type: "RecipeWithStatus" | "MealWithStatus"
+		recipe_id?: string
+		meal?: string
+		complete?: string
+	}
+	dinner: {
+		type: "RecipeWithStatus" | "MealWithStatus"
+		recipe_id?: string
+		meal?: string
+		complete?: string
+	}
+}
