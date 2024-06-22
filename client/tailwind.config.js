@@ -196,7 +196,7 @@ export default {
                     textDecoration: 'underline solid 6px #287CA1'
                 },
                 '.shadow-orange': {
-                    boxShadow:'1px_1px_0_#ff776a'
+                    boxShadow:'1px 1px 0 #ff776a'
                 },
                 '.custom-select': {
                     '-webkit-appearance': 'none;',

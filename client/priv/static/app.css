@@ -615,7 +615,7 @@ input[type="number"] {
 }
 
 .shadow-orange {
-  box-shadow: 1px_1px_0_#ff776a;
+  box-shadow: 1px 1px 0 #ff776a;
 }
 
 .custom-select {
@@ -1441,6 +1441,10 @@ fieldset {
 
   .xs\:w-\[28ch\] {
     width: 28ch;
+  }
+
+  .xs\:snap-x {
+    scroll-snap-type: x var(--tw-scroll-snap-strictness);
   }
 
   .xs\:scroll-pl-\[9\%\] {

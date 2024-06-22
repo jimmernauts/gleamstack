@@ -3,13 +3,14 @@ import birl/duration
 import components/page_title.{page_title}
 import decipher
 import gleam/bool
+import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/javascript/array.{type Array}
 import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
-import gleam/option
+import gleam/option.{type Option, None, Some}
 import gleam/result
 import lib/decoders
 import lustre/attribute.{
@@ -23,7 +24,6 @@ import lustre/element/html.{
   section, select, span, textarea,
 }
 import lustre/event.{on, on_check, on_click, on_input}
-import pages/recipe
 
 //-MODEL---------------------------------------------
 
@@ -35,7 +35,7 @@ pub type PlannerMsg {
 }
 
 pub type PlanWeek =
-  List(PlanDay)
+  Dict(birl.Time, PlanDay)
 
 //-UPDATE---------------------------------------------
 
@@ -65,6 +65,8 @@ pub fn get_plan() -> Effect(PlannerMsg) {
   |> promise.map(array.to_list)
   |> promise.map(list.map(_, decode_plan_day))
   |> promise.map(result.all)
+  |> promise.map(result.map(_, list.map(_, fn(a: PlanDay) { #(a.date, a) })))
+  |> promise.map(result.map(_, dict.from_list))
   |> promise.map(result.map(_, DbRetrievedPlan))
   |> promise.tap(result.map(_, dispatch))
   Nil
@@ -75,7 +77,7 @@ fn do_get_plan() -> Promise(Array(Dynamic))
 
 pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {
   use dispatch <- effect.from
-  do_save_plan(list.map(planweek, encode_plan_day))
+  do_save_plan(list.map(dict.values(planweek), encode_plan_day))
   DbSavedPlan |> dispatch
 }
 
@@ -84,62 +86,99 @@ fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 
 //-VIEWS-------------------------------------------------------------
 
-//TODO: Fill out the empty days in the week's plan when not all of them have an entry in the DB
 pub fn view_planner(model: PlanWeek) {
-  let start_of_week = case model {
-    // first day might not actually be Monday
-    [first, ..] -> birl.to_naive_date_string(first.date)
-    _ -> {
-      let today = birl.set_time_of_day(birl.now(), birl.TimeOfDay(0, 0, 0, 0))
-      let day = case birl.weekday(birl.now()) {
-        birl.Mon -> today
-        birl.Tue -> birl.add(today, duration.days(-1))
-        birl.Wed -> birl.add(today, duration.days(-2))
-        birl.Thu -> birl.add(today, duration.days(-3))
-        birl.Fri -> birl.add(today, duration.days(-4))
-        birl.Sat -> birl.add(today, duration.days(-5))
-        birl.Sun -> birl.add(today, duration.days(-6))
-      }
-      birl.to_naive_date_string(day)
-    }
+  let today = birl.set_time_of_day(birl.now(), birl.TimeOfDay(0, 0, 0, 0))
+  let day = case dict.size(model) {
+    num if num > 0 -> list.first(dict.keys(model))
+    _ -> Ok(today)
   }
-  section(
-    [
-      class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2",
+  let start_of_week =
+    result.map(day, fn(d) {
+      case birl.weekday(d) {
+        birl.Mon -> d
+        birl.Tue -> birl.add(d, duration.days(-1))
+        birl.Wed -> birl.add(d, duration.days(-2))
+        birl.Thu -> birl.add(d, duration.days(-3))
+        birl.Fri -> birl.add(d, duration.days(-4))
+        birl.Sat -> birl.add(d, duration.days(-5))
+        birl.Sun -> birl.add(d, duration.days(-6))
+      }
+    })
+    |> result.unwrap(birl.set_time_of_day(
+      birl.now(),
+      birl.TimeOfDay(0, 0, 0, 0),
+    ))
+  let find_in_week = fn(a) {
+    result.unwrap(dict.get(model, a), PlanDay(a, None, None))
+  }
+  let week =
+    dict.from_list([
+      #(start_of_week, find_in_week(start_of_week)),
+      #(
+        birl.add(start_of_week, duration.days(1)),
+        find_in_week(birl.add(start_of_week, duration.days(1))),
       ),
-    ],
-    [
-      page_title("Week of " <> start_of_week, "underline-orange"),
-      nav(
-        [
-          class(
-            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
-          ),
-        ],
-        [
-          a([href("/"), class("text-center")], [text("🏠")]),
-          a([href("/planner/edit"), class("text-center")], [text("✏️")]),
-        ],
+      #(
+        birl.add(start_of_week, duration.days(2)),
+        find_in_week(birl.add(start_of_week, duration.days(2))),
       ),
-      section(
-        [
-          id("active-week"),
-          class(
-            "mb-2 text-sm p-1 
+      #(
+        birl.add(start_of_week, duration.days(3)),
+        find_in_week(birl.add(start_of_week, duration.days(3))),
+      ),
+      #(
+        birl.add(start_of_week, duration.days(4)),
+        find_in_week(birl.add(start_of_week, duration.days(4))),
+      ),
+      #(
+        birl.add(start_of_week, duration.days(5)),
+        find_in_week(birl.add(start_of_week, duration.days(5))),
+      ),
+      #(
+        birl.add(start_of_week, duration.days(6)),
+        find_in_week(birl.add(start_of_week, duration.days(6))),
+      ),
+    ])
+
+  fragment([
+    section(
+      [
+        class(
+          "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2",
+        ),
+      ],
+      [
+        page_title("Week of ", "underline-orange"),
+        nav(
+          [
+            class(
+              "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
+            ),
+          ],
+          [
+            a([href("/"), class("text-center")], [text("🏠")]),
+            a([href("/planner/edit"), class("text-center")], [text("✏️")]),
+          ],
+        ),
+      ],
+    ),
+    section(
+      [
+        id("active-week"),
+        class(
+          "mb-2 text-sm p-1 
         overflow-x-scroll overflow-y-scroll snap-mandatory snap-always
         col-span-full row-start-3 grid gap-1 
         grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
         snap-y scroll-pt-[9%]
         xs:col-start-[full-start] xs:col-end-[full-end]
         xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]
-        xs:snap-    x xs:scroll-pl-[9%] xs:scroll-pt-0",
-          ),
-        ],
-        [planner_header_row(list.map(model, fn(d) { d.date }))],
-      ),
-    ],
-  )
+        xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0",
+        ),
+      ],
+      [planner_header_row(week)],
+    ),
+  ])
 }
 
 pub fn edit_planner(model: PlanWeek) {
@@ -148,15 +187,30 @@ pub fn edit_planner(model: PlanWeek) {
 
 //-COMPONENTS--------------------------------------------------
 
-fn date_string(day: Result(birl.Time, Nil)) -> String {
-  day
-  |> result.map(birl.get_day)
-  |> result.map(fn(d) { d.date })
-  |> result.map(int.to_string)
-  |> result.unwrap("")
+fn long_date_string(day: birl.Time) -> String {
+  let n =
+    day
+    |> birl.get_day
+    |> fn(d: birl.Day) { d.date }
+    |> int.to_string
+  let s =
+    day
+    |> birl.string_weekday
+  let m =
+    day
+    |> birl.string_month
+  s <> " " <> n <> " " <> m
 }
 
-fn planner_header_row(dates: List(birl.Time)) -> Element(PlannerMsg) {
+fn date_string(day: birl.Time) -> String {
+  day
+  |> birl.get_day
+  |> fn(d: birl.Day) { d.date }
+  |> int.to_string
+}
+
+// FIX HEADER ROW
+fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
   let monday_date =
     dates
     |> list.find(fn(d) { birl.weekday(d) == birl.Mon })
@@ -198,8 +252,8 @@ fn planner_header_row(dates: List(birl.Time)) -> Element(PlannerMsg) {
         h2(
           [
             style([
-              #("--shortMon", "Mon " <> monday_date),
-              #("--longMon", "Monday " <> monday_date),
+              #("--shortMon", "'Mon " <> monday_date <> "'"),
+              #("--longMon", "'Monday " <> monday_date <> "'"),
             ]),
             class(
               "text-center before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]",
@@ -219,8 +273,8 @@ fn planner_header_row(dates: List(birl.Time)) -> Element(PlannerMsg) {
         h2(
           [
             style([
-              #("--shortTue", "Tue " <> tuesday_date),
-              #("--longTue", "Tuesday " <> tuesday_date),
+              #("--shortTue", "'Tue " <> tuesday_date <> "'"),
+              #("--longTue", "'Tuesday " <> tuesday_date <> "'"),
             ]),
             class(
               "text-center before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]",
@@ -240,8 +294,8 @@ fn planner_header_row(dates: List(birl.Time)) -> Element(PlannerMsg) {
         h2(
           [
             style([
-              #("--shortWed", "Wed " <> wednesday_date),
-              #("--longWed", "Wednesday " <> wednesday_date),
+              #("--shortWed", "'Wed " <> wednesday_date <> "'"),
+              #("--longWed", "'Wednesday " <> wednesday_date <> "'"),
             ]),
             class(
               "text-center before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]",
@@ -261,8 +315,8 @@ fn planner_header_row(dates: List(birl.Time)) -> Element(PlannerMsg) {
         h2(
           [
             style([
-              #("--shortThu", "Thu " <> thursday_date),
-              #("--longThu", "Thursday " <> thursday_date),
+              #("--shortThu", "'Thu " <> thursday_date <> "'"),
+              #("--longThu", "'Thursday " <> thursday_date <> "'"),
             ]),
             class(
               "text-center before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]",
@@ -282,8 +336,8 @@ fn planner_header_row(dates: List(birl.Time)) -> Element(PlannerMsg) {
         h2(
           [
             style([
-              #("--shortFri", "Fri " <> friday_date),
-              #("--longFri", "Friday " <> friday_date),
+              #("--shortFri", "'Fri " <> friday_date <> "'"),
+              #("--longFri", "'Friday " <> friday_date <> "'"),
             ]),
             class(
               "text-center before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]",
@@ -303,8 +357,8 @@ fn planner_header_row(dates: List(birl.Time)) -> Element(PlannerMsg) {
         h2(
           [
             style([
-              #("--shortSat", "Sat " <> saturday_date),
-              #("--longSat", "Saturday " <> saturday_date),
+              #("--shortSat", "'Sat " <> saturday_date <> "'"),
+              #("--longSat", "'Saturday " <> saturday_date <> "'"),
             ]),
             class(
               "text-center before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]",
@@ -324,8 +378,8 @@ fn planner_header_row(dates: List(birl.Time)) -> Element(PlannerMsg) {
         h2(
           [
             style([
-              #("--shortSun", "Sun " <> sunday_date),
-              #("--longSun", "Sunday " <> sunday_date),
+              #("--shortSun", "'Sun " <> sunday_date <> "'"),
+              #("--longSun", "'Sunday " <> sunday_date <> "'"),
             ]),
             class(
               "text-center before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]",
@@ -366,7 +420,11 @@ fn planner_header_row(dates: List(birl.Time)) -> Element(PlannerMsg) {
 //-TYPES-------------------------------------------------------------
 
 pub type PlanDay {
-  PlanDay(date: birl.Time, lunch: MealWithStatus, dinner: MealWithStatus)
+  PlanDay(
+    date: birl.Time,
+    lunch: Option(MealWithStatus),
+    dinner: Option(MealWithStatus),
+  )
 }
 
 pub type JsPlanDay {
@@ -385,8 +443,8 @@ fn decode_plan_day(d: Dynamic) -> Result(PlanDay, dynamic.DecodeErrors) {
     dynamic.decode3(
       PlanDay,
       dynamic.field("date", of: decode_stringed_day),
-      dynamic.field("lunch", of: decode_meal_status),
-      dynamic.field("dinner", of: decode_meal_status),
+      dynamic.optional_field("lunch", of: decode_meal_status),
+      dynamic.optional_field("dinner", of: decode_meal_status),
     )
   decoder(d)
 }
@@ -434,34 +492,36 @@ fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {
     date: birl.to_naive_date_string(plan_day.date),
     lunch: {
       case plan_day.lunch {
-        RecipeWithStatus(a, b) ->
+        Some(RecipeWithStatus(a, b)) ->
           json.object([
             #("type", json.string("RecipeWithStatus")),
             #("recipe_id", json.string(a)),
             #("complete", json.string(bool.to_string(b))),
           ])
-        MealWithStatus(a, b) ->
+        Some(MealWithStatus(a, b)) ->
           json.object([
             #("type", json.string("MealWithStatus")),
             #("recipe_id", json.string(a)),
             #("complete", json.string(bool.to_string(b))),
           ])
+        None -> json.object([])
       }
     },
     dinner: {
       case plan_day.dinner {
-        RecipeWithStatus(a, b) ->
+        Some(RecipeWithStatus(a, b)) ->
           json.object([
             #("type", json.string("RecipeWithStatus")),
             #("recipe_id", json.string(a)),
             #("complete", json.string(bool.to_string(b))),
           ])
-        MealWithStatus(a, b) ->
+        Some(MealWithStatus(a, b)) ->
           json.object([
             #("type", json.string("MealWithStatus")),
             #("recipe_id", json.string(a)),
             #("complete", json.string(bool.to_string(b))),
           ])
+        None -> json.object([])
       }
     },
   )

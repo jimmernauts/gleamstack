@@ -1,6 +1,7 @@
 import components/page_title.{page_title}
+import gleam/dict
 import gleam/list
-import gleam/option.{type Option, None}
+import gleam/option.{type Option, None, Some}
 import gleam/uri.{type Uri, Uri}
 import lustre
 import lustre/attribute.{class, href}
@@ -38,7 +39,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
       current_route: Home,
       current_recipe: None,
       recipes: recipe.RecipeList(recipes: [], tag_options: []),
-      planner: [],
+      planner: dict.new(),
     ),
     modem.init(on_route_change),
   )
@@ -89,6 +90,26 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         current_recipe: lookup_recipe_by_slug(model, slug),
       ),
       effect.none(),
+    )
+    OnRouteChange(EditRecipeDetail(slug: "")) -> #(
+      Model(
+        ..model,
+        current_route: EditRecipeDetail(slug: ""),
+        current_recipe: Some(recipe.Recipe(
+          None,
+          "New Recipe",
+          "",
+          0,
+          0,
+          0,
+          Some(dict.from_list([#(0, recipe.Tag("", ""))])),
+          Some(
+            dict.from_list([#(0, recipe.Ingredient(None, None, None, None))]),
+          ),
+          Some(dict.from_list([#(0, recipe.MethodStep(""))])),
+        )),
+      ),
+      effect.map(recipe.get_tag_options(), RecipeList),
     )
     OnRouteChange(EditRecipeDetail(slug: slug)) -> #(
       Model(
@@ -153,6 +174,7 @@ fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(recipe.Recipe) {
 
 fn on_route_change(uri: Uri) -> Msg {
   case uri.path_segments(uri.path) {
+    ["recipes", "new"] -> OnRouteChange(EditRecipeDetail(slug: ""))
     ["recipes", slug, "edit"] -> OnRouteChange(EditRecipeDetail(slug: slug))
     ["recipes", slug] -> OnRouteChange(ViewRecipeDetail(slug: slug))
     ["recipes"] -> OnRouteChange(ViewRecipeList)
@@ -182,7 +204,7 @@ fn view(model: Model) -> Element(Msg) {
         ),
         RecipeDetail,
       )
-    ViewPlanner -> planner.view_planner(model.planner)
+    ViewPlanner -> element.map(planner.view_planner(model.planner), Planner)
     EditPlanner -> planner.edit_planner(model.planner)
   }
   view_base(page)
