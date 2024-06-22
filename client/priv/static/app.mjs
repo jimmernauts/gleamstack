@@ -403,6 +403,11 @@ function second(pair) {
   let a2 = pair[1];
   return a2;
 }
+function map_first(pair, fun) {
+  let a2 = pair[0];
+  let b = pair[1];
+  return [fun(a2), b];
+}
 function new$(first5, second3) {
   return [first5, second3];
 }
@@ -7362,10 +7367,10 @@ var Time = class extends CustomType {
   }
 };
 var Day2 = class extends CustomType {
-  constructor(year2, month2, date) {
+  constructor(year2, month3, date) {
     super();
     this.year = year2;
-    this.month = month2;
+    this.month = month3;
     this.date = date;
   }
 };
@@ -7432,6 +7437,23 @@ function add2(value4, duration) {
     );
   } else {
     return new Time(wt + duration$1, o, timezone, new None());
+  }
+}
+function weekday_to_string(value4) {
+  if (value4 instanceof Mon) {
+    return "Monday";
+  } else if (value4 instanceof Tue) {
+    return "Tuesday";
+  } else if (value4 instanceof Wed) {
+    return "Wednesday";
+  } else if (value4 instanceof Thu) {
+    return "Thursday";
+  } else if (value4 instanceof Fri) {
+    return "Friday";
+  } else if (value4 instanceof Sat) {
+    return "Saturday";
+  } else {
+    return "Sunday";
   }
 }
 function parse_offset(offset) {
@@ -7804,6 +7826,35 @@ function weekday_from_int(weekday3) {
     return new Error2(void 0);
   }
 }
+function month_from_int(month3) {
+  if (month3 === 1) {
+    return new Ok2(new Jan());
+  } else if (month3 === 2) {
+    return new Ok2(new Feb());
+  } else if (month3 === 3) {
+    return new Ok2(new Mar());
+  } else if (month3 === 4) {
+    return new Ok2(new Apr());
+  } else if (month3 === 5) {
+    return new Ok2(new May());
+  } else if (month3 === 6) {
+    return new Ok2(new Jun());
+  } else if (month3 === 7) {
+    return new Ok2(new Jul());
+  } else if (month3 === 8) {
+    return new Ok2(new Aug());
+  } else if (month3 === 9) {
+    return new Ok2(new Sep());
+  } else if (month3 === 10) {
+    return new Ok2(new Oct());
+  } else if (month3 === 11) {
+    return new Ok2(new Nov());
+  } else if (month3 === 12) {
+    return new Ok2(new Dec());
+  } else {
+    return new Error2(void 0);
+  }
+}
 function to_parts2(value4) {
   let t = value4.wall_time;
   let o = value4.offset;
@@ -7823,6 +7874,51 @@ function to_parts2(value4) {
   }
   let offset = $1[0];
   return [date, time, offset];
+}
+function month2(value4) {
+  let $ = to_parts2(value4);
+  let month$1 = $[0][1];
+  let $1 = month_from_int(month$1);
+  if (!$1.isOk()) {
+    throw makeError(
+      "assignment_no_match",
+      "birl",
+      1099,
+      "month",
+      "Assignment pattern did not match",
+      { value: $1 }
+    );
+  }
+  let month$2 = $1[0];
+  return month$2;
+}
+function string_month(value4) {
+  let $ = month2(value4);
+  if ($ instanceof Jan) {
+    return "January";
+  } else if ($ instanceof Feb) {
+    return "February";
+  } else if ($ instanceof Mar) {
+    return "March";
+  } else if ($ instanceof Apr) {
+    return "April";
+  } else if ($ instanceof May) {
+    return "May";
+  } else if ($ instanceof Jun) {
+    return "June";
+  } else if ($ instanceof Jul) {
+    return "July";
+  } else if ($ instanceof Aug) {
+    return "August";
+  } else if ($ instanceof Sep) {
+    return "September";
+  } else if ($ instanceof Oct) {
+    return "October";
+  } else if ($ instanceof Nov) {
+    return "November";
+  } else {
+    return "December";
+  }
 }
 function get_day(value4) {
   let $ = to_parts2(value4);
@@ -8012,6 +8108,10 @@ function weekday2(value4) {
   }
   let weekday$1 = $[0];
   return weekday$1;
+}
+function string_weekday(value4) {
+  let _pipe = weekday2(value4);
+  return weekday_to_string(_pipe);
 }
 function now2() {
   let now$1 = now();
@@ -8452,7 +8552,7 @@ function planner_update(model, msg) {
     throw makeError(
       "todo",
       "pages/planner",
-      48,
+      49,
       "planner_update",
       "This has not yet been implemented",
       {}
@@ -8461,7 +8561,7 @@ function planner_update(model, msg) {
     throw makeError(
       "todo",
       "pages/planner",
-      51,
+      52,
       "planner_update",
       "This has not yet been implemented",
       {}
@@ -8477,255 +8577,96 @@ function edit_planner(model) {
   throw makeError(
     "todo",
     "pages/planner",
-    185,
+    189,
     "edit_planner",
     "This has not yet been implemented",
     {}
   );
 }
-function date_string(day2) {
+function date_num_string(day2) {
   let _pipe = day2;
-  let _pipe$1 = map3(_pipe, get_day);
-  let _pipe$2 = map3(_pipe$1, (d) => {
+  let _pipe$1 = get_day(_pipe);
+  let _pipe$2 = ((d) => {
     return d.date;
-  });
-  let _pipe$3 = map3(_pipe$2, to_string3);
-  return unwrap2(_pipe$3, "");
+  })(_pipe$1);
+  return to_string3(_pipe$2);
+}
+function month_date_string(day2) {
+  let n = date_num_string(day2);
+  let s = (() => {
+    let _pipe = day2;
+    return string_weekday(_pipe);
+  })();
+  let m = (() => {
+    let _pipe = day2;
+    return string_month(_pipe);
+  })();
+  return m + " " + n;
 }
 function planner_header_row(dates) {
-  let monday_date = (() => {
-    let _pipe = dates;
-    let _pipe$1 = find(
+  let date_keys = (() => {
+    let _pipe = map_to_list(dates);
+    let _pipe$1 = map2(
       _pipe,
-      (d) => {
-        return isEqual(weekday2(d), new Mon());
+      (_capture) => {
+        return map_first(_capture, (d) => {
+          return weekday2(d);
+        });
       }
     );
-    return date_string(_pipe$1);
+    return from_list(_pipe$1);
   })();
-  let tuesday_date = (() => {
-    let _pipe = dates;
-    let _pipe$1 = find(
-      _pipe,
-      (d) => {
-        return isEqual(weekday2(d), new Tue());
-      }
-    );
-    return date_string(_pipe$1);
+  let monday = (() => {
+    let _pipe = get(date_keys, new Mon());
+    let _pipe$1 = map3(_pipe, (d) => {
+      return date_num_string(d.date);
+    });
+    return unwrap2(_pipe$1, "");
   })();
-  let wednesday_date = (() => {
-    let _pipe = dates;
-    let _pipe$1 = find(
-      _pipe,
-      (d) => {
-        return isEqual(weekday2(d), new Wed());
-      }
-    );
-    return date_string(_pipe$1);
+  let tuesday = (() => {
+    let _pipe = get(date_keys, new Tue());
+    let _pipe$1 = map3(_pipe, (d) => {
+      return date_num_string(d.date);
+    });
+    return unwrap2(_pipe$1, "");
   })();
-  let thursday_date = (() => {
-    let _pipe = dates;
-    let _pipe$1 = find(
-      _pipe,
-      (d) => {
-        return isEqual(weekday2(d), new Thu());
-      }
-    );
-    return date_string(_pipe$1);
+  let wednesday = (() => {
+    let _pipe = get(date_keys, new Wed());
+    let _pipe$1 = map3(_pipe, (d) => {
+      return date_num_string(d.date);
+    });
+    return unwrap2(_pipe$1, "");
   })();
-  let friday_date = (() => {
-    let _pipe = dates;
-    let _pipe$1 = find(
-      _pipe,
-      (d) => {
-        return isEqual(weekday2(d), new Fri());
-      }
-    );
-    return date_string(_pipe$1);
+  let thursday = (() => {
+    let _pipe = get(date_keys, new Thu());
+    let _pipe$1 = map3(_pipe, (d) => {
+      return date_num_string(d.date);
+    });
+    return unwrap2(_pipe$1, "");
   })();
-  let saturday_date = (() => {
-    let _pipe = dates;
-    let _pipe$1 = find(
-      _pipe,
-      (d) => {
-        return isEqual(weekday2(d), new Sat());
-      }
-    );
-    return date_string(_pipe$1);
+  let friday = (() => {
+    let _pipe = get(date_keys, new Fri());
+    let _pipe$1 = map3(_pipe, (d) => {
+      return date_num_string(d.date);
+    });
+    return unwrap2(_pipe$1, "");
   })();
-  let sunday_date = (() => {
-    let _pipe = dates;
-    let _pipe$1 = find(
-      _pipe,
-      (d) => {
-        return isEqual(weekday2(d), new Sun());
-      }
-    );
-    return date_string(_pipe$1);
+  let saturday = (() => {
+    let _pipe = get(date_keys, new Sat());
+    let _pipe$1 = map3(_pipe, (d) => {
+      return date_num_string(d.date);
+    });
+    return unwrap2(_pipe$1, "");
+  })();
+  let sunday = (() => {
+    let _pipe = get(date_keys, new Sun());
+    let _pipe$1 = map3(_pipe, (d) => {
+      return date_num_string(d.date);
+    });
+    return unwrap2(_pipe$1, "");
   })();
   return fragment(
     toList([
-      div(
-        toList([
-          class$(
-            "xs:col-start-2 xs:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortMon", "'Mon " + monday_date + "'"],
-                  ["--longMon", "'Monday " + monday_date + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-3 xs:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortTue", "'Tue " + tuesday_date + "'"],
-                  ["--longTue", "'Tuesday " + tuesday_date + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-4 xs:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortWed", "'Wed " + wednesday_date + "'"],
-                  ["--longWed", "'Wednesday " + wednesday_date + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-5 xs:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortThu", "'Thu " + thursday_date + "'"],
-                  ["--longThu", "'Thursday " + thursday_date + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-6 xs:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortFri", "'Fri " + friday_date + "'"],
-                  ["--longFri", "'Friday " + friday_date + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-7 xs:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortSat", "'Sat " + saturday_date + "'"],
-                  ["--longSat", "'Saturday " + saturday_date + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-8 xs:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortSun", "'Sun " + sunday_date + "'"],
-                  ["--longSun", "'Sunday " + sunday_date + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
       div(
         toList([
           class$(
@@ -8748,6 +8689,167 @@ function planner_header_row(dates) {
               )
             ]),
             toList([h2(toList([class$("mx-2")]), toList([text("Dinner")]))])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-2 xs:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortMon", "'Mon " + monday + "'"],
+                  ["--longMon", "'Monday " + monday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-3 xs:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortTue", "'Tue " + tuesday + "'"],
+                  ["--longTue", "'Tuesday " + tuesday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-4 xs:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortWed", "'Wed " + wednesday + "'"],
+                  ["--longWed", "'Wednesday " + wednesday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-5 xs:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortThu", "'Thu " + thursday + "'"],
+                  ["--longThu", "'Thursday " + thursday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-6 xs:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortFri", "'Fri " + friday + "'"],
+                  ["--longFri", "'Friday " + friday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-7 xs:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortSat", "'Sat " + saturday + "'"],
+                  ["--longSat", "'Saturday " + saturday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-8 xs:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortSun", "'Sun " + sunday + "'"],
+                  ["--longSun", "'Sunday " + sunday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]"
+              )
+            ]),
+            toList([])
           )
         ])
       )
@@ -8839,7 +8941,10 @@ function view_planner(model) {
           )
         ]),
         toList([
-          page_title("Week of ", "underline-orange"),
+          page_title(
+            "Week of " + month_date_string(start_of_week),
+            "underline-orange"
+          ),
           nav(
             toList([
               class$(
@@ -8866,7 +8971,7 @@ function view_planner(model) {
             "mb-2 text-sm p-1 \n        overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n        col-span-full row-start-3 grid gap-1 \n        grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n        snap-y scroll-pt-[9%]\n        xs:col-start-[full-start] xs:col-end-[full-end]\n        xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n        xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0"
           )
         ]),
-        toList([planner_header_row(keys(week2))])
+        toList([planner_header_row(week2)])
       )
     ])
   );

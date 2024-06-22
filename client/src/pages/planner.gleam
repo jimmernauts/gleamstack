@@ -11,6 +11,7 @@ import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/pair
 import gleam/result
 import lib/decoders
 import lustre/attribute.{
@@ -148,7 +149,10 @@ pub fn view_planner(model: PlanWeek) {
         ),
       ],
       [
-        page_title("Week of ", "underline-orange"),
+        page_title(
+          "Week of " <> month_date_string(start_of_week),
+          "underline-orange",
+        ),
         nav(
           [
             class(
@@ -187,208 +191,83 @@ pub fn edit_planner(model: PlanWeek) {
 
 //-COMPONENTS--------------------------------------------------
 
-fn long_date_string(day: birl.Time) -> String {
-  let n =
-    day
-    |> birl.get_day
-    |> fn(d: birl.Day) { d.date }
-    |> int.to_string
+fn month_date_string(day: birl.Time) -> String {
+  let n = date_num_string(day)
   let s =
     day
     |> birl.string_weekday
   let m =
     day
     |> birl.string_month
-  s <> " " <> n <> " " <> m
+  m <> " " <> n
 }
 
-fn date_string(day: birl.Time) -> String {
+fn long_date_string(day: birl.Time) -> String {
+  let n = date_num_string(day)
+  let s =
+    day
+    |> birl.weekday
+    |> birl.weekday_to_string
+  s <> " " <> n
+}
+
+fn short_date_string(day: birl.Time) -> String {
+  let n = date_num_string(day)
+  let s =
+    day
+    |> birl.weekday
+    |> birl.weekday_to_short_string
+  s <> " " <> n
+}
+
+fn date_num_string(day: birl.Time) -> String {
   day
   |> birl.get_day
   |> fn(d: birl.Day) { d.date }
   |> int.to_string
 }
 
+fn planner_header(date: birl.Time) -> Element(PlannerMsg) {
+  todo
+}
+
 // FIX HEADER ROW
 fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
-  let monday_date =
-    dates
-    |> list.find(fn(d) { birl.weekday(d) == birl.Mon })
-    |> date_string
-  let tuesday_date =
-    dates
-    |> list.find(fn(d) { birl.weekday(d) == birl.Tue })
-    |> date_string
+  let date_keys =
+    dict.to_list(dates)
+    |> list.map(pair.map_first(_, fn(d) { birl.weekday(d) }))
+    |> dict.from_list
 
-  let wednesday_date =
-    dates
-    |> list.find(fn(d) { birl.weekday(d) == birl.Wed })
-    |> date_string
-  let thursday_date =
-    dates
-    |> list.find(fn(d) { birl.weekday(d) == birl.Thu })
-    |> date_string
-  let friday_date =
-    dates
-    |> list.find(fn(d) { birl.weekday(d) == birl.Fri })
-    |> date_string
-  let saturday_date =
-    dates
-    |> list.find(fn(d) { birl.weekday(d) == birl.Sat })
-    |> date_string
-  let sunday_date =
-    dates
-    |> list.find(fn(d) { birl.weekday(d) == birl.Sun })
-    |> date_string
+  let monday =
+    dict.get(date_keys, birl.Mon)
+    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.unwrap("")
+  let tuesday =
+    dict.get(date_keys, birl.Tue)
+    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.unwrap("")
+  let wednesday =
+    dict.get(date_keys, birl.Wed)
+    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.unwrap("")
+  let thursday =
+    dict.get(date_keys, birl.Thu)
+    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.unwrap("")
+  let friday =
+    dict.get(date_keys, birl.Fri)
+    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.unwrap("")
+  let saturday =
+    dict.get(date_keys, birl.Sat)
+    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.unwrap("")
+  let sunday =
+    dict.get(date_keys, birl.Sun)
+    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.unwrap("")
 
   element.fragment([
-    div(
-      [
-        class(
-          "xs:col-start-2 xs:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange",
-        ),
-      ],
-      [
-        h2(
-          [
-            style([
-              #("--shortMon", "'Mon " <> monday_date <> "'"),
-              #("--longMon", "'Monday " <> monday_date <> "'"),
-            ]),
-            class(
-              "text-center before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]",
-            ),
-          ],
-          [],
-        ),
-      ],
-    ),
-    div(
-      [
-        class(
-          "xs:col-start-3 xs:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
-        ),
-      ],
-      [
-        h2(
-          [
-            style([
-              #("--shortTue", "'Tue " <> tuesday_date <> "'"),
-              #("--longTue", "'Tuesday " <> tuesday_date <> "'"),
-            ]),
-            class(
-              "text-center before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]",
-            ),
-          ],
-          [],
-        ),
-      ],
-    ),
-    div(
-      [
-        class(
-          "xs:col-start-4 xs:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
-        ),
-      ],
-      [
-        h2(
-          [
-            style([
-              #("--shortWed", "'Wed " <> wednesday_date <> "'"),
-              #("--longWed", "'Wednesday " <> wednesday_date <> "'"),
-            ]),
-            class(
-              "text-center before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]",
-            ),
-          ],
-          [],
-        ),
-      ],
-    ),
-    div(
-      [
-        class(
-          "xs:col-start-5 xs:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
-        ),
-      ],
-      [
-        h2(
-          [
-            style([
-              #("--shortThu", "'Thu " <> thursday_date <> "'"),
-              #("--longThu", "'Thursday " <> thursday_date <> "'"),
-            ]),
-            class(
-              "text-center before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]",
-            ),
-          ],
-          [],
-        ),
-      ],
-    ),
-    div(
-      [
-        class(
-          "xs:col-start-6 xs:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
-        ),
-      ],
-      [
-        h2(
-          [
-            style([
-              #("--shortFri", "'Fri " <> friday_date <> "'"),
-              #("--longFri", "'Friday " <> friday_date <> "'"),
-            ]),
-            class(
-              "text-center before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]",
-            ),
-          ],
-          [],
-        ),
-      ],
-    ),
-    div(
-      [
-        class(
-          "xs:col-start-7 xs:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
-        ),
-      ],
-      [
-        h2(
-          [
-            style([
-              #("--shortSat", "'Sat " <> saturday_date <> "'"),
-              #("--longSat", "'Saturday " <> saturday_date <> "'"),
-            ]),
-            class(
-              "text-center before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]",
-            ),
-          ],
-          [],
-        ),
-      ],
-    ),
-    div(
-      [
-        class(
-          "xs:col-start-8 xs:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
-        ),
-      ],
-      [
-        h2(
-          [
-            style([
-              #("--shortSun", "'Sun " <> sunday_date <> "'"),
-              #("--longSun", "'Sunday " <> sunday_date <> "'"),
-            ]),
-            class(
-              "text-center before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]",
-            ),
-          ],
-          [],
-        ),
-      ],
-    ),
     div(
       [
         class(
@@ -411,6 +290,153 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
             ),
           ],
           [h2([class("mx-2")], [text("Dinner")])],
+        ),
+      ],
+    ),
+    div(
+      [
+        class(
+          "xs:col-start-2 xs:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange",
+        ),
+      ],
+      [
+        h2(
+          [
+            style([
+              #("--shortMon", "'Mon " <> monday <> "'"),
+              #("--longMon", "'Monday " <> monday <> "'"),
+            ]),
+            class(
+              "text-center before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]",
+            ),
+          ],
+          [],
+        ),
+      ],
+    ),
+    div(
+      [
+        class(
+          "xs:col-start-3 xs:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+        ),
+      ],
+      [
+        h2(
+          [
+            style([
+              #("--shortTue", "'Tue " <> tuesday <> "'"),
+              #("--longTue", "'Tuesday " <> tuesday <> "'"),
+            ]),
+            class(
+              "text-center before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]",
+            ),
+          ],
+          [],
+        ),
+      ],
+    ),
+    div(
+      [
+        class(
+          "xs:col-start-4 xs:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+        ),
+      ],
+      [
+        h2(
+          [
+            style([
+              #("--shortWed", "'Wed " <> wednesday <> "'"),
+              #("--longWed", "'Wednesday " <> wednesday <> "'"),
+            ]),
+            class(
+              "text-center before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]",
+            ),
+          ],
+          [],
+        ),
+      ],
+    ),
+    div(
+      [
+        class(
+          "xs:col-start-5 xs:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+        ),
+      ],
+      [
+        h2(
+          [
+            style([
+              #("--shortThu", "'Thu " <> thursday <> "'"),
+              #("--longThu", "'Thursday " <> thursday <> "'"),
+            ]),
+            class(
+              "text-center before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]",
+            ),
+          ],
+          [],
+        ),
+      ],
+    ),
+    div(
+      [
+        class(
+          "xs:col-start-6 xs:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+        ),
+      ],
+      [
+        h2(
+          [
+            style([
+              #("--shortFri", "'Fri " <> friday <> "'"),
+              #("--longFri", "'Friday " <> friday <> "'"),
+            ]),
+            class(
+              "text-center before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]",
+            ),
+          ],
+          [],
+        ),
+      ],
+    ),
+    div(
+      [
+        class(
+          "xs:col-start-7 xs:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+        ),
+      ],
+      [
+        h2(
+          [
+            style([
+              #("--shortSat", "'Sat " <> saturday <> "'"),
+              #("--longSat", "'Saturday " <> saturday <> "'"),
+            ]),
+            class(
+              "text-center before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]",
+            ),
+          ],
+          [],
+        ),
+      ],
+    ),
+    div(
+      [
+        class(
+          "xs:col-start-8 xs:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+        ),
+      ],
+      [
+        h2(
+          [
+            style([
+              #("--shortSun", "'Sun " <> sunday <> "'"),
+              #("--longSun", "'Sunday " <> sunday <> "'"),
+            ]),
+            class(
+              "text-center before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]",
+            ),
+          ],
+          [],
         ),
       ],
     ),

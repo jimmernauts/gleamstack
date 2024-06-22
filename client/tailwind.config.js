@@ -234,6 +234,7 @@ export default {
                     content: "'❗'",
                     alignSelf:"baseline",
                   }
+                 
             })
             addUtilities({
                 '.font-transitional':{
