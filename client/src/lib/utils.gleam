@@ -1,3 +1,4 @@
+import birl
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
@@ -42,4 +43,40 @@ pub fn update_child(
   let #(new_model, new_effect) = updater(model, msg)
   let new_effect = effect.map(new_effect, mapper)
   #(new_model, new_effect)
+}
+
+pub fn month_date_string(day: birl.Time) -> String {
+  let n = date_num_string(day)
+  let s =
+    day
+    |> birl.string_weekday
+  let m =
+    day
+    |> birl.string_month
+  m <> " " <> n
+}
+
+pub fn long_date_string(day: birl.Time) -> String {
+  let n = date_num_string(day)
+  let s =
+    day
+    |> birl.weekday
+    |> birl.weekday_to_string
+  s <> " " <> n
+}
+
+pub fn short_date_string(day: birl.Time) -> String {
+  let n = date_num_string(day)
+  let s =
+    day
+    |> birl.weekday
+    |> birl.weekday_to_short_string
+  s <> " " <> n
+}
+
+pub fn date_num_string(day: birl.Time) -> String {
+  day
+  |> birl.get_day
+  |> fn(d: birl.Day) { d.date }
+  |> int.to_string
 }

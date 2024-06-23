@@ -8218,6 +8218,116 @@ function tagged_union(tag, variants) {
   };
 }
 
+// build/dev/javascript/justin/justin.mjs
+function add3(words, word) {
+  if (word === "") {
+    return words;
+  } else {
+    return prepend(word, words);
+  }
+}
+function is_upper(g) {
+  return lowercase2(g) !== g;
+}
+function split5(loop$in, loop$up, loop$word, loop$words) {
+  while (true) {
+    let in$ = loop$in;
+    let up = loop$up;
+    let word = loop$word;
+    let words = loop$words;
+    if (in$.hasLength(0) && word === "") {
+      return reverse(words);
+    } else if (in$.hasLength(0)) {
+      return reverse(add3(words, word));
+    } else if (in$.atLeastLength(1) && in$.head === "\n") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "	") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "!") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "?") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "#") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === ".") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "-") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "_") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === " ") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else {
+      let g = in$.head;
+      let in$1 = in$.tail;
+      let $ = is_upper(g);
+      if (!$) {
+        loop$in = in$1;
+        loop$up = false;
+        loop$word = word + g;
+        loop$words = words;
+      } else if ($ && up) {
+        loop$in = in$1;
+        loop$up = up;
+        loop$word = word + g;
+        loop$words = words;
+      } else {
+        loop$in = in$1;
+        loop$up = true;
+        loop$word = g;
+        loop$words = add3(words, word);
+      }
+    }
+  }
+}
+function split_words(text3) {
+  let _pipe = text3;
+  let _pipe$1 = graphemes(_pipe);
+  return split5(_pipe$1, false, "", toList([]));
+}
+function kebab_case(text3) {
+  let _pipe = text3;
+  let _pipe$1 = split_words(_pipe);
+  let _pipe$2 = join2(_pipe$1, "-");
+  return lowercase2(_pipe$2);
+}
+
 // node_modules/nanoid/url-alphabet/index.js
 var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
 
@@ -8514,693 +8624,6 @@ function stringed_int(d) {
   return flatten2(_pipe$2);
 }
 
-// build/dev/javascript/app/pages/planner.mjs
-var UserAddedMealToPlan = class extends CustomType {
-};
-var UserRemovedMealFromPlan = class extends CustomType {
-};
-var DbRetrievedPlan = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var PlanDay = class extends CustomType {
-  constructor(date, lunch, dinner) {
-    super();
-    this.date = date;
-    this.lunch = lunch;
-    this.dinner = dinner;
-  }
-};
-var RecipeWithStatus = class extends CustomType {
-  constructor(recipe_id, complete) {
-    super();
-    this.recipe_id = recipe_id;
-    this.complete = complete;
-  }
-};
-var MealWithStatus = class extends CustomType {
-  constructor(meal, complete) {
-    super();
-    this.meal = meal;
-    this.complete = complete;
-  }
-};
-function planner_update(model, msg) {
-  if (msg instanceof UserAddedMealToPlan) {
-    throw makeError(
-      "todo",
-      "pages/planner",
-      49,
-      "planner_update",
-      "This has not yet been implemented",
-      {}
-    );
-  } else if (msg instanceof UserRemovedMealFromPlan) {
-    throw makeError(
-      "todo",
-      "pages/planner",
-      52,
-      "planner_update",
-      "This has not yet been implemented",
-      {}
-    );
-  } else if (msg instanceof DbRetrievedPlan) {
-    let plan_week = msg[0];
-    return [plan_week, none()];
-  } else {
-    return [model, none()];
-  }
-}
-function edit_planner(model) {
-  throw makeError(
-    "todo",
-    "pages/planner",
-    189,
-    "edit_planner",
-    "This has not yet been implemented",
-    {}
-  );
-}
-function date_num_string(day2) {
-  let _pipe = day2;
-  let _pipe$1 = get_day(_pipe);
-  let _pipe$2 = ((d) => {
-    return d.date;
-  })(_pipe$1);
-  return to_string3(_pipe$2);
-}
-function month_date_string(day2) {
-  let n = date_num_string(day2);
-  let s = (() => {
-    let _pipe = day2;
-    return string_weekday(_pipe);
-  })();
-  let m = (() => {
-    let _pipe = day2;
-    return string_month(_pipe);
-  })();
-  return m + " " + n;
-}
-function planner_header_row(dates) {
-  let date_keys = (() => {
-    let _pipe = map_to_list(dates);
-    let _pipe$1 = map2(
-      _pipe,
-      (_capture) => {
-        return map_first(_capture, (d) => {
-          return weekday2(d);
-        });
-      }
-    );
-    return from_list(_pipe$1);
-  })();
-  let monday = (() => {
-    let _pipe = get(date_keys, new Mon());
-    let _pipe$1 = map3(_pipe, (d) => {
-      return date_num_string(d.date);
-    });
-    return unwrap2(_pipe$1, "");
-  })();
-  let tuesday = (() => {
-    let _pipe = get(date_keys, new Tue());
-    let _pipe$1 = map3(_pipe, (d) => {
-      return date_num_string(d.date);
-    });
-    return unwrap2(_pipe$1, "");
-  })();
-  let wednesday = (() => {
-    let _pipe = get(date_keys, new Wed());
-    let _pipe$1 = map3(_pipe, (d) => {
-      return date_num_string(d.date);
-    });
-    return unwrap2(_pipe$1, "");
-  })();
-  let thursday = (() => {
-    let _pipe = get(date_keys, new Thu());
-    let _pipe$1 = map3(_pipe, (d) => {
-      return date_num_string(d.date);
-    });
-    return unwrap2(_pipe$1, "");
-  })();
-  let friday = (() => {
-    let _pipe = get(date_keys, new Fri());
-    let _pipe$1 = map3(_pipe, (d) => {
-      return date_num_string(d.date);
-    });
-    return unwrap2(_pipe$1, "");
-  })();
-  let saturday = (() => {
-    let _pipe = get(date_keys, new Sat());
-    let _pipe$1 = map3(_pipe, (d) => {
-      return date_num_string(d.date);
-    });
-    return unwrap2(_pipe$1, "");
-  })();
-  let sunday = (() => {
-    let _pipe = get(date_keys, new Sun());
-    let _pipe$1 = map3(_pipe, (d) => {
-      return date_num_string(d.date);
-    });
-    return unwrap2(_pipe$1, "");
-  })();
-  return fragment(
-    toList([
-      div(
-        toList([
-          class$(
-            "subgrid-cols subgrid-rows col-span-full xs:row-span-full xs:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full"
-          )
-        ]),
-        toList([
-          div(
-            toList([
-              class$(
-                "xs:row-start-2 xs:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
-              )
-            ]),
-            toList([h2(toList([class$("mx-2")]), toList([text("Lunch")]))])
-          ),
-          div(
-            toList([
-              class$(
-                "xs:row-start-3 xs:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
-              )
-            ]),
-            toList([h2(toList([class$("mx-2")]), toList([text("Dinner")]))])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-2 xs:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortMon", "'Mon " + monday + "'"],
-                  ["--longMon", "'Monday " + monday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-3 xs:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortTue", "'Tue " + tuesday + "'"],
-                  ["--longTue", "'Tuesday " + tuesday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-4 xs:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortWed", "'Wed " + wednesday + "'"],
-                  ["--longWed", "'Wednesday " + wednesday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-5 xs:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortThu", "'Thu " + thursday + "'"],
-                  ["--longThu", "'Thursday " + thursday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-6 xs:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortFri", "'Fri " + friday + "'"],
-                  ["--longFri", "'Friday " + friday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-7 xs:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortSat", "'Sat " + saturday + "'"],
-                  ["--longSat", "'Saturday " + saturday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-8 xs:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortSun", "'Sun " + sunday + "'"],
-                  ["--longSun", "'Sunday " + sunday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      )
-    ])
-  );
-}
-function view_planner(model) {
-  let today = set_time_of_day(
-    now2(),
-    new TimeOfDay(0, 0, 0, 0)
-  );
-  let day2 = (() => {
-    let $ = map_size(model);
-    if ($ > 0) {
-      let num = $;
-      return first2(keys(model));
-    } else {
-      return new Ok2(today);
-    }
-  })();
-  let start_of_week = (() => {
-    let _pipe = map3(
-      day2,
-      (d) => {
-        let $ = weekday2(d);
-        if ($ instanceof Mon) {
-          return d;
-        } else if ($ instanceof Tue) {
-          return add2(d, days(-1));
-        } else if ($ instanceof Wed) {
-          return add2(d, days(-2));
-        } else if ($ instanceof Thu) {
-          return add2(d, days(-3));
-        } else if ($ instanceof Fri) {
-          return add2(d, days(-4));
-        } else if ($ instanceof Sat) {
-          return add2(d, days(-5));
-        } else {
-          return add2(d, days(-6));
-        }
-      }
-    );
-    return unwrap2(
-      _pipe,
-      set_time_of_day(now2(), new TimeOfDay(0, 0, 0, 0))
-    );
-  })();
-  let find_in_week = (a2) => {
-    return unwrap2(
-      get(model, a2),
-      new PlanDay(a2, new None(), new None())
-    );
-  };
-  let week2 = from_list(
-    toList([
-      [start_of_week, find_in_week(start_of_week)],
-      [
-        add2(start_of_week, days(1)),
-        find_in_week(add2(start_of_week, days(1)))
-      ],
-      [
-        add2(start_of_week, days(2)),
-        find_in_week(add2(start_of_week, days(2)))
-      ],
-      [
-        add2(start_of_week, days(3)),
-        find_in_week(add2(start_of_week, days(3)))
-      ],
-      [
-        add2(start_of_week, days(4)),
-        find_in_week(add2(start_of_week, days(4)))
-      ],
-      [
-        add2(start_of_week, days(5)),
-        find_in_week(add2(start_of_week, days(5)))
-      ],
-      [
-        add2(start_of_week, days(6)),
-        find_in_week(add2(start_of_week, days(6)))
-      ]
-    ])
-  );
-  return fragment(
-    toList([
-      section(
-        toList([
-          class$(
-            "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
-          )
-        ]),
-        toList([
-          page_title(
-            "Week of " + month_date_string(start_of_week),
-            "underline-orange"
-          ),
-          nav(
-            toList([
-              class$(
-                "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
-              )
-            ]),
-            toList([
-              a(
-                toList([href("/"), class$("text-center")]),
-                toList([text("\u{1F3E0}")])
-              ),
-              a(
-                toList([href("/planner/edit"), class$("text-center")]),
-                toList([text("\u270F\uFE0F")])
-              )
-            ])
-          )
-        ])
-      ),
-      section(
-        toList([
-          id("active-week"),
-          class$(
-            "mb-2 text-sm p-1 \n        overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n        col-span-full row-start-3 grid gap-1 \n        grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n        snap-y scroll-pt-[9%]\n        xs:col-start-[full-start] xs:col-end-[full-end]\n        xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n        xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0"
-          )
-        ]),
-        toList([planner_header_row(week2)])
-      )
-    ])
-  );
-}
-function decode_stringed_day(d) {
-  let decoder = string;
-  let _pipe = map3(
-    decoder(d),
-    (a2) => {
-      let _pipe2 = a2;
-      let _pipe$1 = from_naive(_pipe2);
-      return map_error(
-        _pipe$1,
-        (_) => {
-          return toList([
-            new DecodeError(
-              "a stringed day",
-              "something else",
-              toList(["*"])
-            )
-          ]);
-        }
-      );
-    }
-  );
-  return flatten2(_pipe);
-}
-function decode_meal_status(d) {
-  let decoder = tagged_union(
-    field("type", string),
-    toList([
-      [
-        "RecipeWithStatus",
-        decode2(
-          (var0, var1) => {
-            return new RecipeWithStatus(var0, var1);
-          },
-          field("recipe_id", string),
-          field("complete", stringed_bool)
-        )
-      ],
-      [
-        "MealWithStatus",
-        decode2(
-          (var0, var1) => {
-            return new MealWithStatus(var0, var1);
-          },
-          field("meal", string),
-          field("complete", stringed_bool)
-        )
-      ]
-    ])
-  );
-  return decoder(d);
-}
-function decode_plan_day(d) {
-  let decoder = decode3(
-    (var0, var1, var2) => {
-      return new PlanDay(var0, var1, var2);
-    },
-    field("date", decode_stringed_day),
-    optional_field("lunch", decode_meal_status),
-    optional_field("dinner", decode_meal_status)
-  );
-  return decoder(d);
-}
-function get_plan() {
-  return from2(
-    (dispatch2) => {
-      let _pipe = do_get_plan();
-      let _pipe$1 = map_promise(_pipe, toList);
-      let _pipe$2 = map_promise(
-        _pipe$1,
-        (_capture) => {
-          return map2(_capture, decode_plan_day);
-        }
-      );
-      let _pipe$3 = map_promise(_pipe$2, all);
-      let _pipe$4 = map_promise(
-        _pipe$3,
-        (_capture) => {
-          return map3(
-            _capture,
-            (_capture2) => {
-              return map2(_capture2, (a2) => {
-                return [a2.date, a2];
-              });
-            }
-          );
-        }
-      );
-      let _pipe$5 = map_promise(
-        _pipe$4,
-        (_capture) => {
-          return map3(_capture, from_list);
-        }
-      );
-      let _pipe$6 = map_promise(
-        _pipe$5,
-        (_capture) => {
-          return map3(
-            _capture,
-            (var0) => {
-              return new DbRetrievedPlan(var0);
-            }
-          );
-        }
-      );
-      tap(
-        _pipe$6,
-        (_capture) => {
-          return map3(_capture, dispatch2);
-        }
-      );
-      return void 0;
-    }
-  );
-}
-
-// build/dev/javascript/justin/justin.mjs
-function add3(words, word) {
-  if (word === "") {
-    return words;
-  } else {
-    return prepend(word, words);
-  }
-}
-function is_upper(g) {
-  return lowercase2(g) !== g;
-}
-function split5(loop$in, loop$up, loop$word, loop$words) {
-  while (true) {
-    let in$ = loop$in;
-    let up = loop$up;
-    let word = loop$word;
-    let words = loop$words;
-    if (in$.hasLength(0) && word === "") {
-      return reverse(words);
-    } else if (in$.hasLength(0)) {
-      return reverse(add3(words, word));
-    } else if (in$.atLeastLength(1) && in$.head === "\n") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "	") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "!") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "?") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "#") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === ".") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "-") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "_") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === " ") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else {
-      let g = in$.head;
-      let in$1 = in$.tail;
-      let $ = is_upper(g);
-      if (!$) {
-        loop$in = in$1;
-        loop$up = false;
-        loop$word = word + g;
-        loop$words = words;
-      } else if ($ && up) {
-        loop$in = in$1;
-        loop$up = up;
-        loop$word = word + g;
-        loop$words = words;
-      } else {
-        loop$in = in$1;
-        loop$up = true;
-        loop$word = g;
-        loop$words = add3(words, word);
-      }
-    }
-  }
-}
-function split_words(text3) {
-  let _pipe = text3;
-  let _pipe$1 = graphemes(_pipe);
-  return split5(_pipe$1, false, "", toList([]));
-}
-function kebab_case(text3) {
-  let _pipe = text3;
-  let _pipe$1 = split_words(_pipe);
-  let _pipe$2 = join2(_pipe$1, "-");
-  return lowercase2(_pipe$2);
-}
-
 // build/dev/javascript/app/lib/utils.mjs
 function dict_update(dict2, key3, fun) {
   let item = (() => {
@@ -9237,6 +8660,26 @@ function dict_reindex(dict2) {
     }
   );
   return from_list(_pipe$3);
+}
+function date_num_string(day2) {
+  let _pipe = day2;
+  let _pipe$1 = get_day(_pipe);
+  let _pipe$2 = ((d) => {
+    return d.date;
+  })(_pipe$1);
+  return to_string3(_pipe$2);
+}
+function month_date_string(day2) {
+  let n = date_num_string(day2);
+  let s = (() => {
+    let _pipe = day2;
+    return string_weekday(_pipe);
+  })();
+  let m = (() => {
+    let _pipe = day2;
+    return string_month(_pipe);
+  })();
+  return m + " " + n;
 }
 
 // build/dev/javascript/app/pages/recipe.mjs
@@ -11444,6 +10887,679 @@ function get_tag_options() {
       );
       tap(
         _pipe$5,
+        (_capture) => {
+          return map3(_capture, dispatch2);
+        }
+      );
+      return void 0;
+    }
+  );
+}
+
+// build/dev/javascript/app/pages/planner.mjs
+var UserAddedMealToPlan = class extends CustomType {
+};
+var UserRemovedMealFromPlan = class extends CustomType {
+};
+var DbRetrievedPlan = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var PlanDay = class extends CustomType {
+  constructor(date, lunch, dinner) {
+    super();
+    this.date = date;
+    this.lunch = lunch;
+    this.dinner = dinner;
+  }
+};
+var RecipeWithStatus = class extends CustomType {
+  constructor(recipe_title, complete) {
+    super();
+    this.recipe_title = recipe_title;
+    this.complete = complete;
+  }
+};
+var MealWithStatus = class extends CustomType {
+  constructor(meal, complete) {
+    super();
+    this.meal = meal;
+    this.complete = complete;
+  }
+};
+function planner_update(model, msg) {
+  if (msg instanceof UserAddedMealToPlan) {
+    throw makeError(
+      "todo",
+      "pages/planner",
+      52,
+      "planner_update",
+      "This has not yet been implemented",
+      {}
+    );
+  } else if (msg instanceof UserRemovedMealFromPlan) {
+    throw makeError(
+      "todo",
+      "pages/planner",
+      55,
+      "planner_update",
+      "This has not yet been implemented",
+      {}
+    );
+  } else if (msg instanceof DbRetrievedPlan) {
+    let plan_week = msg[0];
+    return [plan_week, none()];
+  } else {
+    return [model, none()];
+  }
+}
+function edit_planner(model) {
+  throw makeError(
+    "todo",
+    "pages/planner",
+    204,
+    "edit_planner",
+    "This has not yet been implemented",
+    {}
+  );
+}
+function planner_header_row(dates) {
+  let date_keys = (() => {
+    let _pipe = map_to_list(dates);
+    let _pipe$1 = map2(
+      _pipe,
+      (_capture) => {
+        return map_first(_capture, (d) => {
+          return weekday2(d);
+        });
+      }
+    );
+    return from_list(_pipe$1);
+  })();
+  let monday = (() => {
+    let _pipe = get(date_keys, new Mon());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let tuesday = (() => {
+    let _pipe = get(date_keys, new Tue());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let wednesday = (() => {
+    let _pipe = get(date_keys, new Wed());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let thursday = (() => {
+    let _pipe = get(date_keys, new Thu());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let friday = (() => {
+    let _pipe = get(date_keys, new Fri());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let saturday = (() => {
+    let _pipe = get(date_keys, new Sat());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let sunday = (() => {
+    let _pipe = get(date_keys, new Sun());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  return fragment(
+    toList([
+      div(
+        toList([
+          class$(
+            "subgrid-cols xs:col-start-1 row-start-1 subgrid-rows col-span-full xs:row-span-full xs:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full"
+          )
+        ]),
+        toList([
+          div(
+            toList([
+              class$(
+                "xs:row-start-2 xs:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
+              )
+            ]),
+            toList([h2(toList([class$("mx-2")]), toList([text("Lunch")]))])
+          ),
+          div(
+            toList([
+              class$(
+                "xs:row-start-3 xs:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
+              )
+            ]),
+            toList([h2(toList([class$("mx-2")]), toList([text("Dinner")]))])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-2 xs:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortMon", "'Mon " + monday + "'"],
+                  ["--longMon", "'Monday " + monday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-3 xs:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortTue", "'Tue " + tuesday + "'"],
+                  ["--longTue", "'Tuesday " + tuesday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-4 xs:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortWed", "'Wed " + wednesday + "'"],
+                  ["--longWed", "'Wednesday " + wednesday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-5 xs:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortThu", "'Thu " + thursday + "'"],
+                  ["--longThu", "'Thursday " + thursday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-6 xs:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortFri", "'Fri " + friday + "'"],
+                  ["--longFri", "'Friday " + friday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-7 xs:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortSat", "'Sat " + saturday + "'"],
+                  ["--longSat", "'Saturday " + saturday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-8 xs:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortSun", "'Sun " + sunday + "'"],
+                  ["--longSun", "'Sunday " + sunday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      )
+    ])
+  );
+}
+function inner_card(meal) {
+  if (meal instanceof RecipeWithStatus) {
+    let r = meal.recipe_title;
+    let c = meal.complete;
+    return a(
+      toList([href("/recipes/" + kebab_case(r))]),
+      toList([
+        h2(
+          toList([
+            class$("text-center text-xl text-wrap"),
+            style(
+              toList([
+                [
+                  "text-decoration",
+                  guard(c, "line-through", () => {
+                    return "none";
+                  })
+                ]
+              ])
+            )
+          ]),
+          toList([text(r)])
+        )
+      ])
+    );
+  } else {
+    let m = meal.meal;
+    let c = meal.complete;
+    return h2(
+      toList([
+        class$("text-center text-xl text-wrap"),
+        style(
+          toList([
+            [
+              "text-decoration",
+              guard(c, "line-through", () => {
+                return "none";
+              })
+            ]
+          ])
+        )
+      ]),
+      toList([text(m)])
+    );
+  }
+}
+function planner_meal_card(pd, i, meal) {
+  let row = (() => {
+    if (meal === "lunch") {
+      return "col-start-2 xs:row-start-2";
+    } else if (meal === "dinner") {
+      return "col-start-3 xs:row-start-3";
+    } else {
+      return "";
+    }
+  })();
+  let card = (() => {
+    if (meal === "lunch") {
+      let _pipe = map(pd.lunch, inner_card);
+      return unwrap(_pipe, none3());
+    } else if (meal === "dinner") {
+      let _pipe = map(pd.dinner, inner_card);
+      return unwrap(_pipe, none3());
+    } else {
+      return none3();
+    }
+  })();
+  return div(
+    toList([
+      class$(
+        "flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]\n                row-start-[var(--dayPlacement)]\n                xs:col-start-[var(--dayPlacement)] \n                snap-start scroll-p-[-40px] " + row
+      ),
+      style(toList([["--dayPlacement", to_string3(i + 2)]]))
+    ]),
+    toList([card])
+  );
+}
+function view_planner(model) {
+  let today = set_time_of_day(
+    now2(),
+    new TimeOfDay(0, 0, 0, 0)
+  );
+  let day2 = (() => {
+    let $ = map_size(model);
+    if ($ > 0) {
+      let num = $;
+      return first2(keys(model));
+    } else {
+      return new Ok2(today);
+    }
+  })();
+  let start_of_week = (() => {
+    let _pipe = map3(
+      day2,
+      (d) => {
+        let $ = weekday2(d);
+        if ($ instanceof Mon) {
+          return d;
+        } else if ($ instanceof Tue) {
+          return add2(d, days(-1));
+        } else if ($ instanceof Wed) {
+          return add2(d, days(-2));
+        } else if ($ instanceof Thu) {
+          return add2(d, days(-3));
+        } else if ($ instanceof Fri) {
+          return add2(d, days(-4));
+        } else if ($ instanceof Sat) {
+          return add2(d, days(-5));
+        } else {
+          return add2(d, days(-6));
+        }
+      }
+    );
+    return unwrap2(
+      _pipe,
+      set_time_of_day(now2(), new TimeOfDay(0, 0, 0, 0))
+    );
+  })();
+  let find_in_week = (a2) => {
+    return unwrap2(
+      get(model, a2),
+      new PlanDay(a2, new None(), new None())
+    );
+  };
+  let week2 = from_list(
+    toList([
+      [start_of_week, find_in_week(start_of_week)],
+      [
+        add2(start_of_week, days(1)),
+        find_in_week(add2(start_of_week, days(1)))
+      ],
+      [
+        add2(start_of_week, days(2)),
+        find_in_week(add2(start_of_week, days(2)))
+      ],
+      [
+        add2(start_of_week, days(3)),
+        find_in_week(add2(start_of_week, days(3)))
+      ],
+      [
+        add2(start_of_week, days(4)),
+        find_in_week(add2(start_of_week, days(4)))
+      ],
+      [
+        add2(start_of_week, days(5)),
+        find_in_week(add2(start_of_week, days(5)))
+      ],
+      [
+        add2(start_of_week, days(6)),
+        find_in_week(add2(start_of_week, days(6)))
+      ]
+    ])
+  );
+  return fragment(
+    toList([
+      section(
+        toList([
+          class$(
+            "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
+          )
+        ]),
+        toList([
+          page_title(
+            "Week of " + month_date_string(start_of_week),
+            "underline-orange"
+          ),
+          nav(
+            toList([
+              class$(
+                "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
+              )
+            ]),
+            toList([
+              a(
+                toList([href("/"), class$("text-center")]),
+                toList([text("\u{1F3E0}")])
+              ),
+              a(
+                toList([href("/planner/edit"), class$("text-center")]),
+                toList([text("\u270F\uFE0F")])
+              )
+            ])
+          )
+        ])
+      ),
+      section(
+        toList([
+          id("active-week"),
+          class$(
+            "mb-2 text-sm p-1 \n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-3 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            xs:col-start-[full-start] xs:col-end-[full-end]\n            xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0"
+          )
+        ]),
+        toList([
+          planner_header_row(week2),
+          fragment(
+            index_map(
+              values(week2),
+              (x, i) => {
+                return planner_meal_card(x, i, "lunch");
+              }
+            )
+          ),
+          fragment(
+            index_map(
+              values(week2),
+              (x, i) => {
+                return planner_meal_card(x, i, "dinner");
+              }
+            )
+          )
+        ])
+      )
+    ])
+  );
+}
+function decode_stringed_day(d) {
+  let decoder = string;
+  let _pipe = map3(
+    decoder(d),
+    (a2) => {
+      let _pipe2 = a2;
+      let _pipe$1 = from_naive(_pipe2);
+      return map_error(
+        _pipe$1,
+        (_) => {
+          return toList([
+            new DecodeError(
+              "a stringed day",
+              "something else",
+              toList(["*"])
+            )
+          ]);
+        }
+      );
+    }
+  );
+  return flatten2(_pipe);
+}
+function decode_meal_status(d) {
+  let decoder = tagged_union(
+    field("type", string),
+    toList([
+      [
+        "RecipeWithStatus",
+        decode2(
+          (var0, var1) => {
+            return new RecipeWithStatus(var0, var1);
+          },
+          field("recipe_id", string),
+          field("complete", stringed_bool)
+        )
+      ],
+      [
+        "MealWithStatus",
+        decode2(
+          (var0, var1) => {
+            return new MealWithStatus(var0, var1);
+          },
+          field("meal", string),
+          field("complete", stringed_bool)
+        )
+      ]
+    ])
+  );
+  return decoder(d);
+}
+function decode_plan_day(d) {
+  let decoder = decode3(
+    (var0, var1, var2) => {
+      return new PlanDay(var0, var1, var2);
+    },
+    field("date", decode_stringed_day),
+    optional_field("lunch", decode_meal_status),
+    optional_field("dinner", decode_meal_status)
+  );
+  return decoder(d);
+}
+function get_plan() {
+  return from2(
+    (dispatch2) => {
+      let _pipe = do_get_plan();
+      let _pipe$1 = map_promise(_pipe, toList);
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map2(_capture, decode_plan_day);
+        }
+      );
+      let _pipe$3 = map_promise(_pipe$2, all);
+      let _pipe$4 = map_promise(
+        _pipe$3,
+        (_capture) => {
+          return map3(
+            _capture,
+            (_capture2) => {
+              return map2(_capture2, (a2) => {
+                return [a2.date, a2];
+              });
+            }
+          );
+        }
+      );
+      let _pipe$5 = map_promise(
+        _pipe$4,
+        (_capture) => {
+          return map3(_capture, from_list);
+        }
+      );
+      let _pipe$6 = map_promise(
+        _pipe$5,
+        (_capture) => {
+          return map3(
+            _capture,
+            (var0) => {
+              return new DbRetrievedPlan(var0);
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$6,
         (_capture) => {
           return map3(_capture, dispatch2);
         }

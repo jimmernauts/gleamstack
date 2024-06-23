@@ -744,6 +744,10 @@ fieldset {
   grid-row: span 1 / span 1;
 }
 
+.row-start-1 {
+  grid-row-start: 1;
+}
+
 .row-start-2 {
   grid-row-start: 2;
 }
@@ -770,6 +774,10 @@ fieldset {
 
 .row-start-8 {
   grid-row-start: 8;
+}
+
+.row-start-\[var\(--dayPlacement\)\] {
+  grid-row-start: var(--dayPlacement);
 }
 
 .mx-1 {
@@ -952,8 +960,16 @@ fieldset {
   --tw-scroll-snap-strictness: mandatory;
 }
 
+.snap-start {
+  scroll-snap-align: start;
+}
+
 .snap-always {
   scroll-snap-stop: always;
+}
+
+.scroll-p-\[-40px\] {
+  scroll-padding: -40px;
 }
 
 .scroll-pt-\[9\%\] {
@@ -1062,6 +1078,10 @@ fieldset {
 
 .overflow-y-scroll {
   overflow-y: scroll;
+}
+
+.text-wrap {
+  text-wrap: wrap;
 }
 
 .rounded-\[1px\] {
@@ -1192,6 +1212,10 @@ fieldset {
   color: rgb(47 40 27 / var(--tw-text-opacity));
 }
 
+.line-through {
+  text-decoration-line: line-through;
+}
+
 .outline {
   outline-style: solid;
 }
@@ -1200,8 +1224,16 @@ fieldset {
   outline-width: 1px;
 }
 
+.outline-offset-\[-1px\] {
+  outline-offset: -1px;
+}
+
 .outline-ecru-white-50 {
   outline-color: #fdfdfb;
+}
+
+.outline-ecru-white-950 {
+  outline-color: #2f281b;
 }
 
 .text-xs {
@@ -1417,6 +1449,10 @@ fieldset {
 
   .xs\:col-start-\[full-start\] {
     grid-column-start: full-start;
+  }
+
+  .xs\:col-start-\[var\(--dayPlacement\)\] {
+    grid-column-start: var(--dayPlacement);
   }
 
   .xs\:col-end-\[full-end\] {

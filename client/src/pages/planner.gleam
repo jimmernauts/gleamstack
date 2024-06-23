@@ -13,7 +13,9 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
 import gleam/result
+import justin.{kebab_case}
 import lib/decoders
+import lib/utils
 import lustre/attribute.{
   attribute, checked, class, disabled, for, href, id, name, placeholder,
   selected, style, type_, value,
@@ -25,6 +27,7 @@ import lustre/element/html.{
   section, select, span, textarea,
 }
 import lustre/event.{on, on_check, on_click, on_input}
+import pages/recipe
 
 //-MODEL---------------------------------------------
 
@@ -150,7 +153,7 @@ pub fn view_planner(model: PlanWeek) {
       ],
       [
         page_title(
-          "Week of " <> month_date_string(start_of_week),
+          "Week of " <> utils.month_date_string(start_of_week),
           "underline-orange",
         ),
         nav(
@@ -171,16 +174,28 @@ pub fn view_planner(model: PlanWeek) {
         id("active-week"),
         class(
           "mb-2 text-sm p-1 
-        overflow-x-scroll overflow-y-scroll snap-mandatory snap-always
-        col-span-full row-start-3 grid gap-1 
-        grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
-        snap-y scroll-pt-[9%]
-        xs:col-start-[full-start] xs:col-end-[full-end]
-        xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]
-        xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0",
+            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always
+            col-span-full row-start-3 grid gap-1 
+            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
+            snap-y scroll-pt-[9%]
+            xs:col-start-[full-start] xs:col-end-[full-end]
+            xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]
+            xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0",
         ),
       ],
-      [planner_header_row(week)],
+      [
+        planner_header_row(week),
+        fragment(
+          list.index_map(dict.values(week), fn(x, i) {
+            planner_meal_card(x, i, "lunch")
+          }),
+        ),
+        fragment(
+          list.index_map(dict.values(week), fn(x, i) {
+            planner_meal_card(x, i, "dinner")
+          }),
+        ),
+      ],
     ),
   ])
 }
@@ -191,47 +206,6 @@ pub fn edit_planner(model: PlanWeek) {
 
 //-COMPONENTS--------------------------------------------------
 
-fn month_date_string(day: birl.Time) -> String {
-  let n = date_num_string(day)
-  let s =
-    day
-    |> birl.string_weekday
-  let m =
-    day
-    |> birl.string_month
-  m <> " " <> n
-}
-
-fn long_date_string(day: birl.Time) -> String {
-  let n = date_num_string(day)
-  let s =
-    day
-    |> birl.weekday
-    |> birl.weekday_to_string
-  s <> " " <> n
-}
-
-fn short_date_string(day: birl.Time) -> String {
-  let n = date_num_string(day)
-  let s =
-    day
-    |> birl.weekday
-    |> birl.weekday_to_short_string
-  s <> " " <> n
-}
-
-fn date_num_string(day: birl.Time) -> String {
-  day
-  |> birl.get_day
-  |> fn(d: birl.Day) { d.date }
-  |> int.to_string
-}
-
-fn planner_header(date: birl.Time) -> Element(PlannerMsg) {
-  todo
-}
-
-// FIX HEADER ROW
 fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
   let date_keys =
     dict.to_list(dates)
@@ -240,38 +214,38 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
 
   let monday =
     dict.get(date_keys, birl.Mon)
-    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let tuesday =
     dict.get(date_keys, birl.Tue)
-    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let wednesday =
     dict.get(date_keys, birl.Wed)
-    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let thursday =
     dict.get(date_keys, birl.Thu)
-    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let friday =
     dict.get(date_keys, birl.Fri)
-    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let saturday =
     dict.get(date_keys, birl.Sat)
-    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let sunday =
     dict.get(date_keys, birl.Sun)
-    |> result.map(fn(d) { date_num_string(d.date) })
+    |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
 
   element.fragment([
     div(
       [
         class(
-          "subgrid-cols subgrid-rows col-span-full xs:row-span-full xs:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full",
+          "subgrid-cols xs:col-start-1 row-start-1 subgrid-rows col-span-full xs:row-span-full xs:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full",
         ),
       ],
       [
@@ -443,6 +417,64 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
   ])
 }
 
+fn inner_card(meal: MealWithStatus) -> Element(PlannerMsg) {
+  case meal {
+    RecipeWithStatus(r, c) -> {
+      html.a([href("/recipes/" <> kebab_case(r))], [
+        h2(
+          [
+            class("text-center text-xl text-wrap"),
+            style([
+              #("text-decoration", {
+                use <- bool.guard(when: c, return: "line-through")
+                "none"
+              }),
+            ]),
+          ],
+          [text(r)],
+        ),
+      ])
+    }
+    MealWithStatus(m, c) -> {
+      h2(
+        [
+          class("text-center text-xl text-wrap"),
+          style([
+            #("text-decoration", {
+              use <- bool.guard(when: c, return: "line-through")
+              "none"
+            }),
+          ]),
+        ],
+        [text(m)],
+      )
+    }
+  }
+}
+
+fn planner_meal_card(pd: PlanDay, i: Int, meal: String) -> Element(PlannerMsg) {
+  let row = case meal {
+    "lunch" -> "col-start-2 xs:row-start-2"
+    "dinner" -> "col-start-3 xs:row-start-3"
+    _ -> ""
+  }
+  let card = case meal {
+    "lunch" -> option.map(pd.lunch, inner_card) |> option.unwrap(element.none())
+    "dinner" ->
+      option.map(pd.dinner, inner_card) |> option.unwrap(element.none())
+    _ -> element.none()
+  }
+  div(
+    [class("flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
+                row-start-[var(--dayPlacement)]
+                xs:col-start-[var(--dayPlacement)] 
+                snap-start scroll-p-[-40px] " <> row), style([
+        #("--dayPlacement", int.to_string(i + 2)),
+      ])],
+    [card],
+  )
+}
+
 //-TYPES-------------------------------------------------------------
 
 pub type PlanDay {
@@ -458,7 +490,7 @@ pub type JsPlanDay {
 }
 
 pub type MealWithStatus {
-  RecipeWithStatus(recipe_id: String, complete: Bool)
+  RecipeWithStatus(recipe_title: String, complete: Bool)
   MealWithStatus(meal: String, complete: Bool)
 }
 
@@ -521,13 +553,13 @@ fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {
         Some(RecipeWithStatus(a, b)) ->
           json.object([
             #("type", json.string("RecipeWithStatus")),
-            #("recipe_id", json.string(a)),
+            #("recipe_title", json.string(a)),
             #("complete", json.string(bool.to_string(b))),
           ])
         Some(MealWithStatus(a, b)) ->
           json.object([
             #("type", json.string("MealWithStatus")),
-            #("recipe_id", json.string(a)),
+            #("meal", json.string(a)),
             #("complete", json.string(bool.to_string(b))),
           ])
         None -> json.object([])
@@ -538,13 +570,13 @@ fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {
         Some(RecipeWithStatus(a, b)) ->
           json.object([
             #("type", json.string("RecipeWithStatus")),
-            #("recipe_id", json.string(a)),
+            #("recipe_title", json.string(a)),
             #("complete", json.string(bool.to_string(b))),
           ])
         Some(MealWithStatus(a, b)) ->
           json.object([
             #("type", json.string("MealWithStatus")),
-            #("recipe_id", json.string(a)),
+            #("meal", json.string(a)),
             #("complete", json.string(bool.to_string(b))),
           ])
         None -> json.object([])
