@@ -452,6 +452,10 @@ fn inner_card(meal: MealWithStatus) -> Element(PlannerMsg) {
   }
 }
 
+fn inner_input(meal: MealWithStatus) -> Element(PlannerMsg) {
+  todo
+}
+
 fn planner_meal_card(pd: PlanDay, i: Int, meal: String) -> Element(PlannerMsg) {
   let row = case meal {
     "lunch" -> "col-start-2 xs:row-start-2"
@@ -462,6 +466,35 @@ fn planner_meal_card(pd: PlanDay, i: Int, meal: String) -> Element(PlannerMsg) {
     "lunch" -> option.map(pd.lunch, inner_card) |> option.unwrap(element.none())
     "dinner" ->
       option.map(pd.dinner, inner_card) |> option.unwrap(element.none())
+    _ -> element.none()
+  }
+  div(
+    [class("flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
+                row-start-[var(--dayPlacement)]
+                xs:col-start-[var(--dayPlacement)] 
+                snap-start scroll-p-[-40px] " <> row), style([
+        #("--dayPlacement", int.to_string(i + 2)),
+      ])],
+    [card],
+  )
+}
+
+fn planner_meal_input(
+  pd: Option(PlanDay),
+  i: Int,
+  meal: String,
+) -> Element(PlannerMsg) {
+  let row = case meal {
+    "lunch" -> "col-start-2 xs:row-start-2"
+    "dinner" -> "col-start-3 xs:row-start-3"
+    _ -> ""
+  }
+  let card = case #(pd, meal) {
+    #(Some(a), "lunch") ->
+      option.map(a.lunch, inner_input) |> option.unwrap(element.none())
+    #(Some(a), "dinner") ->
+      option.map(a.dinner, inner_card) |> option.unwrap(element.none())
+    #(None, _) -> inner_input(MealWithStatus("", complete: False))
     _ -> element.none()
   }
   div(
