@@ -11,6 +11,7 @@ import lustre/element/html.{a, nav, section, span}
 import modem
 import pages/planner
 import pages/recipe
+import session
 import tardis
 
 // MAIN ------------------------------------------------------------------------
@@ -38,10 +39,14 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
     Model(
       current_route: Home,
       current_recipe: None,
-      recipes: recipe.RecipeList(recipes: [], tag_options: []),
-      planner: dict.new(),
+      recipes: session.RecipeList(recipes: [], tag_options: []),
+      planner: planner.Model(plan_week: dict.new(), recipe_list: []),
     ),
-    modem.init(on_route_change),
+    effect.batch([
+      modem.init(on_route_change),
+      effect.map(session.get_recipes(), RecipeList),
+      effect.map(session.get_tag_options(), RecipeList),
+    ]),
   )
 }
 
@@ -51,8 +56,8 @@ pub type Model {
   Model(
     current_route: Route,
     current_recipe: recipe.RecipeDetail,
-    recipes: recipe.RecipeList,
-    planner: planner.PlanWeek,
+    recipes: session.RecipeList,
+    planner: planner.Model,
   )
 }
 
@@ -68,7 +73,7 @@ pub type Route {
 pub type Msg {
   OnRouteChange(Route)
   RecipeDetail(recipe.RecipeDetailMsg)
-  RecipeList(recipe.RecipeListMsg)
+  RecipeList(session.RecipeListMsg)
   Planner(planner.PlannerMsg)
 }
 
@@ -79,8 +84,8 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     OnRouteChange(ViewRecipeList) -> #(
       Model(..model, current_route: ViewRecipeList),
       effect.batch([
-        effect.map(recipe.get_recipes(), RecipeList),
-        effect.map(recipe.get_tag_options(), RecipeList),
+        effect.map(session.get_recipes(), RecipeList),
+        effect.map(session.get_tag_options(), RecipeList),
       ]),
     )
     OnRouteChange(ViewRecipeDetail(slug: slug)) -> #(
@@ -95,21 +100,21 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(
         ..model,
         current_route: EditRecipeDetail(slug: ""),
-        current_recipe: Some(recipe.Recipe(
+        current_recipe: Some(session.Recipe(
           None,
           "New Recipe",
           "",
           0,
           0,
           0,
-          Some(dict.from_list([#(0, recipe.Tag("", ""))])),
+          Some(dict.from_list([#(0, session.Tag("", ""))])),
           Some(
-            dict.from_list([#(0, recipe.Ingredient(None, None, None, None))]),
+            dict.from_list([#(0, session.Ingredient(None, None, None, None))]),
           ),
-          Some(dict.from_list([#(0, recipe.MethodStep(""))])),
+          Some(dict.from_list([#(0, session.MethodStep(""))])),
         )),
       ),
-      effect.map(recipe.get_tag_options(), RecipeList),
+      effect.map(session.get_tag_options(), RecipeList),
     )
     OnRouteChange(EditRecipeDetail(slug: slug)) -> #(
       Model(
@@ -135,7 +140,14 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let #(child_model, child_effect) =
         recipe.list_update(model.recipes, list_msg)
       #(
-        Model(..model, recipes: child_model),
+        Model(
+          ..model,
+          recipes: child_model,
+          planner: planner.Model(
+            plan_week: model.planner.plan_week,
+            recipe_list: child_model.recipes,
+          ),
+        ),
         effect.map(child_effect, RecipeList),
       )
     }
@@ -143,7 +155,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(
         Model(
           ..model,
-          recipes: recipe.merge_recipe_into_model(new_recipe, model.recipes),
+          recipes: session.merge_recipe_into_model(new_recipe, model.recipes),
         ),
         // TODO: Better handle navigating in response to the updated data
         {
@@ -168,7 +180,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(recipe.Recipe) {
+fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(session.Recipe) {
   option.from_result(list.find(model.recipes.recipes, fn(a) { a.slug == slug }))
 }
 
@@ -204,8 +216,22 @@ fn view(model: Model) -> Element(Msg) {
         ),
         RecipeDetail,
       )
-    ViewPlanner -> element.map(planner.view_planner(model.planner), Planner)
-    EditPlanner -> planner.edit_planner(model.planner)
+    ViewPlanner ->
+      element.map(
+        planner.view_planner(planner.Model(
+          plan_week: model.planner.plan_week,
+          recipe_list: model.recipes.recipes,
+        )),
+        Planner,
+      )
+    EditPlanner ->
+      element.map(
+        planner.edit_planner(planner.Model(
+          plan_week: model.planner.plan_week,
+          recipe_list: model.recipes.recipes,
+        )),
+        Planner,
+      )
   }
   view_base(page)
 }

@@ -746,7 +746,7 @@ function any(loop$list, loop$predicate) {
 function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$prev, loop$acc) {
   while (true) {
     let list3 = loop$list;
-    let compare4 = loop$compare;
+    let compare5 = loop$compare;
     let growing = loop$growing;
     let direction = loop$direction;
     let prev = loop$prev;
@@ -761,24 +761,24 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
     } else {
       let new$1 = list3.head;
       let rest$1 = list3.tail;
-      let $ = compare4(prev, new$1);
+      let $ = compare5(prev, new$1);
       if ($ instanceof Gt && direction instanceof Descending) {
         loop$list = rest$1;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$growing = growing$1;
         loop$direction = direction;
         loop$prev = new$1;
         loop$acc = acc;
       } else if ($ instanceof Lt && direction instanceof Ascending) {
         loop$list = rest$1;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$growing = growing$1;
         loop$direction = direction;
         loop$prev = new$1;
         loop$acc = acc;
       } else if ($ instanceof Eq && direction instanceof Ascending) {
         loop$list = rest$1;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$growing = growing$1;
         loop$direction = direction;
         loop$prev = new$1;
@@ -797,7 +797,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           let next = rest$1.head;
           let rest$2 = rest$1.tail;
           let direction$1 = (() => {
-            let $1 = compare4(new$1, next);
+            let $1 = compare5(new$1, next);
             if ($1 instanceof Lt) {
               return new Ascending();
             } else if ($1 instanceof Eq) {
@@ -807,7 +807,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
             }
           })();
           loop$list = rest$2;
-          loop$compare = compare4;
+          loop$compare = compare5;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
           loop$prev = next;
@@ -827,7 +827,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           let next = rest$1.head;
           let rest$2 = rest$1.tail;
           let direction$1 = (() => {
-            let $1 = compare4(new$1, next);
+            let $1 = compare5(new$1, next);
             if ($1 instanceof Lt) {
               return new Ascending();
             } else if ($1 instanceof Eq) {
@@ -837,7 +837,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
             }
           })();
           loop$list = rest$2;
-          loop$compare = compare4;
+          loop$compare = compare5;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
           loop$prev = next;
@@ -857,7 +857,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           let next = rest$1.head;
           let rest$2 = rest$1.tail;
           let direction$1 = (() => {
-            let $1 = compare4(new$1, next);
+            let $1 = compare5(new$1, next);
             if ($1 instanceof Lt) {
               return new Ascending();
             } else if ($1 instanceof Eq) {
@@ -867,7 +867,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
             }
           })();
           loop$list = rest$2;
-          loop$compare = compare4;
+          loop$compare = compare5;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
           loop$prev = next;
@@ -881,7 +881,7 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
   while (true) {
     let list1 = loop$list1;
     let list22 = loop$list2;
-    let compare4 = loop$compare;
+    let compare5 = loop$compare;
     let acc = loop$acc;
     if (list1.hasLength(0)) {
       let list3 = list22;
@@ -894,21 +894,21 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
       let rest1 = list1.tail;
       let first22 = list22.head;
       let rest2 = list22.tail;
-      let $ = compare4(first1, first22);
+      let $ = compare5(first1, first22);
       if ($ instanceof Lt) {
         loop$list1 = rest1;
         loop$list2 = list22;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$acc = prepend(first1, acc);
       } else if ($ instanceof Gt) {
         loop$list1 = list1;
         loop$list2 = rest2;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$acc = prepend(first22, acc);
       } else {
         loop$list1 = list1;
         loop$list2 = rest2;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$acc = prepend(first22, acc);
       }
     }
@@ -917,7 +917,7 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
 function merge_ascending_pairs(loop$sequences, loop$compare, loop$acc) {
   while (true) {
     let sequences2 = loop$sequences;
-    let compare4 = loop$compare;
+    let compare5 = loop$compare;
     let acc = loop$acc;
     if (sequences2.hasLength(0)) {
       return do_reverse(acc, toList([]));
@@ -934,11 +934,11 @@ function merge_ascending_pairs(loop$sequences, loop$compare, loop$acc) {
       let descending = merge_ascendings(
         ascending1,
         ascending2,
-        compare4,
+        compare5,
         toList([])
       );
       loop$sequences = rest$1;
-      loop$compare = compare4;
+      loop$compare = compare5;
       loop$acc = prepend(descending, acc);
     }
   }
@@ -947,7 +947,7 @@ function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
   while (true) {
     let list1 = loop$list1;
     let list22 = loop$list2;
-    let compare4 = loop$compare;
+    let compare5 = loop$compare;
     let acc = loop$acc;
     if (list1.hasLength(0)) {
       let list3 = list22;
@@ -960,21 +960,21 @@ function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
       let rest1 = list1.tail;
       let first22 = list22.head;
       let rest2 = list22.tail;
-      let $ = compare4(first1, first22);
+      let $ = compare5(first1, first22);
       if ($ instanceof Lt) {
         loop$list1 = list1;
         loop$list2 = rest2;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$acc = prepend(first22, acc);
       } else if ($ instanceof Gt) {
         loop$list1 = rest1;
         loop$list2 = list22;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$acc = prepend(first1, acc);
       } else {
         loop$list1 = rest1;
         loop$list2 = list22;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$acc = prepend(first1, acc);
       }
     }
@@ -983,7 +983,7 @@ function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
 function merge_descending_pairs(loop$sequences, loop$compare, loop$acc) {
   while (true) {
     let sequences2 = loop$sequences;
-    let compare4 = loop$compare;
+    let compare5 = loop$compare;
     let acc = loop$acc;
     if (sequences2.hasLength(0)) {
       return do_reverse(acc, toList([]));
@@ -1000,11 +1000,11 @@ function merge_descending_pairs(loop$sequences, loop$compare, loop$acc) {
       let ascending = merge_descendings(
         descending1,
         descending2,
-        compare4,
+        compare5,
         toList([])
       );
       loop$sequences = rest$1;
-      loop$compare = compare4;
+      loop$compare = compare5;
       loop$acc = prepend(ascending, acc);
     }
   }
@@ -1013,7 +1013,7 @@ function merge_all(loop$sequences, loop$direction, loop$compare) {
   while (true) {
     let sequences2 = loop$sequences;
     let direction = loop$direction;
-    let compare4 = loop$compare;
+    let compare5 = loop$compare;
     if (sequences2.hasLength(0)) {
       return toList([]);
     } else if (sequences2.hasLength(1) && direction instanceof Ascending) {
@@ -1023,19 +1023,19 @@ function merge_all(loop$sequences, loop$direction, loop$compare) {
       let sequence = sequences2.head;
       return do_reverse(sequence, toList([]));
     } else if (direction instanceof Ascending) {
-      let sequences$1 = merge_ascending_pairs(sequences2, compare4, toList([]));
+      let sequences$1 = merge_ascending_pairs(sequences2, compare5, toList([]));
       loop$sequences = sequences$1;
       loop$direction = new Descending();
-      loop$compare = compare4;
+      loop$compare = compare5;
     } else {
-      let sequences$1 = merge_descending_pairs(sequences2, compare4, toList([]));
+      let sequences$1 = merge_descending_pairs(sequences2, compare5, toList([]));
       loop$sequences = sequences$1;
       loop$direction = new Ascending();
-      loop$compare = compare4;
+      loop$compare = compare5;
     }
   }
 }
-function sort(list3, compare4) {
+function sort(list3, compare5) {
   if (list3.hasLength(0)) {
     return toList([]);
   } else if (list3.hasLength(1)) {
@@ -1046,7 +1046,7 @@ function sort(list3, compare4) {
     let y = list3.tail.head;
     let rest$1 = list3.tail.tail;
     let direction = (() => {
-      let $ = compare4(x, y);
+      let $ = compare5(x, y);
       if ($ instanceof Lt) {
         return new Ascending();
       } else if ($ instanceof Eq) {
@@ -1057,13 +1057,13 @@ function sort(list3, compare4) {
     })();
     let sequences$1 = sequences(
       rest$1,
-      compare4,
+      compare5,
       toList([x]),
       direction,
       y,
       toList([])
     );
-    return merge_all(sequences$1, new Ascending(), compare4);
+    return merge_all(sequences$1, new Ascending(), compare5);
   }
 }
 function key_set(list3, key3, value4) {
@@ -2993,17 +2993,144 @@ function guard(requirement, consequence, alternative) {
 }
 
 // build/dev/javascript/gleam_json/gleam_json_ffi.mjs
+function json_to_string(json) {
+  return JSON.stringify(json);
+}
 function object(entries) {
   return Object.fromEntries(entries);
 }
 function identity2(x) {
   return x;
 }
+function array(list3) {
+  return list3.toArray();
+}
 function do_null() {
   return null;
 }
+function decode(string3) {
+  try {
+    const result = JSON.parse(string3);
+    return new Ok2(result);
+  } catch (err) {
+    return new Error2(getJsonDecodeError(err, string3));
+  }
+}
+function getJsonDecodeError(stdErr, json) {
+  if (isUnexpectedEndOfInput(stdErr))
+    return new UnexpectedEndOfInput();
+  return toUnexpectedByteError(stdErr, json);
+}
+function isUnexpectedEndOfInput(err) {
+  const unexpectedEndOfInputRegex = /((unexpected (end|eof))|(end of data)|(unterminated string)|(json( parse error|\.parse)\: expected '(\:|\}|\])'))/i;
+  return unexpectedEndOfInputRegex.test(err.message);
+}
+function toUnexpectedByteError(err, json) {
+  let converters = [
+    v8UnexpectedByteError,
+    oldV8UnexpectedByteError,
+    jsCoreUnexpectedByteError,
+    spidermonkeyUnexpectedByteError
+  ];
+  for (let converter of converters) {
+    let result = converter(err, json);
+    if (result)
+      return result;
+  }
+  return new UnexpectedByte("", 0);
+}
+function v8UnexpectedByteError(err) {
+  const regex = /unexpected token '(.)', ".+" is not valid JSON/i;
+  const match = regex.exec(err.message);
+  if (!match)
+    return null;
+  const byte = toHex(match[1]);
+  return new UnexpectedByte(byte, -1);
+}
+function oldV8UnexpectedByteError(err) {
+  const regex = /unexpected token (.) in JSON at position (\d+)/i;
+  const match = regex.exec(err.message);
+  if (!match)
+    return null;
+  const byte = toHex(match[1]);
+  const position2 = Number(match[2]);
+  return new UnexpectedByte(byte, position2);
+}
+function spidermonkeyUnexpectedByteError(err, json) {
+  const regex = /(unexpected character|expected .*) at line (\d+) column (\d+)/i;
+  const match = regex.exec(err.message);
+  if (!match)
+    return null;
+  const line = Number(match[2]);
+  const column = Number(match[3]);
+  const position2 = getPositionFromMultiline(line, column, json);
+  const byte = toHex(json[position2]);
+  return new UnexpectedByte(byte, position2);
+}
+function jsCoreUnexpectedByteError(err) {
+  const regex = /unexpected (identifier|token) "(.)"/i;
+  const match = regex.exec(err.message);
+  if (!match)
+    return null;
+  const byte = toHex(match[2]);
+  return new UnexpectedByte(byte, 0);
+}
+function toHex(char) {
+  return "0x" + char.charCodeAt(0).toString(16).toUpperCase();
+}
+function getPositionFromMultiline(line, column, string3) {
+  if (line === 1)
+    return column - 1;
+  let currentLn = 1;
+  let position2 = 0;
+  string3.split("").find((char, idx) => {
+    if (char === "\n")
+      currentLn += 1;
+    if (currentLn === line) {
+      position2 = idx + column;
+      return true;
+    }
+    return false;
+  });
+  return position2;
+}
 
 // build/dev/javascript/gleam_json/gleam/json.mjs
+var UnexpectedEndOfInput = class extends CustomType {
+};
+var UnexpectedByte = class extends CustomType {
+  constructor(byte, position2) {
+    super();
+    this.byte = byte;
+    this.position = position2;
+  }
+};
+var UnexpectedFormat = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+function do_decode(json, decoder) {
+  return then$(
+    decode(json),
+    (dynamic_value) => {
+      let _pipe = decoder(dynamic_value);
+      return map_error(
+        _pipe,
+        (var0) => {
+          return new UnexpectedFormat(var0);
+        }
+      );
+    }
+  );
+}
+function decode5(json, decoder) {
+  return do_decode(json, decoder);
+}
+function to_string7(json) {
+  return json_to_string(json);
+}
 function string2(input2) {
   return identity2(input2);
 }
@@ -3020,6 +3147,14 @@ function nullable(input2, inner_type) {
 }
 function object2(entries) {
   return object(entries);
+}
+function preprocessed_array(from3) {
+  return array(from3);
+}
+function array2(entries, inner_type) {
+  let _pipe = entries;
+  let _pipe$1 = map2(_pipe, inner_type);
+  return preprocessed_array(_pipe$1);
 }
 
 // build/dev/javascript/lustre/lustre/effect.mjs
@@ -3684,19 +3819,19 @@ var LustreClientApplication2 = class _LustreClientApplication {
   #model = null;
   #update = null;
   #view = null;
-  static start(flags, selector, init7, update4, view3) {
+  static start(flags, selector, init8, update5, view4) {
     if (!is_browser())
       return new Error2(new NotABrowser());
     const root2 = selector instanceof HTMLElement ? selector : document.querySelector(selector);
     if (!root2)
       return new Error2(new ElementNotFound(selector));
-    const app = new _LustreClientApplication(init7(flags), update4, view3, root2);
-    return new Ok2((msg) => app.send(msg));
+    const app2 = new _LustreClientApplication(init8(flags), update5, view4, root2);
+    return new Ok2((msg) => app2.send(msg));
   }
-  constructor([model, effects], update4, view3, root2 = document.body, isComponent = false) {
+  constructor([model, effects], update5, view4, root2 = document.body, isComponent = false) {
     this.#model = model;
-    this.#update = update4;
-    this.#view = view3;
+    this.#update = update5;
+    this.#view = view4;
     this.#root = root2;
     this.#effects = effects.all.toArray();
     this.#didUpdate = true;
@@ -3796,24 +3931,119 @@ var LustreClientApplication2 = class _LustreClientApplication {
     };
   }
 };
-var start = (app, selector, flags) => LustreClientApplication2.start(
+var start = (app2, selector, flags) => LustreClientApplication2.start(
   flags,
   selector,
-  app.init,
-  app.update,
-  app.view
+  app2.init,
+  app2.update,
+  app2.view
 );
 var is_browser = () => globalThis.window && window.document;
 var prevent_default = (event2) => event2.preventDefault();
 
+// build/dev/javascript/lustre/client-component.ffi.mjs
+function register({ init: init8, update: update5, view: view4, on_attribute_change: on_attribute_change2 }, name2) {
+  if (!is_browser())
+    return new Error2(new NotABrowser());
+  if (!name2.includes("-"))
+    return new Error2(new BadComponentName(name2));
+  if (window.customElements.get(name2)) {
+    return new Error2(new ComponentAlreadyRegistered(name2));
+  }
+  const Component = makeComponent(init8, update5, view4, on_attribute_change2);
+  window.customElements.define(name2, Component);
+  for (const el2 of document.querySelectorAll(name2)) {
+    const replaced = new Component();
+    for (const attr of el2.attributes) {
+      replaced.setAttribute(attr.name, attr.value);
+    }
+    el2.replaceWith(replaced);
+  }
+  return new Ok2(void 0);
+}
+function makeComponent(init8, update5, view4, on_attribute_change2) {
+  return class LustreClientComponent extends HTMLElement {
+    #root = document.createElement("div");
+    #application = null;
+    #shadow = null;
+    slotContent = [];
+    static get observedAttributes() {
+      return on_attribute_change2[0]?.entries().map(([name2, _]) => name2) ?? [];
+    }
+    constructor() {
+      super();
+      this.#shadow = this.attachShadow({ mode: "closed" });
+      on_attribute_change2[0]?.forEach((decoder, name2) => {
+        Object.defineProperty(this, name2, {
+          get() {
+            return this[`_${name2}`] || this.getAttribute(name2);
+          },
+          set(value4) {
+            const prev = this[name2];
+            const decoded = decoder(value4);
+            if (decoded instanceof Ok2 && !isEqual(prev, value4)) {
+              this.#application ? this.#application.send(new Dispatch(decoded[0])) : window.requestAnimationFrame(
+                () => this.#application.send(new Dispatch(decoded[0]))
+              );
+            }
+            this[`_${name2}`] = value4;
+          }
+        });
+      });
+    }
+    connectedCallback() {
+      for (const link of document.querySelectorAll("link")) {
+        if (link.rel === "stylesheet") {
+          this.#shadow.appendChild(link.cloneNode(true));
+        }
+      }
+      for (const style3 of document.querySelectorAll("style")) {
+        this.#shadow.appendChild(style3.cloneNode(true));
+      }
+      this.#application = new LustreClientApplication2(
+        init8(),
+        update5,
+        view4,
+        this.#root,
+        true
+      );
+      this.#shadow.append(this.#root);
+    }
+    attributeChangedCallback(key3, _, next) {
+      this[key3] = next;
+    }
+    disconnectedCallback() {
+      this.#application.send(new Shutdown());
+    }
+    get adoptedStyleSheets() {
+      return this.#shadow.adoptedStyleSheets;
+    }
+    set adoptedStyleSheets(value4) {
+      this.#shadow.adoptedStyleSheets = value4;
+    }
+  };
+}
+
 // build/dev/javascript/lustre/lustre.mjs
 var App = class extends CustomType {
-  constructor(init7, update4, view3, on_attribute_change) {
+  constructor(init8, update5, view4, on_attribute_change2) {
     super();
-    this.init = init7;
-    this.update = update4;
-    this.view = view3;
-    this.on_attribute_change = on_attribute_change;
+    this.init = init8;
+    this.update = update5;
+    this.view = view4;
+    this.on_attribute_change = on_attribute_change2;
+  }
+};
+var BadComponentName = class extends CustomType {
+  constructor(name2) {
+    super();
+    this.name = name2;
+  }
+};
+var ComponentAlreadyRegistered = class extends CustomType {
+  constructor(name2) {
+    super();
+    this.name = name2;
   }
 };
 var ElementNotFound = class extends CustomType {
@@ -3824,18 +4054,21 @@ var ElementNotFound = class extends CustomType {
 };
 var NotABrowser = class extends CustomType {
 };
-function application(init7, update4, view3) {
-  return new App(init7, update4, view3, new None());
+function application(init8, update5, view4) {
+  return new App(init8, update5, view4, new None());
+}
+function component(init8, update5, view4, on_attribute_change2) {
+  return new App(init8, update5, view4, new Some(on_attribute_change2));
 }
 function dispatch(msg) {
   return new Dispatch(msg);
 }
-function start3(app, selector, flags) {
+function start3(app2, selector, flags) {
   return guard(
     !is_browser(),
     new Error2(new NotABrowser()),
     () => {
-      return start(app, selector, flags);
+      return start(app2, selector, flags);
     }
   );
 }
@@ -3876,6 +4109,9 @@ function span(attrs, children) {
 }
 function button(attrs, children) {
   return element("button", attrs, children);
+}
+function datalist(attrs, children) {
+  return element("datalist", attrs, children);
 }
 function fieldset(attrs, children) {
   return element("fieldset", attrs, children);
@@ -4766,7 +5002,7 @@ function px(value4) {
 function percent(value4) {
   return new Pct(to_float(value4));
 }
-function to_string8(size2) {
+function to_string9(size2) {
   if (size2 instanceof Px) {
     let value4 = size2[0];
     return append4(to_string(value4), "px");
@@ -4816,7 +5052,7 @@ function property2(field2, content) {
   return new Style(new Property(field2, content, false));
 }
 function width(width2) {
-  return property2("width", to_string8(width2));
+  return property2("width", to_string9(width2));
 }
 function width_(width2) {
   return property2("width", width2);
@@ -4834,7 +5070,7 @@ function font_family(font_family2) {
   return property2("font-family", font_family2);
 }
 function font_size(font_size2) {
-  return property2("font-size", to_string8(font_size2));
+  return property2("font-size", to_string9(font_size2));
 }
 function line_height(line_height2) {
   return property2("line-height", line_height2);
@@ -4861,7 +5097,7 @@ function outline(outline2) {
   return property2("outline", outline2);
 }
 function gap(gap2) {
-  return property2("gap", to_string8(gap2));
+  return property2("gap", to_string9(gap2));
 }
 function grid_column(grid_column2) {
   return property2("grid-column", grid_column2);
@@ -4882,16 +5118,16 @@ function appearance(appearance2) {
   return property2("appearance", appearance2);
 }
 function top(size2) {
-  return property2("top", to_string8(size2));
+  return property2("top", to_string9(size2));
 }
 function bottom(size2) {
-  return property2("bottom", to_string8(size2));
+  return property2("bottom", to_string9(size2));
 }
 function right(size2) {
-  return property2("right", to_string8(size2));
+  return property2("right", to_string9(size2));
 }
 function left(size2) {
-  return property2("left", to_string8(size2));
+  return property2("left", to_string9(size2));
 }
 function box_shadow(box_shadow2) {
   return property2("box-shadow", box_shadow2);
@@ -4915,16 +5151,16 @@ function border_right(border_right2) {
   return property2("border-right", border_right2);
 }
 function border_radius(border_radius2) {
-  return property2("border-radius", to_string8(border_radius2));
+  return property2("border-radius", to_string9(border_radius2));
 }
 function padding2(padding3) {
-  return property2("padding", to_string8(padding3));
+  return property2("padding", to_string9(padding3));
 }
 function padding_(padding3) {
   return property2("padding", padding3);
 }
 function margin(margin2) {
-  return property2("margin", to_string8(margin2));
+  return property2("margin", to_string9(margin2));
 }
 function compose(class$3) {
   let _pipe = class$3;
@@ -4956,10 +5192,10 @@ function to_lustre(class$3) {
 function setup(options) {
   return createCache(options);
 }
-function compose2(view3, cache2) {
+function compose2(view4, cache2) {
   return (model) => {
     prepareCache(cache2);
-    let el2 = view3(model);
+    let el2 = view4(model);
     let $ = renderCache(cache2);
     return el2;
   };
@@ -5717,9 +5953,9 @@ function mount_shadow_node() {
   return [shadow_root, lustre_root];
 }
 function wrap_init(middleware) {
-  return (init7) => {
+  return (init8) => {
     return (flags) => {
-      let new_state = init7(flags);
+      let new_state = init8(flags);
       let _pipe = new_state;
       let _pipe$1 = first(_pipe);
       let _pipe$2 = from(_pipe$1);
@@ -5729,9 +5965,9 @@ function wrap_init(middleware) {
   };
 }
 function wrap_update(middleware) {
-  return (update4) => {
+  return (update5) => {
     return (model, msg) => {
-      let new_state = update4(model, msg);
+      let new_state = update5(model, msg);
       let _pipe = new_state;
       let _pipe$1 = first(_pipe);
       let _pipe$2 = from(_pipe$1);
@@ -7421,6 +7657,32 @@ var Nov = class extends CustomType {
 };
 var Dec = class extends CustomType {
 };
+function compare3(a2, b) {
+  let wta = a2.wall_time;
+  let mta = a2.monotonic_time;
+  let wtb = b.wall_time;
+  let mtb = b.monotonic_time;
+  let $ = (() => {
+    if (mta instanceof Some && mtb instanceof Some) {
+      let ta2 = mta[0];
+      let tb2 = mtb[0];
+      return [ta2, tb2];
+    } else {
+      return [wta, wtb];
+    }
+  })();
+  let ta = $[0];
+  let tb = $[1];
+  let $1 = ta === tb;
+  let $2 = ta < tb;
+  if ($1) {
+    return new Eq();
+  } else if ($2) {
+    return new Lt();
+  } else {
+    return new Gt();
+  }
+}
 function add2(value4, duration) {
   let wt = value4.wall_time;
   let o = value4.offset;
@@ -8624,6 +8886,385 @@ function stringed_int(d) {
   return flatten2(_pipe$2);
 }
 
+// build/dev/javascript/app/session.mjs
+var DbRetrievedRecipes = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var DbRetrievedTagOptions = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var RecipeList = class extends CustomType {
+  constructor(recipes, tag_options) {
+    super();
+    this.recipes = recipes;
+    this.tag_options = tag_options;
+  }
+};
+var Recipe = class extends CustomType {
+  constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
+    super();
+    this.id = id2;
+    this.title = title;
+    this.slug = slug;
+    this.cook_time = cook_time;
+    this.prep_time = prep_time;
+    this.serves = serves;
+    this.tags = tags;
+    this.ingredients = ingredients;
+    this.method_steps = method_steps;
+  }
+};
+var TagOption = class extends CustomType {
+  constructor(id2, name2, options) {
+    super();
+    this.id = id2;
+    this.name = name2;
+    this.options = options;
+  }
+};
+var MethodStep = class extends CustomType {
+  constructor(step_text) {
+    super();
+    this.step_text = step_text;
+  }
+};
+var Tag = class extends CustomType {
+  constructor(name2, value4) {
+    super();
+    this.name = name2;
+    this.value = value4;
+  }
+};
+var Ingredient = class extends CustomType {
+  constructor(name2, ismain, quantity, units2) {
+    super();
+    this.name = name2;
+    this.ismain = ismain;
+    this.quantity = quantity;
+    this.units = units2;
+  }
+};
+function merge_recipe_into_model(recipe, model) {
+  return model.withFields({
+    recipes: (() => {
+      let _pipe = model.recipes;
+      let _pipe$1 = map2(_pipe, (a2) => {
+        return [a2.id, a2];
+      });
+      let _pipe$2 = from_list(_pipe$1);
+      let _pipe$3 = merge(
+        _pipe$2,
+        from_list(toList([[recipe.id, recipe]]))
+      );
+      return values(_pipe$3);
+    })()
+  });
+}
+function decode_ingredient(d) {
+  let decoder = decode4(
+    (var0, var1, var2, var3) => {
+      return new Ingredient(var0, var1, var2, var3);
+    },
+    optional_field("name", string),
+    optional_field("ismain", stringed_bool),
+    optional_field("quantity", string),
+    optional_field("units", string)
+  );
+  return decoder(d);
+}
+function decode_tag(d) {
+  let decoder = decode2(
+    (var0, var1) => {
+      return new Tag(var0, var1);
+    },
+    field("name", string),
+    field("value", string)
+  );
+  return decoder(d);
+}
+function decode_method_step(d) {
+  let decoder = decode1(
+    (var0) => {
+      return new MethodStep(var0);
+    },
+    field("step_text", string)
+  );
+  return decoder(d);
+}
+function decode_recipe(d) {
+  let decoder = decode9(
+    (var0, var1, var2, var3, var4, var5, var6, var7, var8) => {
+      return new Recipe(var0, var1, var2, var3, var4, var5, var6, var7, var8);
+    },
+    optional_field("id", string),
+    field("title", string),
+    field("slug", string),
+    field("cook_time", int),
+    field("prep_time", int),
+    field("serves", int),
+    optional_field("tags", dict(stringed_int, decode_tag)),
+    optional_field(
+      "ingredients",
+      dict(stringed_int, decode_ingredient)
+    ),
+    optional_field(
+      "method_steps",
+      dict(stringed_int, decode_method_step)
+    )
+  );
+  return decoder(d);
+}
+function get_recipes() {
+  return from2(
+    (dispatch2) => {
+      let _pipe = do_get_recipes();
+      let _pipe$1 = map_promise(_pipe, toList);
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map2(_capture, decode_recipe);
+        }
+      );
+      let _pipe$3 = map_promise(_pipe$2, all);
+      let _pipe$4 = map_promise(
+        _pipe$3,
+        (_capture) => {
+          return map3(
+            _capture,
+            (var0) => {
+              return new DbRetrievedRecipes(var0);
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$4,
+        (_capture) => {
+          return map3(_capture, dispatch2);
+        }
+      );
+      return void 0;
+    }
+  );
+}
+function decode_tag_option(d) {
+  let decoder = decode3(
+    (var0, var1, var2) => {
+      return new TagOption(var0, var1, var2);
+    },
+    optional_field("id", string),
+    field("name", string),
+    field("options", list(string))
+  );
+  let f = decoder(d);
+  return debug(f);
+}
+function get_tag_options() {
+  return from2(
+    (dispatch2) => {
+      let _pipe = do_get_tagoptions();
+      let _pipe$1 = map_promise(_pipe, toList);
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map2(_capture, decode_tag_option);
+        }
+      );
+      let _pipe$3 = map_promise(_pipe$2, debug);
+      let _pipe$4 = map_promise(_pipe$3, all);
+      let _pipe$5 = map_promise(
+        _pipe$4,
+        (_capture) => {
+          return map3(
+            _capture,
+            (var0) => {
+              return new DbRetrievedTagOptions(var0);
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$5,
+        (_capture) => {
+          return map3(_capture, dispatch2);
+        }
+      );
+      return void 0;
+    }
+  );
+}
+
+// build/dev/javascript/app/components/typeahead.mjs
+var Model2 = class extends CustomType {
+  constructor(search_items, search_term, found_items) {
+    super();
+    this.search_items = search_items;
+    this.search_term = search_term;
+    this.found_items = found_items;
+  }
+};
+var RetrievedSearchItems = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserUpdatedSearchTerm = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserSelectedItem = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+function init6(_) {
+  return [new Model2(toList([]), "", toList([])), none()];
+}
+function update3(model, msg) {
+  debug(["typeahead update fn:", model, msg]);
+  if (msg instanceof RetrievedSearchItems) {
+    let a2 = msg[0];
+    debug(msg);
+    return [model.withFields({ search_items: a2 }), none()];
+  } else if (msg instanceof UserUpdatedSearchTerm) {
+    let a2 = msg[0];
+    return [
+      model.withFields({
+        search_term: a2,
+        found_items: filter(
+          model.search_items,
+          (r) => {
+            return guard(
+              length2(a2) > 3,
+              false,
+              () => {
+                return contains_string(r, a2);
+              }
+            );
+          }
+        )
+      }),
+      none()
+    ];
+  } else {
+    (_capture) => {
+      return debug(_capture);
+    };
+    return [model, none()];
+  }
+}
+function on_attribute_change() {
+  return from_list(
+    toList([
+      [
+        "recipe-titles",
+        (attribute2) => {
+          let _pipe = attribute2;
+          let _pipe$1 = string(_pipe);
+          let _pipe$2 = map3(
+            _pipe$1,
+            (_capture) => {
+              return decode5(_capture, list(string));
+            }
+          );
+          let _pipe$3 = map3(
+            _pipe$2,
+            (_capture) => {
+              return map_error(
+                _capture,
+                (_) => {
+                  return toList([
+                    new DecodeError(
+                      "a json array of strings",
+                      "something else",
+                      toList(["*"])
+                    )
+                  ]);
+                }
+              );
+            }
+          );
+          let _pipe$4 = flatten2(_pipe$3);
+          let _pipe$5 = map3(
+            _pipe$4,
+            (var0) => {
+              return new RetrievedSearchItems(var0);
+            }
+          );
+          return debug(_pipe$5);
+        }
+      ],
+      [
+        "search-term",
+        (attribute2) => {
+          let _pipe = attribute2;
+          let _pipe$1 = string(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new UserUpdatedSearchTerm(var0);
+            }
+          );
+        }
+      ]
+    ])
+  );
+}
+function search_result(res) {
+  return option(toList([value(res)]), "");
+}
+function view2(model) {
+  return fragment(
+    toList([
+      input(
+        toList([
+          value(model.search_term),
+          attribute("list", "search_results"),
+          on_input((var0) => {
+            return new UserUpdatedSearchTerm(var0);
+          }),
+          on2(
+            "change",
+            (target2) => {
+              let _pipe = target2;
+              let _pipe$1 = string(_pipe);
+              return map3(
+                _pipe$1,
+                (var0) => {
+                  return new UserSelectedItem(var0);
+                }
+              );
+            }
+          )
+        ])
+      ),
+      datalist(
+        toList([id("search_results")]),
+        (() => {
+          let _pipe = model.found_items;
+          let _pipe$1 = map2(_pipe, (a2) => {
+            return a2;
+          });
+          return map2(_pipe$1, search_result);
+        })()
+      )
+    ])
+  );
+}
+function app() {
+  return component(init6, update3, view2, on_attribute_change());
+}
+
 // build/dev/javascript/app/lib/utils.mjs
 function dict_update(dict2, key3, fun) {
   let item = (() => {
@@ -8680,6 +9321,932 @@ function month_date_string(day2) {
     return string_month(_pipe);
   })();
   return m + " " + n;
+}
+
+// build/dev/javascript/app/pages/planner.mjs
+var UserAddedMealToPlan = class extends CustomType {
+};
+var UserRemovedMealFromPlan = class extends CustomType {
+};
+var DbRetrievedPlan = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var Model3 = class extends CustomType {
+  constructor(plan_week, recipe_list) {
+    super();
+    this.plan_week = plan_week;
+    this.recipe_list = recipe_list;
+  }
+};
+var PlanDay = class extends CustomType {
+  constructor(date, lunch, dinner) {
+    super();
+    this.date = date;
+    this.lunch = lunch;
+    this.dinner = dinner;
+  }
+};
+var RecipeWithStatus = class extends CustomType {
+  constructor(recipe_title, complete) {
+    super();
+    this.recipe_title = recipe_title;
+    this.complete = complete;
+  }
+};
+var MealWithStatus = class extends CustomType {
+  constructor(meal, complete) {
+    super();
+    this.meal = meal;
+    this.complete = complete;
+  }
+};
+function planner_update(model, msg) {
+  if (msg instanceof UserAddedMealToPlan) {
+    throw makeError(
+      "todo",
+      "pages/planner",
+      53,
+      "planner_update",
+      "This has not yet been implemented",
+      {}
+    );
+  } else if (msg instanceof UserRemovedMealFromPlan) {
+    throw makeError(
+      "todo",
+      "pages/planner",
+      56,
+      "planner_update",
+      "This has not yet been implemented",
+      {}
+    );
+  } else if (msg instanceof DbRetrievedPlan) {
+    let plan_week = msg[0];
+    return [model.withFields({ plan_week }), none()];
+  } else {
+    return [model, none()];
+  }
+}
+function planner_header_row(dates) {
+  let date_keys = (() => {
+    let _pipe = map_to_list(dates);
+    let _pipe$1 = map2(
+      _pipe,
+      (_capture) => {
+        return map_first(_capture, (d) => {
+          return weekday2(d);
+        });
+      }
+    );
+    return from_list(_pipe$1);
+  })();
+  let monday = (() => {
+    let _pipe = get(date_keys, new Mon());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let tuesday = (() => {
+    let _pipe = get(date_keys, new Tue());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let wednesday = (() => {
+    let _pipe = get(date_keys, new Wed());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let thursday = (() => {
+    let _pipe = get(date_keys, new Thu());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let friday = (() => {
+    let _pipe = get(date_keys, new Fri());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let saturday = (() => {
+    let _pipe = get(date_keys, new Sat());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  let sunday = (() => {
+    let _pipe = get(date_keys, new Sun());
+    let _pipe$1 = map3(
+      _pipe,
+      (d) => {
+        return date_num_string(d.date);
+      }
+    );
+    return unwrap2(_pipe$1, "");
+  })();
+  return fragment(
+    toList([
+      div(
+        toList([
+          class$(
+            "subgrid-cols xs:col-start-1 row-start-1 subgrid-rows col-span-full xs:row-span-full xs:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full"
+          )
+        ]),
+        toList([
+          div(
+            toList([
+              class$(
+                "xs:row-start-2 xs:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
+              )
+            ]),
+            toList([h2(toList([class$("mx-2")]), toList([text("Lunch")]))])
+          ),
+          div(
+            toList([
+              class$(
+                "xs:row-start-3 xs:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
+              )
+            ]),
+            toList([h2(toList([class$("mx-2")]), toList([text("Dinner")]))])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-2 xs:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortMon", "'Mon " + monday + "'"],
+                  ["--longMon", "'Monday " + monday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-3 xs:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortTue", "'Tue " + tuesday + "'"],
+                  ["--longTue", "'Tuesday " + tuesday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-4 xs:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortWed", "'Wed " + wednesday + "'"],
+                  ["--longWed", "'Wednesday " + wednesday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-5 xs:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortThu", "'Thu " + thursday + "'"],
+                  ["--longThu", "'Thursday " + thursday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-6 xs:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortFri", "'Fri " + friday + "'"],
+                  ["--longFri", "'Friday " + friday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-7 xs:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortSat", "'Sat " + saturday + "'"],
+                  ["--longSat", "'Saturday " + saturday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      ),
+      div(
+        toList([
+          class$(
+            "xs:col-start-8 xs:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+          )
+        ]),
+        toList([
+          h2(
+            toList([
+              style(
+                toList([
+                  ["--shortSun", "'Sun " + sunday + "'"],
+                  ["--longSun", "'Sunday " + sunday + "'"]
+                ])
+              ),
+              class$(
+                "text-center before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]"
+              )
+            ]),
+            toList([])
+          )
+        ])
+      )
+    ])
+  );
+}
+function inner_card(meal) {
+  if (meal instanceof RecipeWithStatus) {
+    let r = meal.recipe_title;
+    let c = meal.complete;
+    return a(
+      toList([href("/recipes/" + kebab_case(r))]),
+      toList([
+        h2(
+          toList([
+            class$("text-center text-xl text-wrap"),
+            style(
+              toList([
+                [
+                  "text-decoration",
+                  guard(c, "line-through", () => {
+                    return "none";
+                  })
+                ]
+              ])
+            )
+          ]),
+          toList([text(r)])
+        )
+      ])
+    );
+  } else {
+    let m = meal.meal;
+    let c = meal.complete;
+    return h2(
+      toList([
+        class$("text-center text-xl text-wrap"),
+        style(
+          toList([
+            [
+              "text-decoration",
+              guard(c, "line-through", () => {
+                return "none";
+              })
+            ]
+          ])
+        )
+      ]),
+      toList([text(m)])
+    );
+  }
+}
+function planner_meal_card(pd, i, meal) {
+  let row = (() => {
+    if (meal === "lunch") {
+      return "col-start-2 xs:row-start-2";
+    } else if (meal === "dinner") {
+      return "col-start-3 xs:row-start-3";
+    } else {
+      return "";
+    }
+  })();
+  let card = (() => {
+    if (meal === "lunch") {
+      let _pipe = map(pd.lunch, inner_card);
+      return unwrap(_pipe, none3());
+    } else if (meal === "dinner") {
+      let _pipe = map(pd.dinner, inner_card);
+      return unwrap(_pipe, none3());
+    } else {
+      return none3();
+    }
+  })();
+  return div(
+    toList([
+      class$(
+        "flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]\n                row-start-[var(--dayPlacement)]\n                xs:col-start-[var(--dayPlacement)] \n                snap-start scroll-p-[-40px] " + row
+      ),
+      style(toList([["--dayPlacement", to_string3(i + 2)]]))
+    ]),
+    toList([card])
+  );
+}
+function view_planner(model) {
+  let today = set_time_of_day(
+    now2(),
+    new TimeOfDay(0, 0, 0, 0)
+  );
+  let day2 = (() => {
+    let $ = map_size(model.plan_week);
+    if ($ > 0) {
+      let num = $;
+      return first2(keys(model.plan_week));
+    } else {
+      return new Ok2(today);
+    }
+  })();
+  let start_of_week = (() => {
+    let _pipe = map3(
+      day2,
+      (d) => {
+        let $ = weekday2(d);
+        if ($ instanceof Mon) {
+          return d;
+        } else if ($ instanceof Tue) {
+          return add2(d, days(-1));
+        } else if ($ instanceof Wed) {
+          return add2(d, days(-2));
+        } else if ($ instanceof Thu) {
+          return add2(d, days(-3));
+        } else if ($ instanceof Fri) {
+          return add2(d, days(-4));
+        } else if ($ instanceof Sat) {
+          return add2(d, days(-5));
+        } else {
+          return add2(d, days(-6));
+        }
+      }
+    );
+    return unwrap2(
+      _pipe,
+      set_time_of_day(now2(), new TimeOfDay(0, 0, 0, 0))
+    );
+  })();
+  let find_in_week = (a2) => {
+    return unwrap2(
+      get(model.plan_week, a2),
+      new PlanDay(a2, new None(), new None())
+    );
+  };
+  let week2 = from_list(
+    toList([
+      [start_of_week, find_in_week(start_of_week)],
+      [
+        add2(start_of_week, days(1)),
+        find_in_week(add2(start_of_week, days(1)))
+      ],
+      [
+        add2(start_of_week, days(2)),
+        find_in_week(add2(start_of_week, days(2)))
+      ],
+      [
+        add2(start_of_week, days(3)),
+        find_in_week(add2(start_of_week, days(3)))
+      ],
+      [
+        add2(start_of_week, days(4)),
+        find_in_week(add2(start_of_week, days(4)))
+      ],
+      [
+        add2(start_of_week, days(5)),
+        find_in_week(add2(start_of_week, days(5)))
+      ],
+      [
+        add2(start_of_week, days(6)),
+        find_in_week(add2(start_of_week, days(6)))
+      ]
+    ])
+  );
+  return fragment(
+    toList([
+      section(
+        toList([
+          class$(
+            "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
+          )
+        ]),
+        toList([
+          page_title(
+            "Week of " + month_date_string(start_of_week),
+            "underline-orange"
+          ),
+          nav(
+            toList([
+              class$(
+                "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
+              )
+            ]),
+            toList([
+              a(
+                toList([href("/"), class$("text-center")]),
+                toList([text("\u{1F3E0}")])
+              ),
+              a(
+                toList([href("/planner/edit"), class$("text-center")]),
+                toList([text("\u270F\uFE0F")])
+              )
+            ])
+          )
+        ])
+      ),
+      section(
+        toList([
+          id("active-week"),
+          class$(
+            "mb-2 text-sm p-1 \n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-3 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            xs:col-start-[full-start] xs:col-end-[full-end]\n            xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0"
+          )
+        ]),
+        toList([
+          planner_header_row(week2),
+          fragment(
+            (() => {
+              let _pipe = values(week2);
+              let _pipe$1 = sort(
+                _pipe,
+                (a2, b) => {
+                  return compare3(a2.date, b.date);
+                }
+              );
+              return index_map(
+                _pipe$1,
+                (x, i) => {
+                  return planner_meal_card(x, i, "lunch");
+                }
+              );
+            })()
+          ),
+          fragment(
+            (() => {
+              let _pipe = values(week2);
+              let _pipe$1 = sort(
+                _pipe,
+                (a2, b) => {
+                  return compare3(a2.date, b.date);
+                }
+              );
+              return index_map(
+                _pipe$1,
+                (x, i) => {
+                  return planner_meal_card(x, i, "dinner");
+                }
+              );
+            })()
+          )
+        ])
+      )
+    ])
+  );
+}
+function inner_input(meal, recipe_titles) {
+  let term = (() => {
+    if (meal instanceof RecipeWithStatus) {
+      let r = meal.recipe_title;
+      return r;
+    } else {
+      let m = meal.meal;
+      return m;
+    }
+  })();
+  return element(
+    "type-ahead",
+    toList([
+      attribute(
+        "recipe-titles",
+        to_string7(array2(recipe_titles, string2))
+      ),
+      attribute("search-term", term)
+    ]),
+    toList([])
+  );
+}
+function planner_meal_input(pd, i, meal, recipe_titles) {
+  let row = (() => {
+    if (meal === "lunch") {
+      return "col-start-2 xs:row-start-2";
+    } else if (meal === "dinner") {
+      return "col-start-3 xs:row-start-3";
+    } else {
+      return "";
+    }
+  })();
+  let card = (() => {
+    if (pd instanceof Some && meal === "lunch") {
+      let a$1 = pd[0];
+      return inner_input(
+        unwrap(a$1.lunch, new MealWithStatus("", false)),
+        recipe_titles
+      );
+    } else if (pd instanceof Some && meal === "dinner") {
+      let a$1 = pd[0];
+      return inner_input(
+        unwrap(a$1.dinner, new MealWithStatus("", false)),
+        recipe_titles
+      );
+    } else if (pd instanceof None) {
+      return inner_input(new MealWithStatus("", false), recipe_titles);
+    } else {
+      return none3();
+    }
+  })();
+  return div(
+    toList([
+      class$(
+        "flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]\n                row-start-[var(--dayPlacement)]\n                xs:col-start-[var(--dayPlacement)] \n                snap-start scroll-p-[-40px] " + row
+      ),
+      style(toList([["--dayPlacement", to_string3(i + 2)]]))
+    ]),
+    toList([card])
+  );
+}
+function edit_planner(model) {
+  register(app(), "type-ahead");
+  let today = set_time_of_day(
+    now2(),
+    new TimeOfDay(0, 0, 0, 0)
+  );
+  let day2 = (() => {
+    let $ = map_size(model.plan_week);
+    if ($ > 0) {
+      let num = $;
+      return first2(keys(model.plan_week));
+    } else {
+      return new Ok2(today);
+    }
+  })();
+  let start_of_week = (() => {
+    let _pipe = map3(
+      day2,
+      (d) => {
+        let $ = weekday2(d);
+        if ($ instanceof Mon) {
+          return d;
+        } else if ($ instanceof Tue) {
+          return add2(d, days(-1));
+        } else if ($ instanceof Wed) {
+          return add2(d, days(-2));
+        } else if ($ instanceof Thu) {
+          return add2(d, days(-3));
+        } else if ($ instanceof Fri) {
+          return add2(d, days(-4));
+        } else if ($ instanceof Sat) {
+          return add2(d, days(-5));
+        } else {
+          return add2(d, days(-6));
+        }
+      }
+    );
+    return unwrap2(
+      _pipe,
+      set_time_of_day(now2(), new TimeOfDay(0, 0, 0, 0))
+    );
+  })();
+  let find_in_week = (a2) => {
+    return unwrap2(
+      get(model.plan_week, a2),
+      new PlanDay(a2, new None(), new None())
+    );
+  };
+  let week2 = from_list(
+    toList([
+      [start_of_week, find_in_week(start_of_week)],
+      [
+        add2(start_of_week, days(1)),
+        find_in_week(add2(start_of_week, days(1)))
+      ],
+      [
+        add2(start_of_week, days(2)),
+        find_in_week(add2(start_of_week, days(2)))
+      ],
+      [
+        add2(start_of_week, days(3)),
+        find_in_week(add2(start_of_week, days(3)))
+      ],
+      [
+        add2(start_of_week, days(4)),
+        find_in_week(add2(start_of_week, days(4)))
+      ],
+      [
+        add2(start_of_week, days(5)),
+        find_in_week(add2(start_of_week, days(5)))
+      ],
+      [
+        add2(start_of_week, days(6)),
+        find_in_week(add2(start_of_week, days(6)))
+      ]
+    ])
+  );
+  return fragment(
+    toList([
+      section(
+        toList([
+          class$(
+            "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
+          )
+        ]),
+        toList([
+          page_title(
+            "Week of " + month_date_string(start_of_week),
+            "underline-orange"
+          ),
+          nav(
+            toList([
+              class$(
+                "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
+              )
+            ]),
+            toList([
+              a(
+                toList([href("/"), class$("text-center")]),
+                toList([text("\u{1F3E0}")])
+              ),
+              a(
+                toList([href("/planner/edit"), class$("text-center")]),
+                toList([text("\u270F\uFE0F")])
+              )
+            ])
+          )
+        ])
+      ),
+      section(
+        toList([
+          id("active-week"),
+          class$(
+            "mb-2 text-sm p-1 \n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-3 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            xs:col-start-[full-start] xs:col-end-[full-end]\n            xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0"
+          )
+        ]),
+        toList([
+          planner_header_row(week2),
+          fragment(
+            (() => {
+              let _pipe = values(week2);
+              let _pipe$1 = sort(
+                _pipe,
+                (a2, b) => {
+                  return compare3(a2.date, b.date);
+                }
+              );
+              return index_map(
+                _pipe$1,
+                (x, i) => {
+                  return planner_meal_input(
+                    new Some(x),
+                    i,
+                    "lunch",
+                    (() => {
+                      let _pipe$2 = model.recipe_list;
+                      return map2(_pipe$2, (r) => {
+                        return r.title;
+                      });
+                    })()
+                  );
+                }
+              );
+            })()
+          ),
+          fragment(
+            (() => {
+              let _pipe = values(week2);
+              let _pipe$1 = sort(
+                _pipe,
+                (a2, b) => {
+                  return compare3(a2.date, b.date);
+                }
+              );
+              return index_map(
+                _pipe$1,
+                (x, i) => {
+                  return planner_meal_input(
+                    new Some(x),
+                    i,
+                    "dinner",
+                    (() => {
+                      let _pipe$2 = model.recipe_list;
+                      return map2(_pipe$2, (r) => {
+                        return r.title;
+                      });
+                    })()
+                  );
+                }
+              );
+            })()
+          )
+        ])
+      )
+    ])
+  );
+}
+function decode_stringed_day(d) {
+  let decoder = string;
+  let _pipe = map3(
+    decoder(d),
+    (a2) => {
+      let _pipe2 = a2;
+      let _pipe$1 = from_naive(_pipe2);
+      return map_error(
+        _pipe$1,
+        (_) => {
+          return toList([
+            new DecodeError(
+              "a stringed day",
+              "something else",
+              toList(["*"])
+            )
+          ]);
+        }
+      );
+    }
+  );
+  return flatten2(_pipe);
+}
+function decode_meal_status(d) {
+  let decoder = tagged_union(
+    field("type", string),
+    toList([
+      [
+        "RecipeWithStatus",
+        decode2(
+          (var0, var1) => {
+            return new RecipeWithStatus(var0, var1);
+          },
+          field("recipe_id", string),
+          field("complete", stringed_bool)
+        )
+      ],
+      [
+        "MealWithStatus",
+        decode2(
+          (var0, var1) => {
+            return new MealWithStatus(var0, var1);
+          },
+          field("meal", string),
+          field("complete", stringed_bool)
+        )
+      ]
+    ])
+  );
+  return decoder(d);
+}
+function decode_plan_day(d) {
+  let decoder = decode3(
+    (var0, var1, var2) => {
+      return new PlanDay(var0, var1, var2);
+    },
+    field("date", decode_stringed_day),
+    optional_field("lunch", decode_meal_status),
+    optional_field("dinner", decode_meal_status)
+  );
+  return decoder(d);
+}
+function get_plan() {
+  return from2(
+    (dispatch2) => {
+      let _pipe = do_get_plan();
+      let _pipe$1 = map_promise(_pipe, toList);
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map2(_capture, decode_plan_day);
+        }
+      );
+      let _pipe$3 = map_promise(_pipe$2, all);
+      let _pipe$4 = map_promise(
+        _pipe$3,
+        (_capture) => {
+          return map3(
+            _capture,
+            (_capture2) => {
+              return map2(_capture2, (a2) => {
+                return [a2.date, a2];
+              });
+            }
+          );
+        }
+      );
+      let _pipe$5 = map_promise(
+        _pipe$4,
+        (_capture) => {
+          return map3(_capture, from_list);
+        }
+      );
+      let _pipe$6 = map_promise(
+        _pipe$5,
+        (_capture) => {
+          return map3(
+            _capture,
+            (var0) => {
+              return new DbRetrievedPlan(var0);
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$6,
+        (_capture) => {
+          return map3(_capture, dispatch2);
+        }
+      );
+      return void 0;
+    }
+  );
 }
 
 // build/dev/javascript/app/pages/recipe.mjs
@@ -8816,25 +10383,6 @@ var DbSavedUpdatedRecipe = class extends CustomType {
     this[0] = x0;
   }
 };
-var DbRetrievedRecipes = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var DbRetrievedTagOptions = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var RecipeList = class extends CustomType {
-  constructor(recipes, tag_options) {
-    super();
-    this.recipes = recipes;
-    this.tag_options = tag_options;
-  }
-};
 var JSRecipe = class extends CustomType {
   constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
     super();
@@ -8849,66 +10397,6 @@ var JSRecipe = class extends CustomType {
     this.method_steps = method_steps;
   }
 };
-var Recipe = class extends CustomType {
-  constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
-    super();
-    this.id = id2;
-    this.title = title;
-    this.slug = slug;
-    this.cook_time = cook_time;
-    this.prep_time = prep_time;
-    this.serves = serves;
-    this.tags = tags;
-    this.ingredients = ingredients;
-    this.method_steps = method_steps;
-  }
-};
-var TagOption = class extends CustomType {
-  constructor(id2, name2, options) {
-    super();
-    this.id = id2;
-    this.name = name2;
-    this.options = options;
-  }
-};
-var MethodStep = class extends CustomType {
-  constructor(step_text) {
-    super();
-    this.step_text = step_text;
-  }
-};
-var Tag = class extends CustomType {
-  constructor(name2, value4) {
-    super();
-    this.name = name2;
-    this.value = value4;
-  }
-};
-var Ingredient = class extends CustomType {
-  constructor(name2, ismain, quantity, units2) {
-    super();
-    this.name = name2;
-    this.ismain = ismain;
-    this.quantity = quantity;
-    this.units = units2;
-  }
-};
-function merge_recipe_into_model(recipe, model) {
-  return model.withFields({
-    recipes: (() => {
-      let _pipe = model.recipes;
-      let _pipe$1 = map2(_pipe, (a2) => {
-        return [a2.id, a2];
-      });
-      let _pipe$2 = from_list(_pipe$1);
-      let _pipe$3 = merge(
-        _pipe$2,
-        from_list(toList([[recipe.id, recipe]]))
-      );
-      return values(_pipe$3);
-    })()
-  });
-}
 function list_update(model, msg) {
   if (msg instanceof DbRetrievedRecipes) {
     let recipes = msg[0];
@@ -10762,815 +12250,9 @@ function detail_update(model, msg) {
     return [new Some(recipe), none()];
   }
 }
-function decode_ingredient(d) {
-  let decoder = decode4(
-    (var0, var1, var2, var3) => {
-      return new Ingredient(var0, var1, var2, var3);
-    },
-    optional_field("name", string),
-    optional_field("ismain", stringed_bool),
-    optional_field("quantity", string),
-    optional_field("units", string)
-  );
-  return decoder(d);
-}
-function decode_tag(d) {
-  let decoder = decode2(
-    (var0, var1) => {
-      return new Tag(var0, var1);
-    },
-    field("name", string),
-    field("value", string)
-  );
-  return decoder(d);
-}
-function decode_method_step(d) {
-  let decoder = decode1(
-    (var0) => {
-      return new MethodStep(var0);
-    },
-    field("step_text", string)
-  );
-  return decoder(d);
-}
-function decode_recipe(d) {
-  let decoder = decode9(
-    (var0, var1, var2, var3, var4, var5, var6, var7, var8) => {
-      return new Recipe(var0, var1, var2, var3, var4, var5, var6, var7, var8);
-    },
-    optional_field("id", string),
-    field("title", string),
-    field("slug", string),
-    field("cook_time", int),
-    field("prep_time", int),
-    field("serves", int),
-    optional_field("tags", dict(stringed_int, decode_tag)),
-    optional_field(
-      "ingredients",
-      dict(stringed_int, decode_ingredient)
-    ),
-    optional_field(
-      "method_steps",
-      dict(stringed_int, decode_method_step)
-    )
-  );
-  return decoder(d);
-}
-function get_recipes() {
-  return from2(
-    (dispatch2) => {
-      let _pipe = do_get_recipes();
-      let _pipe$1 = map_promise(_pipe, toList);
-      let _pipe$2 = map_promise(
-        _pipe$1,
-        (_capture) => {
-          return map2(_capture, decode_recipe);
-        }
-      );
-      let _pipe$3 = map_promise(_pipe$2, all);
-      let _pipe$4 = map_promise(
-        _pipe$3,
-        (_capture) => {
-          return map3(
-            _capture,
-            (var0) => {
-              return new DbRetrievedRecipes(var0);
-            }
-          );
-        }
-      );
-      tap(
-        _pipe$4,
-        (_capture) => {
-          return map3(_capture, dispatch2);
-        }
-      );
-      return void 0;
-    }
-  );
-}
-function decode_tag_option(d) {
-  let decoder = decode3(
-    (var0, var1, var2) => {
-      return new TagOption(var0, var1, var2);
-    },
-    optional_field("id", string),
-    field("name", string),
-    field("options", list(string))
-  );
-  let f = decoder(d);
-  return debug(f);
-}
-function get_tag_options() {
-  return from2(
-    (dispatch2) => {
-      let _pipe = do_get_tagoptions();
-      let _pipe$1 = map_promise(_pipe, toList);
-      let _pipe$2 = map_promise(
-        _pipe$1,
-        (_capture) => {
-          return map2(_capture, decode_tag_option);
-        }
-      );
-      let _pipe$3 = map_promise(_pipe$2, debug);
-      let _pipe$4 = map_promise(_pipe$3, all);
-      let _pipe$5 = map_promise(
-        _pipe$4,
-        (_capture) => {
-          return map3(
-            _capture,
-            (var0) => {
-              return new DbRetrievedTagOptions(var0);
-            }
-          );
-        }
-      );
-      tap(
-        _pipe$5,
-        (_capture) => {
-          return map3(_capture, dispatch2);
-        }
-      );
-      return void 0;
-    }
-  );
-}
-
-// build/dev/javascript/app/pages/planner.mjs
-var UserAddedMealToPlan = class extends CustomType {
-};
-var UserRemovedMealFromPlan = class extends CustomType {
-};
-var DbRetrievedPlan = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var PlanDay = class extends CustomType {
-  constructor(date, lunch, dinner) {
-    super();
-    this.date = date;
-    this.lunch = lunch;
-    this.dinner = dinner;
-  }
-};
-var RecipeWithStatus = class extends CustomType {
-  constructor(recipe_title, complete) {
-    super();
-    this.recipe_title = recipe_title;
-    this.complete = complete;
-  }
-};
-var MealWithStatus = class extends CustomType {
-  constructor(meal, complete) {
-    super();
-    this.meal = meal;
-    this.complete = complete;
-  }
-};
-function planner_update(model, msg) {
-  if (msg instanceof UserAddedMealToPlan) {
-    throw makeError(
-      "todo",
-      "pages/planner",
-      52,
-      "planner_update",
-      "This has not yet been implemented",
-      {}
-    );
-  } else if (msg instanceof UserRemovedMealFromPlan) {
-    throw makeError(
-      "todo",
-      "pages/planner",
-      55,
-      "planner_update",
-      "This has not yet been implemented",
-      {}
-    );
-  } else if (msg instanceof DbRetrievedPlan) {
-    let plan_week = msg[0];
-    return [plan_week, none()];
-  } else {
-    return [model, none()];
-  }
-}
-function edit_planner(model) {
-  throw makeError(
-    "todo",
-    "pages/planner",
-    204,
-    "edit_planner",
-    "This has not yet been implemented",
-    {}
-  );
-}
-function planner_header_row(dates) {
-  let date_keys = (() => {
-    let _pipe = map_to_list(dates);
-    let _pipe$1 = map2(
-      _pipe,
-      (_capture) => {
-        return map_first(_capture, (d) => {
-          return weekday2(d);
-        });
-      }
-    );
-    return from_list(_pipe$1);
-  })();
-  let monday = (() => {
-    let _pipe = get(date_keys, new Mon());
-    let _pipe$1 = map3(
-      _pipe,
-      (d) => {
-        return date_num_string(d.date);
-      }
-    );
-    return unwrap2(_pipe$1, "");
-  })();
-  let tuesday = (() => {
-    let _pipe = get(date_keys, new Tue());
-    let _pipe$1 = map3(
-      _pipe,
-      (d) => {
-        return date_num_string(d.date);
-      }
-    );
-    return unwrap2(_pipe$1, "");
-  })();
-  let wednesday = (() => {
-    let _pipe = get(date_keys, new Wed());
-    let _pipe$1 = map3(
-      _pipe,
-      (d) => {
-        return date_num_string(d.date);
-      }
-    );
-    return unwrap2(_pipe$1, "");
-  })();
-  let thursday = (() => {
-    let _pipe = get(date_keys, new Thu());
-    let _pipe$1 = map3(
-      _pipe,
-      (d) => {
-        return date_num_string(d.date);
-      }
-    );
-    return unwrap2(_pipe$1, "");
-  })();
-  let friday = (() => {
-    let _pipe = get(date_keys, new Fri());
-    let _pipe$1 = map3(
-      _pipe,
-      (d) => {
-        return date_num_string(d.date);
-      }
-    );
-    return unwrap2(_pipe$1, "");
-  })();
-  let saturday = (() => {
-    let _pipe = get(date_keys, new Sat());
-    let _pipe$1 = map3(
-      _pipe,
-      (d) => {
-        return date_num_string(d.date);
-      }
-    );
-    return unwrap2(_pipe$1, "");
-  })();
-  let sunday = (() => {
-    let _pipe = get(date_keys, new Sun());
-    let _pipe$1 = map3(
-      _pipe,
-      (d) => {
-        return date_num_string(d.date);
-      }
-    );
-    return unwrap2(_pipe$1, "");
-  })();
-  return fragment(
-    toList([
-      div(
-        toList([
-          class$(
-            "subgrid-cols xs:col-start-1 row-start-1 subgrid-rows col-span-full xs:row-span-full xs:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full"
-          )
-        ]),
-        toList([
-          div(
-            toList([
-              class$(
-                "xs:row-start-2 xs:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
-              )
-            ]),
-            toList([h2(toList([class$("mx-2")]), toList([text("Lunch")]))])
-          ),
-          div(
-            toList([
-              class$(
-                "xs:row-start-3 xs:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
-              )
-            ]),
-            toList([h2(toList([class$("mx-2")]), toList([text("Dinner")]))])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-2 xs:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortMon", "'Mon " + monday + "'"],
-                  ["--longMon", "'Monday " + monday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-3 xs:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortTue", "'Tue " + tuesday + "'"],
-                  ["--longTue", "'Tuesday " + tuesday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-4 xs:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortWed", "'Wed " + wednesday + "'"],
-                  ["--longWed", "'Wednesday " + wednesday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-5 xs:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortThu", "'Thu " + thursday + "'"],
-                  ["--longThu", "'Thursday " + thursday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-6 xs:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortFri", "'Fri " + friday + "'"],
-                  ["--longFri", "'Friday " + friday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-7 xs:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortSat", "'Sat " + saturday + "'"],
-                  ["--longSat", "'Saturday " + saturday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      ),
-      div(
-        toList([
-          class$(
-            "xs:col-start-8 xs:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
-          )
-        ]),
-        toList([
-          h2(
-            toList([
-              style(
-                toList([
-                  ["--shortSun", "'Sun " + sunday + "'"],
-                  ["--longSun", "'Sunday " + sunday + "'"]
-                ])
-              ),
-              class$(
-                "text-center before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]"
-              )
-            ]),
-            toList([])
-          )
-        ])
-      )
-    ])
-  );
-}
-function inner_card(meal) {
-  if (meal instanceof RecipeWithStatus) {
-    let r = meal.recipe_title;
-    let c = meal.complete;
-    return a(
-      toList([href("/recipes/" + kebab_case(r))]),
-      toList([
-        h2(
-          toList([
-            class$("text-center text-xl text-wrap"),
-            style(
-              toList([
-                [
-                  "text-decoration",
-                  guard(c, "line-through", () => {
-                    return "none";
-                  })
-                ]
-              ])
-            )
-          ]),
-          toList([text(r)])
-        )
-      ])
-    );
-  } else {
-    let m = meal.meal;
-    let c = meal.complete;
-    return h2(
-      toList([
-        class$("text-center text-xl text-wrap"),
-        style(
-          toList([
-            [
-              "text-decoration",
-              guard(c, "line-through", () => {
-                return "none";
-              })
-            ]
-          ])
-        )
-      ]),
-      toList([text(m)])
-    );
-  }
-}
-function planner_meal_card(pd, i, meal) {
-  let row = (() => {
-    if (meal === "lunch") {
-      return "col-start-2 xs:row-start-2";
-    } else if (meal === "dinner") {
-      return "col-start-3 xs:row-start-3";
-    } else {
-      return "";
-    }
-  })();
-  let card = (() => {
-    if (meal === "lunch") {
-      let _pipe = map(pd.lunch, inner_card);
-      return unwrap(_pipe, none3());
-    } else if (meal === "dinner") {
-      let _pipe = map(pd.dinner, inner_card);
-      return unwrap(_pipe, none3());
-    } else {
-      return none3();
-    }
-  })();
-  return div(
-    toList([
-      class$(
-        "flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]\n                row-start-[var(--dayPlacement)]\n                xs:col-start-[var(--dayPlacement)] \n                snap-start scroll-p-[-40px] " + row
-      ),
-      style(toList([["--dayPlacement", to_string3(i + 2)]]))
-    ]),
-    toList([card])
-  );
-}
-function view_planner(model) {
-  let today = set_time_of_day(
-    now2(),
-    new TimeOfDay(0, 0, 0, 0)
-  );
-  let day2 = (() => {
-    let $ = map_size(model);
-    if ($ > 0) {
-      let num = $;
-      return first2(keys(model));
-    } else {
-      return new Ok2(today);
-    }
-  })();
-  let start_of_week = (() => {
-    let _pipe = map3(
-      day2,
-      (d) => {
-        let $ = weekday2(d);
-        if ($ instanceof Mon) {
-          return d;
-        } else if ($ instanceof Tue) {
-          return add2(d, days(-1));
-        } else if ($ instanceof Wed) {
-          return add2(d, days(-2));
-        } else if ($ instanceof Thu) {
-          return add2(d, days(-3));
-        } else if ($ instanceof Fri) {
-          return add2(d, days(-4));
-        } else if ($ instanceof Sat) {
-          return add2(d, days(-5));
-        } else {
-          return add2(d, days(-6));
-        }
-      }
-    );
-    return unwrap2(
-      _pipe,
-      set_time_of_day(now2(), new TimeOfDay(0, 0, 0, 0))
-    );
-  })();
-  let find_in_week = (a2) => {
-    return unwrap2(
-      get(model, a2),
-      new PlanDay(a2, new None(), new None())
-    );
-  };
-  let week2 = from_list(
-    toList([
-      [start_of_week, find_in_week(start_of_week)],
-      [
-        add2(start_of_week, days(1)),
-        find_in_week(add2(start_of_week, days(1)))
-      ],
-      [
-        add2(start_of_week, days(2)),
-        find_in_week(add2(start_of_week, days(2)))
-      ],
-      [
-        add2(start_of_week, days(3)),
-        find_in_week(add2(start_of_week, days(3)))
-      ],
-      [
-        add2(start_of_week, days(4)),
-        find_in_week(add2(start_of_week, days(4)))
-      ],
-      [
-        add2(start_of_week, days(5)),
-        find_in_week(add2(start_of_week, days(5)))
-      ],
-      [
-        add2(start_of_week, days(6)),
-        find_in_week(add2(start_of_week, days(6)))
-      ]
-    ])
-  );
-  return fragment(
-    toList([
-      section(
-        toList([
-          class$(
-            "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
-          )
-        ]),
-        toList([
-          page_title(
-            "Week of " + month_date_string(start_of_week),
-            "underline-orange"
-          ),
-          nav(
-            toList([
-              class$(
-                "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
-              )
-            ]),
-            toList([
-              a(
-                toList([href("/"), class$("text-center")]),
-                toList([text("\u{1F3E0}")])
-              ),
-              a(
-                toList([href("/planner/edit"), class$("text-center")]),
-                toList([text("\u270F\uFE0F")])
-              )
-            ])
-          )
-        ])
-      ),
-      section(
-        toList([
-          id("active-week"),
-          class$(
-            "mb-2 text-sm p-1 \n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-3 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            xs:col-start-[full-start] xs:col-end-[full-end]\n            xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0"
-          )
-        ]),
-        toList([
-          planner_header_row(week2),
-          fragment(
-            index_map(
-              values(week2),
-              (x, i) => {
-                return planner_meal_card(x, i, "lunch");
-              }
-            )
-          ),
-          fragment(
-            index_map(
-              values(week2),
-              (x, i) => {
-                return planner_meal_card(x, i, "dinner");
-              }
-            )
-          )
-        ])
-      )
-    ])
-  );
-}
-function decode_stringed_day(d) {
-  let decoder = string;
-  let _pipe = map3(
-    decoder(d),
-    (a2) => {
-      let _pipe2 = a2;
-      let _pipe$1 = from_naive(_pipe2);
-      return map_error(
-        _pipe$1,
-        (_) => {
-          return toList([
-            new DecodeError(
-              "a stringed day",
-              "something else",
-              toList(["*"])
-            )
-          ]);
-        }
-      );
-    }
-  );
-  return flatten2(_pipe);
-}
-function decode_meal_status(d) {
-  let decoder = tagged_union(
-    field("type", string),
-    toList([
-      [
-        "RecipeWithStatus",
-        decode2(
-          (var0, var1) => {
-            return new RecipeWithStatus(var0, var1);
-          },
-          field("recipe_id", string),
-          field("complete", stringed_bool)
-        )
-      ],
-      [
-        "MealWithStatus",
-        decode2(
-          (var0, var1) => {
-            return new MealWithStatus(var0, var1);
-          },
-          field("meal", string),
-          field("complete", stringed_bool)
-        )
-      ]
-    ])
-  );
-  return decoder(d);
-}
-function decode_plan_day(d) {
-  let decoder = decode3(
-    (var0, var1, var2) => {
-      return new PlanDay(var0, var1, var2);
-    },
-    field("date", decode_stringed_day),
-    optional_field("lunch", decode_meal_status),
-    optional_field("dinner", decode_meal_status)
-  );
-  return decoder(d);
-}
-function get_plan() {
-  return from2(
-    (dispatch2) => {
-      let _pipe = do_get_plan();
-      let _pipe$1 = map_promise(_pipe, toList);
-      let _pipe$2 = map_promise(
-        _pipe$1,
-        (_capture) => {
-          return map2(_capture, decode_plan_day);
-        }
-      );
-      let _pipe$3 = map_promise(_pipe$2, all);
-      let _pipe$4 = map_promise(
-        _pipe$3,
-        (_capture) => {
-          return map3(
-            _capture,
-            (_capture2) => {
-              return map2(_capture2, (a2) => {
-                return [a2.date, a2];
-              });
-            }
-          );
-        }
-      );
-      let _pipe$5 = map_promise(
-        _pipe$4,
-        (_capture) => {
-          return map3(_capture, from_list);
-        }
-      );
-      let _pipe$6 = map_promise(
-        _pipe$5,
-        (_capture) => {
-          return map3(
-            _capture,
-            (var0) => {
-              return new DbRetrievedPlan(var0);
-            }
-          );
-        }
-      );
-      tap(
-        _pipe$6,
-        (_capture) => {
-          return map3(_capture, dispatch2);
-        }
-      );
-      return void 0;
-    }
-  );
-}
 
 // build/dev/javascript/app/app.mjs
-var Model2 = class extends CustomType {
+var Model4 = class extends CustomType {
   constructor(current_route, current_recipe, recipes, planner) {
     super();
     this.current_route = current_route;
@@ -11630,7 +12312,7 @@ function lookup_recipe_by_slug(model, slug) {
     })
   );
 }
-function update3(model, msg) {
+function update4(model, msg) {
   if (msg instanceof OnRouteChange && msg[0] instanceof ViewRecipeList) {
     return [
       model.withFields({ current_route: new ViewRecipeList() }),
@@ -11688,7 +12370,9 @@ function update3(model, msg) {
                 ])
               )
             ),
-            new Some(from_list(toList([[0, new MethodStep("")]])))
+            new Some(
+              from_list(toList([[0, new MethodStep("")]]))
+            )
           )
         )
       }),
@@ -11732,7 +12416,13 @@ function update3(model, msg) {
     let child_model = $[0];
     let child_effect = $[1];
     return [
-      model.withFields({ recipes: child_model }),
+      model.withFields({
+        recipes: child_model,
+        planner: new Model3(
+          model.planner.plan_week,
+          child_model.recipes
+        )
+      }),
       map4(child_effect, (var0) => {
         return new RecipeList2(var0);
       })
@@ -11794,15 +12484,31 @@ function on_route_change(uri) {
     return new OnRouteChange(new Home());
   }
 }
-function init6(_) {
+function init7(_) {
   return [
-    new Model2(
+    new Model4(
       new Home(),
       new None(),
       new RecipeList(toList([]), toList([])),
-      new$2()
+      new Model3(new$2(), toList([]))
     ),
-    init2(on_route_change)
+    batch(
+      toList([
+        init2(on_route_change),
+        map4(
+          get_recipes(),
+          (var0) => {
+            return new RecipeList2(var0);
+          }
+        ),
+        map4(
+          get_tag_options(),
+          (var0) => {
+            return new RecipeList2(var0);
+          }
+        )
+      ])
+    )
   ];
 }
 function view_base(children) {
@@ -11886,7 +12592,7 @@ function view_home() {
     ])
   );
 }
-function view2(model) {
+function view3(model) {
   let page = (() => {
     let $ = model.current_route;
     if ($ instanceof Home) {
@@ -11917,13 +12623,22 @@ function view2(model) {
       );
     } else if ($ instanceof ViewPlanner) {
       return map6(
-        view_planner(model.planner),
+        view_planner(
+          new Model3(model.planner.plan_week, model.recipes.recipes)
+        ),
         (var0) => {
           return new Planner(var0);
         }
       );
     } else {
-      return edit_planner(model.planner);
+      return map6(
+        edit_planner(
+          new Model3(model.planner.plan_week, model.recipes.recipes)
+        ),
+        (var0) => {
+          return new Planner(var0);
+        }
+      );
     }
   })();
   return view_base(page);
@@ -11934,14 +12649,14 @@ function main2() {
     throw makeError(
       "assignment_no_match",
       "app",
-      28,
+      29,
       "main",
       "Assignment pattern did not match",
       { value: $ }
     );
   }
   let main$1 = $[0];
-  let _pipe = application(init6, update3, view2);
+  let _pipe = application(init7, update4, view3);
   let _pipe$1 = wrap(_pipe, main$1);
   let _pipe$2 = start3(_pipe$1, "#app", void 0);
   return activate(_pipe$2, main$1);

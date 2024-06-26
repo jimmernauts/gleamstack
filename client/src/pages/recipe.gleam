@@ -7,8 +7,6 @@ import gleam/dynamic.{
 import gleam/function
 import gleam/int
 import gleam/io
-import gleam/javascript/array.{type Array}
-import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -28,7 +26,11 @@ import lustre/element/html.{
   a, button, div, fieldset, form, input, label, legend, li, nav, ol, option,
   section, select, span, textarea,
 }
-import lustre/event.{on, on_check, on_click, on_input}
+import lustre/event.{on_check, on_click, on_input}
+import session.{
+  type Ingredient, type MethodStep, type Recipe, type RecipeList, type Tag,
+  type TagOption, Ingredient, MethodStep, Recipe, RecipeList, Tag, TagOption,
+}
 
 //-MODEL---------------------------------------------
 
@@ -56,61 +58,12 @@ pub type RecipeDetailMsg {
   DbSavedUpdatedRecipe(Recipe)
 }
 
-pub type RecipeListMsg {
-  DbRetrievedRecipes(List(Recipe))
-  DbRetrievedTagOptions(List(TagOption))
-}
-
-pub type RecipeList {
-  RecipeList(recipes: List(Recipe), tag_options: List(TagOption))
-}
-
 pub type RecipeDetail =
   Option(Recipe)
 
 //-UPDATE---------------------------------------------
 
-pub fn merge_recipe_into_model(recipe: Recipe, model: RecipeList) -> RecipeList {
-  RecipeList(
-    ..model,
-    recipes: model.recipes
-      |> list.map(fn(a) { #(a.id, a) })
-      |> dict.from_list
-      |> dict.merge(dict.from_list([#(recipe.id, recipe)]))
-      |> dict.values(),
-  )
-}
-
-pub fn get_recipes() -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_get_recipes()
-  |> promise.map(array.to_list)
-  |> promise.map(list.map(_, decode_recipe))
-  |> promise.map(result.all)
-  |> promise.map(result.map(_, DbRetrievedRecipes))
-  |> promise.tap(result.map(_, dispatch))
-  Nil
-}
-
-@external(javascript, ".././db.ts", "do_get_recipes")
-fn do_get_recipes() -> Promise(Array(Dynamic))
-
-pub fn get_tag_options() -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_get_tagoptions()
-  |> promise.map(array.to_list)
-  |> promise.map(list.map(_, decode_tag_option))
-  |> promise.map(io.debug)
-  |> promise.map(result.all)
-  |> promise.map(result.map(_, DbRetrievedTagOptions))
-  |> promise.tap(result.map(_, dispatch))
-  Nil
-}
-
-@external(javascript, ".././db.ts", "do_get_tagoptions")
-fn do_get_tagoptions() -> Promise(Array(Dynamic))
-
-fn save_recipe(recipe: Recipe) -> Effect(RecipeDetailMsg) {
+fn save_recipe(recipe: session.Recipe) -> Effect(RecipeDetailMsg) {
   let js_recipe =
     JSRecipe(
       id: option.unwrap(recipe.id, ""),
@@ -520,15 +473,15 @@ pub fn detail_update(
 }
 
 pub fn list_update(
-  model: RecipeList,
-  msg: RecipeListMsg,
-) -> #(RecipeList, Effect(RecipeListMsg)) {
+  model: session.RecipeList,
+  msg: session.RecipeListMsg,
+) -> #(RecipeList, Effect(session.RecipeListMsg)) {
   case msg {
-    DbRetrievedRecipes(recipes) -> #(
+    session.DbRetrievedRecipes(recipes) -> #(
       RecipeList(..model, recipes: recipes),
       effect.none(),
     )
-    DbRetrievedTagOptions(tag_options) -> #(
+    session.DbRetrievedTagOptions(tag_options) -> #(
       RecipeList(..model, tag_options: tag_options),
       effect.none(),
     )
@@ -537,7 +490,7 @@ pub fn list_update(
 
 //-VIEWS-------------------------------------------------------------
 
-pub fn view_recipe_list(model: RecipeList) {
+pub fn view_recipe_list(model: session.RecipeList) {
   section(
     [
       class(
@@ -1377,41 +1330,6 @@ fn method_step_input(index: Int, method_step: Option(MethodStep)) {
 }
 
 //-TYPES-------------------------------------------------------------
-
-pub type Recipe {
-  Recipe(
-    id: Option(String),
-    title: String,
-    slug: String,
-    cook_time: Int,
-    prep_time: Int,
-    serves: Int,
-    tags: Option(Dict(Int, Tag)),
-    ingredients: Option(Dict(Int, Ingredient)),
-    method_steps: Option(Dict(Int, MethodStep)),
-  )
-}
-
-pub type TagOption {
-  TagOption(id: Option(String), name: String, options: List(String))
-}
-
-pub type MethodStep {
-  MethodStep(step_text: String)
-}
-
-pub type Tag {
-  Tag(name: String, value: String)
-}
-
-pub type Ingredient {
-  Ingredient(
-    name: Option(String),
-    ismain: Option(Bool),
-    quantity: Option(String),
-    units: Option(String),
-  )
-}
 
 //-ENCODERS-DECODERS----------------------------------------------
 
