@@ -65,7 +65,7 @@ pub type RecipeDetail =
 
 fn save_recipe(recipe: session.Recipe) -> Effect(RecipeDetailMsg) {
   let js_recipe =
-    JSRecipe(
+    JsRecipe(
       id: option.unwrap(recipe.id, ""),
       title: recipe.title,
       slug: recipe.slug,
@@ -84,10 +84,10 @@ fn save_recipe(recipe: session.Recipe) -> Effect(RecipeDetailMsg) {
 }
 
 @external(javascript, ".././db.ts", "addOrUpdateRecipe")
-fn do_save_recipe(recipe: JSRecipe) -> Nil
+fn do_save_recipe(recipe: JsRecipe) -> Nil
 
-type JSRecipe {
-  JSRecipe(
+type JsRecipe {
+  JsRecipe(
     id: String,
     title: String,
     slug: String,

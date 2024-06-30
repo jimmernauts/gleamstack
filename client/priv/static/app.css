@@ -1203,6 +1203,10 @@ fieldset {
   font-weight: 700;
 }
 
+.lowercase {
+  text-transform: lowercase;
+}
+
 .italic {
   font-style: italic;
 }
@@ -1351,6 +1355,16 @@ fieldset {
 
 .marker\:font-mono::marker {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.placeholder\:bg-ecru-white-100::-moz-placeholder {
+  --tw-bg-opacity: 1;
+  background-color: rgb(241 241 227 / var(--tw-bg-opacity));
+}
+
+.placeholder\:bg-ecru-white-100::placeholder {
+  --tw-bg-opacity: 1;
+  background-color: rgb(241 241 227 / var(--tw-bg-opacity));
 }
 
 .before\:content-\[var\(--shortFri\)\]::before {

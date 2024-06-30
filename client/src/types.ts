@@ -37,16 +37,13 @@ export type MethodStep = {
 
 export type PlanDay = {
 	date: string;
-	lunch: {
-		type: "RecipeWithStatus" | "MealWithStatus"
-		recipe_id?: string
-		meal?: string
-		complete?: string
-	}
-	dinner: {
-		type: "RecipeWithStatus" | "MealWithStatus"
-		recipe_id?: string
-		meal?: string
-		complete?: string
-	}
+	planned_meals: {
+		lunch: MealWithStatus;
+		dinner: MealWithStatus;
+	};
 }
+
+export type MealWithStatus = {
+	title: string;
+	complete?: string;
+};

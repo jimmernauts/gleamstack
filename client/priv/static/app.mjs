@@ -285,14 +285,6 @@ function map(option2, fun) {
     return new None();
   }
 }
-function flatten(option2) {
-  if (option2 instanceof Some) {
-    let x = option2[0];
-    return x;
-  } else {
-    return new None();
-  }
-}
 function or(first5, second3) {
   if (first5 instanceof Some) {
     return first5;
@@ -302,13 +294,6 @@ function or(first5, second3) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/regex.mjs
-var Match = class extends CustomType {
-  constructor(content, submatches) {
-    super();
-    this.content = content;
-    this.submatches = submatches;
-  }
-};
 var CompileError = class extends CustomType {
   constructor(error, byte_index) {
     super();
@@ -326,14 +311,8 @@ var Options = class extends CustomType {
 function compile(pattern, options) {
   return compile_regex(pattern, options);
 }
-function from_string(pattern) {
-  return compile(pattern, new Options(false, false));
-}
-function split(regex, string3) {
-  return regex_split(regex, string3);
-}
-function scan(regex, string3) {
-  return regex_scan(regex, string3);
+function check(regex, content) {
+  return regex_check(regex, content);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/order.mjs
@@ -380,6 +359,40 @@ function compare(a2, b) {
     }
   }
 }
+function min(a2, b) {
+  let $ = a2 < b;
+  if ($) {
+    return a2;
+  } else {
+    return b;
+  }
+}
+function max(a2, b) {
+  let $ = a2 > b;
+  if ($) {
+    return a2;
+  } else {
+    return b;
+  }
+}
+function clamp(x, min_bound, max_bound) {
+  let _pipe = x;
+  let _pipe$1 = min(_pipe, max_bound);
+  return max(_pipe$1, min_bound);
+}
+function modulo(dividend, divisor) {
+  if (divisor === 0) {
+    return new Error2(void 0);
+  } else {
+    let remainder$1 = remainderInt(dividend, divisor);
+    let $ = remainder$1 * divisor < 0;
+    if ($) {
+      return new Ok2(remainder$1 + divisor);
+    } else {
+      return new Ok2(remainder$1);
+    }
+  }
+}
 function floor_divide(dividend, divisor) {
   if (divisor === 0) {
     return new Error2(void 0);
@@ -408,15 +421,48 @@ function map_first(pair, fun) {
   let b = pair[1];
   return [fun(a2), b];
 }
+function map_second(pair, fun) {
+  let a2 = pair[0];
+  let b = pair[1];
+  return [a2, fun(b)];
+}
 function new$(first5, second3) {
   return [first5, second3];
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
+var Continue = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var Stop = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
 var Ascending = class extends CustomType {
 };
 var Descending = class extends CustomType {
 };
+function count_length(loop$list, loop$count) {
+  while (true) {
+    let list3 = loop$list;
+    let count = loop$count;
+    if (list3.atLeastLength(1)) {
+      let list$1 = list3.tail;
+      loop$list = list$1;
+      loop$count = count + 1;
+    } else {
+      return count;
+    }
+  }
+}
+function length(list3) {
+  return count_length(list3, 0);
+}
 function do_reverse(loop$remaining, loop$accumulator) {
   while (true) {
     let remaining = loop$remaining;
@@ -436,22 +482,6 @@ function reverse(xs) {
 }
 function is_empty(list3) {
   return isEqual(list3, toList([]));
-}
-function contains(loop$list, loop$elem) {
-  while (true) {
-    let list3 = loop$list;
-    let elem = loop$elem;
-    if (list3.hasLength(0)) {
-      return false;
-    } else if (list3.atLeastLength(1) && isEqual(list3.head, elem)) {
-      let first$1 = list3.head;
-      return true;
-    } else {
-      let rest$1 = list3.tail;
-      loop$list = rest$1;
-      loop$elem = elem;
-    }
-  }
 }
 function first2(list3) {
   if (list3.hasLength(0)) {
@@ -705,6 +735,50 @@ function fold_right(list3, initial, fun) {
     return fun(fold_right(rest$1, initial, fun), x);
   }
 }
+function do_index_fold(loop$over, loop$acc, loop$with, loop$index) {
+  while (true) {
+    let over = loop$over;
+    let acc = loop$acc;
+    let with$ = loop$with;
+    let index3 = loop$index;
+    if (over.hasLength(0)) {
+      return acc;
+    } else {
+      let first$1 = over.head;
+      let rest$1 = over.tail;
+      loop$over = rest$1;
+      loop$acc = with$(acc, first$1, index3);
+      loop$with = with$;
+      loop$index = index3 + 1;
+    }
+  }
+}
+function index_fold(over, initial, fun) {
+  return do_index_fold(over, initial, fun, 0);
+}
+function fold_until(loop$collection, loop$accumulator, loop$fun) {
+  while (true) {
+    let collection = loop$collection;
+    let accumulator = loop$accumulator;
+    let fun = loop$fun;
+    if (collection.hasLength(0)) {
+      return accumulator;
+    } else {
+      let first$1 = collection.head;
+      let rest$1 = collection.tail;
+      let $ = fun(accumulator, first$1);
+      if ($ instanceof Continue) {
+        let next_accumulator = $[0];
+        loop$collection = rest$1;
+        loop$accumulator = next_accumulator;
+        loop$fun = fun;
+      } else {
+        let b = $[0];
+        return b;
+      }
+    }
+  }
+}
 function find(loop$haystack, loop$is_desired) {
   while (true) {
     let haystack = loop$haystack;
@@ -720,25 +794,6 @@ function find(loop$haystack, loop$is_desired) {
       } else {
         loop$haystack = rest$1;
         loop$is_desired = is_desired;
-      }
-    }
-  }
-}
-function any(loop$list, loop$predicate) {
-  while (true) {
-    let list3 = loop$list;
-    let predicate = loop$predicate;
-    if (list3.hasLength(0)) {
-      return false;
-    } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
-      let $ = predicate(first$1);
-      if ($) {
-        return true;
-      } else {
-        loop$list = rest$1;
-        loop$predicate = predicate;
       }
     }
   }
@@ -794,10 +849,10 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
         if (rest$1.hasLength(0)) {
           return prepend(toList([new$1]), acc$1);
         } else {
-          let next = rest$1.head;
+          let next2 = rest$1.head;
           let rest$2 = rest$1.tail;
           let direction$1 = (() => {
-            let $1 = compare5(new$1, next);
+            let $1 = compare5(new$1, next2);
             if ($1 instanceof Lt) {
               return new Ascending();
             } else if ($1 instanceof Eq) {
@@ -810,7 +865,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           loop$compare = compare5;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
-          loop$prev = next;
+          loop$prev = next2;
           loop$acc = acc$1;
         }
       } else if ($ instanceof Lt && direction instanceof Descending) {
@@ -824,10 +879,10 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
         if (rest$1.hasLength(0)) {
           return prepend(toList([new$1]), acc$1);
         } else {
-          let next = rest$1.head;
+          let next2 = rest$1.head;
           let rest$2 = rest$1.tail;
           let direction$1 = (() => {
-            let $1 = compare5(new$1, next);
+            let $1 = compare5(new$1, next2);
             if ($1 instanceof Lt) {
               return new Ascending();
             } else if ($1 instanceof Eq) {
@@ -840,7 +895,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           loop$compare = compare5;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
-          loop$prev = next;
+          loop$prev = next2;
           loop$acc = acc$1;
         }
       } else {
@@ -854,10 +909,10 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
         if (rest$1.hasLength(0)) {
           return prepend(toList([new$1]), acc$1);
         } else {
-          let next = rest$1.head;
+          let next2 = rest$1.head;
           let rest$2 = rest$1.tail;
           let direction$1 = (() => {
-            let $1 = compare5(new$1, next);
+            let $1 = compare5(new$1, next2);
             if ($1 instanceof Lt) {
               return new Ascending();
             } else if ($1 instanceof Eq) {
@@ -870,7 +925,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           loop$compare = compare5;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
-          loop$prev = next;
+          loop$prev = next2;
           loop$acc = acc$1;
         }
       }
@@ -1081,6 +1136,13 @@ function key_set(list3, key3, value4) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/result.mjs
+function is_ok(result) {
+  if (!result.isOk()) {
+    return false;
+  } else {
+    return true;
+  }
+}
 function map3(result, fun) {
   if (result.isOk()) {
     let x = result[0];
@@ -1099,7 +1161,7 @@ function map_error(result, fun) {
     return new Error2(fun(error));
   }
 }
-function flatten2(result) {
+function flatten(result) {
   if (result.isOk()) {
     let x = result[0];
     return x;
@@ -1141,17 +1203,17 @@ function append_builder(builder, suffix) {
 function from_strings(strings) {
   return concat2(strings);
 }
-function from_string2(string3) {
+function from_string(string3) {
   return identity(string3);
 }
 function append2(builder, second3) {
-  return append_builder(builder, from_string2(second3));
+  return append_builder(builder, from_string(second3));
 }
 function to_string4(builder) {
   return identity(builder);
 }
-function split3(iodata, pattern) {
-  return split2(iodata, pattern);
+function split2(iodata, pattern) {
+  return split(iodata, pattern);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
@@ -1184,7 +1246,7 @@ function bool(data) {
 function shallow_list(value4) {
   return decode_list(value4);
 }
-function any2(decoders) {
+function any(decoders) {
   return (data) => {
     if (decoders.hasLength(0)) {
       return new Error2(
@@ -1198,7 +1260,7 @@ function any2(decoders) {
         let decoded = $[0];
         return new Ok2(decoded);
       } else {
-        return any2(decoders$1)(data);
+        return any(decoders$1)(data);
       }
     }
   };
@@ -1225,7 +1287,7 @@ function decode1(constructor, t1) {
 }
 function push_path(error, name2) {
   let name$1 = from(name2);
-  let decoder = any2(
+  let decoder = any(
     toList([string, (x) => {
       return map3(int(x), to_string3);
     }])
@@ -1313,10 +1375,10 @@ function dict(key_type, value_type) {
   return (value4) => {
     return try$(
       decode_map(value4),
-      (map8) => {
+      (map9) => {
         return try$(
           (() => {
-            let _pipe = map8;
+            let _pipe = map9;
             let _pipe$1 = map_to_list(_pipe);
             return try_map(
               _pipe$1,
@@ -2231,27 +2293,13 @@ function graphemes_iterator(string3) {
     return new Intl.Segmenter().segment(string3)[Symbol.iterator]();
   }
 }
-function pop_grapheme(string3) {
-  let first5;
-  const iterator = graphemes_iterator(string3);
-  if (iterator) {
-    first5 = iterator.next().value?.segment;
-  } else {
-    first5 = string3.match(/./su)?.[0];
-  }
-  if (first5) {
-    return new Ok2([first5, string3.slice(first5.length)]);
-  } else {
-    return new Error2(Nil2);
-  }
-}
 function lowercase(string3) {
   return string3.toLowerCase();
 }
 function add(a2, b) {
   return a2 + b;
 }
-function split2(xs, pattern) {
+function split(xs, pattern) {
   return List.fromArray(xs.split(pattern));
 }
 function join(xs, separator) {
@@ -2286,14 +2334,9 @@ function print_debug(string3) {
     console.log(string3);
   }
 }
-function codepoint(int3) {
-  return new UtfCodepoint(int3);
-}
-function string_to_codepoint_integer_list(string3) {
-  return List.fromArray(Array.from(string3).map((item) => item.codePointAt(0)));
-}
-function utf_codepoint_to_int(utf_codepoint) {
-  return utf_codepoint.value;
+function regex_check(regex, string3) {
+  regex.lastIndex = 0;
+  return regex.test(string3);
 }
 function compile_regex(pattern, options) {
   try {
@@ -2308,47 +2351,27 @@ function compile_regex(pattern, options) {
     return new Error2(new CompileError(error.message, number));
   }
 }
-function regex_split(regex, string3) {
-  return List.fromArray(string3.split(regex).map((item) => item === void 0 ? "" : item));
-}
-function regex_scan(regex, string3) {
-  const matches = Array.from(string3.matchAll(regex)).map((match) => {
-    const content = match[0];
-    const submatches = [];
-    for (let n = match.length - 1; n > 0; n--) {
-      if (match[n]) {
-        submatches[n - 1] = new Some(match[n]);
-        continue;
-      }
-      if (submatches.length > 0) {
-        submatches[n - 1] = new None();
-      }
-    }
-    return new Match(content, List.fromArray(submatches));
-  });
-  return List.fromArray(matches);
-}
 function new_map() {
   return Dict.new();
 }
-function map_size(map8) {
-  return map8.size;
+function map_size(map9) {
+  return map9.size;
 }
-function map_to_list(map8) {
-  return List.fromArray(map8.entries());
+function map_to_list(map9) {
+  return List.fromArray(map9.entries());
 }
-function map_remove(key3, map8) {
-  return map8.delete(key3);
+function map_remove(key3, map9) {
+  return map9.delete(key3);
 }
-function map_get(map8, key3) {
-  const value4 = map8.get(key3, NOT_FOUND);
+function map_get(map9, key3) {
+  const value4 = map9.get(key3, NOT_FOUND);
   if (value4 === NOT_FOUND) {
     return new Error2(Nil2);
   }
   return new Ok2(value4);
 }
-function map_insert(key3, value4, map8) {
-  return map8.set(key3, value4);
+function map_insert(key3, value4, map9) {
+  return map9.set(key3, value4);
 }
 function classify_dynamic(data) {
   if (typeof data === "string") {
@@ -2445,9 +2468,9 @@ function decode_field(value4, name2) {
     return try_get_field(value4, name2, not_a_map_error);
   }
 }
-function try_get_field(value4, field2, or_else) {
+function try_get_field(value4, field3, or_else) {
   try {
-    return field2 in value4 ? new Ok2(new Some(value4[field2])) : or_else();
+    return field3 in value4 ? new Ok2(new Some(value4[field3])) : or_else();
   } catch {
     return or_else();
   }
@@ -2492,10 +2515,10 @@ function inspect(v) {
   }
   return inspectObject(v);
 }
-function inspectDict(map8) {
+function inspectDict(map9) {
   let body3 = "dict.from_list([";
   let first5 = true;
-  map8.forEach((value4, key3) => {
+  map9.forEach((value4, key3) => {
     if (!first5)
       body3 = body3 + ", ";
     body3 = body3 + "#(" + inspect(key3) + ", " + inspect(value4) + ")";
@@ -2655,9 +2678,18 @@ function drop2(loop$dict, loop$disallowed_keys) {
     }
   }
 }
+function update(dict2, key3, fun) {
+  let _pipe = dict2;
+  let _pipe$1 = get(_pipe, key3);
+  let _pipe$2 = from_result(_pipe$1);
+  let _pipe$3 = fun(_pipe$2);
+  return ((_capture) => {
+    return insert(dict2, key3, _capture);
+  })(_pipe$3);
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/iterator.mjs
-var Stop = class extends CustomType {
+var Stop2 = class extends CustomType {
 };
 var Continue2 = class extends CustomType {
   constructor(x0, x1) {
@@ -2680,7 +2712,7 @@ var Next = class extends CustomType {
   }
 };
 function stop() {
-  return new Stop();
+  return new Stop2();
 }
 function do_unfold(initial, f) {
   return () => {
@@ -2690,7 +2722,7 @@ function do_unfold(initial, f) {
       let acc = $.accumulator;
       return new Continue2(x, do_unfold(acc, f));
     } else {
-      return new Stop();
+      return new Stop2();
     }
   };
 }
@@ -2717,8 +2749,8 @@ function do_fold(loop$continuation, loop$f, loop$accumulator) {
     let $ = continuation();
     if ($ instanceof Continue2) {
       let elem = $[0];
-      let next = $[1];
-      loop$continuation = next;
+      let next2 = $[1];
+      loop$continuation = next2;
       loop$f = f;
       loop$accumulator = f(accumulator, elem);
     } else {
@@ -2745,15 +2777,15 @@ function do_take2(continuation, desired) {
   return () => {
     let $ = desired > 0;
     if (!$) {
-      return new Stop();
+      return new Stop2();
     } else {
       let $1 = continuation();
-      if ($1 instanceof Stop) {
-        return new Stop();
+      if ($1 instanceof Stop2) {
+        return new Stop2();
       } else {
         let e = $1[0];
-        let next = $1[1];
-        return new Continue2(e, do_take2(next, desired - 1));
+        let next2 = $1[1];
+        return new Continue2(e, do_take2(next2, desired - 1));
       }
     }
   };
@@ -2797,12 +2829,12 @@ function single(elem) {
 function is_empty2(str) {
   return str === "";
 }
-function length2(string3) {
+function length3(string3) {
   return string_length(string3);
 }
 function replace(string3, pattern, substitute) {
   let _pipe = string3;
-  let _pipe$1 = from_string2(_pipe);
+  let _pipe$1 = from_string(_pipe);
   let _pipe$2 = string_replace(_pipe$1, pattern, substitute);
   return to_string4(_pipe$2);
 }
@@ -2811,7 +2843,7 @@ function lowercase2(string3) {
 }
 function append4(first5, second3) {
   let _pipe = first5;
-  let _pipe$1 = from_string2(_pipe);
+  let _pipe$1 = from_string(_pipe);
   let _pipe$2 = append2(_pipe$1, second3);
   return to_string4(_pipe$2);
 }
@@ -2832,9 +2864,6 @@ function join2(strings, separator) {
 function trim2(string3) {
   return trim(string3);
 }
-function pop_grapheme2(string3) {
-  return pop_grapheme(string3);
-}
 function do_slice(string3, idx, len) {
   let _pipe = string3;
   let _pipe$1 = graphemes(_pipe);
@@ -2849,7 +2878,7 @@ function slice(string3, idx, len) {
   } else {
     let $1 = idx < 0;
     if ($1) {
-      let translated_idx = length2(string3) + idx;
+      let translated_idx = length3(string3) + idx;
       let $2 = translated_idx < 0;
       if ($2) {
         return "";
@@ -2861,18 +2890,18 @@ function slice(string3, idx, len) {
     }
   }
 }
-function split4(x, substring) {
+function split3(x, substring) {
   if (substring === "") {
     return graphemes(x);
   } else {
     let _pipe = x;
-    let _pipe$1 = from_string2(_pipe);
-    let _pipe$2 = split3(_pipe$1, substring);
+    let _pipe$1 = from_string(_pipe);
+    let _pipe$2 = split2(_pipe$1, substring);
     return map2(_pipe$2, to_string4);
   }
 }
 function padding(size2, pad_string) {
-  let pad_length = length2(pad_string);
+  let pad_length = length3(pad_string);
   let num_pads = divideInt(size2, pad_length);
   let extra = remainderInt(size2, pad_length);
   let _pipe = repeat(pad_string);
@@ -2883,41 +2912,12 @@ function padding(size2, pad_string) {
   );
 }
 function pad_left(string3, desired_length, pad_string) {
-  let current_length = length2(string3);
+  let current_length = length3(string3);
   let to_pad_length = desired_length - current_length;
   let _pipe = padding(to_pad_length, pad_string);
   let _pipe$1 = append3(_pipe, single(string3));
   let _pipe$2 = to_list(_pipe$1);
   return concat3(_pipe$2);
-}
-function pad_right(string3, desired_length, pad_string) {
-  let current_length = length2(string3);
-  let to_pad_length = desired_length - current_length;
-  let _pipe = single(string3);
-  let _pipe$1 = append3(_pipe, padding(to_pad_length, pad_string));
-  let _pipe$2 = to_list(_pipe$1);
-  return concat3(_pipe$2);
-}
-function do_to_utf_codepoints(string3) {
-  let _pipe = string3;
-  let _pipe$1 = string_to_codepoint_integer_list(_pipe);
-  return map2(_pipe$1, codepoint);
-}
-function to_utf_codepoints(string3) {
-  return do_to_utf_codepoints(string3);
-}
-function utf_codepoint_to_int2(cp) {
-  return utf_codepoint_to_int(cp);
-}
-function first3(s) {
-  let $ = pop_grapheme2(s);
-  if ($.isOk()) {
-    let first$1 = $[0][0];
-    return new Ok2(first$1);
-  } else {
-    let e = $[0];
-    return new Error2(e);
-  }
 }
 function inspect2(term) {
   let _pipe = inspect(term);
@@ -2973,10 +2973,17 @@ function remove_dot_segments(input2) {
   return do_remove_dot_segments(input2, toList([]));
 }
 function path_segments(path) {
-  return remove_dot_segments(split4(path, "/"));
+  return remove_dot_segments(split3(path, "/"));
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/bool.mjs
+function to_int(bool3) {
+  if (!bool3) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
 function to_string5(bool3) {
   if (!bool3) {
     return "False";
@@ -2993,144 +3000,17 @@ function guard(requirement, consequence, alternative) {
 }
 
 // build/dev/javascript/gleam_json/gleam_json_ffi.mjs
-function json_to_string(json) {
-  return JSON.stringify(json);
-}
 function object(entries) {
   return Object.fromEntries(entries);
 }
 function identity2(x) {
   return x;
 }
-function array(list3) {
-  return list3.toArray();
-}
 function do_null() {
   return null;
 }
-function decode(string3) {
-  try {
-    const result = JSON.parse(string3);
-    return new Ok2(result);
-  } catch (err) {
-    return new Error2(getJsonDecodeError(err, string3));
-  }
-}
-function getJsonDecodeError(stdErr, json) {
-  if (isUnexpectedEndOfInput(stdErr))
-    return new UnexpectedEndOfInput();
-  return toUnexpectedByteError(stdErr, json);
-}
-function isUnexpectedEndOfInput(err) {
-  const unexpectedEndOfInputRegex = /((unexpected (end|eof))|(end of data)|(unterminated string)|(json( parse error|\.parse)\: expected '(\:|\}|\])'))/i;
-  return unexpectedEndOfInputRegex.test(err.message);
-}
-function toUnexpectedByteError(err, json) {
-  let converters = [
-    v8UnexpectedByteError,
-    oldV8UnexpectedByteError,
-    jsCoreUnexpectedByteError,
-    spidermonkeyUnexpectedByteError
-  ];
-  for (let converter of converters) {
-    let result = converter(err, json);
-    if (result)
-      return result;
-  }
-  return new UnexpectedByte("", 0);
-}
-function v8UnexpectedByteError(err) {
-  const regex = /unexpected token '(.)', ".+" is not valid JSON/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const byte = toHex(match[1]);
-  return new UnexpectedByte(byte, -1);
-}
-function oldV8UnexpectedByteError(err) {
-  const regex = /unexpected token (.) in JSON at position (\d+)/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const byte = toHex(match[1]);
-  const position2 = Number(match[2]);
-  return new UnexpectedByte(byte, position2);
-}
-function spidermonkeyUnexpectedByteError(err, json) {
-  const regex = /(unexpected character|expected .*) at line (\d+) column (\d+)/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const line = Number(match[2]);
-  const column = Number(match[3]);
-  const position2 = getPositionFromMultiline(line, column, json);
-  const byte = toHex(json[position2]);
-  return new UnexpectedByte(byte, position2);
-}
-function jsCoreUnexpectedByteError(err) {
-  const regex = /unexpected (identifier|token) "(.)"/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const byte = toHex(match[2]);
-  return new UnexpectedByte(byte, 0);
-}
-function toHex(char) {
-  return "0x" + char.charCodeAt(0).toString(16).toUpperCase();
-}
-function getPositionFromMultiline(line, column, string3) {
-  if (line === 1)
-    return column - 1;
-  let currentLn = 1;
-  let position2 = 0;
-  string3.split("").find((char, idx) => {
-    if (char === "\n")
-      currentLn += 1;
-    if (currentLn === line) {
-      position2 = idx + column;
-      return true;
-    }
-    return false;
-  });
-  return position2;
-}
 
 // build/dev/javascript/gleam_json/gleam/json.mjs
-var UnexpectedEndOfInput = class extends CustomType {
-};
-var UnexpectedByte = class extends CustomType {
-  constructor(byte, position2) {
-    super();
-    this.byte = byte;
-    this.position = position2;
-  }
-};
-var UnexpectedFormat = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-function do_decode(json, decoder) {
-  return then$(
-    decode(json),
-    (dynamic_value) => {
-      let _pipe = decoder(dynamic_value);
-      return map_error(
-        _pipe,
-        (var0) => {
-          return new UnexpectedFormat(var0);
-        }
-      );
-    }
-  );
-}
-function decode5(json, decoder) {
-  return do_decode(json, decoder);
-}
-function to_string7(json) {
-  return json_to_string(json);
-}
 function string2(input2) {
   return identity2(input2);
 }
@@ -3148,14 +3028,6 @@ function nullable(input2, inner_type) {
 function object2(entries) {
   return object(entries);
 }
-function preprocessed_array(from3) {
-  return array(from3);
-}
-function array2(entries, inner_type) {
-  let _pipe = entries;
-  let _pipe$1 = map2(_pipe, inner_type);
-  return preprocessed_array(_pipe$1);
-}
 
 // build/dev/javascript/lustre/lustre/effect.mjs
 var Effect = class extends CustomType {
@@ -3167,6 +3039,11 @@ var Effect = class extends CustomType {
 function from2(effect) {
   return new Effect(toList([(dispatch2, _) => {
     return effect(dispatch2);
+  }]));
+}
+function event(name2, data) {
+  return new Effect(toList([(_, emit3) => {
+    return emit3(name2, data);
   }]));
 }
 function none() {
@@ -3189,10 +3066,10 @@ function map4(effect, f) {
     map2(
       effect.all,
       (eff) => {
-        return (dispatch2, emit2) => {
+        return (dispatch2, emit3) => {
           return eff((msg) => {
             return dispatch2(f(msg));
-          }, emit2);
+          }, emit3);
         };
       }
     )
@@ -3514,6 +3391,30 @@ function map6(element3, f) {
   }
 }
 
+// build/dev/javascript/gleam_stdlib/gleam/set.mjs
+var Set2 = class extends CustomType {
+  constructor(dict2) {
+    super();
+    this.dict = dict2;
+  }
+};
+function contains(set, member) {
+  let _pipe = set.dict;
+  let _pipe$1 = get(_pipe, member);
+  return is_ok(_pipe$1);
+}
+var token = void 0;
+function from_list2(members) {
+  let dict2 = fold(
+    members,
+    new$2(),
+    (m, k) => {
+      return insert(m, k, token);
+    }
+  );
+  return new Set2(dict2);
+}
+
 // build/dev/javascript/lustre/lustre/internals/runtime.mjs
 var Debug = class extends CustomType {
   constructor(x0) {
@@ -3537,31 +3438,31 @@ var ForceModel = class extends CustomType {
 };
 
 // build/dev/javascript/lustre/vdom.ffi.mjs
-function morph(prev, next, dispatch2, isComponent = false) {
+function morph(prev, next2, dispatch2, isComponent = false) {
   let out;
-  let stack = [{ prev, next, parent: prev.parentNode }];
+  let stack = [{ prev, next: next2, parent: prev.parentNode }];
   while (stack.length) {
-    let { prev: prev2, next: next2, parent } = stack.pop();
-    if (next2.subtree !== void 0)
-      next2 = next2.subtree();
-    if (next2.content !== void 0) {
+    let { prev: prev2, next: next3, parent } = stack.pop();
+    if (next3.subtree !== void 0)
+      next3 = next3.subtree();
+    if (next3.content !== void 0) {
       if (!prev2) {
-        const created = document.createTextNode(next2.content);
+        const created = document.createTextNode(next3.content);
         parent.appendChild(created);
         out ??= created;
       } else if (prev2.nodeType === Node.TEXT_NODE) {
-        if (prev2.textContent !== next2.content)
-          prev2.textContent = next2.content;
+        if (prev2.textContent !== next3.content)
+          prev2.textContent = next3.content;
         out ??= prev2;
       } else {
-        const created = document.createTextNode(next2.content);
+        const created = document.createTextNode(next3.content);
         parent.replaceChild(created, prev2);
         out ??= created;
       }
-    } else if (next2.tag !== void 0) {
+    } else if (next3.tag !== void 0) {
       const created = createElementNode({
         prev: prev2,
-        next: next2,
+        next: next3,
         dispatch: dispatch2,
         stack,
         isComponent
@@ -3572,21 +3473,21 @@ function morph(prev, next, dispatch2, isComponent = false) {
         parent.replaceChild(created, prev2);
       }
       out ??= created;
-    } else if (next2.elements !== void 0) {
-      iterateElement(next2, (fragmentElement) => {
+    } else if (next3.elements !== void 0) {
+      iterateElement(next3, (fragmentElement) => {
         stack.unshift({ prev: prev2, next: fragmentElement, parent });
         prev2 = prev2?.nextSibling;
       });
-    } else if (next2.subtree !== void 0) {
-      stack.push({ prev: prev2, next: next2, parent });
+    } else if (next3.subtree !== void 0) {
+      stack.push({ prev: prev2, next: next3, parent });
     }
   }
   return out;
 }
-function createElementNode({ prev, next, dispatch: dispatch2, stack }) {
-  const namespace = next.namespace || "http://www.w3.org/1999/xhtml";
-  const canMorph = prev && prev.nodeType === Node.ELEMENT_NODE && prev.localName === next.tag && prev.namespaceURI === (next.namespace || "http://www.w3.org/1999/xhtml");
-  const el2 = canMorph ? prev : namespace ? document.createElementNS(namespace, next.tag) : document.createElement(next.tag);
+function createElementNode({ prev, next: next2, dispatch: dispatch2, stack }) {
+  const namespace = next2.namespace || "http://www.w3.org/1999/xhtml";
+  const canMorph = prev && prev.nodeType === Node.ELEMENT_NODE && prev.localName === next2.tag && prev.namespaceURI === (next2.namespace || "http://www.w3.org/1999/xhtml");
+  const el2 = canMorph ? prev : namespace ? document.createElementNS(namespace, next2.tag) : document.createElement(next2.tag);
   let handlersForEl;
   if (!registeredHandlers.has(el2)) {
     const emptyHandlers = /* @__PURE__ */ new Map();
@@ -3600,7 +3501,7 @@ function createElementNode({ prev, next, dispatch: dispatch2, stack }) {
   let className = null;
   let style3 = null;
   let innerHTML = null;
-  for (const attr of next.attrs) {
+  for (const attr of next2.attrs) {
     const name2 = attr[0];
     const value4 = attr[1];
     if (attr.as_property) {
@@ -3659,8 +3560,8 @@ function createElementNode({ prev, next, dispatch: dispatch2, stack }) {
       el2.removeEventListener(eventName, lustreGenericEventHandler);
     }
   }
-  if (next.key !== void 0 && next.key !== "") {
-    el2.setAttribute("data-lustre-key", next.key);
+  if (next2.key !== void 0 && next2.key !== "") {
+    el2.setAttribute("data-lustre-key", next2.key);
   } else if (innerHTML !== null) {
     el2.innerHTML = innerHTML;
     return el2;
@@ -3669,15 +3570,15 @@ function createElementNode({ prev, next, dispatch: dispatch2, stack }) {
   let seenKeys = null;
   let keyedChildren = null;
   let incomingKeyedChildren = null;
-  let firstChild = next.children[Symbol.iterator]().next().value;
+  let firstChild = next2.children[Symbol.iterator]().next().value;
   if (canMorph && firstChild !== void 0 && // Explicit checks are more verbose but truthy checks force a bunch of comparisons
   // we don't care about: it's never gonna be a number etc.
   firstChild.key !== void 0 && firstChild.key !== "") {
     seenKeys = /* @__PURE__ */ new Set();
     keyedChildren = getKeyedChildren(prev);
-    incomingKeyedChildren = getKeyedChildren(next);
+    incomingKeyedChildren = getKeyedChildren(next2);
   }
-  for (const child of next.children) {
+  for (const child of next2.children) {
     iterateElement(child, (currElement) => {
       if (currElement.key !== void 0 && seenKeys !== null) {
         prevChild = diffKeyedChild(
@@ -3696,9 +3597,9 @@ function createElementNode({ prev, next, dispatch: dispatch2, stack }) {
     });
   }
   while (prevChild) {
-    const next2 = prevChild.nextSibling;
+    const next3 = prevChild.nextSibling;
     el2.removeChild(prevChild);
-    prevChild = next2;
+    prevChild = next3;
   }
   return el2;
 }
@@ -3882,9 +3783,9 @@ var LustreClientApplication2 = class _LustreClientApplication {
   }
   #flush_queue(iterations = 0) {
     while (this.#queue.length) {
-      const [next, effects] = this.#update(this.#model, this.#queue.shift());
-      this.#didUpdate ||= this.#model !== next;
-      this.#model = next;
+      const [next2, effects] = this.#update(this.#model, this.#queue.shift());
+      this.#didUpdate ||= this.#model !== next2;
+      this.#model = next2;
       this.#effects = this.#effects.concat(effects.all.toArray());
     }
     while (this.#effects.length) {
@@ -4009,8 +3910,8 @@ function makeComponent(init8, update5, view4, on_attribute_change2) {
       );
       this.#shadow.append(this.#root);
     }
-    attributeChangedCallback(key3, _, next) {
-      this[key3] = next;
+    attributeChangedCallback(key3, _, next2) {
+      this[key3] = next2;
     }
     disconnectedCallback() {
       this.#application.send(new Shutdown());
@@ -4240,9 +4141,6 @@ function curry2(fun) {
     };
   };
 }
-function identity3(x) {
-  return x;
-}
 function apply1(fun, arg1) {
   return fun(arg1);
 }
@@ -4256,6 +4154,9 @@ function debug(term) {
 }
 
 // build/dev/javascript/lustre/lustre/event.mjs
+function emit2(event2, data) {
+  return event(event2, data);
+}
 function on2(name2, handler) {
   return on(name2, handler);
 }
@@ -5002,7 +4903,7 @@ function px(value4) {
 function percent(value4) {
   return new Pct(to_float(value4));
 }
-function to_string9(size2) {
+function to_string8(size2) {
   if (size2 instanceof Px) {
     let value4 = size2[0];
     return append4(to_string(value4), "px");
@@ -5048,11 +4949,11 @@ function convert_styles(styles) {
     return item.internal;
   });
 }
-function property2(field2, content) {
-  return new Style(new Property(field2, content, false));
+function property2(field3, content) {
+  return new Style(new Property(field3, content, false));
 }
 function width(width2) {
-  return property2("width", to_string9(width2));
+  return property2("width", to_string8(width2));
 }
 function width_(width2) {
   return property2("width", width2);
@@ -5070,7 +4971,7 @@ function font_family(font_family2) {
   return property2("font-family", font_family2);
 }
 function font_size(font_size2) {
-  return property2("font-size", to_string9(font_size2));
+  return property2("font-size", to_string8(font_size2));
 }
 function line_height(line_height2) {
   return property2("line-height", line_height2);
@@ -5097,7 +4998,7 @@ function outline(outline2) {
   return property2("outline", outline2);
 }
 function gap(gap2) {
-  return property2("gap", to_string9(gap2));
+  return property2("gap", to_string8(gap2));
 }
 function grid_column(grid_column2) {
   return property2("grid-column", grid_column2);
@@ -5118,16 +5019,16 @@ function appearance(appearance2) {
   return property2("appearance", appearance2);
 }
 function top(size2) {
-  return property2("top", to_string9(size2));
+  return property2("top", to_string8(size2));
 }
 function bottom(size2) {
-  return property2("bottom", to_string9(size2));
+  return property2("bottom", to_string8(size2));
 }
 function right(size2) {
-  return property2("right", to_string9(size2));
+  return property2("right", to_string8(size2));
 }
 function left(size2) {
-  return property2("left", to_string9(size2));
+  return property2("left", to_string8(size2));
 }
 function box_shadow(box_shadow2) {
   return property2("box-shadow", box_shadow2);
@@ -5151,16 +5052,16 @@ function border_right(border_right2) {
   return property2("border-right", border_right2);
 }
 function border_radius(border_radius2) {
-  return property2("border-radius", to_string9(border_radius2));
+  return property2("border-radius", to_string8(border_radius2));
 }
 function padding2(padding3) {
-  return property2("padding", to_string9(padding3));
+  return property2("padding", to_string8(padding3));
 }
 function padding_(padding3) {
   return property2("padding", padding3);
 }
 function margin(margin2) {
-  return property2("margin", to_string9(margin2));
+  return property2("margin", to_string8(margin2));
 }
 function compose(class$3) {
   let _pipe = class$3;
@@ -5181,7 +5082,7 @@ function dynamic(id2, styles) {
 function to_lustre(class$3) {
   let _pipe = class$3;
   let _pipe$1 = toString(_pipe);
-  let _pipe$2 = split4(_pipe$1, " ");
+  let _pipe$2 = split3(_pipe$1, " ");
   let _pipe$3 = map2(_pipe$2, (value4) => {
     return [value4, true];
   });
@@ -5248,7 +5149,7 @@ function null_or(val) {
 
 // build/dev/javascript/tardis/tardis/internals/data/colors.mjs
 var Colors = class extends CustomType {
-  constructor(background2, shadow2, primary, editor_fg, editor_bg, gutter, syntax_comment, button2, function$, nil, bool3, constant, bit_array, utf_codepoint, string3, number, custom_type, regex, date) {
+  constructor(background2, shadow2, primary, editor_fg, editor_bg, gutter, syntax_comment, button2, function$, nil, bool3, constant2, bit_array, utf_codepoint, string3, number, custom_type, regex, date) {
     super();
     this.background = background2;
     this.shadow = shadow2;
@@ -5261,7 +5162,7 @@ var Colors = class extends CustomType {
     this.function = function$;
     this.nil = nil;
     this.bool = bool3;
-    this.constant = constant;
+    this.constant = constant2;
     this.bit_array = bit_array;
     this.utf_codepoint = utf_codepoint;
     this.string = string3;
@@ -5882,9 +5783,9 @@ function inspect3(v) {
   }
   return inspectObject2(v);
 }
-function inspectDict2(map8) {
+function inspectDict2(map9) {
   const data = [];
-  map8.forEach((value4, key3) => data.push([inspect3(key3), inspect3(value4)]));
+  map9.forEach((value4, key3) => data.push([inspect3(key3), inspect3(value4)]));
   return new DataDict(List.fromArray(data));
 }
 function inspectObject2(v) {
@@ -6255,7 +6156,7 @@ function frozen_panel() {
 function view_data_line(indent2, prefix, text3, color2) {
   let idt = repeat2(" ", indent2);
   let text_color2 = text_color(color2);
-  let $ = length2(prefix);
+  let $ = length3(prefix);
   if ($ === 0) {
     return div(toList([text_color2]), toList([text2(idt + text3)]));
   } else {
@@ -7022,13 +6923,689 @@ function page_title(title, styles) {
   );
 }
 
-// build/dev/javascript/birl/birl/duration.mjs
-var Duration = class extends CustomType {
+// node_modules/nanoid/url-alphabet/index.js
+var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
+
+// node_modules/nanoid/index.browser.js
+var nanoid = (size2 = 21) => {
+  let id2 = "";
+  let bytes = crypto.getRandomValues(new Uint8Array(size2));
+  while (size2--) {
+    id2 += urlAlphabet[bytes[size2] & 63];
+  }
+  return id2;
+};
+
+// build/dev/javascript/app/seed.ts
+var TagOptionSeed = [
+  {
+    name: "Cuisine",
+    options: [
+      "Mediterranean",
+      "French",
+      "Italian",
+      "Chinese",
+      "Thai",
+      "Australian",
+      "Japanese",
+      "International"
+    ]
+  },
+  {
+    name: "Style",
+    options: [
+      "Veggie",
+      "Meat & Sides",
+      "Soups / Noodles / Stir Fry",
+      "Salad",
+      "Slow Cooker",
+      "Oven Bake",
+      "BBQ",
+      "Bakery"
+    ]
+  },
+  {
+    name: "Label",
+    options: [
+      "Go-to",
+      "Weeknight",
+      "Fancy",
+      "Light",
+      "Substantial"
+    ]
+  }
+];
+var RecipeSeed = [{
+  title: "Pink potato salad",
+  slug: "pink-potato-salad",
+  cook_time: 10,
+  prep_time: 10,
+  serves: 4,
+  shortlisted: false,
+  ingredients: /* @__PURE__ */ new Map([
+    ["0", { units: "g", quantity: "600", name: "Baby potato" }],
+    ["1", { units: "pc", quantity: "1 / 2", name: "Red Cabbage" }],
+    ["2", { units: "g", quantity: "200", name: "Pomegranate seeds" }],
+    ["3", { units: "tin", quantity: "1", name: "Butter Beans" }],
+    ["4", { units: "g", quantity: "100", name: "Mayonnaise" }],
+    ["5", { units: "g", quantity: "50", name: "Yoghurt" }],
+    ["6", { units: "tbsp", quantity: "3", name: "Extra Virgin Olive Oil" }],
+    ["7", { units: "pc", quantity: "1 / 2", name: "Lemon juice" }],
+    ["8", { units: "g", quantity: "15", name: "Flat - leaf parsley" }]
+  ]),
+  method_steps: /* @__PURE__ */ new Map([
+    ["0", {
+      step_text: "Boil the potatoes in salted water for 10 minutes, until they are just cooked through, then drain and rinse under running cold water to cool."
+    }],
+    ["1", {
+      step_text: "While the potatoes are cooking, shred the cabbage, deseed the pomegranate (or open the packet), and drain and rinse the beans."
+    }],
+    ["2", {
+      step_text: "In a bowl, mix the mayonnaise, yoghurt, lemon juice, oil, a teaspoon of flaky sea salt and plenty of pepper, then taste and adjust the seasoning accordingly."
+    }],
+    ["3", {
+      step_text: "Put the cooled, drained potatoes, red cabbage, pomegranate, beans and the dressing in a large bowl, then taste and adjust the seasoning if necessary. Arrange on a large plate, scatter over the parsley and serve at room temperature."
+    }]
+  ]),
+  tags: /* @__PURE__ */ new Map([["0", { name: "Cuisine", value: "Australian" }], ["1", {
+    name: "Style",
+    value: "Salad"
+  }], ["2", { name: "Label", value: "Light" }]])
+}];
+async function seedDb() {
+  console.log("beginning seedDb");
+  const preparetables = await prepareTables();
+  const tagoptions = await listTagOptions();
+  console.log(tagoptions[0]);
+  const recipes = await listRecipes();
+  console.log(recipes[0]);
+  console.log("tagoptions.length: ", tagoptions.length);
+  if (tagoptions.length === 0) {
+    for (const item of TagOptionSeed) {
+      const res = await addTagOption(item);
+    }
+  }
+  console.log("recipes.length: ", recipes.length);
+  if (recipes.length === 0) {
+    for (const item of RecipeSeed) {
+      await addOrUpdateRecipe(item);
+    }
+  }
+  console.log("finishing seedDb");
+}
+
+// build/dev/javascript/app/db.ts
+var sqliteWasm = await import("https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0");
+var sqlite = await sqliteWasm.default(
+  () => "https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0/dist/crsqlite.wasm"
+);
+var db = await sqlite.open("mealstack.db");
+function replacer(key3, value4) {
+  if (value4 instanceof Map) {
+    return {
+      dataType: "Map",
+      value: Array.from(value4.entries())
+      // or with spread: value: [...value]
+    };
+  }
+  return value4;
+}
+function reviver(key3, value4) {
+  if (typeof value4 === "object" && value4 !== null) {
+    if (value4.dataType === "Map") {
+      return new Map(value4.value);
+    }
+  }
+  return value4;
+}
+async function prepareTables() {
+  const findTagOptionsTable = await db.execA(
+    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='tag_options')"
+  );
+  const tagOptionsTableExists = findTagOptionsTable[0][0];
+  console.log("tagoptions table exists? ", tagOptionsTableExists);
+  if (!tagOptionsTableExists) {
+    console.log("creating tag_options table...");
+    await db.execA(
+      "CREATE TABLE `tag_options` ( 			`id` text PRIMARY KEY NOT NULL, 			`name` text NOT NULL, 			`options` text NOT NULL 		)"
+    );
+  }
+  const findRecipesTable = await db.execA(
+    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='recipes')"
+  );
+  const recipesTableExists = findRecipesTable[0][0];
+  console.log("recipes table exists? ", recipesTableExists);
+  if (!recipesTableExists) {
+    console.log("creating recipes table...");
+    await db.execA(
+      "CREATE TABLE `recipes` ( 			`id` text PRIMARY KEY NOT NULL, 			`slug` text, 			`title` text, 			`cook_time` integer, 			`prep_time` integer, 			`serves` integer, 			`ingredients` text, 			`method_steps` text, 			`tags` text, 			`shortlisted` integer 		)"
+    );
+  }
+  const findPlanTable = await db.execA(
+    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='plan')"
+  );
+  const planTableExists = findPlanTable[0][0];
+  console.log("plan Table exists? ", planTableExists);
+  if (!planTableExists) {
+    console.log("creating plan table...");
+    await db.execA(
+      "CREATE TABLE `plan` ( 			`date` date PRIMARY KEY NOT NULL, 			`planned_meals` text 		)"
+    );
+  }
+}
+async function listTagOptions() {
+  console.log("listTagOptions");
+  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM tag_options)");
+  const exists = findRows[0];
+  if (!exists) {
+    return new Ok2([]);
+  }
+  const result = await db.execO("SELECT * FROM tag_options");
+  const mapped = result.map((x) => {
+    x.options = JSON.parse(x.options);
+    return x;
+  });
+  console.log("tagoptions mapped: ", mapped);
+  return mapped;
+}
+async function addTagOption(tagOption) {
+  console.log("addTagOption: ", tagOption);
+  const result = await db.execA(
+    `INSERT INTO tag_options (id, name, options) VALUES (
+			'${nanoid()}'
+			,'${tagOption.name}'
+			,'${JSON.stringify(tagOption.options)}'
+		)`
+  );
+  console.log(result);
+  return result ? new Ok2(result) : new Error2(void 0);
+}
+async function listRecipes() {
+  console.log("listRecipes");
+  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM recipes)");
+  const exists = findRows[0];
+  if (!exists) {
+    return new Ok2([]);
+  }
+  const result = await db.execO(
+    "SELECT id, title, slug, prep_time, cook_time, serves, tags, ingredients, method_steps FROM recipes"
+  );
+  const mapped = result.map((recipe) => {
+    recipe.tags = JSON.parse(recipe.tags, reviver);
+    recipe.ingredients = JSON.parse(recipe.ingredients, reviver);
+    recipe.method_steps = JSON.parse(recipe.method_steps, reviver);
+    return recipe;
+  });
+  console.log("recipes mapped: ", mapped);
+  return mapped;
+}
+async function addOrUpdateRecipe(recipe) {
+  console.log("addOrUpdateRecipe: ", recipe);
+  const query = ` 		INSERT INTO recipes 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
+			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(
+    recipe.ingredients,
+    replacer
+  )}',
+			'${JSON.stringify(recipe.method_steps, replacer)}', '${JSON.stringify(
+    recipe.tags,
+    replacer
+  )}', '${recipe.shortlisted}') 		 ON CONFLICT(id) DO UPDATE SET		 slug=excluded.slug, 		 title=excluded.title, 		 cook_time=excluded.cook_time, 		 prep_time=excluded.prep_time, 		 serves=excluded.serves, 		 ingredients=excluded.ingredients, 		 method_steps=excluded.method_steps, 		 tags=excluded.tags, 		 shortlisted=excluded.shortlisted;`;
+  const result = await db.execA(query);
+  return new Ok2();
+}
+async function do_get_recipes() {
+  const _seed = await seedDb();
+  const result = await listRecipes();
+  console.log("recipe result from ffi: ", result);
+  return result;
+}
+async function do_get_tagoptions() {
+  const result = await listTagOptions();
+  console.log("tagoption result from ffi: ", result);
+  return result;
+}
+async function do_get_plan(startDate) {
+  console.log("do_get_plan");
+  const _seed = await seedDb();
+  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM plan)");
+  const exists = findRows[0];
+  if (!exists) {
+    return new Ok2([]);
+  }
+  const input2 = startDate ? startDate : `'now'`;
+  const result = await db.execO(
+    `SELECT date(date),planned_meals FROM plan WHERE date > DATE(${input2},'localtime','weekday 0','-6 days') AND date < DATE(${input2},'localtime','weekday 0')`
+  );
+  const mapped = result.map((day3) => {
+    day3.planned_meals = JSON.parse(day3.planned_meals);
+    return day3;
+  });
+  console.log("plan result from ffi: ", mapped);
+  return result;
+}
+async function do_save_plan(plan) {
+  console.log("do_save_plan: ", plan);
+  for (const day3 of plan) {
+    const result = await db.execO(`
+			INSERT INTO plan 			(date,planned_meals) 			VALUES ('${day3.date}','${JSON.stringify(day3.planned_meals)}') 			ON CONFLICT(date) DO UPDATE SET 			planned_meals = excluded.planned_meals 			`);
+    console.log("inserted planday: ", result);
+  }
+  return new Ok2();
+}
+
+// build/dev/javascript/app/lib/decoders.mjs
+function stringed_bool(d) {
+  let _pipe = string(d);
+  return map3(
+    _pipe,
+    (a2) => {
+      if (a2 === "True") {
+        return true;
+      } else if (a2 === "true") {
+        return true;
+      } else if (a2 === "1") {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  );
+}
+function stringed_int(d) {
+  let decoder = string;
+  let _pipe = decoder(d);
+  let _pipe$1 = map3(_pipe, parse);
+  let _pipe$2 = map3(
+    _pipe$1,
+    (_capture) => {
+      return map_error(
+        _capture,
+        (_) => {
+          return toList([
+            new DecodeError(
+              "a stringed int",
+              "something else",
+              toList([""])
+            )
+          ]);
+        }
+      );
+    }
+  );
+  return flatten(_pipe$2);
+}
+
+// build/dev/javascript/app/session.mjs
+var DbRetrievedRecipes = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
   }
 };
+var DbRetrievedTagOptions = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var RecipeList = class extends CustomType {
+  constructor(recipes, tag_options) {
+    super();
+    this.recipes = recipes;
+    this.tag_options = tag_options;
+  }
+};
+var Recipe = class extends CustomType {
+  constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
+    super();
+    this.id = id2;
+    this.title = title;
+    this.slug = slug;
+    this.cook_time = cook_time;
+    this.prep_time = prep_time;
+    this.serves = serves;
+    this.tags = tags;
+    this.ingredients = ingredients;
+    this.method_steps = method_steps;
+  }
+};
+var TagOption = class extends CustomType {
+  constructor(id2, name2, options) {
+    super();
+    this.id = id2;
+    this.name = name2;
+    this.options = options;
+  }
+};
+var MethodStep = class extends CustomType {
+  constructor(step_text) {
+    super();
+    this.step_text = step_text;
+  }
+};
+var Tag = class extends CustomType {
+  constructor(name2, value4) {
+    super();
+    this.name = name2;
+    this.value = value4;
+  }
+};
+var Ingredient = class extends CustomType {
+  constructor(name2, ismain, quantity, units2) {
+    super();
+    this.name = name2;
+    this.ismain = ismain;
+    this.quantity = quantity;
+    this.units = units2;
+  }
+};
+function merge_recipe_into_model(recipe, model) {
+  return model.withFields({
+    recipes: (() => {
+      let _pipe = model.recipes;
+      let _pipe$1 = map2(_pipe, (a2) => {
+        return [a2.id, a2];
+      });
+      let _pipe$2 = from_list(_pipe$1);
+      let _pipe$3 = merge(
+        _pipe$2,
+        from_list(toList([[recipe.id, recipe]]))
+      );
+      return values(_pipe$3);
+    })()
+  });
+}
+function decode_ingredient(d) {
+  let decoder = decode4(
+    (var0, var1, var2, var3) => {
+      return new Ingredient(var0, var1, var2, var3);
+    },
+    optional_field("name", string),
+    optional_field("ismain", stringed_bool),
+    optional_field("quantity", string),
+    optional_field("units", string)
+  );
+  return decoder(d);
+}
+function decode_tag(d) {
+  let decoder = decode2(
+    (var0, var1) => {
+      return new Tag(var0, var1);
+    },
+    field("name", string),
+    field("value", string)
+  );
+  return decoder(d);
+}
+function decode_method_step(d) {
+  let decoder = decode1(
+    (var0) => {
+      return new MethodStep(var0);
+    },
+    field("step_text", string)
+  );
+  return decoder(d);
+}
+function decode_recipe(d) {
+  let decoder = decode9(
+    (var0, var1, var2, var3, var4, var5, var6, var7, var8) => {
+      return new Recipe(var0, var1, var2, var3, var4, var5, var6, var7, var8);
+    },
+    optional_field("id", string),
+    field("title", string),
+    field("slug", string),
+    field("cook_time", int),
+    field("prep_time", int),
+    field("serves", int),
+    optional_field("tags", dict(stringed_int, decode_tag)),
+    optional_field(
+      "ingredients",
+      dict(stringed_int, decode_ingredient)
+    ),
+    optional_field(
+      "method_steps",
+      dict(stringed_int, decode_method_step)
+    )
+  );
+  return decoder(d);
+}
+function get_recipes() {
+  return from2(
+    (dispatch2) => {
+      let _pipe = do_get_recipes();
+      let _pipe$1 = map_promise(_pipe, toList);
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map2(_capture, decode_recipe);
+        }
+      );
+      let _pipe$3 = map_promise(_pipe$2, all);
+      let _pipe$4 = map_promise(
+        _pipe$3,
+        (_capture) => {
+          return map3(
+            _capture,
+            (var0) => {
+              return new DbRetrievedRecipes(var0);
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$4,
+        (_capture) => {
+          return map3(_capture, dispatch2);
+        }
+      );
+      return void 0;
+    }
+  );
+}
+function decode_tag_option(d) {
+  let decoder = decode3(
+    (var0, var1, var2) => {
+      return new TagOption(var0, var1, var2);
+    },
+    optional_field("id", string),
+    field("name", string),
+    field("options", list(string))
+  );
+  let f = decoder(d);
+  return debug(f);
+}
+function get_tag_options() {
+  return from2(
+    (dispatch2) => {
+      let _pipe = do_get_tagoptions();
+      let _pipe$1 = map_promise(_pipe, toList);
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map2(_capture, decode_tag_option);
+        }
+      );
+      let _pipe$3 = map_promise(_pipe$2, debug);
+      let _pipe$4 = map_promise(_pipe$3, all);
+      let _pipe$5 = map_promise(
+        _pipe$4,
+        (_capture) => {
+          return map3(
+            _capture,
+            (var0) => {
+              return new DbRetrievedTagOptions(var0);
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$5,
+        (_capture) => {
+          return map3(_capture, dispatch2);
+        }
+      );
+      return void 0;
+    }
+  );
+}
+
+// build/dev/javascript/app/components/typeahead.mjs
+var Model2 = class extends CustomType {
+  constructor(search_items, search_term2, found_items) {
+    super();
+    this.search_items = search_items;
+    this.search_term = search_term2;
+    this.found_items = found_items;
+  }
+};
+var RetrievedSearchItems = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserUpdatedSearchTerm = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserChangedValue = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+function typeahead(attrs) {
+  return element("type-ahead", attrs, toList([]));
+}
+function recipe_titles(all3) {
+  return property("recipe-titles", all3);
+}
+function search_term(term) {
+  return property("search-term", term);
+}
+function init6(_) {
+  return [new Model2(toList([]), "", toList([])), none()];
+}
+function update3(model, msg) {
+  if (msg instanceof RetrievedSearchItems) {
+    let a2 = msg[0];
+    return [model.withFields({ search_items: a2 }), none()];
+  } else if (msg instanceof UserUpdatedSearchTerm) {
+    let a2 = msg[0];
+    return [
+      model.withFields({
+        search_term: a2,
+        found_items: (() => {
+          let $ = length3(a2);
+          if ($ < 3) {
+            let num = $;
+            return model.search_items;
+          } else {
+            return filter(
+              model.search_items,
+              (r) => {
+                return contains_string(
+                  lowercase2(r),
+                  lowercase2(a2)
+                );
+              }
+            );
+          }
+        })()
+      }),
+      none()
+    ];
+  } else {
+    let a2 = msg[0];
+    return [model, emit2("typeahead-change", string2(a2))];
+  }
+}
+function on_attribute_change() {
+  return from_list(
+    toList([
+      [
+        "recipe-titles",
+        (attribute2) => {
+          let _pipe = attribute2;
+          let _pipe$1 = list(string)(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new RetrievedSearchItems(var0);
+            }
+          );
+        }
+      ],
+      [
+        "search-term",
+        (attribute2) => {
+          let _pipe = attribute2;
+          let _pipe$1 = string(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new UserUpdatedSearchTerm(var0);
+            }
+          );
+        }
+      ]
+    ])
+  );
+}
+function search_result(res) {
+  return option(toList([]), res);
+}
+function view2(model) {
+  return fragment(
+    toList([
+      input(
+        toList([
+          class$(
+            "text-center text-xl resize-none w-full bg-ecru-white-100 placeholder:bg-ecru-white-100"
+          ),
+          value(model.search_term),
+          attribute("list", "search_results"),
+          on_input((var0) => {
+            return new UserUpdatedSearchTerm(var0);
+          }),
+          on2(
+            "change",
+            (event2) => {
+              let _pipe = event2;
+              let _pipe$1 = field(
+                "target",
+                field("value", string)
+              )(_pipe);
+              return map3(
+                _pipe$1,
+                (var0) => {
+                  return new UserChangedValue(var0);
+                }
+              );
+            }
+          )
+        ])
+      ),
+      datalist(
+        toList([id("search_results")]),
+        (() => {
+          let _pipe = model.found_items;
+          let _pipe$1 = map2(_pipe, (a2) => {
+            return a2;
+          });
+          return map2(_pipe$1, search_result);
+        })()
+      )
+    ])
+  );
+}
+function app() {
+  return component(init6, update3, view2, on_attribute_change());
+}
+
+// build/dev/javascript/birl/birl/duration.mjs
 var MicroSecond = class extends CustomType {
 };
 var MilliSecond = class extends CustomType {
@@ -7047,111 +7624,14 @@ var Month = class extends CustomType {
 };
 var Year = class extends CustomType {
 };
-function extract(duration, unit_value) {
-  return [divideInt(duration, unit_value), remainderInt(duration, unit_value)];
-}
 var milli_second = 1e3;
 var second2 = 1e6;
 var minute = 6e7;
 var hour = 36e8;
 var day = 864e8;
-function days(value4) {
-  return new Duration(value4 * day);
-}
 var week = 6048e8;
 var month = 2592e9;
 var year = 31536e9;
-function new$5(values2) {
-  let _pipe = values2;
-  let _pipe$1 = fold(
-    _pipe,
-    0,
-    (total, current) => {
-      if (current[1] instanceof MicroSecond) {
-        let amount = current[0];
-        return total + amount;
-      } else if (current[1] instanceof MilliSecond) {
-        let amount = current[0];
-        return total + amount * milli_second;
-      } else if (current[1] instanceof Second) {
-        let amount = current[0];
-        return total + amount * second2;
-      } else if (current[1] instanceof Minute) {
-        let amount = current[0];
-        return total + amount * minute;
-      } else if (current[1] instanceof Hour) {
-        let amount = current[0];
-        return total + amount * hour;
-      } else if (current[1] instanceof Day) {
-        let amount = current[0];
-        return total + amount * day;
-      } else if (current[1] instanceof Week) {
-        let amount = current[0];
-        return total + amount * week;
-      } else if (current[1] instanceof Month) {
-        let amount = current[0];
-        return total + amount * month;
-      } else {
-        let amount = current[0];
-        return total + amount * year;
-      }
-    }
-  );
-  return new Duration(_pipe$1);
-}
-function decompose(duration) {
-  let value4 = duration[0];
-  let absolute_value2 = absolute_value(value4);
-  let $ = extract(absolute_value2, year);
-  let years$1 = $[0];
-  let remaining = $[1];
-  let $1 = extract(remaining, month);
-  let months$1 = $1[0];
-  let remaining$1 = $1[1];
-  let $2 = extract(remaining$1, week);
-  let weeks$1 = $2[0];
-  let remaining$2 = $2[1];
-  let $3 = extract(remaining$2, day);
-  let days$1 = $3[0];
-  let remaining$3 = $3[1];
-  let $4 = extract(remaining$3, hour);
-  let hours$1 = $4[0];
-  let remaining$4 = $4[1];
-  let $5 = extract(remaining$4, minute);
-  let minutes$1 = $5[0];
-  let remaining$5 = $5[1];
-  let $6 = extract(remaining$5, second2);
-  let seconds$1 = $6[0];
-  let remaining$6 = $6[1];
-  let $7 = extract(remaining$6, milli_second);
-  let milli_seconds$1 = $7[0];
-  let remaining$7 = $7[1];
-  let _pipe = toList([
-    [years$1, new Year()],
-    [months$1, new Month()],
-    [weeks$1, new Week()],
-    [days$1, new Day()],
-    [hours$1, new Hour()],
-    [minutes$1, new Minute()],
-    [seconds$1, new Second()],
-    [milli_seconds$1, new MilliSecond()],
-    [remaining$7, new MicroSecond()]
-  ]);
-  let _pipe$1 = filter(_pipe, (item) => {
-    return item[0] > 0;
-  });
-  return map2(
-    _pipe$1,
-    (item) => {
-      let $8 = value4 < 0;
-      if ($8) {
-        return [-1 * item[0], item[1]];
-      } else {
-        return item;
-      }
-    }
-  );
-}
 var unit_values = toList([
   [new Year(), year],
   [new Month(), month],
@@ -7547,51 +8027,6 @@ var list2 = toList([
   ["WET", 0]
 ]);
 
-// build/dev/javascript/birl/birl_ffi.mjs
-function now() {
-  return Date.now() * 1e3;
-}
-function local_offset() {
-  const date = /* @__PURE__ */ new Date();
-  return -date.getTimezoneOffset();
-}
-function local_timezone() {
-  return new Some(Intl.DateTimeFormat().resolvedOptions().timeZone);
-}
-function monotonic_now() {
-  return Math.floor(globalThis.performance.now() * 1e3);
-}
-function to_parts(timestamp, offset) {
-  const date = new Date((timestamp + offset) / 1e3);
-  return [
-    [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()],
-    [
-      date.getUTCHours(),
-      date.getUTCMinutes(),
-      date.getUTCSeconds(),
-      date.getUTCMilliseconds()
-    ]
-  ];
-}
-function from_parts(parts, offset) {
-  const date = new Date(
-    Date.UTC(
-      parts[0][0],
-      parts[0][1] - 1,
-      parts[0][2],
-      parts[1][0],
-      parts[1][1],
-      parts[1][2],
-      parts[1][3]
-    )
-  );
-  return date.getTime() * 1e3 - offset;
-}
-function weekday(timestamp, offset) {
-  const date = new Date((timestamp + offset) / 1e3);
-  return date.getUTCDay();
-}
-
 // build/dev/javascript/birl/birl.mjs
 var Time = class extends CustomType {
   constructor(wall_time, offset, timezone, monotonic_time) {
@@ -7600,23 +8035,6 @@ var Time = class extends CustomType {
     this.offset = offset;
     this.timezone = timezone;
     this.monotonic_time = monotonic_time;
-  }
-};
-var Day2 = class extends CustomType {
-  constructor(year2, month3, date) {
-    super();
-    this.year = year2;
-    this.month = month3;
-    this.date = date;
-  }
-};
-var TimeOfDay = class extends CustomType {
-  constructor(hour2, minute2, second3, milli_second2) {
-    super();
-    this.hour = hour2;
-    this.minute = minute2;
-    this.second = second3;
-    this.milli_second = milli_second2;
   }
 };
 var Mon = class extends CustomType {
@@ -7657,751 +8075,6 @@ var Nov = class extends CustomType {
 };
 var Dec = class extends CustomType {
 };
-function compare3(a2, b) {
-  let wta = a2.wall_time;
-  let mta = a2.monotonic_time;
-  let wtb = b.wall_time;
-  let mtb = b.monotonic_time;
-  let $ = (() => {
-    if (mta instanceof Some && mtb instanceof Some) {
-      let ta2 = mta[0];
-      let tb2 = mtb[0];
-      return [ta2, tb2];
-    } else {
-      return [wta, wtb];
-    }
-  })();
-  let ta = $[0];
-  let tb = $[1];
-  let $1 = ta === tb;
-  let $2 = ta < tb;
-  if ($1) {
-    return new Eq();
-  } else if ($2) {
-    return new Lt();
-  } else {
-    return new Gt();
-  }
-}
-function add2(value4, duration) {
-  let wt = value4.wall_time;
-  let o = value4.offset;
-  let timezone = value4.timezone;
-  let mt = value4.monotonic_time;
-  let duration$1 = duration[0];
-  if (mt instanceof Some) {
-    let mt$1 = mt[0];
-    return new Time(
-      wt + duration$1,
-      o,
-      timezone,
-      new Some(mt$1 + duration$1)
-    );
-  } else {
-    return new Time(wt + duration$1, o, timezone, new None());
-  }
-}
-function weekday_to_string(value4) {
-  if (value4 instanceof Mon) {
-    return "Monday";
-  } else if (value4 instanceof Tue) {
-    return "Tuesday";
-  } else if (value4 instanceof Wed) {
-    return "Wednesday";
-  } else if (value4 instanceof Thu) {
-    return "Thursday";
-  } else if (value4 instanceof Fri) {
-    return "Friday";
-  } else if (value4 instanceof Sat) {
-    return "Saturday";
-  } else {
-    return "Sunday";
-  }
-}
-function parse_offset(offset) {
-  return guard(
-    contains(toList(["Z", "z"]), offset),
-    new Ok2(0),
-    () => {
-      let $ = from_string("([+-])");
-      if (!$.isOk()) {
-        throw makeError(
-          "assignment_no_match",
-          "birl",
-          1326,
-          "",
-          "Assignment pattern did not match",
-          { value: $ }
-        );
-      }
-      let re = $[0];
-      return then$(
-        (() => {
-          let $1 = split(re, offset);
-          if ($1.hasLength(3) && $1.head === "" && $1.tail.head === "+") {
-            let offset$1 = $1.tail.tail.head;
-            return new Ok2([1, offset$1]);
-          } else if ($1.hasLength(3) && $1.head === "" && $1.tail.head === "-") {
-            let offset$1 = $1.tail.tail.head;
-            return new Ok2([-1, offset$1]);
-          } else if ($1.hasLength(1)) {
-            return new Ok2([1, offset]);
-          } else {
-            return new Error2(void 0);
-          }
-        })(),
-        (_use0) => {
-          let sign = _use0[0];
-          let offset$1 = _use0[1];
-          let $1 = split4(offset$1, ":");
-          if ($1.hasLength(2)) {
-            let hour_str = $1.head;
-            let minute_str = $1.tail.head;
-            return then$(
-              parse(hour_str),
-              (hour2) => {
-                return then$(
-                  parse(minute_str),
-                  (minute2) => {
-                    return new Ok2(sign * (hour2 * 60 + minute2) * 60 * 1e6);
-                  }
-                );
-              }
-            );
-          } else if ($1.hasLength(1)) {
-            let offset$2 = $1.head;
-            let $2 = length2(offset$2);
-            if ($2 === 1) {
-              return then$(
-                parse(offset$2),
-                (hour2) => {
-                  return new Ok2(sign * hour2 * 3600 * 1e6);
-                }
-              );
-            } else if ($2 === 2) {
-              return then$(
-                parse(offset$2),
-                (number) => {
-                  let $3 = number < 14;
-                  if ($3) {
-                    return new Ok2(sign * number * 3600 * 1e6);
-                  } else {
-                    return new Ok2(
-                      sign * (divideInt(number, 10) * 60 + remainderInt(
-                        number,
-                        10
-                      )) * 60 * 1e6
-                    );
-                  }
-                }
-              );
-            } else if ($2 === 3) {
-              let $3 = first3(offset$2);
-              if (!$3.isOk()) {
-                throw makeError(
-                  "assignment_no_match",
-                  "birl",
-                  1356,
-                  "",
-                  "Assignment pattern did not match",
-                  { value: $3 }
-                );
-              }
-              let hour_str = $3[0];
-              let minute_str = slice(offset$2, 1, 2);
-              return then$(
-                parse(hour_str),
-                (hour2) => {
-                  return then$(
-                    parse(minute_str),
-                    (minute2) => {
-                      return new Ok2(
-                        sign * (hour2 * 60 + minute2) * 60 * 1e6
-                      );
-                    }
-                  );
-                }
-              );
-            } else if ($2 === 4) {
-              let hour_str = slice(offset$2, 0, 2);
-              let minute_str = slice(offset$2, 2, 2);
-              return then$(
-                parse(hour_str),
-                (hour2) => {
-                  return then$(
-                    parse(minute_str),
-                    (minute2) => {
-                      return new Ok2(
-                        sign * (hour2 * 60 + minute2) * 60 * 1e6
-                      );
-                    }
-                  );
-                }
-              );
-            } else {
-              return new Error2(void 0);
-            }
-          } else {
-            return new Error2(void 0);
-          }
-        }
-      );
-    }
-  );
-}
-function generate_offset(offset) {
-  return guard(
-    offset === 0,
-    new Ok2("Z"),
-    () => {
-      let $ = (() => {
-        let _pipe = toList([[offset, new MicroSecond()]]);
-        let _pipe$1 = new$5(_pipe);
-        return decompose(_pipe$1);
-      })();
-      if ($.hasLength(2) && $.head[1] instanceof Hour && $.tail.head[1] instanceof Minute) {
-        let hour2 = $.head[0];
-        let minute2 = $.tail.head[0];
-        let _pipe = toList([
-          (() => {
-            let $1 = hour2 > 0;
-            if ($1) {
-              return concat3(
-                toList([
-                  "+",
-                  (() => {
-                    let _pipe2 = hour2;
-                    let _pipe$12 = to_string3(_pipe2);
-                    return pad_left(_pipe$12, 2, "0");
-                  })()
-                ])
-              );
-            } else {
-              return concat3(
-                toList([
-                  "-",
-                  (() => {
-                    let _pipe2 = hour2;
-                    let _pipe$12 = absolute_value(_pipe2);
-                    let _pipe$2 = to_string3(_pipe$12);
-                    return pad_left(_pipe$2, 2, "0");
-                  })()
-                ])
-              );
-            }
-          })(),
-          (() => {
-            let _pipe2 = minute2;
-            let _pipe$12 = absolute_value(_pipe2);
-            let _pipe$2 = to_string3(_pipe$12);
-            return pad_left(_pipe$2, 2, "0");
-          })()
-        ]);
-        let _pipe$1 = join2(_pipe, ":");
-        return new Ok2(_pipe$1);
-      } else if ($.hasLength(1) && $.head[1] instanceof Hour) {
-        let hour2 = $.head[0];
-        let _pipe = toList([
-          (() => {
-            let $1 = hour2 > 0;
-            if ($1) {
-              return concat3(
-                toList([
-                  "+",
-                  (() => {
-                    let _pipe2 = hour2;
-                    let _pipe$12 = to_string3(_pipe2);
-                    return pad_left(_pipe$12, 2, "0");
-                  })()
-                ])
-              );
-            } else {
-              return concat3(
-                toList([
-                  "-",
-                  (() => {
-                    let _pipe2 = hour2;
-                    let _pipe$12 = absolute_value(_pipe2);
-                    let _pipe$2 = to_string3(_pipe$12);
-                    return pad_left(_pipe$2, 2, "0");
-                  })()
-                ])
-              );
-            }
-          })(),
-          "00"
-        ]);
-        let _pipe$1 = join2(_pipe, ":");
-        return new Ok2(_pipe$1);
-      } else {
-        return new Error2(void 0);
-      }
-    }
-  );
-}
-function is_invalid_date(date) {
-  let _pipe = date;
-  let _pipe$1 = to_utf_codepoints(_pipe);
-  let _pipe$2 = map2(_pipe$1, utf_codepoint_to_int2);
-  return any(
-    _pipe$2,
-    (code) => {
-      if (code === 45) {
-        return false;
-      } else if (code >= 48 && code <= 57) {
-        return false;
-      } else {
-        return true;
-      }
-    }
-  );
-}
-function is_invalid_time(time) {
-  let _pipe = time;
-  let _pipe$1 = to_utf_codepoints(_pipe);
-  let _pipe$2 = map2(_pipe$1, utf_codepoint_to_int2);
-  return any(
-    _pipe$2,
-    (code) => {
-      if (code >= 48 && code <= 58) {
-        return false;
-      } else {
-        return true;
-      }
-    }
-  );
-}
-function parse_section(section2, pattern_string, default$) {
-  let $ = from_string(pattern_string);
-  if (!$.isOk()) {
-    throw makeError(
-      "assignment_no_match",
-      "birl",
-      1521,
-      "parse_section",
-      "Assignment pattern did not match",
-      { value: $ }
-    );
-  }
-  let pattern = $[0];
-  let $1 = scan(pattern, section2);
-  if ($1.hasLength(1) && $1.head instanceof Match && $1.head.submatches.hasLength(1) && $1.head.submatches.head instanceof Some) {
-    let major = $1.head.submatches.head[0];
-    return toList([parse(major), new Ok2(default$), new Ok2(default$)]);
-  } else if ($1.hasLength(1) && $1.head instanceof Match && $1.head.submatches.hasLength(2) && $1.head.submatches.head instanceof Some && $1.head.submatches.tail.head instanceof Some) {
-    let major = $1.head.submatches.head[0];
-    let middle = $1.head.submatches.tail.head[0];
-    return toList([parse(major), parse(middle), new Ok2(default$)]);
-  } else if ($1.hasLength(1) && $1.head instanceof Match && $1.head.submatches.hasLength(3) && $1.head.submatches.head instanceof Some && $1.head.submatches.tail.head instanceof Some && $1.head.submatches.tail.tail.head instanceof Some) {
-    let major = $1.head.submatches.head[0];
-    let middle = $1.head.submatches.tail.head[0];
-    let minor = $1.head.submatches.tail.tail.head[0];
-    return toList([parse(major), parse(middle), parse(minor)]);
-  } else {
-    return toList([new Error2(void 0)]);
-  }
-}
-function parse_date_section(date) {
-  return guard(
-    is_invalid_date(date),
-    new Error2(void 0),
-    () => {
-      let _pipe = (() => {
-        let $ = contains_string(date, "-");
-        if ($) {
-          let $1 = from_string(
-            "(\\d{4})(?:-(1[0-2]|0?[0-9]))?(?:-(3[0-1]|[1-2][0-9]|0?[0-9]))?"
-          );
-          if (!$1.isOk()) {
-            throw makeError(
-              "assignment_no_match",
-              "birl",
-              1441,
-              "",
-              "Assignment pattern did not match",
-              { value: $1 }
-            );
-          }
-          let dash_pattern = $1[0];
-          let $2 = scan(dash_pattern, date);
-          if ($2.hasLength(1) && $2.head instanceof Match && $2.head.submatches.hasLength(1) && $2.head.submatches.head instanceof Some) {
-            let major = $2.head.submatches.head[0];
-            return toList([parse(major), new Ok2(1), new Ok2(1)]);
-          } else if ($2.hasLength(1) && $2.head instanceof Match && $2.head.submatches.hasLength(2) && $2.head.submatches.head instanceof Some && $2.head.submatches.tail.head instanceof Some) {
-            let major = $2.head.submatches.head[0];
-            let middle = $2.head.submatches.tail.head[0];
-            return toList([parse(major), parse(middle), new Ok2(1)]);
-          } else if ($2.hasLength(1) && $2.head instanceof Match && $2.head.submatches.hasLength(3) && $2.head.submatches.head instanceof Some && $2.head.submatches.tail.head instanceof Some && $2.head.submatches.tail.tail.head instanceof Some) {
-            let major = $2.head.submatches.head[0];
-            let middle = $2.head.submatches.tail.head[0];
-            let minor = $2.head.submatches.tail.tail.head[0];
-            return toList([
-              parse(major),
-              parse(middle),
-              parse(minor)
-            ]);
-          } else {
-            return toList([new Error2(void 0)]);
-          }
-        } else {
-          return parse_section(
-            date,
-            "(\\d{4})(1[0-2]|0?[0-9])?(3[0-1]|[1-2][0-9]|0?[0-9])?",
-            1
-          );
-        }
-      })();
-      return try_map(_pipe, identity3);
-    }
-  );
-}
-function parse_time_section(time) {
-  return guard(
-    is_invalid_time(time),
-    new Error2(void 0),
-    () => {
-      let _pipe = parse_section(
-        time,
-        "(2[0-3]|1[0-9]|0?[0-9])([1-5][0-9]|0?[0-9])?([1-5][0-9]|0?[0-9])?",
-        0
-      );
-      return try_map(_pipe, identity3);
-    }
-  );
-}
-function weekday_from_int(weekday3) {
-  if (weekday3 === 0) {
-    return new Ok2(new Sun());
-  } else if (weekday3 === 1) {
-    return new Ok2(new Mon());
-  } else if (weekday3 === 2) {
-    return new Ok2(new Tue());
-  } else if (weekday3 === 3) {
-    return new Ok2(new Wed());
-  } else if (weekday3 === 4) {
-    return new Ok2(new Thu());
-  } else if (weekday3 === 5) {
-    return new Ok2(new Fri());
-  } else if (weekday3 === 6) {
-    return new Ok2(new Sat());
-  } else {
-    return new Error2(void 0);
-  }
-}
-function month_from_int(month3) {
-  if (month3 === 1) {
-    return new Ok2(new Jan());
-  } else if (month3 === 2) {
-    return new Ok2(new Feb());
-  } else if (month3 === 3) {
-    return new Ok2(new Mar());
-  } else if (month3 === 4) {
-    return new Ok2(new Apr());
-  } else if (month3 === 5) {
-    return new Ok2(new May());
-  } else if (month3 === 6) {
-    return new Ok2(new Jun());
-  } else if (month3 === 7) {
-    return new Ok2(new Jul());
-  } else if (month3 === 8) {
-    return new Ok2(new Aug());
-  } else if (month3 === 9) {
-    return new Ok2(new Sep());
-  } else if (month3 === 10) {
-    return new Ok2(new Oct());
-  } else if (month3 === 11) {
-    return new Ok2(new Nov());
-  } else if (month3 === 12) {
-    return new Ok2(new Dec());
-  } else {
-    return new Error2(void 0);
-  }
-}
-function to_parts2(value4) {
-  let t = value4.wall_time;
-  let o = value4.offset;
-  let $ = to_parts(t, o);
-  let date = $[0];
-  let time = $[1];
-  let $1 = generate_offset(o);
-  if (!$1.isOk()) {
-    throw makeError(
-      "assignment_no_match",
-      "birl",
-      1318,
-      "to_parts",
-      "Assignment pattern did not match",
-      { value: $1 }
-    );
-  }
-  let offset = $1[0];
-  return [date, time, offset];
-}
-function month2(value4) {
-  let $ = to_parts2(value4);
-  let month$1 = $[0][1];
-  let $1 = month_from_int(month$1);
-  if (!$1.isOk()) {
-    throw makeError(
-      "assignment_no_match",
-      "birl",
-      1099,
-      "month",
-      "Assignment pattern did not match",
-      { value: $1 }
-    );
-  }
-  let month$2 = $1[0];
-  return month$2;
-}
-function string_month(value4) {
-  let $ = month2(value4);
-  if ($ instanceof Jan) {
-    return "January";
-  } else if ($ instanceof Feb) {
-    return "February";
-  } else if ($ instanceof Mar) {
-    return "March";
-  } else if ($ instanceof Apr) {
-    return "April";
-  } else if ($ instanceof May) {
-    return "May";
-  } else if ($ instanceof Jun) {
-    return "June";
-  } else if ($ instanceof Jul) {
-    return "July";
-  } else if ($ instanceof Aug) {
-    return "August";
-  } else if ($ instanceof Sep) {
-    return "September";
-  } else if ($ instanceof Oct) {
-    return "October";
-  } else if ($ instanceof Nov) {
-    return "November";
-  } else {
-    return "December";
-  }
-}
-function get_day(value4) {
-  let $ = to_parts2(value4);
-  let year2 = $[0][0];
-  let month$1 = $[0][1];
-  let day2 = $[0][2];
-  return new Day2(year2, month$1, day2);
-}
-function from_parts2(date, time, offset) {
-  return then$(
-    parse_offset(offset),
-    (offset_number) => {
-      let _pipe = from_parts([date, time], offset_number);
-      let _pipe$1 = new Time(
-        _pipe,
-        offset_number,
-        new None(),
-        new None()
-      );
-      return new Ok2(_pipe$1);
-    }
-  );
-}
-function from_naive(value4) {
-  let value$1 = trim2(value4);
-  return then$(
-    (() => {
-      let $ = split4(value$1, "T");
-      let $1 = split4(value$1, "t");
-      let $2 = split4(value$1, " ");
-      if ($.hasLength(2)) {
-        let day_string = $.head;
-        let time_string = $.tail.head;
-        return new Ok2([day_string, time_string]);
-      } else if ($1.hasLength(2)) {
-        let day_string = $1.head;
-        let time_string = $1.tail.head;
-        return new Ok2([day_string, time_string]);
-      } else if ($2.hasLength(2)) {
-        let day_string = $2.head;
-        let time_string = $2.tail.head;
-        return new Ok2([day_string, time_string]);
-      } else if ($.hasLength(1) && $1.hasLength(1) && $2.hasLength(1)) {
-        return new Ok2([value$1, "00"]);
-      } else {
-        return new Error2(void 0);
-      }
-    })(),
-    (_use0) => {
-      let day_string = _use0[0];
-      let time_string = _use0[1];
-      let day_string$1 = trim2(day_string);
-      let time_string$1 = trim2(time_string);
-      let time_string$2 = replace(time_string$1, ":", "");
-      return then$(
-        (() => {
-          let $ = split4(time_string$2, ".");
-          let $1 = split4(time_string$2, ",");
-          if ($.hasLength(1) && $1.hasLength(1)) {
-            return new Ok2([time_string$2, new Ok2(0)]);
-          } else if ($.hasLength(2) && $1.hasLength(1)) {
-            let time_string$3 = $.head;
-            let milli_seconds_string = $.tail.head;
-            return new Ok2(
-              [
-                time_string$3,
-                (() => {
-                  let _pipe = milli_seconds_string;
-                  let _pipe$1 = slice(_pipe, 0, 3);
-                  let _pipe$2 = pad_right(_pipe$1, 3, "0");
-                  return parse(_pipe$2);
-                })()
-              ]
-            );
-          } else if ($.hasLength(1) && $1.hasLength(2)) {
-            let time_string$3 = $1.head;
-            let milli_seconds_string = $1.tail.head;
-            return new Ok2(
-              [
-                time_string$3,
-                (() => {
-                  let _pipe = milli_seconds_string;
-                  let _pipe$1 = slice(_pipe, 0, 3);
-                  let _pipe$2 = pad_right(_pipe$1, 3, "0");
-                  return parse(_pipe$2);
-                })()
-              ]
-            );
-          } else {
-            return new Error2(void 0);
-          }
-        })(),
-        (_use02) => {
-          let time_string$3 = _use02[0];
-          let milli_seconds_result = _use02[1];
-          if (milli_seconds_result.isOk()) {
-            let milli_seconds = milli_seconds_result[0];
-            return then$(
-              parse_date_section(day_string$1),
-              (day2) => {
-                if (!day2.hasLength(3)) {
-                  throw makeError(
-                    "assignment_no_match",
-                    "birl",
-                    612,
-                    "",
-                    "Assignment pattern did not match",
-                    { value: day2 }
-                  );
-                }
-                let year2 = day2.head;
-                let month$1 = day2.tail.head;
-                let date = day2.tail.tail.head;
-                return then$(
-                  parse_time_section(time_string$3),
-                  (time_of_day) => {
-                    if (!time_of_day.hasLength(3)) {
-                      throw makeError(
-                        "assignment_no_match",
-                        "birl",
-                        615,
-                        "",
-                        "Assignment pattern did not match",
-                        { value: time_of_day }
-                      );
-                    }
-                    let hour2 = time_of_day.head;
-                    let minute2 = time_of_day.tail.head;
-                    let second3 = time_of_day.tail.tail.head;
-                    return from_parts2(
-                      [year2, month$1, date],
-                      [hour2, minute2, second3, milli_seconds],
-                      "Z"
-                    );
-                  }
-                );
-              }
-            );
-          } else {
-            return new Error2(void 0);
-          }
-        }
-      );
-    }
-  );
-}
-function set_time_of_day(value4, time) {
-  let $ = to_parts2(value4);
-  let date = $[0];
-  let offset = $[2];
-  let hour2 = time.hour;
-  let minute2 = time.minute;
-  let second3 = time.second;
-  let milli_second2 = time.milli_second;
-  let $1 = from_parts2(date, [hour2, minute2, second3, milli_second2], offset);
-  if (!$1.isOk()) {
-    throw makeError(
-      "assignment_no_match",
-      "birl",
-      1227,
-      "set_time_of_day",
-      "Assignment pattern did not match",
-      { value: $1 }
-    );
-  }
-  let new_value = $1[0];
-  return new Time(
-    new_value.wall_time,
-    new_value.offset,
-    value4.timezone,
-    value4.monotonic_time
-  );
-}
-function weekday2(value4) {
-  let t = value4.wall_time;
-  let o = value4.offset;
-  let $ = weekday_from_int(weekday(t, o));
-  if (!$.isOk()) {
-    throw makeError(
-      "assignment_no_match",
-      "birl",
-      1033,
-      "weekday",
-      "Assignment pattern did not match",
-      { value: $ }
-    );
-  }
-  let weekday$1 = $[0];
-  return weekday$1;
-}
-function string_weekday(value4) {
-  let _pipe = weekday2(value4);
-  return weekday_to_string(_pipe);
-}
-function now2() {
-  let now$1 = now();
-  let offset_in_minutes = local_offset();
-  let monotonic_now$1 = monotonic_now();
-  let timezone = local_timezone();
-  return new Time(
-    now$1,
-    offset_in_minutes * 6e7,
-    (() => {
-      let _pipe = map(
-        timezone,
-        (tz) => {
-          let $ = any(list2, (item) => {
-            return item[0] === tz;
-          });
-          if ($) {
-            return new Some(tz);
-          } else {
-            return new None();
-          }
-        }
-      );
-      return flatten(_pipe);
-    })(),
-    new Some(monotonic_now$1)
-  );
-}
 var unix_epoch = new Time(0, 0, new None(), new None());
 var string_to_units = toList([
   ["year", new Year()],
@@ -8479,9 +8152,27 @@ function tagged_union(tag, variants) {
     );
   };
 }
+function enum$(variants) {
+  return tagged_union(
+    string,
+    map2(
+      variants,
+      (_capture) => {
+        return map_second(
+          _capture,
+          (variant) => {
+            return (_) => {
+              return new Ok2(variant);
+            };
+          }
+        );
+      }
+    )
+  );
+}
 
 // build/dev/javascript/justin/justin.mjs
-function add3(words, word) {
+function add2(words, word) {
   if (word === "") {
     return words;
   } else {
@@ -8500,61 +8191,61 @@ function split5(loop$in, loop$up, loop$word, loop$words) {
     if (in$.hasLength(0) && word === "") {
       return reverse(words);
     } else if (in$.hasLength(0)) {
-      return reverse(add3(words, word));
+      return reverse(add2(words, word));
     } else if (in$.atLeastLength(1) && in$.head === "\n") {
       let in$1 = in$.tail;
       loop$in = in$1;
       loop$up = false;
       loop$word = "";
-      loop$words = add3(words, word);
+      loop$words = add2(words, word);
     } else if (in$.atLeastLength(1) && in$.head === "	") {
       let in$1 = in$.tail;
       loop$in = in$1;
       loop$up = false;
       loop$word = "";
-      loop$words = add3(words, word);
+      loop$words = add2(words, word);
     } else if (in$.atLeastLength(1) && in$.head === "!") {
       let in$1 = in$.tail;
       loop$in = in$1;
       loop$up = false;
       loop$word = "";
-      loop$words = add3(words, word);
+      loop$words = add2(words, word);
     } else if (in$.atLeastLength(1) && in$.head === "?") {
       let in$1 = in$.tail;
       loop$in = in$1;
       loop$up = false;
       loop$word = "";
-      loop$words = add3(words, word);
+      loop$words = add2(words, word);
     } else if (in$.atLeastLength(1) && in$.head === "#") {
       let in$1 = in$.tail;
       loop$in = in$1;
       loop$up = false;
       loop$word = "";
-      loop$words = add3(words, word);
+      loop$words = add2(words, word);
     } else if (in$.atLeastLength(1) && in$.head === ".") {
       let in$1 = in$.tail;
       loop$in = in$1;
       loop$up = false;
       loop$word = "";
-      loop$words = add3(words, word);
+      loop$words = add2(words, word);
     } else if (in$.atLeastLength(1) && in$.head === "-") {
       let in$1 = in$.tail;
       loop$in = in$1;
       loop$up = false;
       loop$word = "";
-      loop$words = add3(words, word);
+      loop$words = add2(words, word);
     } else if (in$.atLeastLength(1) && in$.head === "_") {
       let in$1 = in$.tail;
       loop$in = in$1;
       loop$up = false;
       loop$word = "";
-      loop$words = add3(words, word);
+      loop$words = add2(words, word);
     } else if (in$.atLeastLength(1) && in$.head === " ") {
       let in$1 = in$.tail;
       loop$in = in$1;
       loop$up = false;
       loop$word = "";
-      loop$words = add3(words, word);
+      loop$words = add2(words, word);
     } else {
       let g = in$.head;
       let in$1 = in$.tail;
@@ -8573,7 +8264,7 @@ function split5(loop$in, loop$up, loop$word, loop$words) {
         loop$in = in$1;
         loop$up = true;
         loop$word = g;
-        loop$words = add3(words, word);
+        loop$words = add2(words, word);
       }
     }
   }
@@ -8590,271 +8281,1134 @@ function kebab_case(text3) {
   return lowercase2(_pipe$2);
 }
 
-// node_modules/nanoid/url-alphabet/index.js
-var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
-
-// node_modules/nanoid/index.browser.js
-var nanoid = (size2 = 21) => {
-  let id2 = "";
-  let bytes = crypto.getRandomValues(new Uint8Array(size2));
-  while (size2--) {
-    id2 += urlAlphabet[bytes[size2] & 63];
+// build/dev/javascript/nibble/nibble/lexer.mjs
+var Matcher = class extends CustomType {
+  constructor(run3) {
+    super();
+    this.run = run3;
   }
-  return id2;
 };
-
-// build/dev/javascript/app/seed.ts
-var TagOptionSeed = [
-  {
-    name: "Cuisine",
-    options: [
-      "Mediterranean",
-      "French",
-      "Italian",
-      "Chinese",
-      "Thai",
-      "Australian",
-      "Japanese",
-      "International"
-    ]
-  },
-  {
-    name: "Style",
-    options: [
-      "Veggie",
-      "Meat & Sides",
-      "Soups / Noodles / Stir Fry",
-      "Salad",
-      "Slow Cooker",
-      "Oven Bake",
-      "BBQ",
-      "Bakery"
-    ]
-  },
-  {
-    name: "Label",
-    options: [
-      "Go-to",
-      "Weeknight",
-      "Fancy",
-      "Light",
-      "Substantial"
-    ]
+var Keep = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
   }
-];
-var RecipeSeed = [{
-  title: "Pink potato salad",
-  slug: "pink-potato-salad",
-  cook_time: 10,
-  prep_time: 10,
-  serves: 4,
-  shortlisted: false,
-  ingredients: /* @__PURE__ */ new Map([
-    ["0", { units: "g", quantity: "600", name: "Baby potato" }],
-    ["1", { units: "pc", quantity: "1 / 2", name: "Red Cabbage" }],
-    ["2", { units: "g", quantity: "200", name: "Pomegranate seeds" }],
-    ["3", { units: "tin", quantity: "1", name: "Butter Beans" }],
-    ["4", { units: "g", quantity: "100", name: "Mayonnaise" }],
-    ["5", { units: "g", quantity: "50", name: "Yoghurt" }],
-    ["6", { units: "tbsp", quantity: "3", name: "Extra Virgin Olive Oil" }],
-    ["7", { units: "pc", quantity: "1 / 2", name: "Lemon juice" }],
-    ["8", { units: "g", quantity: "15", name: "Flat - leaf parsley" }]
-  ]),
-  method_steps: /* @__PURE__ */ new Map([
-    ["0", {
-      step_text: "Boil the potatoes in salted water for 10 minutes, until they are just cooked through, then drain and rinse under running cold water to cool."
-    }],
-    ["1", {
-      step_text: "While the potatoes are cooking, shred the cabbage, deseed the pomegranate (or open the packet), and drain and rinse the beans."
-    }],
-    ["2", {
-      step_text: "In a bowl, mix the mayonnaise, yoghurt, lemon juice, oil, a teaspoon of flaky sea salt and plenty of pepper, then taste and adjust the seasoning accordingly."
-    }],
-    ["3", {
-      step_text: "Put the cooled, drained potatoes, red cabbage, pomegranate, beans and the dressing in a large bowl, then taste and adjust the seasoning if necessary. Arrange on a large plate, scatter over the parsley and serve at room temperature."
-    }]
-  ]),
-  tags: /* @__PURE__ */ new Map([["0", { name: "Cuisine", value: "Australian" }], ["1", {
-    name: "Style",
-    value: "Salad"
-  }], ["2", { name: "Label", value: "Light" }]])
-}];
-async function seedDb() {
-  console.log("beginning seedDb");
-  const preparetables = await prepareTables();
-  const tagoptions = await listTagOptions();
-  console.log(tagoptions[0]);
-  const recipes = await listRecipes();
-  console.log(recipes[0]);
-  console.log("tagoptions.length: ", tagoptions.length);
-  if (tagoptions.length === 0) {
-    for (const item of TagOptionSeed) {
-      const res = await addTagOption(item);
+};
+var Skip = class extends CustomType {
+};
+var Drop = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var NoMatch = class extends CustomType {
+};
+var Token = class extends CustomType {
+  constructor(span2, lexeme, value4) {
+    super();
+    this.span = span2;
+    this.lexeme = lexeme;
+    this.value = value4;
+  }
+};
+var Span = class extends CustomType {
+  constructor(row_start, col_start, row_end, col_end) {
+    super();
+    this.row_start = row_start;
+    this.col_start = col_start;
+    this.row_end = row_end;
+    this.col_end = col_end;
+  }
+};
+var NoMatchFound = class extends CustomType {
+  constructor(row, col, lexeme) {
+    super();
+    this.row = row;
+    this.col = col;
+    this.lexeme = lexeme;
+  }
+};
+var Lexer = class extends CustomType {
+  constructor(matchers) {
+    super();
+    this.matchers = matchers;
+  }
+};
+var State = class extends CustomType {
+  constructor(source, tokens, current, row, col) {
+    super();
+    this.source = source;
+    this.tokens = tokens;
+    this.current = current;
+    this.row = row;
+    this.col = col;
+  }
+};
+function simple(matchers) {
+  return new Lexer((_) => {
+    return matchers;
+  });
+}
+function keep(f) {
+  return new Matcher(
+    (mode, lexeme, lookahead) => {
+      let _pipe = f(lexeme, lookahead);
+      let _pipe$1 = map3(
+        _pipe,
+        (_capture) => {
+          return new Keep(_capture, mode);
+        }
+      );
+      return unwrap2(_pipe$1, new NoMatch());
+    }
+  );
+}
+function custom(f) {
+  return new Matcher(f);
+}
+function do_match(mode, str, lookahead, matchers) {
+  return fold_until(
+    matchers,
+    new NoMatch(),
+    (_, matcher) => {
+      let $ = matcher.run(mode, str, lookahead);
+      if ($ instanceof Keep) {
+        let match = $;
+        return new Stop(match);
+      } else if ($ instanceof Skip) {
+        return new Stop(new Skip());
+      } else if ($ instanceof Drop) {
+        let match = $;
+        return new Stop(match);
+      } else {
+        return new Continue(new NoMatch());
+      }
+    }
+  );
+}
+function next_col(col, str) {
+  if (str === "\n") {
+    return 1;
+  } else {
+    return col + 1;
+  }
+}
+function next_row(row, str) {
+  if (str === "\n") {
+    return row + 1;
+  } else {
+    return row;
+  }
+}
+function do_run(loop$lexer, loop$mode, loop$state) {
+  while (true) {
+    let lexer2 = loop$lexer;
+    let mode = loop$mode;
+    let state = loop$state;
+    let matchers = lexer2.matchers(mode);
+    let $ = state.source;
+    let $1 = state.current;
+    if ($.hasLength(0) && $1[2] === "") {
+      return new Ok2(reverse(state.tokens));
+    } else if ($.hasLength(0)) {
+      let start_row = $1[0];
+      let start_col = $1[1];
+      let lexeme = $1[2];
+      let $2 = do_match(mode, lexeme, "", matchers);
+      if ($2 instanceof NoMatch) {
+        return new Error2(new NoMatchFound(start_row, start_col, lexeme));
+      } else if ($2 instanceof Skip) {
+        return new Error2(new NoMatchFound(start_row, start_col, lexeme));
+      } else if ($2 instanceof Drop) {
+        return new Ok2(reverse(state.tokens));
+      } else {
+        let value4 = $2[0];
+        let span2 = new Span(start_row, start_col, state.row, state.col);
+        let token$1 = new Token(span2, lexeme, value4);
+        return new Ok2(reverse(prepend(token$1, state.tokens)));
+      }
+    } else {
+      let lookahead = $.head;
+      let rest2 = $.tail;
+      let start_row = $1[0];
+      let start_col = $1[1];
+      let lexeme = $1[2];
+      let row = next_row(state.row, lookahead);
+      let col = next_col(state.col, lookahead);
+      let $2 = do_match(mode, lexeme, lookahead, matchers);
+      if ($2 instanceof Keep) {
+        let value4 = $2[0];
+        let mode$1 = $2[1];
+        let span2 = new Span(start_row, start_col, state.row, state.col);
+        let token$1 = new Token(span2, lexeme, value4);
+        loop$lexer = lexer2;
+        loop$mode = mode$1;
+        loop$state = new State(
+          rest2,
+          prepend(token$1, state.tokens),
+          [state.row, state.col, lookahead],
+          row,
+          col
+        );
+      } else if ($2 instanceof Skip) {
+        loop$lexer = lexer2;
+        loop$mode = mode;
+        loop$state = new State(
+          rest2,
+          state.tokens,
+          [start_row, start_col, lexeme + lookahead],
+          row,
+          col
+        );
+      } else if ($2 instanceof Drop) {
+        let mode$1 = $2[0];
+        loop$lexer = lexer2;
+        loop$mode = mode$1;
+        loop$state = new State(
+          rest2,
+          state.tokens,
+          [state.row, state.col, lookahead],
+          row,
+          col
+        );
+      } else {
+        loop$lexer = lexer2;
+        loop$mode = mode;
+        loop$state = new State(
+          rest2,
+          state.tokens,
+          [start_row, start_col, lexeme + lookahead],
+          row,
+          col
+        );
+      }
     }
   }
-  console.log("recipes.length: ", recipes.length);
-  if (recipes.length === 0) {
-    for (const item of RecipeSeed) {
-      await addOrUpdateRecipe(item);
-    }
-  }
-  console.log("finishing seedDb");
+}
+function run(source, lexer2) {
+  let _pipe = graphemes(source);
+  let _pipe$1 = new State(_pipe, toList([]), [1, 1, ""], 1, 1);
+  return ((_capture) => {
+    return do_run(lexer2, void 0, _capture);
+  })(_pipe$1);
 }
 
-// build/dev/javascript/app/db.ts
-var sqliteWasm = await import("https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0");
-var sqlite = await sqliteWasm.default(
-  () => "https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0/dist/crsqlite.wasm"
-);
-var db = await sqlite.open("mealstack.db");
-function replacer(key3, value4) {
-  if (value4 instanceof Map) {
-    return {
-      dataType: "Map",
-      value: Array.from(value4.entries())
-      // or with spread: value: [...value]
-    };
+// build/dev/javascript/nibble/nibble.mjs
+var Parser = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
   }
-  return value4;
+};
+var Cont = class extends CustomType {
+  constructor(x0, x1, x2) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+    this[2] = x2;
+  }
+};
+var Fail = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var State2 = class extends CustomType {
+  constructor(src, idx, pos, ctx) {
+    super();
+    this.src = src;
+    this.idx = idx;
+    this.pos = pos;
+    this.ctx = ctx;
+  }
+};
+var CanBacktrack = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var EndOfInput = class extends CustomType {
+};
+var Expected = class extends CustomType {
+  constructor(x0, got) {
+    super();
+    this[0] = x0;
+    this.got = got;
+  }
+};
+var Unexpected = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var DeadEnd = class extends CustomType {
+  constructor(pos, problem, context) {
+    super();
+    this.pos = pos;
+    this.problem = problem;
+    this.context = context;
+  }
+};
+var Empty2 = class extends CustomType {
+};
+var Cons = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var Append = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+function runwrap(state, parser3) {
+  let parse6 = parser3[0];
+  return parse6(state);
 }
-function reviver(key3, value4) {
-  if (typeof value4 === "object" && value4 !== null) {
-    if (value4.dataType === "Map") {
-      return new Map(value4.value);
+function next(state) {
+  let $ = get(state.src, state.idx);
+  if (!$.isOk()) {
+    return [new None(), state];
+  } else {
+    let span$1 = $[0].span;
+    let tok = $[0].value;
+    return [
+      new Some(tok),
+      state.withFields({ idx: state.idx + 1, pos: span$1 })
+    ];
+  }
+}
+function return$(value4) {
+  return new Parser(
+    (state) => {
+      return new Cont(new CanBacktrack(false), value4, state);
+    }
+  );
+}
+function succeed(value4) {
+  return return$(value4);
+}
+function backtrackable(parser3) {
+  return new Parser(
+    (state) => {
+      let $ = runwrap(state, parser3);
+      if ($ instanceof Cont) {
+        let a2 = $[1];
+        let state$1 = $[2];
+        return new Cont(new CanBacktrack(false), a2, state$1);
+      } else {
+        let bag = $[1];
+        return new Fail(new CanBacktrack(false), bag);
+      }
+    }
+  );
+}
+function should_commit(a2, b) {
+  let a$1 = a2[0];
+  let b$1 = b[0];
+  return new CanBacktrack(a$1 || b$1);
+}
+function do$(parser3, f) {
+  return new Parser(
+    (state) => {
+      let $ = runwrap(state, parser3);
+      if ($ instanceof Cont) {
+        let to_a = $[0];
+        let a2 = $[1];
+        let state$1 = $[2];
+        let $1 = runwrap(state$1, f(a2));
+        if ($1 instanceof Cont) {
+          let to_b = $1[0];
+          let b = $1[1];
+          let state$2 = $1[2];
+          return new Cont(should_commit(to_a, to_b), b, state$2);
+        } else {
+          let to_b = $1[0];
+          let bag = $1[1];
+          return new Fail(should_commit(to_a, to_b), bag);
+        }
+      } else {
+        let can_backtrack = $[0];
+        let bag = $[1];
+        return new Fail(can_backtrack, bag);
+      }
+    }
+  );
+}
+function then$3(parser3, f) {
+  return do$(parser3, f);
+}
+function map8(parser3, f) {
+  return do$(parser3, (a2) => {
+    return return$(f(a2));
+  });
+}
+function take_while(predicate) {
+  return new Parser(
+    (state) => {
+      let $ = next(state);
+      let tok = $[0];
+      let next_state = $[1];
+      let $1 = map(tok, predicate);
+      if (tok instanceof Some && $1 instanceof Some && $1[0]) {
+        let tok$1 = tok[0];
+        return runwrap(
+          next_state,
+          do$(
+            take_while(predicate),
+            (toks) => {
+              return return$(prepend(tok$1, toks));
+            }
+          )
+        );
+      } else if (tok instanceof Some && $1 instanceof Some && !$1[0]) {
+        return new Cont(new CanBacktrack(false), toList([]), state);
+      } else {
+        return new Cont(new CanBacktrack(false), toList([]), state);
+      }
+    }
+  );
+}
+function take_exactly(parser3, count) {
+  if (count === 0) {
+    return return$(toList([]));
+  } else {
+    return do$(
+      parser3,
+      (x) => {
+        return do$(
+          take_exactly(parser3, count - 1),
+          (xs) => {
+            return return$(prepend(x, xs));
+          }
+        );
+      }
+    );
+  }
+}
+function bag_from_state(state, problem) {
+  return new Cons(new Empty2(), new DeadEnd(state.pos, problem, state.ctx));
+}
+function token2(tok) {
+  return new Parser(
+    (state) => {
+      let $ = next(state);
+      if ($[0] instanceof Some && isEqual(tok, $[0][0])) {
+        let t = $[0][0];
+        let state$1 = $[1];
+        return new Cont(new CanBacktrack(true), void 0, state$1);
+      } else if ($[0] instanceof Some) {
+        let t = $[0][0];
+        let state$1 = $[1];
+        return new Fail(
+          new CanBacktrack(false),
+          bag_from_state(state$1, new Expected(inspect2(tok), t))
+        );
+      } else {
+        let state$1 = $[1];
+        return new Fail(
+          new CanBacktrack(false),
+          bag_from_state(state$1, new EndOfInput())
+        );
+      }
+    }
+  );
+}
+function eof() {
+  return new Parser(
+    (state) => {
+      let $ = next(state);
+      if ($[0] instanceof Some) {
+        let tok = $[0][0];
+        let state$1 = $[1];
+        return new Fail(
+          new CanBacktrack(false),
+          bag_from_state(state$1, new Unexpected(tok))
+        );
+      } else {
+        return new Cont(new CanBacktrack(false), void 0, state);
+      }
+    }
+  );
+}
+function take_if(expecting, predicate) {
+  return new Parser(
+    (state) => {
+      let $ = next(state);
+      let tok = $[0];
+      let next_state = $[1];
+      let $1 = map(tok, predicate);
+      if (tok instanceof Some && $1 instanceof Some && $1[0]) {
+        let tok$1 = tok[0];
+        return new Cont(new CanBacktrack(false), tok$1, next_state);
+      } else if (tok instanceof Some && $1 instanceof Some && !$1[0]) {
+        let tok$1 = tok[0];
+        return new Fail(
+          new CanBacktrack(false),
+          bag_from_state(next_state, new Expected(expecting, tok$1))
+        );
+      } else {
+        return new Fail(
+          new CanBacktrack(false),
+          bag_from_state(next_state, new EndOfInput())
+        );
+      }
+    }
+  );
+}
+function take_while1(expecting, predicate) {
+  return do$(
+    take_if(expecting, predicate),
+    (x) => {
+      return do$(
+        take_while(predicate),
+        (xs) => {
+          return return$(prepend(x, xs));
+        }
+      );
+    }
+  );
+}
+function to_deadends(loop$bag, loop$acc) {
+  while (true) {
+    let bag = loop$bag;
+    let acc = loop$acc;
+    if (bag instanceof Empty2) {
+      return acc;
+    } else if (bag instanceof Cons && bag[0] instanceof Empty2) {
+      let deadend = bag[1];
+      return prepend(deadend, acc);
+    } else if (bag instanceof Cons) {
+      let bag$1 = bag[0];
+      let deadend = bag[1];
+      loop$bag = bag$1;
+      loop$acc = prepend(deadend, acc);
+    } else {
+      let left2 = bag[0];
+      let right2 = bag[1];
+      loop$bag = left2;
+      loop$acc = to_deadends(right2, acc);
     }
   }
-  return value4;
 }
-async function prepareTables() {
-  const findTagOptionsTable = await db.execA(
-    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='tag_options')"
+function run2(src, parser3) {
+  let src$1 = index_fold(
+    src,
+    new$2(),
+    (dict2, tok, idx) => {
+      return insert(dict2, idx, tok);
+    }
   );
-  const tagOptionsTableExists = findTagOptionsTable[0][0];
-  console.log("tagoptions table exists? ", tagOptionsTableExists);
-  if (!tagOptionsTableExists) {
-    console.log("creating tag_options table...");
-    await db.execA(
-      "CREATE TABLE `tag_options` ( 			`id` text PRIMARY KEY NOT NULL, 			`name` text NOT NULL, 			`options` text NOT NULL 		)"
-    );
+  let init8 = new State2(src$1, 0, new Span(1, 1, 1, 1), toList([]));
+  let $ = runwrap(init8, parser3);
+  if ($ instanceof Cont) {
+    let a2 = $[1];
+    return new Ok2(a2);
+  } else {
+    let bag = $[1];
+    return new Error2(to_deadends(bag, toList([])));
   }
-  const findRecipesTable = await db.execA(
-    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='recipes')"
+}
+function add_bag_to_step(step, left2) {
+  if (step instanceof Cont) {
+    let can_backtrack = step[0];
+    let a2 = step[1];
+    let state = step[2];
+    return new Cont(can_backtrack, a2, state);
+  } else {
+    let can_backtrack = step[0];
+    let right2 = step[1];
+    return new Fail(can_backtrack, new Append(left2, right2));
+  }
+}
+function one_of(parsers) {
+  return new Parser(
+    (state) => {
+      let init8 = new Fail(new CanBacktrack(false), new Empty2());
+      return fold_until(
+        parsers,
+        init8,
+        (result, next2) => {
+          if (result instanceof Cont) {
+            return new Stop(result);
+          } else if (result instanceof Fail && result[0] instanceof CanBacktrack && result[0][0]) {
+            return new Stop(result);
+          } else {
+            let bag = result[1];
+            let _pipe = runwrap(state, next2);
+            let _pipe$1 = add_bag_to_step(_pipe, bag);
+            return new Continue(_pipe$1);
+          }
+        }
+      );
+    }
   );
-  const recipesTableExists = findRecipesTable[0][0];
-  console.log("recipes table exists? ", recipesTableExists);
-  if (!recipesTableExists) {
-    console.log("creating recipes table...");
-    await db.execA(
-      "CREATE TABLE `recipes` ( 			`id` text PRIMARY KEY NOT NULL, 			`slug` text, 			`title` text, 			`cook_time` integer, 			`prep_time` integer, 			`serves` integer, 			`ingredients` text, 			`method_steps` text, 			`tags` text, 			`shortlisted` integer 		)"
-    );
-  }
-  const findPlanTable = await db.execA(
-    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='plan')"
+}
+function optional(parser3) {
+  return one_of(
+    toList([
+      map8(parser3, (var0) => {
+        return new Some(var0);
+      }),
+      return$(new None())
+    ])
   );
-  const planTableExists = findPlanTable[0][0];
-  console.log("plan Table exists? ", planTableExists);
-  if (!planTableExists) {
-    console.log("creating plan table...");
-    await db.execA(
-      "CREATE TABLE `plan` ( 			`date` date PRIMARY KEY NOT NULL, 			`lunch` text, 			`dinner` text 		)"
-    );
-  }
-}
-async function listTagOptions() {
-  console.log("listTagOptions");
-  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM tag_options)");
-  const exists = findRows[0];
-  if (!exists) {
-    return new Ok2([]);
-  }
-  const result = await db.execO("SELECT * FROM tag_options");
-  const mapped = result.map((x) => {
-    x.options = JSON.parse(x.options);
-    return x;
-  });
-  console.log("tagoptions mapped: ", mapped);
-  return mapped;
-}
-async function addTagOption(tagOption) {
-  console.log("addTagOption: ", tagOption);
-  const result = await db.execA(
-    `INSERT INTO tag_options (id, name, options) VALUES (
-			'${nanoid()}'
-			,'${tagOption.name}'
-			,'${JSON.stringify(tagOption.options)}'
-		)`
-  );
-  console.log(result);
-  return result ? new Ok2(result) : new Error2(void 0);
-}
-async function listRecipes() {
-  console.log("listRecipes");
-  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM recipes)");
-  const exists = findRows[0];
-  if (!exists) {
-    return new Ok2([]);
-  }
-  const result = await db.execO("SELECT id, title, slug, prep_time, cook_time, serves, tags, ingredients, method_steps FROM recipes");
-  const mapped = result.map((recipe) => {
-    recipe.tags = JSON.parse(recipe.tags, reviver);
-    recipe.ingredients = JSON.parse(recipe.ingredients, reviver);
-    recipe.method_steps = JSON.parse(recipe.method_steps, reviver);
-    return recipe;
-  });
-  console.log("recipes mapped: ", mapped);
-  return mapped;
-}
-async function addOrUpdateRecipe(recipe) {
-  console.log("addOrUpdateRecipe: ", recipe);
-  const query = ` 		INSERT INTO recipes 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
-			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(recipe.ingredients, replacer)}',
-			'${JSON.stringify(recipe.method_steps, replacer)}', '${JSON.stringify(recipe.tags, replacer)}', '${recipe.shortlisted}') 		 ON CONFLICT(id) DO UPDATE SET		 slug=excluded.slug, 		 title=excluded.title, 		 cook_time=excluded.cook_time, 		 prep_time=excluded.prep_time, 		 serves=excluded.serves, 		 ingredients=excluded.ingredients, 		 method_steps=excluded.method_steps, 		 tags=excluded.tags, 		 shortlisted=excluded.shortlisted;`;
-  const result = await db.execA(
-    query
-  );
-  return new Ok2();
-}
-async function do_get_recipes() {
-  const _seed = await seedDb();
-  const result = await listRecipes();
-  console.log("recipe result from ffi: ", result);
-  return result;
-}
-async function do_get_tagoptions() {
-  const result = await listTagOptions();
-  console.log("tagoption result from ffi: ", result);
-  return result;
-}
-async function do_get_plan(startDate) {
-  console.log("do_get_plan");
-  const _seed = await seedDb();
-  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM plan)");
-  const exists = findRows[0];
-  if (!exists) {
-    return new Ok2([]);
-  }
-  const input2 = startDate ? startDate : `'now'`;
-  const result = await db.execO(`SELECT date(date),lunch,dinner FROM plan WHERE date > DATE(${input2},'localtime','weekday 0','-6 days') AND date < DATE(${input2},'localtime','weekday 1')`);
-  const mapped = result.map((day2) => {
-    day2.lunch = JSON.parse(day2.lunch);
-    day2.dinner = JSON.parse(day2.dinner);
-    return day2;
-  });
-  console.log("plan result from ffi: ", mapped);
-  return result;
 }
 
-// build/dev/javascript/app/lib/decoders.mjs
-function stringed_bool(d) {
-  let _pipe = string(d);
-  return map3(
+// build/dev/javascript/rada/rada/date/parse.mjs
+var Digit = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var WeekToken = class extends CustomType {
+};
+var Dash = class extends CustomType {
+};
+var TimeToken = class extends CustomType {
+};
+var Other = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+function lexer() {
+  let options = new Options(false, true);
+  let $ = compile("^[0-9]+$", options);
+  if (!$.isOk()) {
+    throw makeError(
+      "assignment_no_match",
+      "rada/date/parse",
+      14,
+      "lexer",
+      "Assignment pattern did not match",
+      { value: $ }
+    );
+  }
+  let digits_regex = $[0];
+  let is_digits = (str) => {
+    return check(digits_regex, str);
+  };
+  return simple(
+    toList([
+      custom(
+        (mode, lexeme, _) => {
+          if (lexeme === "") {
+            return new Drop(mode);
+          } else if (lexeme === "W") {
+            return new Keep(new WeekToken(), mode);
+          } else if (lexeme === "T") {
+            return new Keep(new TimeToken(), mode);
+          } else if (lexeme === "-") {
+            return new Keep(new Dash(), mode);
+          } else {
+            let $1 = is_digits(lexeme);
+            if ($1) {
+              return new Keep(new Digit(lexeme), mode);
+            } else {
+              return new Keep(new Other(lexeme), mode);
+            }
+          }
+        }
+      )
+    ])
+  );
+}
+
+// build/dev/javascript/rada/rada/date/pattern.mjs
+var Field = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var Literal = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var Alpha = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var Quote = class extends CustomType {
+};
+var EscapedQuote = class extends CustomType {
+};
+var Text2 = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+function is_alpha(token3) {
+  if (token3 instanceof Alpha) {
+    return true;
+  } else {
+    return false;
+  }
+}
+function is_specific_alpha(char) {
+  return (token3) => {
+    if (token3 instanceof Alpha) {
+      let c = token3[0];
+      return c === char;
+    } else {
+      return false;
+    }
+  };
+}
+function is_text(token3) {
+  if (token3 instanceof Text2) {
+    return true;
+  } else {
+    return false;
+  }
+}
+function is_quote(token3) {
+  if (token3 instanceof Quote) {
+    return true;
+  } else {
+    return false;
+  }
+}
+function extract_content(tokens) {
+  if (tokens.hasLength(0)) {
+    return "";
+  } else {
+    let token3 = tokens.head;
+    let rest2 = tokens.tail;
+    if (token3 instanceof Alpha) {
+      let str = token3[0];
+      return str + extract_content(rest2);
+    } else if (token3 instanceof Quote) {
+      return "'" + extract_content(rest2);
+    } else if (token3 instanceof EscapedQuote) {
+      return "'" + extract_content(rest2);
+    } else {
+      let str = token3[0];
+      return str + extract_content(rest2);
+    }
+  }
+}
+function field2() {
+  return do$(
+    take_if("Expecting an Alpha token", is_alpha),
+    (alpha) => {
+      if (!(alpha instanceof Alpha)) {
+        throw makeError(
+          "assignment_no_match",
+          "rada/date/pattern",
+          170,
+          "",
+          "Assignment pattern did not match",
+          { value: alpha }
+        );
+      }
+      let char = alpha[0];
+      return do$(
+        take_while(is_specific_alpha(char)),
+        (rest2) => {
+          return return$(new Field(char, length(rest2) + 1));
+        }
+      );
+    }
+  );
+}
+function escaped_quote() {
+  let _pipe = token2(new EscapedQuote());
+  return then$3(
     _pipe,
-    (a2) => {
-      if (a2 === "True") {
-        return true;
-      } else if (a2 === "true") {
-        return true;
-      } else if (a2 === "1") {
+    (_) => {
+      return succeed(new Literal("'"));
+    }
+  );
+}
+function literal() {
+  return do$(
+    take_if("Expecting an Text token", is_text),
+    (text3) => {
+      return do$(
+        take_while(is_text),
+        (rest2) => {
+          let joined = (() => {
+            let _pipe = map2(
+              prepend(text3, rest2),
+              (entry) => {
+                if (!(entry instanceof Text2)) {
+                  throw makeError(
+                    "assignment_no_match",
+                    "rada/date/pattern",
+                    216,
+                    "",
+                    "Assignment pattern did not match",
+                    { value: entry }
+                  );
+                }
+                let text$1 = entry[0];
+                return text$1;
+              }
+            );
+            return concat3(_pipe);
+          })();
+          return return$(new Literal(joined));
+        }
+      );
+    }
+  );
+}
+function quoted_help(result) {
+  return one_of(
+    toList([
+      do$(
+        take_while1(
+          "Expecting a non-Quote",
+          (token3) => {
+            return !is_quote(token3);
+          }
+        ),
+        (tokens) => {
+          let str = extract_content(tokens);
+          return quoted_help(result + str);
+        }
+      ),
+      (() => {
+        let _pipe = token2(new EscapedQuote());
+        return then$3(
+          _pipe,
+          (_) => {
+            return quoted_help(result + "'");
+          }
+        );
+      })(),
+      succeed(result)
+    ])
+  );
+}
+function quoted() {
+  return do$(
+    take_if("Expecting an Quote", is_quote),
+    (_) => {
+      return do$(
+        quoted_help(""),
+        (text3) => {
+          return do$(
+            one_of(
+              toList([
+                (() => {
+                  let _pipe = take_if("Expecting an Quote", is_quote);
+                  return map8(_pipe, (_2) => {
+                    return void 0;
+                  });
+                })(),
+                eof()
+              ])
+            ),
+            (_2) => {
+              return return$(new Literal(text3));
+            }
+          );
+        }
+      );
+    }
+  );
+}
+function finalize(tokens) {
+  return fold(
+    tokens,
+    toList([]),
+    (tokens2, token3) => {
+      if (token3 instanceof Literal && tokens2.atLeastLength(1) && tokens2.head instanceof Literal) {
+        let x = token3[0];
+        let y = tokens2.head[0];
+        let rest2 = tokens2.tail;
+        return prepend(new Literal(x + y), rest2);
+      } else {
+        return prepend(token3, tokens2);
+      }
+    }
+  );
+}
+function parser(tokens) {
+  return one_of(
+    toList([
+      (() => {
+        let _pipe = one_of(
+          toList([field2(), literal(), escaped_quote(), quoted()])
+        );
+        return then$3(
+          _pipe,
+          (token3) => {
+            return parser(prepend(token3, tokens));
+          }
+        );
+      })(),
+      succeed(finalize(tokens))
+    ])
+  );
+}
+function from_string3(str) {
+  let alpha = (() => {
+    let _pipe = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let _pipe$1 = graphemes(_pipe);
+    return from_list2(_pipe$1);
+  })();
+  let is_alpha$1 = (char) => {
+    return contains(alpha, char);
+  };
+  let l = simple(
+    toList([
+      keep(
+        (lexeme, _) => {
+          let $ = is_alpha$1(lexeme);
+          if ($) {
+            return new Ok2(new Alpha(lexeme));
+          } else {
+            return new Error2(void 0);
+          }
+        }
+      ),
+      custom(
+        (mode, lexeme, next_grapheme) => {
+          if (lexeme === "'") {
+            if (next_grapheme === "'") {
+              return new Skip();
+            } else {
+              return new Keep(new Quote(), mode);
+            }
+          } else if (lexeme === "''") {
+            return new Keep(new EscapedQuote(), mode);
+          } else {
+            return new NoMatch();
+          }
+        }
+      ),
+      keep(
+        (lexeme, _) => {
+          if (lexeme === "") {
+            return new Error2(void 0);
+          } else {
+            return new Ok2(new Text2(lexeme));
+          }
+        }
+      )
+    ])
+  );
+  let tokens_result = run(str, l);
+  if (tokens_result.isOk()) {
+    let tokens = tokens_result[0];
+    let _pipe = run2(tokens, parser(toList([])));
+    return unwrap2(_pipe, toList([new Literal(str)]));
+  } else {
+    return toList([]);
+  }
+}
+
+// build/dev/javascript/rada/rada_ffi.mjs
+function get_year_month_day() {
+  let date = /* @__PURE__ */ new Date();
+  return [date.getFullYear(), date.getMonth() + 1, date.getDate()];
+}
+
+// build/dev/javascript/rada/rada/date.mjs
+var Jan2 = class extends CustomType {
+};
+var Feb2 = class extends CustomType {
+};
+var Mar2 = class extends CustomType {
+};
+var Apr2 = class extends CustomType {
+};
+var May2 = class extends CustomType {
+};
+var Jun2 = class extends CustomType {
+};
+var Jul2 = class extends CustomType {
+};
+var Aug2 = class extends CustomType {
+};
+var Sep2 = class extends CustomType {
+};
+var Oct2 = class extends CustomType {
+};
+var Nov2 = class extends CustomType {
+};
+var Dec2 = class extends CustomType {
+};
+var Mon2 = class extends CustomType {
+};
+var Tue2 = class extends CustomType {
+};
+var Wed2 = class extends CustomType {
+};
+var Thu2 = class extends CustomType {
+};
+var Fri2 = class extends CustomType {
+};
+var Sat2 = class extends CustomType {
+};
+var Sun2 = class extends CustomType {
+};
+var RD = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var OrdinalDate = class extends CustomType {
+  constructor(year3, ordinal_day2) {
+    super();
+    this.year = year3;
+    this.ordinal_day = ordinal_day2;
+  }
+};
+var CalendarDate = class extends CustomType {
+  constructor(year3, month3, day3) {
+    super();
+    this.year = year3;
+    this.month = month3;
+    this.day = day3;
+  }
+};
+var WeekDate = class extends CustomType {
+  constructor(week_year2, week_number2, weekday3) {
+    super();
+    this.week_year = week_year2;
+    this.week_number = week_number2;
+    this.weekday = weekday3;
+  }
+};
+var Language = class extends CustomType {
+  constructor(month_name, month_name_short, weekday_name, weekday_name_short, day_with_suffix) {
+    super();
+    this.month_name = month_name;
+    this.month_name_short = month_name_short;
+    this.weekday_name = weekday_name;
+    this.weekday_name_short = weekday_name_short;
+    this.day_with_suffix = day_with_suffix;
+  }
+};
+var MonthAndDay = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var WeekAndWeekday = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var OrdinalDay = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var Years = class extends CustomType {
+};
+var Months = class extends CustomType {
+};
+var Weeks = class extends CustomType {
+};
+var Days = class extends CustomType {
+};
+var Year2 = class extends CustomType {
+};
+var Quarter = class extends CustomType {
+};
+var Month2 = class extends CustomType {
+};
+var Week2 = class extends CustomType {
+};
+var Monday = class extends CustomType {
+};
+var Tuesday = class extends CustomType {
+};
+var Wednesday = class extends CustomType {
+};
+var Thursday = class extends CustomType {
+};
+var Friday = class extends CustomType {
+};
+var Saturday = class extends CustomType {
+};
+var Sunday = class extends CustomType {
+};
+function string_take_right(str, count) {
+  return slice(str, -1 * count, count);
+}
+function string_take_left(str, count) {
+  return slice(str, 0, count);
+}
+function month_to_name(month3) {
+  if (month3 instanceof Jan2) {
+    return "January";
+  } else if (month3 instanceof Feb2) {
+    return "February";
+  } else if (month3 instanceof Mar2) {
+    return "March";
+  } else if (month3 instanceof Apr2) {
+    return "April";
+  } else if (month3 instanceof May2) {
+    return "May";
+  } else if (month3 instanceof Jun2) {
+    return "June";
+  } else if (month3 instanceof Jul2) {
+    return "July";
+  } else if (month3 instanceof Aug2) {
+    return "August";
+  } else if (month3 instanceof Sep2) {
+    return "September";
+  } else if (month3 instanceof Oct2) {
+    return "October";
+  } else if (month3 instanceof Nov2) {
+    return "November";
+  } else {
+    return "December";
+  }
+}
+function weekday_to_name(weekday3) {
+  if (weekday3 instanceof Mon2) {
+    return "Monday";
+  } else if (weekday3 instanceof Tue2) {
+    return "Tuesday";
+  } else if (weekday3 instanceof Wed2) {
+    return "Wednesday";
+  } else if (weekday3 instanceof Thu2) {
+    return "Thursday";
+  } else if (weekday3 instanceof Fri2) {
+    return "Friday";
+  } else if (weekday3 instanceof Sat2) {
+    return "Saturday";
+  } else {
+    return "Sunday";
+  }
+}
+function parse_digit() {
+  return take_if(
+    "Expecting digit",
+    (token3) => {
+      if (token3 instanceof Digit) {
         return true;
       } else {
         return false;
@@ -8862,407 +9416,1132 @@ function stringed_bool(d) {
     }
   );
 }
-function stringed_int(d) {
-  let decoder = string;
-  let _pipe = decoder(d);
-  let _pipe$1 = map3(_pipe, parse);
-  let _pipe$2 = map3(
-    _pipe$1,
-    (_capture) => {
-      return map_error(
-        _capture,
-        (_) => {
-          return toList([
-            new DecodeError(
-              "a stringed int",
-              "something else",
-              toList([""])
-            )
-          ]);
-        }
-      );
-    }
-  );
-  return flatten2(_pipe$2);
-}
-
-// build/dev/javascript/app/session.mjs
-var DbRetrievedRecipes = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var DbRetrievedTagOptions = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var RecipeList = class extends CustomType {
-  constructor(recipes, tag_options) {
-    super();
-    this.recipes = recipes;
-    this.tag_options = tag_options;
-  }
-};
-var Recipe = class extends CustomType {
-  constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
-    super();
-    this.id = id2;
-    this.title = title;
-    this.slug = slug;
-    this.cook_time = cook_time;
-    this.prep_time = prep_time;
-    this.serves = serves;
-    this.tags = tags;
-    this.ingredients = ingredients;
-    this.method_steps = method_steps;
-  }
-};
-var TagOption = class extends CustomType {
-  constructor(id2, name2, options) {
-    super();
-    this.id = id2;
-    this.name = name2;
-    this.options = options;
-  }
-};
-var MethodStep = class extends CustomType {
-  constructor(step_text) {
-    super();
-    this.step_text = step_text;
-  }
-};
-var Tag = class extends CustomType {
-  constructor(name2, value4) {
-    super();
-    this.name = name2;
-    this.value = value4;
-  }
-};
-var Ingredient = class extends CustomType {
-  constructor(name2, ismain, quantity, units2) {
-    super();
-    this.name = name2;
-    this.ismain = ismain;
-    this.quantity = quantity;
-    this.units = units2;
-  }
-};
-function merge_recipe_into_model(recipe, model) {
-  return model.withFields({
-    recipes: (() => {
-      let _pipe = model.recipes;
-      let _pipe$1 = map2(_pipe, (a2) => {
-        return [a2.id, a2];
-      });
-      let _pipe$2 = from_list(_pipe$1);
-      let _pipe$3 = merge(
-        _pipe$2,
-        from_list(toList([[recipe.id, recipe]]))
-      );
-      return values(_pipe$3);
-    })()
-  });
-}
-function decode_ingredient(d) {
-  let decoder = decode4(
-    (var0, var1, var2, var3) => {
-      return new Ingredient(var0, var1, var2, var3);
-    },
-    optional_field("name", string),
-    optional_field("ismain", stringed_bool),
-    optional_field("quantity", string),
-    optional_field("units", string)
-  );
-  return decoder(d);
-}
-function decode_tag(d) {
-  let decoder = decode2(
-    (var0, var1) => {
-      return new Tag(var0, var1);
-    },
-    field("name", string),
-    field("value", string)
-  );
-  return decoder(d);
-}
-function decode_method_step(d) {
-  let decoder = decode1(
-    (var0) => {
-      return new MethodStep(var0);
-    },
-    field("step_text", string)
-  );
-  return decoder(d);
-}
-function decode_recipe(d) {
-  let decoder = decode9(
-    (var0, var1, var2, var3, var4, var5, var6, var7, var8) => {
-      return new Recipe(var0, var1, var2, var3, var4, var5, var6, var7, var8);
-    },
-    optional_field("id", string),
-    field("title", string),
-    field("slug", string),
-    field("cook_time", int),
-    field("prep_time", int),
-    field("serves", int),
-    optional_field("tags", dict(stringed_int, decode_tag)),
-    optional_field(
-      "ingredients",
-      dict(stringed_int, decode_ingredient)
-    ),
-    optional_field(
-      "method_steps",
-      dict(stringed_int, decode_method_step)
-    )
-  );
-  return decoder(d);
-}
-function get_recipes() {
-  return from2(
-    (dispatch2) => {
-      let _pipe = do_get_recipes();
-      let _pipe$1 = map_promise(_pipe, toList);
-      let _pipe$2 = map_promise(
-        _pipe$1,
-        (_capture) => {
-          return map2(_capture, decode_recipe);
-        }
-      );
-      let _pipe$3 = map_promise(_pipe$2, all);
-      let _pipe$4 = map_promise(
-        _pipe$3,
-        (_capture) => {
-          return map3(
-            _capture,
-            (var0) => {
-              return new DbRetrievedRecipes(var0);
-            }
-          );
-        }
-      );
-      tap(
-        _pipe$4,
-        (_capture) => {
-          return map3(_capture, dispatch2);
-        }
-      );
-      return void 0;
-    }
-  );
-}
-function decode_tag_option(d) {
-  let decoder = decode3(
-    (var0, var1, var2) => {
-      return new TagOption(var0, var1, var2);
-    },
-    optional_field("id", string),
-    field("name", string),
-    field("options", list(string))
-  );
-  let f = decoder(d);
-  return debug(f);
-}
-function get_tag_options() {
-  return from2(
-    (dispatch2) => {
-      let _pipe = do_get_tagoptions();
-      let _pipe$1 = map_promise(_pipe, toList);
-      let _pipe$2 = map_promise(
-        _pipe$1,
-        (_capture) => {
-          return map2(_capture, decode_tag_option);
-        }
-      );
-      let _pipe$3 = map_promise(_pipe$2, debug);
-      let _pipe$4 = map_promise(_pipe$3, all);
-      let _pipe$5 = map_promise(
-        _pipe$4,
-        (_capture) => {
-          return map3(
-            _capture,
-            (var0) => {
-              return new DbRetrievedTagOptions(var0);
-            }
-          );
-        }
-      );
-      tap(
-        _pipe$5,
-        (_capture) => {
-          return map3(_capture, dispatch2);
-        }
-      );
-      return void 0;
-    }
-  );
-}
-
-// build/dev/javascript/app/components/typeahead.mjs
-var Model2 = class extends CustomType {
-  constructor(search_items, search_term, found_items) {
-    super();
-    this.search_items = search_items;
-    this.search_term = search_term;
-    this.found_items = found_items;
-  }
-};
-var RetrievedSearchItems = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserUpdatedSearchTerm = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserSelectedItem = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-function init6(_) {
-  return [new Model2(toList([]), "", toList([])), none()];
-}
-function update3(model, msg) {
-  debug(["typeahead update fn:", model, msg]);
-  if (msg instanceof RetrievedSearchItems) {
-    let a2 = msg[0];
-    debug(msg);
-    return [model.withFields({ search_items: a2 }), none()];
-  } else if (msg instanceof UserUpdatedSearchTerm) {
-    let a2 = msg[0];
-    return [
-      model.withFields({
-        search_term: a2,
-        found_items: filter(
-          model.search_items,
-          (r) => {
-            return guard(
-              length2(a2) > 3,
-              false,
-              () => {
-                return contains_string(r, a2);
+function int_4() {
+  return do$(
+    optional(token2(new Dash())),
+    (negative) => {
+      let negative$1 = (() => {
+        let _pipe = negative;
+        let _pipe$1 = map(_pipe, (_) => {
+          return "-";
+        });
+        return unwrap(_pipe$1, "");
+      })();
+      return do$(
+        (() => {
+          let _pipe = parse_digit();
+          return take_exactly(_pipe, 4);
+        })(),
+        (tokens) => {
+          let str = (() => {
+            let _pipe = map2(
+              tokens,
+              (token3) => {
+                if (!(token3 instanceof Digit)) {
+                  throw makeError(
+                    "assignment_no_match",
+                    "rada/date",
+                    1091,
+                    "",
+                    "Assignment pattern did not match",
+                    { value: token3 }
+                  );
+                }
+                let str2 = token3[0];
+                return str2;
               }
             );
+            return concat3(_pipe);
+          })();
+          let $ = parse(negative$1 + str);
+          if (!$.isOk()) {
+            throw makeError(
+              "assignment_no_match",
+              "rada/date",
+              1096,
+              "",
+              "Assignment pattern did not match",
+              { value: $ }
+            );
           }
-        )
-      }),
-      none()
-    ];
+          let int3 = $[0];
+          return return$(int3);
+        }
+      );
+    }
+  );
+}
+function int_3() {
+  return do$(
+    (() => {
+      let _pipe = parse_digit();
+      return take_exactly(_pipe, 3);
+    })(),
+    (tokens) => {
+      let str = (() => {
+        let _pipe = map2(
+          tokens,
+          (token3) => {
+            if (!(token3 instanceof Digit)) {
+              throw makeError(
+                "assignment_no_match",
+                "rada/date",
+                1109,
+                "",
+                "Assignment pattern did not match",
+                { value: token3 }
+              );
+            }
+            let str2 = token3[0];
+            return str2;
+          }
+        );
+        return concat3(_pipe);
+      })();
+      let $ = parse(str);
+      if (!$.isOk()) {
+        throw makeError(
+          "assignment_no_match",
+          "rada/date",
+          1114,
+          "",
+          "Assignment pattern did not match",
+          { value: $ }
+        );
+      }
+      let int3 = $[0];
+      return return$(int3);
+    }
+  );
+}
+function parse_ordinal_day() {
+  return do$(
+    int_3(),
+    (day3) => {
+      return return$(new OrdinalDay(day3));
+    }
+  );
+}
+function int_2() {
+  return do$(
+    (() => {
+      let _pipe = parse_digit();
+      return take_exactly(_pipe, 2);
+    })(),
+    (tokens) => {
+      let str = (() => {
+        let _pipe = map2(
+          tokens,
+          (token3) => {
+            if (!(token3 instanceof Digit)) {
+              throw makeError(
+                "assignment_no_match",
+                "rada/date",
+                1127,
+                "",
+                "Assignment pattern did not match",
+                { value: token3 }
+              );
+            }
+            let str2 = token3[0];
+            return str2;
+          }
+        );
+        return concat3(_pipe);
+      })();
+      let $ = parse(str);
+      if (!$.isOk()) {
+        throw makeError(
+          "assignment_no_match",
+          "rada/date",
+          1132,
+          "",
+          "Assignment pattern did not match",
+          { value: $ }
+        );
+      }
+      let int3 = $[0];
+      return return$(int3);
+    }
+  );
+}
+function parse_month_and_day(extended) {
+  return do$(
+    int_2(),
+    (month3) => {
+      let dash_count = to_int(extended);
+      return do$(
+        one_of(
+          toList([
+            (() => {
+              let _pipe = take_exactly(
+                token2(new Dash()),
+                dash_count
+              );
+              return then$3(_pipe, (_) => {
+                return int_2();
+              });
+            })(),
+            (() => {
+              let _pipe = eof();
+              return then$3(_pipe, (_) => {
+                return succeed(1);
+              });
+            })()
+          ])
+        ),
+        (day3) => {
+          return return$(new MonthAndDay(month3, day3));
+        }
+      );
+    }
+  );
+}
+function int_1() {
+  return do$(
+    (() => {
+      let _pipe = parse_digit();
+      return take_exactly(_pipe, 1);
+    })(),
+    (tokens) => {
+      if (!tokens.hasLength(1) || !(tokens.head instanceof Digit)) {
+        throw makeError(
+          "assignment_no_match",
+          "rada/date",
+          1143,
+          "",
+          "Assignment pattern did not match",
+          { value: tokens }
+        );
+      }
+      let str = tokens.head[0];
+      let $ = parse(str);
+      if (!$.isOk()) {
+        throw makeError(
+          "assignment_no_match",
+          "rada/date",
+          1145,
+          "",
+          "Assignment pattern did not match",
+          { value: $ }
+        );
+      }
+      let int3 = $[0];
+      return return$(int3);
+    }
+  );
+}
+function parse_week_and_weekday(extended) {
+  return do$(
+    token2(new WeekToken()),
+    (_) => {
+      return do$(
+        int_2(),
+        (week2) => {
+          let dash_count = to_int(extended);
+          return do$(
+            one_of(
+              toList([
+                (() => {
+                  let _pipe = take_exactly(
+                    token2(new Dash()),
+                    dash_count
+                  );
+                  return then$3(_pipe, (_2) => {
+                    return int_1();
+                  });
+                })(),
+                succeed(1)
+              ])
+            ),
+            (day3) => {
+              return return$(new WeekAndWeekday(week2, day3));
+            }
+          );
+        }
+      );
+    }
+  );
+}
+function parse_day_of_year() {
+  return one_of(
+    toList([
+      (() => {
+        let _pipe = token2(new Dash());
+        return then$3(
+          _pipe,
+          (_) => {
+            return one_of(
+              toList([
+                backtrackable(parse_ordinal_day()),
+                parse_month_and_day(true),
+                parse_week_and_weekday(true)
+              ])
+            );
+          }
+        );
+      })(),
+      backtrackable(parse_month_and_day(false)),
+      parse_ordinal_day(),
+      parse_week_and_weekday(false),
+      succeed(new OrdinalDay(1))
+    ])
+  );
+}
+function compare4(date1, date2) {
+  let rd_1 = date1[0];
+  let rd_2 = date2[0];
+  return compare(rd_1, rd_2);
+}
+function month_to_number(month3) {
+  if (month3 instanceof Jan2) {
+    return 1;
+  } else if (month3 instanceof Feb2) {
+    return 2;
+  } else if (month3 instanceof Mar2) {
+    return 3;
+  } else if (month3 instanceof Apr2) {
+    return 4;
+  } else if (month3 instanceof May2) {
+    return 5;
+  } else if (month3 instanceof Jun2) {
+    return 6;
+  } else if (month3 instanceof Jul2) {
+    return 7;
+  } else if (month3 instanceof Aug2) {
+    return 8;
+  } else if (month3 instanceof Sep2) {
+    return 9;
+  } else if (month3 instanceof Oct2) {
+    return 10;
+  } else if (month3 instanceof Nov2) {
+    return 11;
   } else {
-    (_capture) => {
-      return debug(_capture);
-    };
-    return [model, none()];
+    return 12;
   }
 }
-function on_attribute_change() {
-  return from_list(
-    toList([
-      [
-        "recipe-titles",
-        (attribute2) => {
-          let _pipe = attribute2;
-          let _pipe$1 = string(_pipe);
-          let _pipe$2 = map3(
-            _pipe$1,
-            (_capture) => {
-              return decode5(_capture, list(string));
-            }
-          );
-          let _pipe$3 = map3(
-            _pipe$2,
-            (_capture) => {
-              return map_error(
-                _capture,
-                (_) => {
-                  return toList([
-                    new DecodeError(
-                      "a json array of strings",
-                      "something else",
-                      toList(["*"])
-                    )
-                  ]);
-                }
-              );
-            }
-          );
-          let _pipe$4 = flatten2(_pipe$3);
-          let _pipe$5 = map3(
-            _pipe$4,
-            (var0) => {
-              return new RetrievedSearchItems(var0);
-            }
-          );
-          return debug(_pipe$5);
-        }
-      ],
-      [
-        "search-term",
-        (attribute2) => {
-          let _pipe = attribute2;
-          let _pipe$1 = string(_pipe);
-          return map3(
-            _pipe$1,
-            (var0) => {
-              return new UserUpdatedSearchTerm(var0);
-            }
-          );
-        }
-      ]
-    ])
+function month_to_quarter(month3) {
+  return divideInt(month_to_number(month3) + 2, 3);
+}
+function number_to_month(month_number2) {
+  let $ = max(1, month_number2);
+  if ($ === 1) {
+    return new Jan2();
+  } else if ($ === 2) {
+    return new Feb2();
+  } else if ($ === 3) {
+    return new Mar2();
+  } else if ($ === 4) {
+    return new Apr2();
+  } else if ($ === 5) {
+    return new May2();
+  } else if ($ === 6) {
+    return new Jun2();
+  } else if ($ === 7) {
+    return new Jul2();
+  } else if ($ === 8) {
+    return new Aug2();
+  } else if ($ === 9) {
+    return new Sep2();
+  } else if ($ === 10) {
+    return new Oct2();
+  } else if ($ === 11) {
+    return new Nov2();
+  } else {
+    return new Dec2();
+  }
+}
+function quarter_to_month(quarter2) {
+  let _pipe = quarter2 * 3 - 2;
+  return number_to_month(_pipe);
+}
+function weekday_to_number(weekday3) {
+  if (weekday3 instanceof Mon2) {
+    return 1;
+  } else if (weekday3 instanceof Tue2) {
+    return 2;
+  } else if (weekday3 instanceof Wed2) {
+    return 3;
+  } else if (weekday3 instanceof Thu2) {
+    return 4;
+  } else if (weekday3 instanceof Fri2) {
+    return 5;
+  } else if (weekday3 instanceof Sat2) {
+    return 6;
+  } else {
+    return 7;
+  }
+}
+function number_to_weekday(weekday_number2) {
+  let $ = max(1, weekday_number2);
+  if ($ === 1) {
+    return new Mon2();
+  } else if ($ === 2) {
+    return new Tue2();
+  } else if ($ === 3) {
+    return new Wed2();
+  } else if ($ === 4) {
+    return new Thu2();
+  } else if ($ === 5) {
+    return new Fri2();
+  } else if ($ === 6) {
+    return new Sat2();
+  } else {
+    return new Sun2();
+  }
+}
+function pad_signed_int(value4, length6) {
+  let prefix = (() => {
+    let $ = value4 < 0;
+    if ($) {
+      return "-";
+    } else {
+      return "";
+    }
+  })();
+  let suffix = (() => {
+    let _pipe = value4;
+    let _pipe$1 = absolute_value(_pipe);
+    let _pipe$2 = to_string3(_pipe$1);
+    return pad_left(_pipe$2, length6, "0");
+  })();
+  return prefix + suffix;
+}
+function floor_div(a2, b) {
+  let _pipe = floor_divide(a2, b);
+  return unwrap2(_pipe, 0);
+}
+function days_before_year(year1) {
+  let year$1 = year1 - 1;
+  let leap_years = floor_div(year$1, 4) - floor_div(year$1, 100) + floor_div(
+    year$1,
+    400
+  );
+  return 365 * year$1 + leap_years;
+}
+function first_of_year(year3) {
+  return new RD(days_before_year(year3) + 1);
+}
+function modulo_unwrap(a2, b) {
+  let _pipe = modulo(a2, b);
+  return unwrap2(_pipe, 0);
+}
+function is_leap_year(year3) {
+  return modulo_unwrap(year3, 4) === 0 && modulo_unwrap(year3, 100) !== 0 || modulo_unwrap(
+    year3,
+    400
+  ) === 0;
+}
+function weekday_number(date) {
+  let rd = date[0];
+  let $ = modulo_unwrap(rd, 7);
+  if ($ === 0) {
+    return 7;
+  } else {
+    let n = $;
+    return n;
+  }
+}
+function days_before_week_year(year3) {
+  let jan4 = days_before_year(year3) + 4;
+  return jan4 - weekday_number(new RD(jan4));
+}
+function is_53_week_year(year3) {
+  let wdn_jan1 = weekday_number(first_of_year(year3));
+  return wdn_jan1 === 4 || wdn_jan1 === 3 && is_leap_year(year3);
+}
+function weekday2(date) {
+  let _pipe = date;
+  let _pipe$1 = weekday_number(_pipe);
+  return number_to_weekday(_pipe$1);
+}
+function ordinal_suffix(value4) {
+  let value_mod_100 = modulo_unwrap(value4, 100);
+  let value$1 = (() => {
+    let $2 = value_mod_100 < 20;
+    if ($2) {
+      return value_mod_100;
+    } else {
+      return modulo_unwrap(value_mod_100, 10);
+    }
+  })();
+  let $ = min(value$1, 4);
+  if ($ === 1) {
+    return "st";
+  } else if ($ === 2) {
+    return "nd";
+  } else if ($ === 3) {
+    return "rd";
+  } else {
+    return "th";
+  }
+}
+function with_ordinal_suffix(value4) {
+  return to_string3(value4) + ordinal_suffix(value4);
+}
+function language_en() {
+  return new Language(
+    month_to_name,
+    (val) => {
+      let _pipe = val;
+      let _pipe$1 = month_to_name(_pipe);
+      return string_take_left(_pipe$1, 3);
+    },
+    weekday_to_name,
+    (val) => {
+      let _pipe = val;
+      let _pipe$1 = weekday_to_name(_pipe);
+      return string_take_left(_pipe$1, 3);
+    },
+    with_ordinal_suffix
   );
 }
-function search_result(res) {
-  return option(toList([value(res)]), "");
+function days_since_previous_weekday(weekday3, date) {
+  return modulo_unwrap(
+    weekday_number(date) + 7 - weekday_to_number(weekday3),
+    7
+  );
 }
-function view2(model) {
-  return fragment(
-    toList([
-      input(
-        toList([
-          value(model.search_term),
-          attribute("list", "search_results"),
-          on_input((var0) => {
-            return new UserUpdatedSearchTerm(var0);
-          }),
-          on2(
-            "change",
-            (target2) => {
-              let _pipe = target2;
-              let _pipe$1 = string(_pipe);
-              return map3(
-                _pipe$1,
-                (var0) => {
-                  return new UserSelectedItem(var0);
-                }
-              );
-            }
-          )
-        ])
-      ),
-      datalist(
-        toList([id("search_results")]),
-        (() => {
-          let _pipe = model.found_items;
-          let _pipe$1 = map2(_pipe, (a2) => {
-            return a2;
-          });
-          return map2(_pipe$1, search_result);
-        })()
+function days_in_month(year3, month3) {
+  if (month3 instanceof Jan2) {
+    return 31;
+  } else if (month3 instanceof Feb2) {
+    let $ = is_leap_year(year3);
+    if ($) {
+      return 29;
+    } else {
+      return 28;
+    }
+  } else if (month3 instanceof Mar2) {
+    return 31;
+  } else if (month3 instanceof Apr2) {
+    return 30;
+  } else if (month3 instanceof May2) {
+    return 31;
+  } else if (month3 instanceof Jun2) {
+    return 30;
+  } else if (month3 instanceof Jul2) {
+    return 31;
+  } else if (month3 instanceof Aug2) {
+    return 31;
+  } else if (month3 instanceof Sep2) {
+    return 30;
+  } else if (month3 instanceof Oct2) {
+    return 31;
+  } else if (month3 instanceof Nov2) {
+    return 30;
+  } else {
+    return 31;
+  }
+}
+function to_calendar_date_helper(loop$year, loop$month, loop$ordinal_day) {
+  while (true) {
+    let year3 = loop$year;
+    let month3 = loop$month;
+    let ordinal_day2 = loop$ordinal_day;
+    let month_days = days_in_month(year3, month3);
+    let month_number$1 = month_to_number(month3);
+    let $ = month_number$1 < 12 && ordinal_day2 > month_days;
+    if ($) {
+      loop$year = year3;
+      loop$month = number_to_month(month_number$1 + 1);
+      loop$ordinal_day = ordinal_day2 - month_days;
+    } else {
+      return new CalendarDate(year3, month3, ordinal_day2);
+    }
+  }
+}
+function days_before_month(year3, month3) {
+  let leap_days = to_int(is_leap_year(year3));
+  if (month3 instanceof Jan2) {
+    return 0;
+  } else if (month3 instanceof Feb2) {
+    return 31;
+  } else if (month3 instanceof Mar2) {
+    return 59 + leap_days;
+  } else if (month3 instanceof Apr2) {
+    return 90 + leap_days;
+  } else if (month3 instanceof May2) {
+    return 120 + leap_days;
+  } else if (month3 instanceof Jun2) {
+    return 151 + leap_days;
+  } else if (month3 instanceof Jul2) {
+    return 181 + leap_days;
+  } else if (month3 instanceof Aug2) {
+    return 212 + leap_days;
+  } else if (month3 instanceof Sep2) {
+    return 243 + leap_days;
+  } else if (month3 instanceof Oct2) {
+    return 273 + leap_days;
+  } else if (month3 instanceof Nov2) {
+    return 304 + leap_days;
+  } else {
+    return 334 + leap_days;
+  }
+}
+function first_of_month(year3, month3) {
+  return new RD(days_before_year(year3) + days_before_month(year3, month3) + 1);
+}
+function from_calendar_date(year3, month3, day3) {
+  return new RD(
+    days_before_year(year3) + days_before_month(year3, month3) + clamp(
+      day3,
+      1,
+      days_in_month(year3, month3)
+    )
+  );
+}
+function today() {
+  let $ = get_year_month_day();
+  let year$1 = $[0];
+  let month_number$1 = $[1];
+  let day$1 = $[2];
+  return from_calendar_date(year$1, number_to_month(month_number$1), day$1);
+}
+function div_with_remainder(a2, b) {
+  return [floor_div(a2, b), modulo_unwrap(a2, b)];
+}
+function year2(date) {
+  let rd = date[0];
+  let $ = div_with_remainder(rd, 146097);
+  let n400 = $[0];
+  let r400 = $[1];
+  let $1 = div_with_remainder(r400, 36524);
+  let n100 = $1[0];
+  let r100 = $1[1];
+  let $2 = div_with_remainder(r100, 1461);
+  let n4 = $2[0];
+  let r4 = $2[1];
+  let $3 = div_with_remainder(r4, 365);
+  let n1 = $3[0];
+  let r1 = $3[1];
+  let n = (() => {
+    let $4 = r1 === 0;
+    if ($4) {
+      return 0;
+    } else {
+      return 1;
+    }
+  })();
+  return n400 * 400 + n100 * 100 + n4 * 4 + n1 + n;
+}
+function to_ordinal_date(date) {
+  let rd = date[0];
+  let year_ = year2(date);
+  return new OrdinalDate(year_, rd - days_before_year(year_));
+}
+function to_calendar_date(date) {
+  let ordinal_date = to_ordinal_date(date);
+  return to_calendar_date_helper(
+    ordinal_date.year,
+    new Jan2(),
+    ordinal_date.ordinal_day
+  );
+}
+function to_week_date(date) {
+  let rd = date[0];
+  let weekday_number_ = weekday_number(date);
+  let week_year$1 = year2(new RD(rd + (4 - weekday_number_)));
+  let week_1_day_1 = days_before_week_year(week_year$1) + 1;
+  return new WeekDate(
+    week_year$1,
+    1 + divideInt(rd - week_1_day_1, 7),
+    number_to_weekday(weekday_number_)
+  );
+}
+function ordinal_day(date) {
+  return to_ordinal_date(date).ordinal_day;
+}
+function month2(date) {
+  return to_calendar_date(date).month;
+}
+function month_number(date) {
+  let _pipe = date;
+  let _pipe$1 = month2(_pipe);
+  return month_to_number(_pipe$1);
+}
+function quarter(date) {
+  let _pipe = date;
+  let _pipe$1 = month2(_pipe);
+  return month_to_quarter(_pipe$1);
+}
+function day2(date) {
+  return to_calendar_date(date).day;
+}
+function week_year(date) {
+  return to_week_date(date).week_year;
+}
+function week_number(date) {
+  return to_week_date(date).week_number;
+}
+function format_field(loop$date, loop$language, loop$char, loop$length) {
+  while (true) {
+    let date = loop$date;
+    let language = loop$language;
+    let char = loop$char;
+    let length6 = loop$length;
+    if (char === "y") {
+      if (length6 === 2) {
+        let _pipe = date;
+        let _pipe$1 = year2(_pipe);
+        let _pipe$2 = to_string3(_pipe$1);
+        let _pipe$3 = pad_left(_pipe$2, 2, "0");
+        return string_take_right(_pipe$3, 2);
+      } else {
+        let _pipe = date;
+        let _pipe$1 = year2(_pipe);
+        return pad_signed_int(_pipe$1, length6);
+      }
+    } else if (char === "Y") {
+      if (length6 === 2) {
+        let _pipe = date;
+        let _pipe$1 = week_year(_pipe);
+        let _pipe$2 = to_string3(_pipe$1);
+        let _pipe$3 = pad_left(_pipe$2, 2, "0");
+        return string_take_right(_pipe$3, 2);
+      } else {
+        let _pipe = date;
+        let _pipe$1 = week_year(_pipe);
+        return pad_signed_int(_pipe$1, length6);
+      }
+    } else if (char === "Q") {
+      if (length6 === 1) {
+        let _pipe = date;
+        let _pipe$1 = quarter(_pipe);
+        return to_string3(_pipe$1);
+      } else if (length6 === 2) {
+        let _pipe = date;
+        let _pipe$1 = quarter(_pipe);
+        return to_string3(_pipe$1);
+      } else if (length6 === 3) {
+        let _pipe = date;
+        let _pipe$1 = quarter(_pipe);
+        let _pipe$2 = to_string3(_pipe$1);
+        return ((str) => {
+          return "Q" + str;
+        })(_pipe$2);
+      } else if (length6 === 4) {
+        let _pipe = date;
+        let _pipe$1 = quarter(_pipe);
+        return with_ordinal_suffix(_pipe$1);
+      } else if (length6 === 5) {
+        let _pipe = date;
+        let _pipe$1 = quarter(_pipe);
+        return to_string3(_pipe$1);
+      } else {
+        return "";
+      }
+    } else if (char === "M") {
+      if (length6 === 1) {
+        let _pipe = date;
+        let _pipe$1 = month_number(_pipe);
+        return to_string3(_pipe$1);
+      } else if (length6 === 2) {
+        let _pipe = date;
+        let _pipe$1 = month_number(_pipe);
+        let _pipe$2 = to_string3(_pipe$1);
+        return pad_left(_pipe$2, 2, "0");
+      } else if (length6 === 3) {
+        let _pipe = date;
+        let _pipe$1 = month2(_pipe);
+        return language.month_name_short(_pipe$1);
+      } else if (length6 === 4) {
+        let _pipe = date;
+        let _pipe$1 = month2(_pipe);
+        return language.month_name(_pipe$1);
+      } else if (length6 === 5) {
+        let _pipe = date;
+        let _pipe$1 = month2(_pipe);
+        let _pipe$2 = language.month_name_short(_pipe$1);
+        return string_take_left(_pipe$2, 1);
+      } else {
+        return "";
+      }
+    } else if (char === "w") {
+      if (length6 === 1) {
+        let _pipe = date;
+        let _pipe$1 = week_number(_pipe);
+        return to_string3(_pipe$1);
+      } else if (length6 === 2) {
+        let _pipe = date;
+        let _pipe$1 = week_number(_pipe);
+        let _pipe$2 = to_string3(_pipe$1);
+        return pad_left(_pipe$2, 2, "0");
+      } else {
+        return "";
+      }
+    } else if (char === "d") {
+      if (length6 === 1) {
+        let _pipe = date;
+        let _pipe$1 = day2(_pipe);
+        return to_string3(_pipe$1);
+      } else if (length6 === 2) {
+        let _pipe = date;
+        let _pipe$1 = day2(_pipe);
+        let _pipe$2 = to_string3(_pipe$1);
+        return pad_left(_pipe$2, 2, "0");
+      } else if (length6 === 3) {
+        let _pipe = date;
+        let _pipe$1 = day2(_pipe);
+        return language.day_with_suffix(_pipe$1);
+      } else {
+        return "";
+      }
+    } else if (char === "D") {
+      if (length6 === 1) {
+        let _pipe = date;
+        let _pipe$1 = ordinal_day(_pipe);
+        return to_string3(_pipe$1);
+      } else if (length6 === 2) {
+        let _pipe = date;
+        let _pipe$1 = ordinal_day(_pipe);
+        let _pipe$2 = to_string3(_pipe$1);
+        return pad_left(_pipe$2, 2, "0");
+      } else if (length6 === 3) {
+        let _pipe = date;
+        let _pipe$1 = ordinal_day(_pipe);
+        let _pipe$2 = to_string3(_pipe$1);
+        return pad_left(_pipe$2, 3, "0");
+      } else {
+        return "";
+      }
+    } else if (char === "E") {
+      if (length6 === 1) {
+        let _pipe = date;
+        let _pipe$1 = weekday2(_pipe);
+        return language.weekday_name_short(_pipe$1);
+      } else if (length6 === 2) {
+        let _pipe = date;
+        let _pipe$1 = weekday2(_pipe);
+        return language.weekday_name_short(_pipe$1);
+      } else if (length6 === 3) {
+        let _pipe = date;
+        let _pipe$1 = weekday2(_pipe);
+        return language.weekday_name_short(_pipe$1);
+      } else if (length6 === 4) {
+        let _pipe = date;
+        let _pipe$1 = weekday2(_pipe);
+        return language.weekday_name(_pipe$1);
+      } else if (length6 === 5) {
+        let _pipe = date;
+        let _pipe$1 = weekday2(_pipe);
+        let _pipe$2 = language.weekday_name_short(_pipe$1);
+        return string_take_left(_pipe$2, 1);
+      } else if (length6 === 6) {
+        let _pipe = date;
+        let _pipe$1 = weekday2(_pipe);
+        let _pipe$2 = language.weekday_name_short(_pipe$1);
+        return string_take_left(_pipe$2, 2);
+      } else {
+        return "";
+      }
+    } else if (char === "e") {
+      if (length6 === 1) {
+        let _pipe = date;
+        let _pipe$1 = weekday_number(_pipe);
+        return to_string3(_pipe$1);
+      } else if (length6 === 2) {
+        let _pipe = date;
+        let _pipe$1 = weekday_number(_pipe);
+        return to_string3(_pipe$1);
+      } else {
+        let _pipe = date;
+        loop$date = _pipe;
+        loop$language = language;
+        loop$char = "E";
+        loop$length = length6;
+      }
+    } else {
+      return "";
+    }
+  }
+}
+function format_with_tokens(language, tokens, date) {
+  return fold(
+    tokens,
+    "",
+    (formatted, token3) => {
+      if (token3 instanceof Field) {
+        let char = token3[0];
+        let length6 = token3[1];
+        return format_field(date, language, char, length6) + formatted;
+      } else {
+        let str = token3[0];
+        return str + formatted;
+      }
+    }
+  );
+}
+function format_with_language(date, language, pattern_text) {
+  let tokens = (() => {
+    let _pipe = pattern_text;
+    let _pipe$1 = from_string3(_pipe);
+    return reverse(_pipe$1);
+  })();
+  return format_with_tokens(language, tokens, date);
+}
+function format(date, pattern) {
+  return format_with_language(date, language_en(), pattern);
+}
+function to_iso_string(date) {
+  return format(date, "yyyy-MM-dd");
+}
+function add3(loop$date, loop$count, loop$unit) {
+  while (true) {
+    let date = loop$date;
+    let count = loop$count;
+    let unit = loop$unit;
+    let rd = date[0];
+    if (unit instanceof Years) {
+      loop$date = date;
+      loop$count = 12 * count;
+      loop$unit = new Months();
+    } else if (unit instanceof Months) {
+      let calendar_date = to_calendar_date(date);
+      let whole_months = 12 * (calendar_date.year - 1) + (month_to_number(
+        calendar_date.month
+      ) - 1) + count;
+      let year$1 = floor_div(whole_months, 12) + 1;
+      let month$1 = number_to_month(modulo_unwrap(whole_months, 12) + 1);
+      return new RD(
+        days_before_year(year$1) + days_before_month(year$1, month$1) + min(
+          calendar_date.day,
+          days_in_month(year$1, month$1)
+        )
+      );
+    } else if (unit instanceof Weeks) {
+      return new RD(rd + 7 * count);
+    } else {
+      return new RD(rd + count);
+    }
+  }
+}
+function floor3(date, interval) {
+  let rd = date[0];
+  if (interval instanceof Year2) {
+    return first_of_year(year2(date));
+  } else if (interval instanceof Quarter) {
+    return first_of_month(
+      year2(date),
+      (() => {
+        let _pipe = quarter(date);
+        return quarter_to_month(_pipe);
+      })()
+    );
+  } else if (interval instanceof Month2) {
+    return first_of_month(year2(date), month2(date));
+  } else if (interval instanceof Week2) {
+    return new RD(rd - days_since_previous_weekday(new Mon2(), date));
+  } else if (interval instanceof Monday) {
+    return new RD(rd - days_since_previous_weekday(new Mon2(), date));
+  } else if (interval instanceof Tuesday) {
+    return new RD(rd - days_since_previous_weekday(new Tue2(), date));
+  } else if (interval instanceof Wednesday) {
+    return new RD(rd - days_since_previous_weekday(new Wed2(), date));
+  } else if (interval instanceof Thursday) {
+    return new RD(rd - days_since_previous_weekday(new Thu2(), date));
+  } else if (interval instanceof Friday) {
+    return new RD(rd - days_since_previous_weekday(new Fri2(), date));
+  } else if (interval instanceof Saturday) {
+    return new RD(rd - days_since_previous_weekday(new Sat2(), date));
+  } else if (interval instanceof Sunday) {
+    return new RD(rd - days_since_previous_weekday(new Sun2(), date));
+  } else {
+    return date;
+  }
+}
+function is_between_int(value4, lower, upper) {
+  return lower <= value4 && value4 <= upper;
+}
+function from_ordinal_parts(year3, ordinal) {
+  let days_in_year = (() => {
+    let $2 = is_leap_year(year3);
+    if ($2) {
+      return 366;
+    } else {
+      return 365;
+    }
+  })();
+  let $ = !is_between_int(ordinal, 1, days_in_year);
+  if ($) {
+    return new Error2(
+      "Invalid ordinal date: " + ("ordinal-day " + to_string3(ordinal) + " is out of range") + (" (1 to " + to_string3(
+        days_in_year
+      ) + ")") + (" for " + to_string3(year3)) + ("; received (year " + to_string3(
+        year3
+      ) + ", ordinal-day " + to_string3(ordinal) + ")")
+    );
+  } else {
+    return new Ok2(new RD(days_before_year(year3) + ordinal));
+  }
+}
+function from_calendar_parts(year3, month_number2, day3) {
+  let $ = is_between_int(month_number2, 1, 12);
+  let $1 = is_between_int(
+    day3,
+    1,
+    days_in_month(year3, number_to_month(month_number2))
+  );
+  if (!$) {
+    return new Error2(
+      "Invalid date: " + ("month " + to_string3(month_number2) + " is out of range") + " (1 to 12)" + ("; received (year " + to_string3(
+        year3
+      ) + ", month " + to_string3(month_number2) + ", day " + to_string3(
+        day3
+      ) + ")")
+    );
+  } else if ($ && !$1) {
+    return new Error2(
+      "Invalid date: " + ("day " + to_string3(day3) + " is out of range") + (" (1 to " + to_string3(
+        days_in_month(year3, number_to_month(month_number2))
+      ) + ")") + (" for " + (() => {
+        let _pipe = month_number2;
+        let _pipe$1 = number_to_month(_pipe);
+        return month_to_name(_pipe$1);
+      })()) + (() => {
+        let $2 = month_number2 === 2 && day3 === 29;
+        if ($2) {
+          return " (" + to_string3(year3) + " is not a leap year)";
+        } else {
+          return "";
+        }
+      })() + ("; received (year " + to_string3(year3) + ", month " + to_string3(
+        month_number2
+      ) + ", day " + to_string3(day3) + ")")
+    );
+  } else {
+    return new Ok2(
+      new RD(
+        days_before_year(year3) + days_before_month(
+          year3,
+          number_to_month(month_number2)
+        ) + day3
       )
-    ])
+    );
+  }
+}
+function from_week_parts(week_year2, week_number2, weekday_number2) {
+  let weeks_in_year = (() => {
+    let $2 = is_53_week_year(week_year2);
+    if ($2) {
+      return 53;
+    } else {
+      return 52;
+    }
+  })();
+  let $ = is_between_int(week_number2, 1, weeks_in_year);
+  let $1 = is_between_int(weekday_number2, 1, 7);
+  if (!$) {
+    return new Error2(
+      "Invalid week date: " + ("week " + to_string3(week_number2) + " is out of range") + (" (1 to " + to_string3(
+        weeks_in_year
+      ) + ")") + (" for " + to_string3(week_year2)) + ("; received (year " + to_string3(
+        week_year2
+      ) + ", week " + to_string3(week_number2) + ", weekday " + to_string3(
+        weekday_number2
+      ) + ")")
+    );
+  } else if ($ && !$1) {
+    return new Error2(
+      "Invalid week date: " + ("weekday " + to_string3(weekday_number2) + " is out of range") + " (1 to 7)" + ("; received (year " + to_string3(
+        week_year2
+      ) + ", week " + to_string3(week_number2) + ", weekday " + to_string3(
+        weekday_number2
+      ) + ")")
+    );
+  } else {
+    return new Ok2(
+      new RD(
+        days_before_week_year(week_year2) + (week_number2 - 1) * 7 + weekday_number2
+      )
+    );
+  }
+}
+function from_year_and_day_of_year(year3, day_of_year) {
+  if (day_of_year instanceof MonthAndDay) {
+    let month_number$1 = day_of_year[0];
+    let day$1 = day_of_year[1];
+    return from_calendar_parts(year3, month_number$1, day$1);
+  } else if (day_of_year instanceof WeekAndWeekday) {
+    let week_number$1 = day_of_year[0];
+    let weekday_number$1 = day_of_year[1];
+    return from_week_parts(year3, week_number$1, weekday_number$1);
+  } else {
+    let ordinal_day$1 = day_of_year[0];
+    return from_ordinal_parts(year3, ordinal_day$1);
+  }
+}
+function parser2() {
+  return do$(
+    int_4(),
+    (year3) => {
+      return do$(
+        parse_day_of_year(),
+        (day_of_year) => {
+          return return$(from_year_and_day_of_year(year3, day_of_year));
+        }
+      );
+    }
   );
 }
-function app() {
-  return component(init6, update3, view2, on_attribute_change());
+function from_iso_string(str) {
+  let $ = run(str, lexer());
+  if (!$.isOk()) {
+    throw makeError(
+      "assignment_no_match",
+      "rada/date",
+      950,
+      "from_iso_string",
+      "Assignment pattern did not match",
+      { value: $ }
+    );
+  }
+  let tokens = $[0];
+  let result = run2(
+    tokens,
+    (() => {
+      let _pipe = parser2();
+      return then$3(
+        _pipe,
+        (val) => {
+          return one_of(
+            toList([
+              (() => {
+                let _pipe$1 = eof();
+                return then$3(
+                  _pipe$1,
+                  (_) => {
+                    return succeed(val);
+                  }
+                );
+              })(),
+              (() => {
+                let _pipe$1 = token2(new TimeToken());
+                return then$3(
+                  _pipe$1,
+                  (_) => {
+                    return succeed(
+                      new Error2("Expected a date only, not a date and time")
+                    );
+                  }
+                );
+              })(),
+              succeed(new Error2("Expected a date only"))
+            ])
+          );
+        }
+      );
+    })()
+  );
+  if (result.isOk() && result[0].isOk()) {
+    let value4 = result[0][0];
+    return new Ok2(value4);
+  } else if (result.isOk() && !result[0].isOk()) {
+    let err = result[0][0];
+    return new Error2(err);
+  } else {
+    return new Error2("Expected a date in ISO 8601 format");
+  }
 }
 
 // build/dev/javascript/app/lib/utils.mjs
@@ -9302,37 +10581,69 @@ function dict_reindex(dict2) {
   );
   return from_list(_pipe$3);
 }
-function date_num_string(day2) {
-  let _pipe = day2;
-  let _pipe$1 = get_day(_pipe);
-  let _pipe$2 = ((d) => {
-    return d.date;
-  })(_pipe$1);
-  return to_string3(_pipe$2);
+function date_num_string(day3) {
+  let _pipe = day3;
+  let _pipe$1 = day2(_pipe);
+  return to_string3(_pipe$1);
 }
-function month_date_string(day2) {
-  let n = date_num_string(day2);
+function month_date_string(day3) {
+  let n = date_num_string(day3);
   let s = (() => {
-    let _pipe = day2;
-    return string_weekday(_pipe);
+    let _pipe = day3;
+    return weekday2(_pipe);
   })();
   let m = (() => {
-    let _pipe = day2;
-    return string_month(_pipe);
+    let _pipe = day3;
+    let _pipe$1 = month2(_pipe);
+    return ((a2) => {
+      if (a2 instanceof Jan2) {
+        return "January";
+      } else if (a2 instanceof Feb2) {
+        return "February";
+      } else if (a2 instanceof Mar2) {
+        return "March";
+      } else if (a2 instanceof Apr2) {
+        return "April";
+      } else if (a2 instanceof May2) {
+        return "May";
+      } else if (a2 instanceof Jun2) {
+        return "June";
+      } else if (a2 instanceof Jul2) {
+        return "July";
+      } else if (a2 instanceof Aug2) {
+        return "August";
+      } else if (a2 instanceof Sep2) {
+        return "September";
+      } else if (a2 instanceof Oct2) {
+        return "October";
+      } else if (a2 instanceof Nov2) {
+        return "November";
+      } else {
+        return "December";
+      }
+    })(_pipe$1);
   })();
   return m + " " + n;
 }
 
 // build/dev/javascript/app/pages/planner.mjs
-var UserAddedMealToPlan = class extends CustomType {
-};
-var UserRemovedMealFromPlan = class extends CustomType {
+var UserUpdatedPlanMeal = class extends CustomType {
+  constructor(x0, x1, x2) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+    this[2] = x2;
+  }
 };
 var DbRetrievedPlan = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
   }
+};
+var DbSavedPlan = class extends CustomType {
+};
+var UserSavedPlan = class extends CustomType {
 };
 var Model3 = class extends CustomType {
   constructor(plan_week, recipe_list) {
@@ -9341,53 +10652,55 @@ var Model3 = class extends CustomType {
     this.recipe_list = recipe_list;
   }
 };
+var Lunch = class extends CustomType {
+};
+var Dinner = class extends CustomType {
+};
 var PlanDay = class extends CustomType {
-  constructor(date, lunch, dinner) {
+  constructor(date, planned_meals) {
     super();
     this.date = date;
-    this.lunch = lunch;
-    this.dinner = dinner;
+    this.planned_meals = planned_meals;
   }
 };
-var RecipeWithStatus = class extends CustomType {
-  constructor(recipe_title, complete) {
+var JsPlanDay = class extends CustomType {
+  constructor(date, planned_meals) {
     super();
-    this.recipe_title = recipe_title;
+    this.date = date;
+    this.planned_meals = planned_meals;
+  }
+};
+var PlannedMealWithStatus = class extends CustomType {
+  constructor(title, for$2, complete) {
+    super();
+    this.title = title;
+    this.for = for$2;
     this.complete = complete;
   }
 };
-var MealWithStatus = class extends CustomType {
-  constructor(meal, complete) {
-    super();
-    this.meal = meal;
-    this.complete = complete;
-  }
-};
-function planner_update(model, msg) {
-  if (msg instanceof UserAddedMealToPlan) {
-    throw makeError(
-      "todo",
-      "pages/planner",
-      53,
-      "planner_update",
-      "This has not yet been implemented",
-      {}
-    );
-  } else if (msg instanceof UserRemovedMealFromPlan) {
-    throw makeError(
-      "todo",
-      "pages/planner",
-      56,
-      "planner_update",
-      "This has not yet been implemented",
-      {}
-    );
-  } else if (msg instanceof DbRetrievedPlan) {
-    let plan_week = msg[0];
-    return [model.withFields({ plan_week }), none()];
-  } else {
-    return [model, none()];
-  }
+function update_plan_week(current, date, meal, value4) {
+  let _pipe = update(
+    current,
+    date,
+    (a2) => {
+      return new PlanDay(
+        date,
+        insert(
+          (() => {
+            if (a2 instanceof Some) {
+              let a$1 = a2[0];
+              return a$1.planned_meals;
+            } else {
+              return new$2();
+            }
+          })(),
+          meal,
+          new PlannedMealWithStatus(value4, meal, false)
+        )
+      );
+    }
+  );
+  return debug(_pipe);
 }
 function planner_header_row(dates) {
   let date_keys = (() => {
@@ -9403,7 +10716,7 @@ function planner_header_row(dates) {
     return from_list(_pipe$1);
   })();
   let monday = (() => {
-    let _pipe = get(date_keys, new Mon());
+    let _pipe = get(date_keys, new Mon2());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -9413,7 +10726,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let tuesday = (() => {
-    let _pipe = get(date_keys, new Tue());
+    let _pipe = get(date_keys, new Tue2());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -9423,7 +10736,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let wednesday = (() => {
-    let _pipe = get(date_keys, new Wed());
+    let _pipe = get(date_keys, new Wed2());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -9433,7 +10746,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let thursday = (() => {
-    let _pipe = get(date_keys, new Thu());
+    let _pipe = get(date_keys, new Thu2());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -9443,7 +10756,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let friday = (() => {
-    let _pipe = get(date_keys, new Fri());
+    let _pipe = get(date_keys, new Fri2());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -9453,7 +10766,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let saturday = (() => {
-    let _pipe = get(date_keys, new Sat());
+    let _pipe = get(date_keys, new Sat2());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -9463,7 +10776,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let sunday = (() => {
-    let _pipe = get(date_keys, new Sun());
+    let _pipe = get(date_keys, new Sun2());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -9663,72 +10976,44 @@ function planner_header_row(dates) {
     ])
   );
 }
-function inner_card(meal) {
-  if (meal instanceof RecipeWithStatus) {
-    let r = meal.recipe_title;
-    let c = meal.complete;
-    return a(
-      toList([href("/recipes/" + kebab_case(r))]),
-      toList([
-        h2(
-          toList([
-            class$("text-center text-xl text-wrap"),
-            style(
-              toList([
-                [
-                  "text-decoration",
-                  guard(c, "line-through", () => {
-                    return "none";
-                  })
-                ]
-              ])
-            )
-          ]),
-          toList([text(r)])
-        )
-      ])
-    );
-  } else {
-    let m = meal.meal;
-    let c = meal.complete;
-    return h2(
-      toList([
-        class$("text-center text-xl text-wrap"),
-        style(
-          toList([
-            [
-              "text-decoration",
-              guard(c, "line-through", () => {
-                return "none";
-              })
-            ]
-          ])
-        )
-      ]),
-      toList([text(m)])
-    );
-  }
+function inner_card(meal, recipe_titles2) {
+  let m = meal.title;
+  let f = meal.for;
+  let c = meal.complete;
+  return h2(
+    toList([
+      class$("text-center text-xl text-wrap"),
+      style(
+        toList([
+          [
+            "text-decoration",
+            guard(c, "line-through", () => {
+              return "none";
+            })
+          ]
+        ])
+      )
+    ]),
+    toList([text(m)])
+  );
 }
-function planner_meal_card(pd, i, meal) {
+function planner_meal_card(pd, i, for$2, recipe_titles2) {
   let row = (() => {
-    if (meal === "lunch") {
+    if (for$2 instanceof Lunch) {
       return "col-start-2 xs:row-start-2";
-    } else if (meal === "dinner") {
-      return "col-start-3 xs:row-start-3";
     } else {
-      return "";
+      return "col-start-3 xs:row-start-3";
     }
   })();
   let card = (() => {
-    if (meal === "lunch") {
-      let _pipe = map(pd.lunch, inner_card);
-      return unwrap(_pipe, none3());
-    } else if (meal === "dinner") {
-      let _pipe = map(pd.dinner, inner_card);
-      return unwrap(_pipe, none3());
-    } else {
-      return none3();
-    }
+    let _pipe = get(pd.planned_meals, for$2);
+    let _pipe$1 = map3(
+      _pipe,
+      (_capture) => {
+        return inner_card(_capture, recipe_titles2);
+      }
+    );
+    return unwrap2(_pipe$1, none3());
   })();
   return div(
     toList([
@@ -9741,78 +11026,39 @@ function planner_meal_card(pd, i, meal) {
   );
 }
 function view_planner(model) {
-  let today = set_time_of_day(
-    now2(),
-    new TimeOfDay(0, 0, 0, 0)
-  );
-  let day2 = (() => {
-    let $ = map_size(model.plan_week);
-    if ($ > 0) {
-      let num = $;
-      return first2(keys(model.plan_week));
-    } else {
-      return new Ok2(today);
-    }
-  })();
-  let start_of_week = (() => {
-    let _pipe = map3(
-      day2,
-      (d) => {
-        let $ = weekday2(d);
-        if ($ instanceof Mon) {
-          return d;
-        } else if ($ instanceof Tue) {
-          return add2(d, days(-1));
-        } else if ($ instanceof Wed) {
-          return add2(d, days(-2));
-        } else if ($ instanceof Thu) {
-          return add2(d, days(-3));
-        } else if ($ instanceof Fri) {
-          return add2(d, days(-4));
-        } else if ($ instanceof Sat) {
-          return add2(d, days(-5));
-        } else {
-          return add2(d, days(-6));
-        }
-      }
-    );
-    return unwrap2(
-      _pipe,
-      set_time_of_day(now2(), new TimeOfDay(0, 0, 0, 0))
-    );
-  })();
+  let start_of_week = floor3(today(), new Monday());
   let find_in_week = (a2) => {
     return unwrap2(
       get(model.plan_week, a2),
-      new PlanDay(a2, new None(), new None())
+      new PlanDay(a2, new$2())
     );
   };
   let week2 = from_list(
     toList([
       [start_of_week, find_in_week(start_of_week)],
       [
-        add2(start_of_week, days(1)),
-        find_in_week(add2(start_of_week, days(1)))
+        add3(start_of_week, 1, new Days()),
+        find_in_week(add3(start_of_week, 1, new Days()))
       ],
       [
-        add2(start_of_week, days(2)),
-        find_in_week(add2(start_of_week, days(2)))
+        add3(start_of_week, 2, new Days()),
+        find_in_week(add3(start_of_week, 2, new Days()))
       ],
       [
-        add2(start_of_week, days(3)),
-        find_in_week(add2(start_of_week, days(3)))
+        add3(start_of_week, 3, new Days()),
+        find_in_week(add3(start_of_week, 3, new Days()))
       ],
       [
-        add2(start_of_week, days(4)),
-        find_in_week(add2(start_of_week, days(4)))
+        add3(start_of_week, 4, new Days()),
+        find_in_week(add3(start_of_week, 4, new Days()))
       ],
       [
-        add2(start_of_week, days(5)),
-        find_in_week(add2(start_of_week, days(5)))
+        add3(start_of_week, 5, new Days()),
+        find_in_week(add3(start_of_week, 5, new Days()))
       ],
       [
-        add2(start_of_week, days(6)),
-        find_in_week(add2(start_of_week, days(6)))
+        add3(start_of_week, 6, new Days()),
+        find_in_week(add3(start_of_week, 6, new Days()))
       ]
     ])
   );
@@ -9863,234 +11109,16 @@ function view_planner(model) {
               let _pipe$1 = sort(
                 _pipe,
                 (a2, b) => {
-                  return compare3(a2.date, b.date);
+                  return compare4(a2.date, b.date);
                 }
               );
               return index_map(
                 _pipe$1,
                 (x, i) => {
-                  return planner_meal_card(x, i, "lunch");
-                }
-              );
-            })()
-          ),
-          fragment(
-            (() => {
-              let _pipe = values(week2);
-              let _pipe$1 = sort(
-                _pipe,
-                (a2, b) => {
-                  return compare3(a2.date, b.date);
-                }
-              );
-              return index_map(
-                _pipe$1,
-                (x, i) => {
-                  return planner_meal_card(x, i, "dinner");
-                }
-              );
-            })()
-          )
-        ])
-      )
-    ])
-  );
-}
-function inner_input(meal, recipe_titles) {
-  let term = (() => {
-    if (meal instanceof RecipeWithStatus) {
-      let r = meal.recipe_title;
-      return r;
-    } else {
-      let m = meal.meal;
-      return m;
-    }
-  })();
-  return element(
-    "type-ahead",
-    toList([
-      attribute(
-        "recipe-titles",
-        to_string7(array2(recipe_titles, string2))
-      ),
-      attribute("search-term", term)
-    ]),
-    toList([])
-  );
-}
-function planner_meal_input(pd, i, meal, recipe_titles) {
-  let row = (() => {
-    if (meal === "lunch") {
-      return "col-start-2 xs:row-start-2";
-    } else if (meal === "dinner") {
-      return "col-start-3 xs:row-start-3";
-    } else {
-      return "";
-    }
-  })();
-  let card = (() => {
-    if (pd instanceof Some && meal === "lunch") {
-      let a$1 = pd[0];
-      return inner_input(
-        unwrap(a$1.lunch, new MealWithStatus("", false)),
-        recipe_titles
-      );
-    } else if (pd instanceof Some && meal === "dinner") {
-      let a$1 = pd[0];
-      return inner_input(
-        unwrap(a$1.dinner, new MealWithStatus("", false)),
-        recipe_titles
-      );
-    } else if (pd instanceof None) {
-      return inner_input(new MealWithStatus("", false), recipe_titles);
-    } else {
-      return none3();
-    }
-  })();
-  return div(
-    toList([
-      class$(
-        "flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]\n                row-start-[var(--dayPlacement)]\n                xs:col-start-[var(--dayPlacement)] \n                snap-start scroll-p-[-40px] " + row
-      ),
-      style(toList([["--dayPlacement", to_string3(i + 2)]]))
-    ]),
-    toList([card])
-  );
-}
-function edit_planner(model) {
-  register(app(), "type-ahead");
-  let today = set_time_of_day(
-    now2(),
-    new TimeOfDay(0, 0, 0, 0)
-  );
-  let day2 = (() => {
-    let $ = map_size(model.plan_week);
-    if ($ > 0) {
-      let num = $;
-      return first2(keys(model.plan_week));
-    } else {
-      return new Ok2(today);
-    }
-  })();
-  let start_of_week = (() => {
-    let _pipe = map3(
-      day2,
-      (d) => {
-        let $ = weekday2(d);
-        if ($ instanceof Mon) {
-          return d;
-        } else if ($ instanceof Tue) {
-          return add2(d, days(-1));
-        } else if ($ instanceof Wed) {
-          return add2(d, days(-2));
-        } else if ($ instanceof Thu) {
-          return add2(d, days(-3));
-        } else if ($ instanceof Fri) {
-          return add2(d, days(-4));
-        } else if ($ instanceof Sat) {
-          return add2(d, days(-5));
-        } else {
-          return add2(d, days(-6));
-        }
-      }
-    );
-    return unwrap2(
-      _pipe,
-      set_time_of_day(now2(), new TimeOfDay(0, 0, 0, 0))
-    );
-  })();
-  let find_in_week = (a2) => {
-    return unwrap2(
-      get(model.plan_week, a2),
-      new PlanDay(a2, new None(), new None())
-    );
-  };
-  let week2 = from_list(
-    toList([
-      [start_of_week, find_in_week(start_of_week)],
-      [
-        add2(start_of_week, days(1)),
-        find_in_week(add2(start_of_week, days(1)))
-      ],
-      [
-        add2(start_of_week, days(2)),
-        find_in_week(add2(start_of_week, days(2)))
-      ],
-      [
-        add2(start_of_week, days(3)),
-        find_in_week(add2(start_of_week, days(3)))
-      ],
-      [
-        add2(start_of_week, days(4)),
-        find_in_week(add2(start_of_week, days(4)))
-      ],
-      [
-        add2(start_of_week, days(5)),
-        find_in_week(add2(start_of_week, days(5)))
-      ],
-      [
-        add2(start_of_week, days(6)),
-        find_in_week(add2(start_of_week, days(6)))
-      ]
-    ])
-  );
-  return fragment(
-    toList([
-      section(
-        toList([
-          class$(
-            "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
-          )
-        ]),
-        toList([
-          page_title(
-            "Week of " + month_date_string(start_of_week),
-            "underline-orange"
-          ),
-          nav(
-            toList([
-              class$(
-                "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
-              )
-            ]),
-            toList([
-              a(
-                toList([href("/"), class$("text-center")]),
-                toList([text("\u{1F3E0}")])
-              ),
-              a(
-                toList([href("/planner/edit"), class$("text-center")]),
-                toList([text("\u270F\uFE0F")])
-              )
-            ])
-          )
-        ])
-      ),
-      section(
-        toList([
-          id("active-week"),
-          class$(
-            "mb-2 text-sm p-1 \n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-3 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            xs:col-start-[full-start] xs:col-end-[full-end]\n            xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0"
-          )
-        ]),
-        toList([
-          planner_header_row(week2),
-          fragment(
-            (() => {
-              let _pipe = values(week2);
-              let _pipe$1 = sort(
-                _pipe,
-                (a2, b) => {
-                  return compare3(a2.date, b.date);
-                }
-              );
-              return index_map(
-                _pipe$1,
-                (x, i) => {
-                  return planner_meal_input(
-                    new Some(x),
+                  return planner_meal_card(
+                    x,
                     i,
-                    "lunch",
+                    new Lunch(),
                     (() => {
                       let _pipe$2 = model.recipe_list;
                       return map2(_pipe$2, (r) => {
@@ -10108,16 +11136,214 @@ function edit_planner(model) {
               let _pipe$1 = sort(
                 _pipe,
                 (a2, b) => {
-                  return compare3(a2.date, b.date);
+                  return compare4(a2.date, b.date);
+                }
+              );
+              return index_map(
+                _pipe$1,
+                (x, i) => {
+                  return planner_meal_card(
+                    x,
+                    i,
+                    new Dinner(),
+                    (() => {
+                      let _pipe$2 = model.recipe_list;
+                      return map2(_pipe$2, (r) => {
+                        return r.title;
+                      });
+                    })()
+                  );
+                }
+              );
+            })()
+          )
+        ])
+      )
+    ])
+  );
+}
+function inner_input(date, for$2, title, recipe_titles2) {
+  return typeahead(
+    toList([
+      recipe_titles(recipe_titles2),
+      search_term(title),
+      on2(
+        "typeahead-change",
+        (target2) => {
+          let _pipe = target2;
+          let _pipe$1 = field("detail", string)(_pipe);
+          return map3(
+            _pipe$1,
+            (a2) => {
+              return new UserUpdatedPlanMeal(date, for$2, a2);
+            }
+          );
+        }
+      )
+    ])
+  );
+}
+function planner_meal_input(pd, i, for$2, recipe_titles2) {
+  let row = (() => {
+    if (for$2 instanceof Lunch) {
+      return "col-start-2 xs:row-start-2";
+    } else {
+      return "col-start-3 xs:row-start-3";
+    }
+  })();
+  let card = (() => {
+    let _pipe = get(pd.planned_meals, for$2);
+    let _pipe$1 = map3(
+      _pipe,
+      (a2) => {
+        return inner_input(pd.date, for$2, a2.title, recipe_titles2);
+      }
+    );
+    return unwrap2(
+      _pipe$1,
+      inner_input(pd.date, for$2, "", recipe_titles2)
+    );
+  })();
+  return div(
+    toList([
+      class$(
+        "flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]\n                row-start-[var(--dayPlacement)]\n                xs:col-start-[var(--dayPlacement)] \n                snap-start scroll-p-[-40px] " + row
+      ),
+      style(toList([["--dayPlacement", to_string3(i + 2)]]))
+    ]),
+    toList([card])
+  );
+}
+function edit_planner(model) {
+  let start_of_week = floor3(today(), new Monday());
+  let find_in_week = (a2) => {
+    return unwrap2(
+      get(model.plan_week, a2),
+      new PlanDay(a2, new$2())
+    );
+  };
+  let week2 = from_list(
+    toList([
+      [start_of_week, find_in_week(start_of_week)],
+      [
+        add3(start_of_week, 1, new Days()),
+        find_in_week(add3(start_of_week, 1, new Days()))
+      ],
+      [
+        add3(start_of_week, 2, new Days()),
+        find_in_week(add3(start_of_week, 2, new Days()))
+      ],
+      [
+        add3(start_of_week, 3, new Days()),
+        find_in_week(add3(start_of_week, 3, new Days()))
+      ],
+      [
+        add3(start_of_week, 4, new Days()),
+        find_in_week(add3(start_of_week, 4, new Days()))
+      ],
+      [
+        add3(start_of_week, 5, new Days()),
+        find_in_week(add3(start_of_week, 5, new Days()))
+      ],
+      [
+        add3(start_of_week, 6, new Days()),
+        find_in_week(add3(start_of_week, 6, new Days()))
+      ]
+    ])
+  );
+  return fragment(
+    toList([
+      section(
+        toList([
+          class$(
+            "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
+          )
+        ]),
+        toList([
+          page_title(
+            "Week of " + month_date_string(start_of_week),
+            "underline-orange"
+          ),
+          nav(
+            toList([
+              class$(
+                "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4"
+              )
+            ]),
+            toList([
+              a(
+                toList([href("/"), class$("text-center")]),
+                toList([text("\u{1F3E0}")])
+              ),
+              a(
+                toList([href("/planner/"), class$("text-center")]),
+                toList([text("\u274E")])
+              ),
+              button(
+                toList([
+                  type_("submit"),
+                  attribute("form", "active-week"),
+                  class$("")
+                ]),
+                toList([text("\u{1F4BE}")])
+              )
+            ])
+          )
+        ])
+      ),
+      form(
+        toList([
+          id("active-week"),
+          class$(
+            "mb-2 text-sm p-1 \n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-3 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            xs:col-start-[full-start] xs:col-end-[full-end]\n            xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0"
+          ),
+          on_submit(new UserSavedPlan())
+        ]),
+        toList([
+          planner_header_row(week2),
+          fragment(
+            (() => {
+              let _pipe = values(week2);
+              let _pipe$1 = sort(
+                _pipe,
+                (a2, b) => {
+                  return compare4(a2.date, b.date);
                 }
               );
               return index_map(
                 _pipe$1,
                 (x, i) => {
                   return planner_meal_input(
-                    new Some(x),
+                    x,
                     i,
-                    "dinner",
+                    new Lunch(),
+                    (() => {
+                      let _pipe$2 = model.recipe_list;
+                      return map2(_pipe$2, (r) => {
+                        return r.title;
+                      });
+                    })()
+                  );
+                }
+              );
+            })()
+          ),
+          fragment(
+            (() => {
+              let _pipe = values(week2);
+              let _pipe$1 = sort(
+                _pipe,
+                (a2, b) => {
+                  return compare4(a2.date, b.date);
+                }
+              );
+              return index_map(
+                _pipe$1,
+                (x, i) => {
+                  return planner_meal_input(
+                    x,
+                    i,
+                    new Dinner(),
                     (() => {
                       let _pipe$2 = model.recipe_list;
                       return map2(_pipe$2, (r) => {
@@ -10136,11 +11362,11 @@ function edit_planner(model) {
 }
 function decode_stringed_day(d) {
   let decoder = string;
-  let _pipe = map3(
+  return then$(
     decoder(d),
     (a2) => {
-      let _pipe2 = a2;
-      let _pipe$1 = from_naive(_pipe2);
+      let _pipe = a2;
+      let _pipe$1 = from_iso_string(_pipe);
       return map_error(
         _pipe$1,
         (_) => {
@@ -10155,44 +11381,33 @@ function decode_stringed_day(d) {
       );
     }
   );
-  return flatten2(_pipe);
 }
-function decode_meal_status(d) {
-  let decoder = tagged_union(
-    field("type", string),
-    toList([
-      [
-        "RecipeWithStatus",
-        decode2(
-          (var0, var1) => {
-            return new RecipeWithStatus(var0, var1);
-          },
-          field("recipe_id", string),
-          field("complete", stringed_bool)
+function decode_planned_meals(d) {
+  let decoder = dict(
+    enum$(toList([["lunch", new Lunch()], ["dinner", new Dinner()]])),
+    decode3(
+      (var0, var1, var2) => {
+        return new PlannedMealWithStatus(var0, var1, var2);
+      },
+      field("title", string),
+      field(
+        "for",
+        enum$(
+          toList([["lunch", new Lunch()], ["dinner", new Dinner()]])
         )
-      ],
-      [
-        "MealWithStatus",
-        decode2(
-          (var0, var1) => {
-            return new MealWithStatus(var0, var1);
-          },
-          field("meal", string),
-          field("complete", stringed_bool)
-        )
-      ]
-    ])
+      ),
+      field("complete", stringed_bool)
+    )
   );
   return decoder(d);
 }
 function decode_plan_day(d) {
-  let decoder = decode3(
-    (var0, var1, var2) => {
-      return new PlanDay(var0, var1, var2);
+  let decoder = decode2(
+    (var0, var1) => {
+      return new PlanDay(var0, var1);
     },
     field("date", decode_stringed_day),
-    optional_field("lunch", decode_meal_status),
-    optional_field("dinner", decode_meal_status)
+    field("planned_meals", decode_planned_meals)
   );
   return decoder(d);
 }
@@ -10247,6 +11462,79 @@ function get_plan() {
       return void 0;
     }
   );
+}
+function json_encode_planned_meal_with_status(meal) {
+  return object2(
+    toList([
+      ["title", string2(meal.title)],
+      [
+        "for",
+        string2(
+          (() => {
+            let $ = meal.for;
+            if ($ instanceof Lunch) {
+              return "lunch";
+            } else {
+              return "dinner";
+            }
+          })()
+        )
+      ],
+      ["complete", string2(to_string5(meal.complete))]
+    ])
+  );
+}
+function json_encode_planned_meals(dict2) {
+  let _pipe = dict2;
+  let _pipe$1 = map_to_list(_pipe);
+  let _pipe$2 = map2(
+    _pipe$1,
+    (pair) => {
+      return [
+        (() => {
+          let $ = pair[0];
+          if ($ instanceof Lunch) {
+            return "lunch";
+          } else {
+            return "dinner";
+          }
+        })(),
+        json_encode_planned_meal_with_status(pair[1])
+      ];
+    }
+  );
+  return object2(_pipe$2);
+}
+function encode_plan_day(plan_day) {
+  return new JsPlanDay(
+    to_iso_string(plan_day.date),
+    json_encode_planned_meals(plan_day.planned_meals)
+  );
+}
+function save_plan(planweek) {
+  return from2(
+    (dispatch2) => {
+      do_save_plan(map2(values(planweek), encode_plan_day));
+      let _pipe = new DbSavedPlan();
+      return dispatch2(_pipe);
+    }
+  );
+}
+function planner_update(model, msg) {
+  if (msg instanceof UserUpdatedPlanMeal) {
+    let date = msg[0];
+    let meal = msg[1];
+    let value4 = msg[2];
+    let result = update_plan_week(model.plan_week, date, meal, value4);
+    return [model.withFields({ plan_week: result }), none()];
+  } else if (msg instanceof UserSavedPlan) {
+    return [model, save_plan(model.plan_week)];
+  } else if (msg instanceof DbRetrievedPlan) {
+    let plan_week = msg[0];
+    return [model.withFields({ plan_week }), none()];
+  } else {
+    return [model, none()];
+  }
 }
 
 // build/dev/javascript/app/pages/recipe.mjs
@@ -10383,7 +11671,7 @@ var DbSavedUpdatedRecipe = class extends CustomType {
     this[0] = x0;
   }
 };
-var JSRecipe = class extends CustomType {
+var JsRecipe = class extends CustomType {
   constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
     super();
     this.id = id2;
@@ -10875,7 +12163,7 @@ function tag_input(available_tags, index3, input2) {
           style(
             toList([
               (() => {
-                let $ = length2(tag.name);
+                let $ = length3(tag.name);
                 if ($ > 0) {
                   let num = $;
                   return ["width", to_string3(num + 1) + "ch"];
@@ -10930,7 +12218,7 @@ function tag_input(available_tags, index3, input2) {
           style(
             toList([
               (() => {
-                let $ = length2(tag.value);
+                let $ = length3(tag.value);
                 if ($ > 0) {
                   let num = $;
                   return ["width", to_string3(num + 1) + "ch"];
@@ -11698,7 +12986,7 @@ function json_encode_tag_list(dict2) {
   return object2(_pipe$2);
 }
 function save_recipe(recipe) {
-  let js_recipe = new JSRecipe(
+  let js_recipe = new JsRecipe(
     unwrap(recipe.id, ""),
     recipe.title,
     recipe.slug,
@@ -12451,6 +13739,16 @@ function update4(model, msg) {
         return new RecipeDetail(var0);
       })
     ];
+  } else if (msg instanceof Planner && msg[0] instanceof DbSavedPlan) {
+    return [
+      model,
+      from2(
+        (dispatch2) => {
+          let _pipe = new OnRouteChange(new ViewPlanner());
+          return dispatch2(_pipe);
+        }
+      )
+    ];
   } else {
     let planner_msg = msg[0];
     let $ = planner_update(model.planner, planner_msg);
@@ -12649,13 +13947,14 @@ function main2() {
     throw makeError(
       "assignment_no_match",
       "app",
-      29,
+      31,
       "main",
       "Assignment pattern did not match",
       { value: $ }
     );
   }
   let main$1 = $[0];
+  register(app(), "type-ahead");
   let _pipe = application(init7, update4, view3);
   let _pipe$1 = wrap(_pipe, main$1);
   let _pipe$2 = start3(_pipe$1, "#app", void 0);

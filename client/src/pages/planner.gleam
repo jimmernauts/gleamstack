@@ -1,7 +1,5 @@
-import birl
-import birl/duration
 import components/page_title.{page_title}
-import components/typeahead
+import components/typeahead.{typeahead}
 import decipher
 import gleam/bool
 import gleam/dict.{type Dict}
@@ -18,42 +16,70 @@ import gleam/result
 import justin.{kebab_case}
 import lib/decoders
 import lib/utils
-import lustre
-import lustre/attribute.{attribute, class, href, id, style}
+import lustre/attribute.{attribute, class, href, id, style, type_}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, element, fragment, text}
-import lustre/element/html.{a, div, h2, nav, option, section}
-import lustre/event
+import lustre/element/html.{a, button, div, form, h2, nav, option, section}
+import lustre/event.{on_submit}
+import rada/date.{type Date}
 import session.{type Recipe}
 
 //-MODEL---------------------------------------------
 
 pub type PlannerMsg {
-  UserAddedMealToPlan
-  UserRemovedMealFromPlan
+  UserUpdatedPlanMeal(Date, Meal, String)
   DbRetrievedPlan(PlanWeek)
   DbSavedPlan
+  UserSavedPlan
 }
 
 pub type PlanWeek =
-  Dict(birl.Time, PlanDay)
+  Dict(Date, PlanDay)
 
 pub type Model {
   Model(plan_week: PlanWeek, recipe_list: List(Recipe))
 }
 
+pub type Meal {
+  Lunch
+  Dinner
+}
+
 //-UPDATE---------------------------------------------
+
+fn update_plan_week(
+  current: PlanWeek,
+  date: Date,
+  meal: Meal,
+  value: String,
+) -> PlanWeek {
+  dict.update(current, date, fn(a) {
+    PlanDay(
+      date: date,
+      planned_meals: dict.insert(
+        case a {
+          Some(a) -> a.planned_meals
+          _ -> dict.new()
+        },
+        meal,
+        PlannedMealWithStatus(for: meal, title: value, complete: False),
+      ),
+    )
+  })
+  |> io.debug
+}
 
 pub fn planner_update(
   model: Model,
   msg: PlannerMsg,
 ) -> #(Model, Effect(PlannerMsg)) {
   case msg {
-    UserAddedMealToPlan -> {
-      todo
+    UserUpdatedPlanMeal(date, meal, value) -> {
+      let result = update_plan_week(model.plan_week, date, meal, value)
+      #(Model(..model, plan_week: result), effect.none())
     }
-    UserRemovedMealFromPlan -> {
-      todo
+    UserSavedPlan -> {
+      #(model, save_plan(model.plan_week))
     }
     DbRetrievedPlan(plan_week) -> {
       #(Model(..model, plan_week: plan_week), effect.none())
@@ -92,56 +118,36 @@ fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 //-VIEWS-------------------------------------------------------------
 
 pub fn view_planner(model: Model) {
-  let today = birl.set_time_of_day(birl.now(), birl.TimeOfDay(0, 0, 0, 0))
-  let day = case dict.size(model.plan_week) {
-    num if num > 0 -> list.first(dict.keys(model.plan_week))
-    _ -> Ok(today)
-  }
-  let start_of_week =
-    result.map(day, fn(d) {
-      case birl.weekday(d) {
-        birl.Mon -> d
-        birl.Tue -> birl.add(d, duration.days(-1))
-        birl.Wed -> birl.add(d, duration.days(-2))
-        birl.Thu -> birl.add(d, duration.days(-3))
-        birl.Fri -> birl.add(d, duration.days(-4))
-        birl.Sat -> birl.add(d, duration.days(-5))
-        birl.Sun -> birl.add(d, duration.days(-6))
-      }
-    })
-    |> result.unwrap(birl.set_time_of_day(
-      birl.now(),
-      birl.TimeOfDay(0, 0, 0, 0),
-    ))
+  let start_of_week = date.floor(date.today(), date.Monday)
   let find_in_week = fn(a) {
-    result.unwrap(dict.get(model.plan_week, a), PlanDay(a, None, None))
+    result.unwrap(dict.get(model.plan_week, a), PlanDay(a, dict.new()))
   }
   let week =
     dict.from_list([
       #(start_of_week, find_in_week(start_of_week)),
       #(
-        birl.add(start_of_week, duration.days(1)),
-        find_in_week(birl.add(start_of_week, duration.days(1))),
+        date.add(start_of_week, 1, date.Days),
+        find_in_week(date.add(start_of_week, 1, date.Days)),
       ),
       #(
-        birl.add(start_of_week, duration.days(2)),
-        find_in_week(birl.add(start_of_week, duration.days(2))),
+        date.add(start_of_week, 2, date.Days),
+        find_in_week(date.add(start_of_week, 2, date.Days)),
       ),
       #(
-        birl.add(start_of_week, duration.days(3)),
-        find_in_week(birl.add(start_of_week, duration.days(3))),
+        date.add(start_of_week, 3, date.Days),
+        find_in_week(date.add(start_of_week, 3, date.Days)),
       ),
       #(
-        birl.add(start_of_week, duration.days(4)),
-        find_in_week(birl.add(start_of_week, duration.days(4))),
+        date.add(start_of_week, 4, date.Days),
+        find_in_week(date.add(start_of_week, 4, date.Days)),
       ),
       #(
-        birl.add(start_of_week, duration.days(5)),
-        find_in_week(birl.add(start_of_week, duration.days(5))),
+        date.add(start_of_week, 5, date.Days),
+        find_in_week(date.add(start_of_week, 5, date.Days)),
       ),
       #(
-        birl.add(start_of_week, duration.days(6)),
-        find_in_week(birl.add(start_of_week, duration.days(6))),
+        date.add(start_of_week, 6, date.Days),
+        find_in_week(date.add(start_of_week, 6, date.Days)),
       ),
     ])
 
@@ -188,13 +194,27 @@ pub fn view_planner(model: Model) {
         planner_header_row(week),
         fragment({
           dict.values(week)
-          |> list.sort(fn(a, b) { birl.compare(a.date, b.date) })
-          |> list.index_map(fn(x, i) { planner_meal_card(x, i, "lunch") })
+          |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
+          |> list.index_map(fn(x, i) {
+            planner_meal_card(
+              x,
+              i,
+              Lunch,
+              model.recipe_list |> list.map(fn(r) { r.title }),
+            )
+          })
         }),
         fragment({
           dict.values(week)
-          |> list.sort(fn(a, b) { birl.compare(a.date, b.date) })
-          |> list.index_map(fn(x, i) { planner_meal_card(x, i, "dinner") })
+          |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
+          |> list.index_map(fn(x, i) {
+            planner_meal_card(
+              x,
+              i,
+              Dinner,
+              model.recipe_list |> list.map(fn(r) { r.title }),
+            )
+          })
         }),
       ],
     ),
@@ -202,57 +222,36 @@ pub fn view_planner(model: Model) {
 }
 
 pub fn edit_planner(model: Model) {
-  lustre.register(typeahead.app(), "type-ahead")
-  let today = birl.set_time_of_day(birl.now(), birl.TimeOfDay(0, 0, 0, 0))
-  let day = case dict.size(model.plan_week) {
-    num if num > 0 -> list.first(dict.keys(model.plan_week))
-    _ -> Ok(today)
-  }
-  let start_of_week =
-    result.map(day, fn(d) {
-      case birl.weekday(d) {
-        birl.Mon -> d
-        birl.Tue -> birl.add(d, duration.days(-1))
-        birl.Wed -> birl.add(d, duration.days(-2))
-        birl.Thu -> birl.add(d, duration.days(-3))
-        birl.Fri -> birl.add(d, duration.days(-4))
-        birl.Sat -> birl.add(d, duration.days(-5))
-        birl.Sun -> birl.add(d, duration.days(-6))
-      }
-    })
-    |> result.unwrap(birl.set_time_of_day(
-      birl.now(),
-      birl.TimeOfDay(0, 0, 0, 0),
-    ))
+  let start_of_week = date.floor(date.today(), date.Monday)
   let find_in_week = fn(a) {
-    result.unwrap(dict.get(model.plan_week, a), PlanDay(a, None, None))
+    result.unwrap(dict.get(model.plan_week, a), PlanDay(a, dict.new()))
   }
   let week =
     dict.from_list([
       #(start_of_week, find_in_week(start_of_week)),
       #(
-        birl.add(start_of_week, duration.days(1)),
-        find_in_week(birl.add(start_of_week, duration.days(1))),
+        date.add(start_of_week, 1, date.Days),
+        find_in_week(date.add(start_of_week, 1, date.Days)),
       ),
       #(
-        birl.add(start_of_week, duration.days(2)),
-        find_in_week(birl.add(start_of_week, duration.days(2))),
+        date.add(start_of_week, 2, date.Days),
+        find_in_week(date.add(start_of_week, 2, date.Days)),
       ),
       #(
-        birl.add(start_of_week, duration.days(3)),
-        find_in_week(birl.add(start_of_week, duration.days(3))),
+        date.add(start_of_week, 3, date.Days),
+        find_in_week(date.add(start_of_week, 3, date.Days)),
       ),
       #(
-        birl.add(start_of_week, duration.days(4)),
-        find_in_week(birl.add(start_of_week, duration.days(4))),
+        date.add(start_of_week, 4, date.Days),
+        find_in_week(date.add(start_of_week, 4, date.Days)),
       ),
       #(
-        birl.add(start_of_week, duration.days(5)),
-        find_in_week(birl.add(start_of_week, duration.days(5))),
+        date.add(start_of_week, 5, date.Days),
+        find_in_week(date.add(start_of_week, 5, date.Days)),
       ),
       #(
-        birl.add(start_of_week, duration.days(6)),
-        find_in_week(birl.add(start_of_week, duration.days(6))),
+        date.add(start_of_week, 6, date.Days),
+        find_in_week(date.add(start_of_week, 6, date.Days)),
       ),
     ])
 
@@ -276,12 +275,16 @@ pub fn edit_planner(model: Model) {
           ],
           [
             a([href("/"), class("text-center")], [text("🏠")]),
-            a([href("/planner/edit"), class("text-center")], [text("✏️")]),
+            a([href("/planner/"), class("text-center")], [text("❎")]),
+            button(
+              [type_("submit"), attribute("form", "active-week"), class("")],
+              [text("💾")],
+            ),
           ],
         ),
       ],
     ),
-    section(
+    form(
       [
         id("active-week"),
         class(
@@ -294,29 +297,30 @@ pub fn edit_planner(model: Model) {
             xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]
             xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0",
         ),
+        on_submit(UserSavedPlan),
       ],
       [
         planner_header_row(week),
         fragment({
           dict.values(week)
-          |> list.sort(fn(a, b) { birl.compare(a.date, b.date) })
+          |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
           |> list.index_map(fn(x, i) {
             planner_meal_input(
-              Some(x),
+              x,
               i,
-              "lunch",
+              Lunch,
               model.recipe_list |> list.map(fn(r) { r.title }),
             )
           })
         }),
         fragment({
           dict.values(week)
-          |> list.sort(fn(a, b) { birl.compare(a.date, b.date) })
+          |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
           |> list.index_map(fn(x, i) {
             planner_meal_input(
-              Some(x),
+              x,
               i,
-              "dinner",
+              Dinner,
               model.recipe_list |> list.map(fn(r) { r.title }),
             )
           })
@@ -331,35 +335,35 @@ pub fn edit_planner(model: Model) {
 fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
   let date_keys =
     dict.to_list(dates)
-    |> list.map(pair.map_first(_, fn(d) { birl.weekday(d) }))
+    |> list.map(pair.map_first(_, fn(d) { date.weekday(d) }))
     |> dict.from_list
 
   let monday =
-    dict.get(date_keys, birl.Mon)
+    dict.get(date_keys, date.Mon)
     |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let tuesday =
-    dict.get(date_keys, birl.Tue)
+    dict.get(date_keys, date.Tue)
     |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let wednesday =
-    dict.get(date_keys, birl.Wed)
+    dict.get(date_keys, date.Wed)
     |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let thursday =
-    dict.get(date_keys, birl.Thu)
+    dict.get(date_keys, date.Thu)
     |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let friday =
-    dict.get(date_keys, birl.Fri)
+    dict.get(date_keys, date.Fri)
     |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let saturday =
-    dict.get(date_keys, birl.Sat)
+    dict.get(date_keys, date.Sat)
     |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
   let sunday =
-    dict.get(date_keys, birl.Sun)
+    dict.get(date_keys, date.Sun)
     |> result.map(fn(d) { utils.date_num_string(d.date) })
     |> result.unwrap("")
 
@@ -539,18 +543,21 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
   ])
 }
 
-fn planner_meal_card(pd: PlanDay, i: Int, meal: String) -> Element(PlannerMsg) {
-  let row = case meal {
-    "lunch" -> "col-start-2 xs:row-start-2"
-    "dinner" -> "col-start-3 xs:row-start-3"
-    _ -> ""
+fn planner_meal_card(
+  pd: PlanDay,
+  i: Int,
+  for: Meal,
+  recipe_titles: List(String),
+) -> Element(PlannerMsg) {
+  let row = case for {
+    Lunch -> "col-start-2 xs:row-start-2"
+    Dinner -> "col-start-3 xs:row-start-3"
   }
-  let card = case meal {
-    "lunch" -> option.map(pd.lunch, inner_card) |> option.unwrap(element.none())
-    "dinner" ->
-      option.map(pd.dinner, inner_card) |> option.unwrap(element.none())
-    _ -> element.none()
-  }
+  let card =
+    dict.get(pd.planned_meals, for)
+    |> result.map(inner_card(_, recipe_titles))
+    |> result.unwrap(element.none())
+
   div(
     [class("flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
@@ -562,66 +569,40 @@ fn planner_meal_card(pd: PlanDay, i: Int, meal: String) -> Element(PlannerMsg) {
   )
 }
 
-fn inner_card(meal: MealWithStatus) -> Element(PlannerMsg) {
-  case meal {
-    RecipeWithStatus(r, c) -> {
-      html.a([href("/recipes/" <> kebab_case(r))], [
-        h2(
-          [
-            class("text-center text-xl text-wrap"),
-            style([
-              #("text-decoration", {
-                use <- bool.guard(when: c, return: "line-through")
-                "none"
-              }),
-            ]),
-          ],
-          [text(r)],
-        ),
-      ])
-    }
-    MealWithStatus(m, c) -> {
-      h2(
-        [
-          class("text-center text-xl text-wrap"),
-          style([
-            #("text-decoration", {
-              use <- bool.guard(when: c, return: "line-through")
-              "none"
-            }),
-          ]),
-        ],
-        [text(m)],
-      )
-    }
-  }
+fn inner_card(
+  meal: PlannedMealWithStatus,
+  recipe_titles: List(String),
+) -> Element(PlannerMsg) {
+  let PlannedMealWithStatus(m, f, c) = meal
+  h2(
+    [
+      class("text-center text-xl text-wrap"),
+      style([
+        #("text-decoration", {
+          use <- bool.guard(when: c, return: "line-through")
+          "none"
+        }),
+      ]),
+    ],
+    [text(m)],
+  )
 }
 
 fn planner_meal_input(
-  pd: Option(PlanDay),
+  pd: PlanDay,
   i: Int,
-  meal: String,
+  for: Meal,
   recipe_titles: List(String),
 ) -> Element(PlannerMsg) {
-  let row = case meal {
-    "lunch" -> "col-start-2 xs:row-start-2"
-    "dinner" -> "col-start-3 xs:row-start-3"
-    _ -> ""
+  let row = case for {
+    Lunch -> "col-start-2 xs:row-start-2"
+    Dinner -> "col-start-3 xs:row-start-3"
   }
-  let card = case pd, meal {
-    Some(a), "lunch" ->
-      inner_input(
-        option.unwrap(a.lunch, MealWithStatus("", complete: False)),
-        recipe_titles,
-      )
-    Some(a), "dinner" ->
-      inner_input(
-        option.unwrap(a.dinner, MealWithStatus("", complete: False)),
-        recipe_titles,
-      )
-    None, _ -> inner_input(MealWithStatus("", complete: False), recipe_titles)
-    _, _ -> element.none()
-  }
+  let card =
+    dict.get(pd.planned_meals, for)
+    |> result.map(fn(a) { inner_input(pd.date, for, a.title, recipe_titles) })
+    |> result.unwrap(inner_input(pd.date, for, "", recipe_titles))
+
   div(
     [class("flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
@@ -634,132 +615,110 @@ fn planner_meal_input(
 }
 
 fn inner_input(
-  meal: MealWithStatus,
+  date: Date,
+  for: Meal,
+  title: String,
   recipe_titles: List(String),
 ) -> Element(PlannerMsg) {
-  let term = case meal {
-    RecipeWithStatus(r, _c) -> r
-    MealWithStatus(m, _c) -> m
-  }
-  element(
-    "type-ahead",
-    [
-      attribute(
-        "recipe-titles",
-        json.to_string(json.array(recipe_titles, of: json.string)),
-      ),
-      attribute("search-term", term),
-    ],
-    [],
-  )
+  typeahead([
+    typeahead.recipe_titles(recipe_titles),
+    typeahead.search_term(title),
+    event.on("typeahead-change", fn(target) {
+      target
+      |> dynamic.field("detail", dynamic.string)
+      |> result.map(fn(a) { UserUpdatedPlanMeal(date, for, a) })
+    }),
+  ])
 }
 
 //-TYPES-------------------------------------------------------------
 
 pub type PlanDay {
-  PlanDay(
-    date: birl.Time,
-    lunch: Option(MealWithStatus),
-    dinner: Option(MealWithStatus),
-  )
+  PlanDay(date: Date, planned_meals: Dict(Meal, PlannedMealWithStatus))
 }
 
 pub type JsPlanDay {
-  JsPlanDay(date: String, lunch: Json, dinner: Json)
+  JsPlanDay(date: String, planned_meals: Json)
 }
 
-pub type MealWithStatus {
-  RecipeWithStatus(recipe_title: String, complete: Bool)
-  MealWithStatus(meal: String, complete: Bool)
+pub type PlannedMealWithStatus {
+  PlannedMealWithStatus(title: String, for: Meal, complete: Bool)
 }
 
 //-ENCODERS-DECODERS----------------------------------------------
 
 fn decode_plan_day(d: Dynamic) -> Result(PlanDay, dynamic.DecodeErrors) {
   let decoder =
-    dynamic.decode3(
+    dynamic.decode2(
       PlanDay,
       dynamic.field("date", of: decode_stringed_day),
-      dynamic.optional_field("lunch", of: decode_meal_status),
-      dynamic.optional_field("dinner", of: decode_meal_status),
+      dynamic.field("planned_meals", of: decode_planned_meals),
     )
   decoder(d)
 }
 
-fn decode_stringed_day(d: Dynamic) -> Result(birl.Time, dynamic.DecodeErrors) {
+fn decode_stringed_day(d: Dynamic) -> Result(Date, dynamic.DecodeErrors) {
   let decoder = dynamic.string
-  result.map(decoder(d), fn(a) {
+  result.then(decoder(d), fn(a) {
     a
-    |> birl.from_naive
+    |> date.from_iso_string
     |> result.map_error(fn(_x) {
       [dynamic.DecodeError("a stringed day", "something else", ["*"])]
     })
   })
-  |> result.flatten
 }
 
-fn decode_meal_status(
+fn decode_planned_meals(
   d: Dynamic,
-) -> Result(MealWithStatus, dynamic.DecodeErrors) {
+) -> Result(Dict(Meal, PlannedMealWithStatus), dynamic.DecodeErrors) {
   let decoder =
-    decipher.tagged_union(dynamic.field("type", dynamic.string), [
-      #(
-        "RecipeWithStatus",
-        dynamic.decode2(
-          RecipeWithStatus,
-          dynamic.field("recipe_id", dynamic.string),
-          dynamic.field("complete", decoders.stringed_bool),
+    dynamic.dict(
+      decipher.enum([#("lunch", Lunch), #("dinner", Dinner)]),
+      dynamic.decode3(
+        PlannedMealWithStatus,
+        dynamic.field("title", dynamic.string),
+        dynamic.field(
+          "for",
+          decipher.enum([#("lunch", Lunch), #("dinner", Dinner)]),
         ),
+        dynamic.field("complete", decoders.stringed_bool),
       ),
-      #(
-        "MealWithStatus",
-        dynamic.decode2(
-          MealWithStatus,
-          dynamic.field("meal", dynamic.string),
-          dynamic.field("complete", decoders.stringed_bool),
-        ),
-      ),
-    ])
-
+    )
   decoder(d)
 }
 
 fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {
   JsPlanDay(
-    date: birl.to_naive_date_string(plan_day.date),
-    lunch: {
-      case plan_day.lunch {
-        Some(RecipeWithStatus(a, b)) ->
-          json.object([
-            #("type", json.string("RecipeWithStatus")),
-            #("recipe_title", json.string(a)),
-            #("complete", json.string(bool.to_string(b))),
-          ])
-        Some(MealWithStatus(a, b)) ->
-          json.object([
-            #("type", json.string("MealWithStatus")),
-            #("meal", json.string(a)),
-            #("complete", json.string(bool.to_string(b))),
-          ])
-        None -> json.object([])
-      }
-    },
-    dinner: {
-      case plan_day.dinner {
-        Some(RecipeWithStatus(a, b)) ->
-          json.object([
-            #("type", json.string("RecipeWithStatus")),
-            #("recipe_title", json.string(a)),
-            #("complete", json.string(bool.to_string(b))),
-          ])
-        Some(MealWithStatus(a, b)) ->
-          json.object([
-            #("type", json.string("MealWithStatus")),
-            #("meal", json.string(a)),
-            #("complete", json.string(bool.to_string(b))),
-          ])
-        None -> json.object([])
-      }
-    },
+    date: date.to_iso_string(plan_day.date),
+    planned_meals: json_encode_planned_meals(plan_day.planned_meals),
   )
+}
+
+fn json_encode_planned_meals(dict: Dict(Meal, PlannedMealWithStatus)) -> Json {
+  dict
+  |> dict.to_list
+  |> list.map(fn(pair: #(Meal, PlannedMealWithStatus)) {
+    #(
+      case pair.0 {
+        Lunch -> "lunch"
+        Dinner -> "dinner"
+      },
+      json_encode_planned_meal_with_status(pair.1),
+    )
+  })
+  |> json.object
+}
+
+fn json_encode_planned_meal_with_status(meal: PlannedMealWithStatus) -> Json {
+  json.object([
+    #("title", json.string(meal.title)),
+    #(
+      "for",
+      json.string(case meal.for {
+        Lunch -> "lunch"
+        Dinner -> "dinner"
+      }),
+    ),
+    #("complete", json.string(bool.to_string(meal.complete))),
+  ])
 }

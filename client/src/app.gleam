@@ -1,4 +1,5 @@
 import components/page_title.{page_title}
+import components/typeahead
 import gleam/dict
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -19,6 +20,7 @@ import tardis
 // WITHOUT DEBUGGER
 
 // pub fn main() {
+//   lustre.register(typeahead.app(), "type-ahead")
 //  let app = lustre.application(init, update, view)
 //  let assert Ok(_) = lustre.start(app, "#app", Nil)
 // }
@@ -27,7 +29,7 @@ import tardis
 
 pub fn main() {
   let assert Ok(main) = tardis.single("main")
-
+  lustre.register(typeahead.app(), "type-ahead")
   lustre.application(init, update, view)
   |> tardis.wrap(with: main)
   |> lustre.start("#app", Nil)
@@ -170,6 +172,16 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(
         Model(..model, current_recipe: child_model),
         effect.map(child_effect, RecipeDetail),
+      )
+    }
+    Planner(planner.DbSavedPlan) -> {
+      #(
+        model,
+        // TODO: Better handle navigating in response to the updated data
+        {
+          use dispatch <- effect.from
+          OnRouteChange(ViewPlanner) |> dispatch
+        },
       )
     }
     Planner(planner_msg) -> {

@@ -7,9 +7,9 @@ import gleam/list
 import gleam/result
 import gleam/string
 import lustre.{type App}
-import lustre/attribute.{attribute, class, id, value}
+import lustre/attribute.{type Attribute, attribute, class, id, value}
 import lustre/effect.{type Effect}
-import lustre/element.{type Element, fragment}
+import lustre/element.{type Element, fragment, text}
 import lustre/element/html.{datalist, div, input, option, textarea}
 import lustre/event.{on, on_click, on_input}
 import session.{type Recipe}
@@ -18,7 +18,17 @@ pub fn app() -> App(Nil, Model, Msg) {
   lustre.component(init, update, view, on_attribute_change())
 }
 
-pub const name = "type-ahead"
+pub fn typeahead(attrs: List(Attribute(msg))) -> Element(msg) {
+  element.element("type-ahead", attrs, [])
+}
+
+pub fn recipe_titles(all: List(String)) -> Attribute(msg) {
+  attribute.property("recipe-titles", all)
+}
+
+pub fn search_term(term: String) -> Attribute(msg) {
+  attribute.property("search-term", term)
+}
 
 //-MODEL------------------------------------------------------
 
@@ -30,7 +40,7 @@ pub type Model {
   )
 }
 
-pub fn init(_) -> #(Model, Effect(Msg)) {
+fn init(_) -> #(Model, Effect(Msg)) {
   #(Model([], "", []), effect.none())
 }
 
@@ -39,50 +49,44 @@ pub fn init(_) -> #(Model, Effect(Msg)) {
 pub type Msg {
   RetrievedSearchItems(List(String))
   UserUpdatedSearchTerm(String)
-  UserSelectedItem(String)
+  UserChangedValue(String)
 }
 
-pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  io.debug(#("typeahead update fn:", model, msg))
+fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     RetrievedSearchItems(a) -> {
-      io.debug(msg)
       #(Model(..model, search_items: a), effect.none())
     }
-    UserUpdatedSearchTerm(a) -> #(
-      Model(
-        ..model,
-        search_term: a,
-        found_items: {
-          list.filter(model.search_items, fn(r) {
-            use <- bool.guard(when: string.length(a) > 3, return: False)
-            string.contains(r, a)
-          })
-        },
-      ),
-      effect.none(),
-    )
-    _ -> {
-      io.debug(_)
-      #(model, effect.none())
+    UserUpdatedSearchTerm(a) -> {
+      #(
+        Model(
+          ..model,
+          search_term: a,
+          found_items: {
+            case string.length(a) {
+              num if num < 3 -> model.search_items
+              _ ->
+                list.filter(model.search_items, fn(r) {
+                  string.contains(string.lowercase(r), string.lowercase(a))
+                })
+            }
+          },
+        ),
+        effect.none(),
+      )
+    }
+    UserChangedValue(a) -> {
+      #(model, event.emit("typeahead-change", json.string(a)))
     }
   }
 }
 
-pub fn on_attribute_change() -> Dict(String, Decoder(Msg)) {
+fn on_attribute_change() -> Dict(String, Decoder(Msg)) {
   dict.from_list([
     #("recipe-titles", fn(attribute) {
       attribute
-      |> dynamic.string
-      |> result.map(json.decode(_, dynamic.list(dynamic.string)))
-      |> result.map(result.map_error(_, fn(_e) {
-        [
-          dynamic.DecodeError("a json array of strings", "something else", ["*"]),
-        ]
-      }))
-      |> result.flatten
+      |> dynamic.list(dynamic.string)
       |> result.map(RetrievedSearchItems)
-      |> io.debug
     }),
     #("search-term", fn(attribute) {
       attribute
@@ -94,20 +98,23 @@ pub fn on_attribute_change() -> Dict(String, Decoder(Msg)) {
 
 //-VIEW--------------------------------------------------------
 
-pub fn search_result(res: String) -> Element(Msg) {
-  option([value(res)], "")
+fn search_result(res: String) -> Element(Msg) {
+  option([], res)
 }
 
-pub fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Msg) {
   fragment([
     input([
+      class(
+        "text-center text-xl resize-none w-full bg-ecru-white-100 placeholder:bg-ecru-white-100",
+      ),
       value(model.search_term),
       attribute("list", "search_results"),
       on_input(UserUpdatedSearchTerm),
-      on("change", fn(target) {
-        target
-        |> dynamic.string
-        |> result.map(UserSelectedItem)
+      on("change", fn(event) {
+        event
+        |> dynamic.field("target", dynamic.field("value", dynamic.string))
+        |> result.map(UserChangedValue)
       }),
     ]),
     datalist([id("search_results")], {

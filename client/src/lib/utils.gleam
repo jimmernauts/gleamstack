@@ -1,11 +1,14 @@
-import birl
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
 import gleam/option.{Some}
 import gleam/pair
 import lustre/effect.{type Effect}
+import rada/date.{type Date}
 
+/// Update a dictionary with a given key and function.
+/// If the key does not exist, the dictionary is returned unchanged.
+/// 
 pub fn dict_update(
   in dict: Dict(k, v),
   update key: k,
@@ -45,38 +48,73 @@ pub fn update_child(
   #(new_model, new_effect)
 }
 
-pub fn month_date_string(day: birl.Time) -> String {
+pub fn month_date_string(day: Date) -> String {
   let n = date_num_string(day)
   let s =
     day
-    |> birl.string_weekday
+    |> date.weekday
   let m =
     day
-    |> birl.string_month
+    |> date.month
+    |> fn(a) {
+      case a {
+        date.Jan -> "January"
+        date.Feb -> "February"
+        date.Mar -> "March"
+        date.Apr -> "April"
+        date.May -> "May"
+        date.Jun -> "June"
+        date.Jul -> "July"
+        date.Aug -> "August"
+        date.Sep -> "September"
+        date.Oct -> "October"
+        date.Nov -> "November"
+        date.Dec -> "December"
+      }
+    }
   m <> " " <> n
 }
 
-pub fn long_date_string(day: birl.Time) -> String {
+pub fn long_date_string(day: Date) -> String {
   let n = date_num_string(day)
   let s =
     day
-    |> birl.weekday
-    |> birl.weekday_to_string
+    |> date.weekday
+    |> fn(a) {
+      case a {
+        date.Sun -> "Sunday"
+        date.Mon -> "Monday"
+        date.Tue -> "Tuesday"
+        date.Wed -> "Wednesday"
+        date.Thu -> "Thursday"
+        date.Fri -> "Friday"
+        date.Sat -> "Saturday"
+      }
+    }
   s <> " " <> n
 }
 
-pub fn short_date_string(day: birl.Time) -> String {
+pub fn short_date_string(day: Date) -> String {
   let n = date_num_string(day)
   let s =
     day
-    |> birl.weekday
-    |> birl.weekday_to_short_string
+    |> date.weekday
+    |> fn(a) {
+      case a {
+        date.Sun -> "Sun"
+        date.Mon -> "Mon"
+        date.Tue -> "Tue"
+        date.Wed -> "Wed"
+        date.Thu -> "Thu"
+        date.Fri -> "Fri"
+        date.Sat -> "Sat"
+      }
+    }
   s <> " " <> n
 }
 
-pub fn date_num_string(day: birl.Time) -> String {
+pub fn date_num_string(day: Date) -> String {
   day
-  |> birl.get_day
-  |> fn(d: birl.Day) { d.date }
+  |> date.day
   |> int.to_string
 }
