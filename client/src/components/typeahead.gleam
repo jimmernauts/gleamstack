@@ -105,9 +105,7 @@ fn search_result(res: String) -> Element(Msg) {
 fn view(model: Model) -> Element(Msg) {
   fragment([
     input([
-      class(
-        "text-center text-xl resize-none w-full bg-ecru-white-100 placeholder:bg-ecru-white-100",
-      ),
+      class("ml-2 text-xl w-full bg-ecru-white-100"),
       value(model.search_term),
       attribute("list", "search_results"),
       on_input(UserUpdatedSearchTerm),

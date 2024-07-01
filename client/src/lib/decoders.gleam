@@ -18,7 +18,7 @@ pub fn stringed_int(d: Dynamic) -> Result(Int, dynamic.DecodeErrors) {
   let decoder = dynamic.string
   decoder(d)
   |> result.map(int.parse)
-  |> result.map(result.map_error(_, fn(_x) {
+  |> result.then(result.map_error(_, fn(_x) {
     [
       dynamic.DecodeError(
         expected: "a stringed int",
@@ -27,5 +27,4 @@ pub fn stringed_int(d: Dynamic) -> Result(Int, dynamic.DecodeErrors) {
       ),
     ]
   }))
-  |> result.flatten
 }

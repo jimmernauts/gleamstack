@@ -1161,15 +1161,6 @@ function map_error(result, fun) {
     return new Error2(fun(error));
   }
 }
-function flatten(result) {
-  if (result.isOk()) {
-    let x = result[0];
-    return x;
-  } else {
-    let error = result[0];
-    return new Error2(error);
-  }
-}
 function try$(result, fun) {
   if (result.isOk()) {
     let x = result[0];
@@ -7215,7 +7206,7 @@ function stringed_int(d) {
   let decoder = string;
   let _pipe = decoder(d);
   let _pipe$1 = map3(_pipe, parse);
-  let _pipe$2 = map3(
+  return then$(
     _pipe$1,
     (_capture) => {
       return map_error(
@@ -7232,7 +7223,6 @@ function stringed_int(d) {
       );
     }
   );
-  return flatten(_pipe$2);
 }
 
 // build/dev/javascript/app/session.mjs
@@ -7562,9 +7552,7 @@ function view2(model) {
     toList([
       input(
         toList([
-          class$(
-            "text-center text-xl resize-none w-full bg-ecru-white-100 placeholder:bg-ecru-white-100"
-          ),
+          class$("ml-2 text-xl w-full bg-ecru-white-100"),
           value(model.search_term),
           attribute("list", "search_results"),
           on_input((var0) => {
