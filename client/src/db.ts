@@ -185,7 +185,7 @@ export async function do_get_plan(startDate) {
 	}
 	const input = startDate ? startDate : `'now'`;
 	const result = await db.execO(
-		`SELECT date(date),planned_meals FROM plan WHERE date > DATE(${input},'localtime','weekday 0','-6 days') AND date < DATE(${input},'localtime','weekday 0')`,
+		`SELECT date,planned_meals FROM plan WHERE date > DATE(${input},'localtime','weekday 0','-6 days') AND date < DATE(${input},'localtime','weekday 0')`,
 	);
 	const mapped = result.map((day) => {
 		day.planned_meals = JSON.parse(day.planned_meals);

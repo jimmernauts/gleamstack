@@ -780,6 +780,10 @@ fieldset {
   grid-row-start: var(--dayPlacement);
 }
 
+.m-1 {
+  margin: 0.25rem;
+}
+
 .mx-1 {
   margin-left: 0.25rem;
   margin-right: 0.25rem;
@@ -904,12 +908,20 @@ fieldset {
   min-height: 56px;
 }
 
+.min-h-\[70vh\] {
+  min-height: 70vh;
+}
+
 .min-h-\[90vh\] {
   min-height: 90vh;
 }
 
 .min-h-full {
   min-height: 100%;
+}
+
+.w-11\/12 {
+  width: 91.666667%;
 }
 
 .w-\[16ch\] {
@@ -1000,6 +1012,10 @@ fieldset {
   grid-template-rows: fit-content(100px) fit-content(100px) 1fr;
 }
 
+.grid-rows-\[fit-content\(65px\)\] {
+  grid-template-rows: fit-content(65px);
+}
+
 .flex-col {
   flex-direction: column;
 }
@@ -1058,6 +1074,10 @@ fieldset {
 
 .gap-y-2 {
   row-gap: 0.5rem;
+}
+
+.place-self-start {
+  place-self: start;
 }
 
 .justify-self-start {
@@ -1269,6 +1289,11 @@ fieldset {
   line-height: 1.2;
 }
 
+.text-4xl {
+  font-size: clamp(2.0272865295410156rem, calc(2.0272865295410156rem + ((3.1103999999999994 - 2.0272865295410156) * ((100vw - 20rem) / (96 - 20)))), 3.1103999999999994rem);
+  line-height: 1.1;
+}
+
 .text-5xl {
   font-size: clamp(2.2806973457336426rem, calc(2.2806973457336426rem + ((3.732479999999999 - 2.2806973457336426) * ((100vw - 20rem) / (96 - 20)))), 3.732479999999999rem);
   line-height: 1.1;
@@ -1287,6 +1312,11 @@ fieldset {
 .text-9xl {
   font-size: clamp(3.65323615365196rem, calc(3.65323615365196rem + ((7.739670527999997 - 3.65323615365196) * ((100vw - 20rem) / (96 - 20)))), 7.739670527999997rem);
   line-height: 1;
+}
+
+.text-5\.5xl {
+  font-size: clamp(2.362726290864429rem, calc(2.362726290864429rem + ((3.9423199078001616 - 2.362726290864429) * ((100vw - 20rem) / (96 - 20)))), 3.9423199078001616rem);
+  line-height: 1.1;
 }
 
 .font-transitional {
@@ -1311,6 +1341,10 @@ fieldset {
 
 .\[box-shadow\:1px_1px_0_\#ff776a\] {
   box-shadow: 1px 1px 0 #ff776a;
+}
+
+.\[field-sizing\:_content\;\] {
+  field-sizing: content;;
 }
 
 .placeholder\:underline-pink::-moz-placeholder {
@@ -1419,97 +1453,8 @@ fieldset {
 }
 
 @media (min-width: 480px) {
-  .xs\:col-span-1 {
-    grid-column: span 1 / span 1;
-  }
-
-  .xs\:col-start-1 {
-    grid-column-start: 1;
-  }
-
-  .xs\:col-start-2 {
-    grid-column-start: 2;
-  }
-
-  .xs\:col-start-3 {
-    grid-column-start: 3;
-  }
-
-  .xs\:col-start-4 {
-    grid-column-start: 4;
-  }
-
-  .xs\:col-start-5 {
-    grid-column-start: 5;
-  }
-
-  .xs\:col-start-6 {
-    grid-column-start: 6;
-  }
-
-  .xs\:col-start-7 {
-    grid-column-start: 7;
-  }
-
-  .xs\:col-start-8 {
-    grid-column-start: 8;
-  }
-
-  .xs\:col-start-\[full-start\] {
-    grid-column-start: full-start;
-  }
-
-  .xs\:col-start-\[var\(--dayPlacement\)\] {
-    grid-column-start: var(--dayPlacement);
-  }
-
-  .xs\:col-end-\[full-end\] {
-    grid-column-end: full-end;
-  }
-
-  .xs\:row-span-full {
-    grid-row: 1 / -1;
-  }
-
-  .xs\:row-start-1 {
-    grid-row-start: 1;
-  }
-
-  .xs\:row-start-2 {
-    grid-row-start: 2;
-  }
-
-  .xs\:row-start-3 {
-    grid-row-start: 3;
-  }
-
   .xs\:w-\[28ch\] {
     width: 28ch;
-  }
-
-  .xs\:snap-x {
-    scroll-snap-type: x var(--tw-scroll-snap-strictness);
-  }
-
-  .xs\:scroll-pl-\[9\%\] {
-    scroll-padding-left: 9%;
-  }
-
-  .xs\:scroll-pt-0 {
-    scroll-padding-top: 0px;
-  }
-
-  .xs\:grid-cols-\[fit-content\(10\%\)_repeat\(7\2c _1fr\)\] {
-    grid-template-columns: fit-content(10%) repeat(7, 1fr);
-  }
-
-  .xs\:grid-rows-\[fit-content\(20\%\)_minmax\(20vh\2c 1fr\)_minmax\(20vh\2c 1fr\)\] {
-    grid-template-rows: fit-content(20%) minmax(20vh,1fr) minmax(20vh,1fr);
-  }
-
-  .xs\:text-base {
-    font-size: clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem);
-    line-height: 1.6;
   }
 }
 
@@ -1556,6 +1501,15 @@ fieldset {
 
   .sm\:row-start-1 {
     grid-row-start: 1;
+  }
+
+  .sm\:m-2 {
+    margin: 0.5rem;
+  }
+
+  .sm\:mx-2 {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
   }
 
   .sm\:mx-4 {
@@ -1625,12 +1579,101 @@ fieldset {
 }
 
 @media (min-width: 768px) {
+  .md\:col-span-1 {
+    grid-column: span 1 / span 1;
+  }
+
+  .md\:col-start-1 {
+    grid-column-start: 1;
+  }
+
+  .md\:col-start-2 {
+    grid-column-start: 2;
+  }
+
+  .md\:col-start-3 {
+    grid-column-start: 3;
+  }
+
+  .md\:col-start-4 {
+    grid-column-start: 4;
+  }
+
+  .md\:col-start-5 {
+    grid-column-start: 5;
+  }
+
+  .md\:col-start-6 {
+    grid-column-start: 6;
+  }
+
+  .md\:col-start-7 {
+    grid-column-start: 7;
+  }
+
+  .md\:col-start-8 {
+    grid-column-start: 8;
+  }
+
+  .md\:col-start-\[full-start\] {
+    grid-column-start: full-start;
+  }
+
+  .md\:col-start-\[var\(--dayPlacement\)\] {
+    grid-column-start: var(--dayPlacement);
+  }
+
+  .md\:col-end-\[full-end\] {
+    grid-column-end: full-end;
+  }
+
+  .md\:row-span-full {
+    grid-row: 1 / -1;
+  }
+
+  .md\:row-start-1 {
+    grid-row-start: 1;
+  }
+
+  .md\:row-start-2 {
+    grid-row-start: 2;
+  }
+
+  .md\:row-start-3 {
+    grid-row-start: 3;
+  }
+
   .md\:w-\[23ch\] {
     width: 23ch;
   }
 
+  .md\:snap-x {
+    scroll-snap-type: x var(--tw-scroll-snap-strictness);
+  }
+
+  .md\:scroll-pl-\[9\%\] {
+    scroll-padding-left: 9%;
+  }
+
+  .md\:scroll-pt-0 {
+    scroll-padding-top: 0px;
+  }
+
   .md\:grid-cols-\[\[start_full-start\]_1fr_\[main-start\]_70ch_\[main-end\]_1fr_\[full-end_end\]\] {
     grid-template-columns: [start full-start] 1fr [main-start] 70ch [main-end] 1fr [full-end end];
+  }
+
+  .md\:grid-cols-\[fit-content\(10\%\)_repeat\(7\2c _15vw\)\] {
+    grid-template-columns: fit-content(10%) repeat(7, 15vw);
+  }
+
+  .md\:grid-rows-\[fit-content\(20\%\)_minmax\(20vh\2c 1fr\)_minmax\(20vh\2c 1fr\)\] {
+    grid-template-rows: fit-content(20%) minmax(20vh,1fr) minmax(20vh,1fr);
+  }
+
+  .md\:text-base {
+    font-size: clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem);
+    line-height: 1.6;
   }
 
   .md\:text-lg {
@@ -1657,6 +1700,10 @@ fieldset {
 @media (min-width: 1280px) {
   .xl\:grid-cols-\[\[start\]_1fr_\[full-start\]_3fr_\[main-start\]_95ch_\[main-end\]_3fr_\[full-end\]_1fr_\[end\]\] {
     grid-template-columns: [start] 1fr [full-start] 3fr [main-start] 95ch [main-end] 3fr [full-end] 1fr [end];
+  }
+
+  .xl\:grid-cols-\[fit-content\(10\%\)_repeat\(7\2c _11\.5vw\)\] {
+    grid-template-columns: fit-content(10%) repeat(7, 11.5vw);
   }
 }
 

@@ -498,7 +498,7 @@ pub fn view_recipe_list(model: session.RecipeList) {
       ),
     ],
     [
-      page_title("Recipe Book", "underline-green"),
+      page_title("Recipe List", "underline-green"),
       nav(
         [
           class(
@@ -548,17 +548,22 @@ pub fn edit_recipe_detail(
       div(
         [
           class(
-            "mt-4 mb-2 sm:mb-4 mr-2 flex col-start-1 col-span-11 sm:col-start-1 sm:col-span-8",
+            "inline-block mt-4 mb-2 sm:mb-4 mr-2 col-start-1 col-span-11 sm:col-start-1 sm:col-span-8",
           ),
         ],
         [
           textarea(
             [
-              id("title"),
+              id("page-title-input"),
               name("title"),
               class(
-                "placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-x-hidden px-0 pb-1 ml-2 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100",
+                "[field-sizing:_content;] placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-x-hidden px-0 pb-1 ml-2 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100",
               ),
+              class(case string.length(recipe.title) {
+                num if num > 38 -> "text-4xl"
+                num if num > 17 -> "text-5.5xl"
+                _ -> "text-7xl"
+              }),
               attribute("title", "recipe title"),
               on_input(UserUpdatedRecipeTitle),
             ],

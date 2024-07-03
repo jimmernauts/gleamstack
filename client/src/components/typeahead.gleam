@@ -104,21 +104,27 @@ fn search_result(res: String) -> Element(Msg) {
 
 fn view(model: Model) -> Element(Msg) {
   fragment([
-    input([
-      class("ml-2 text-xl w-full bg-ecru-white-100"),
-      value(model.search_term),
-      attribute("list", "search_results"),
-      on_input(UserUpdatedSearchTerm),
-      on("change", fn(event) {
-        event
-        |> dynamic.field("target", dynamic.field("value", dynamic.string))
-        |> result.map(UserChangedValue)
-      }),
-    ]),
-    datalist([id("search_results")], {
-      model.found_items
-      |> list.map(fn(a: String) { a })
-      |> list.map(search_result)
-    }),
+    element.element(
+      "fit-text",
+      [class("contents"), attribute("data-target", "input")],
+      [
+        input([
+          class("text-lg w-full bg-ecru-white-100"),
+          value(model.search_term),
+          attribute("list", "search_results"),
+          on_input(UserUpdatedSearchTerm),
+          on("change", fn(event) {
+            event
+            |> dynamic.field("target", dynamic.field("value", dynamic.string))
+            |> result.map(UserChangedValue)
+          }),
+        ]),
+        datalist([id("search_results")], {
+          model.found_items
+          |> list.map(fn(a: String) { a })
+          |> list.map(search_result)
+        }),
+      ],
+    ),
   ])
 }

@@ -7165,7 +7165,7 @@ async function do_get_plan(startDate) {
   }
   const input2 = startDate ? startDate : `'now'`;
   const result = await db.execO(
-    `SELECT date(date),planned_meals FROM plan WHERE date > DATE(${input2},'localtime','weekday 0','-6 days') AND date < DATE(${input2},'localtime','weekday 0')`
+    `SELECT date,planned_meals FROM plan WHERE date > DATE(${input2},'localtime','weekday 0','-6 days') AND date < DATE(${input2},'localtime','weekday 0')`
   );
   const mapped = result.map((day3) => {
     day3.planned_meals = JSON.parse(day3.planned_meals);
@@ -7550,41 +7550,47 @@ function search_result(res) {
 function view2(model) {
   return fragment(
     toList([
-      input(
+      element(
+        "fit-text",
+        toList([class$("contents"), attribute("data-target", "input")]),
         toList([
-          class$("ml-2 text-xl w-full bg-ecru-white-100"),
-          value(model.search_term),
-          attribute("list", "search_results"),
-          on_input((var0) => {
-            return new UserUpdatedSearchTerm(var0);
-          }),
-          on2(
-            "change",
-            (event2) => {
-              let _pipe = event2;
-              let _pipe$1 = field(
-                "target",
-                field("value", string)
-              )(_pipe);
-              return map3(
-                _pipe$1,
-                (var0) => {
-                  return new UserChangedValue(var0);
+          input(
+            toList([
+              class$("text-lg w-full bg-ecru-white-100"),
+              value(model.search_term),
+              attribute("list", "search_results"),
+              on_input((var0) => {
+                return new UserUpdatedSearchTerm(var0);
+              }),
+              on2(
+                "change",
+                (event2) => {
+                  let _pipe = event2;
+                  let _pipe$1 = field(
+                    "target",
+                    field("value", string)
+                  )(_pipe);
+                  return map3(
+                    _pipe$1,
+                    (var0) => {
+                      return new UserChangedValue(var0);
+                    }
+                  );
                 }
-              );
-            }
+              )
+            ])
+          ),
+          datalist(
+            toList([id("search_results")]),
+            (() => {
+              let _pipe = model.found_items;
+              let _pipe$1 = map2(_pipe, (a2) => {
+                return a2;
+              });
+              return map2(_pipe$1, search_result);
+            })()
           )
         ])
-      ),
-      datalist(
-        toList([id("search_results")]),
-        (() => {
-          let _pipe = model.found_items;
-          let _pipe$1 = map2(_pipe, (a2) => {
-            return a2;
-          });
-          return map2(_pipe$1, search_result);
-        })()
       )
     ])
   );
@@ -10778,14 +10784,14 @@ function planner_header_row(dates) {
       div(
         toList([
           class$(
-            "subgrid-cols xs:col-start-1 row-start-1 subgrid-rows col-span-full xs:row-span-full xs:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full"
+            "subgrid-cols md:col-start-1 row-start-1 subgrid-rows col-span-full md:row-span-full md:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full"
           )
         ]),
         toList([
           div(
             toList([
               class$(
-                "xs:row-start-2 xs:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
+                "md:row-start-2 md:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
               )
             ]),
             toList([h2(toList([class$("mx-2")]), toList([text("Lunch")]))])
@@ -10793,7 +10799,7 @@ function planner_header_row(dates) {
           div(
             toList([
               class$(
-                "xs:row-start-3 xs:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
+                "md:row-start-3 md:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50"
               )
             ]),
             toList([h2(toList([class$("mx-2")]), toList([text("Dinner")]))])
@@ -10803,7 +10809,7 @@ function planner_header_row(dates) {
       div(
         toList([
           class$(
-            "xs:col-start-2 xs:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange"
+            "md:col-start-2 md:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange"
           )
         ]),
         toList([
@@ -10826,7 +10832,7 @@ function planner_header_row(dates) {
       div(
         toList([
           class$(
-            "xs:col-start-3 xs:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+            "md:col-start-3 md:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
           )
         ]),
         toList([
@@ -10849,7 +10855,7 @@ function planner_header_row(dates) {
       div(
         toList([
           class$(
-            "xs:col-start-4 xs:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+            "md:col-start-4 md:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
           )
         ]),
         toList([
@@ -10872,7 +10878,7 @@ function planner_header_row(dates) {
       div(
         toList([
           class$(
-            "xs:col-start-5 xs:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+            "md:col-start-5 md:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
           )
         ]),
         toList([
@@ -10895,7 +10901,7 @@ function planner_header_row(dates) {
       div(
         toList([
           class$(
-            "xs:col-start-6 xs:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+            "md:col-start-6 md:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
           )
         ]),
         toList([
@@ -10918,7 +10924,7 @@ function planner_header_row(dates) {
       div(
         toList([
           class$(
-            "xs:col-start-7 xs:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+            "md:col-start-7 md:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
           )
         ]),
         toList([
@@ -10941,7 +10947,7 @@ function planner_header_row(dates) {
       div(
         toList([
           class$(
-            "xs:col-start-8 xs:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
+            "md:col-start-8 md:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]"
           )
         ]),
         toList([
@@ -10968,29 +10974,38 @@ function inner_card(meal, recipe_titles2) {
   let m = meal.title;
   let f = meal.for;
   let c = meal.complete;
-  return h2(
+  return div(
     toList([
-      class$("text-center text-xl text-wrap"),
-      style(
-        toList([
-          [
-            "text-decoration",
-            guard(c, "line-through", () => {
-              return "none";
-            })
-          ]
-        ])
+      class$(
+        "flex justify-center w-11/12 h-11/12 flex-col justify-between m-1 sm:m-2 overflow-hidden"
       )
     ]),
-    toList([text(m)])
+    toList([
+      h2(
+        toList([
+          class$("text-center text-xl text-wrap"),
+          style(
+            toList([
+              [
+                "text-decoration",
+                guard(c, "line-through", () => {
+                  return "none";
+                })
+              ]
+            ])
+          )
+        ]),
+        toList([text(m)])
+      )
+    ])
   );
 }
 function planner_meal_card(pd, i, for$2, recipe_titles2) {
   let row = (() => {
     if (for$2 instanceof Lunch) {
-      return "col-start-2 xs:row-start-2";
+      return "col-start-2 md:row-start-2";
     } else {
-      return "col-start-3 xs:row-start-3";
+      return "col-start-3 md:row-start-3";
     }
   })();
   let card = (() => {
@@ -11006,7 +11021,7 @@ function planner_meal_card(pd, i, for$2, recipe_titles2) {
   return div(
     toList([
       class$(
-        "flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]\n                row-start-[var(--dayPlacement)]\n                xs:col-start-[var(--dayPlacement)] \n                snap-start scroll-p-[-40px] " + row
+        "flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]\n                row-start-[var(--dayPlacement)]\n                md:col-start-[var(--dayPlacement)] \n                snap-start scroll-p-[-40px] " + row
       ),
       style(toList([["--dayPlacement", to_string3(i + 2)]]))
     ]),
@@ -11055,7 +11070,7 @@ function view_planner(model) {
       section(
         toList([
           class$(
-            "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
+            "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(65px)] gap-y-2"
           )
         ]),
         toList([
@@ -11086,7 +11101,7 @@ function view_planner(model) {
         toList([
           id("active-week"),
           class$(
-            "mb-2 text-sm p-1 \n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-3 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            xs:col-start-[full-start] xs:col-end-[full-end]\n            xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0"
+            "mb-2 text-sm p-1 min-h-[70vh]\n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-2 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            md:col-start-[full-start] md:col-end-[full-end]\n            md:text-base md:grid-cols-[fit-content(10%)_repeat(7,_15vw)] md:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            md:snap-x md:scroll-pl-[9%] md:scroll-pt-0\n            xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]"
           )
         ]),
         toList([
@@ -11151,22 +11166,35 @@ function view_planner(model) {
   );
 }
 function inner_input(date, for$2, title, recipe_titles2) {
-  return typeahead(
+  return div(
     toList([
-      recipe_titles(recipe_titles2),
-      search_term(title),
-      on2(
-        "typeahead-change",
-        (target2) => {
-          let _pipe = target2;
-          let _pipe$1 = field("detail", string)(_pipe);
-          return map3(
-            _pipe$1,
-            (a2) => {
-              return new UserUpdatedPlanMeal(date, for$2, a2);
+      class$(
+        "flex justify-center w-11/12 h-11/12 flex-col justify-between m-1 sm:m-2 overflow-hidden"
+      )
+    ]),
+    toList([
+      typeahead(
+        toList([
+          recipe_titles(recipe_titles2),
+          search_term(title),
+          on2(
+            "typeahead-change",
+            (target2) => {
+              let _pipe = target2;
+              let _pipe$1 = field("detail", string)(_pipe);
+              return map3(
+                _pipe$1,
+                (a2) => {
+                  return new UserUpdatedPlanMeal(date, for$2, a2);
+                }
+              );
             }
-          );
-        }
+          )
+        ])
+      ),
+      div(
+        toList([class$("flex justify-end place-self-start sm:mx-2")]),
+        toList([input(toList([type_("checkbox")]))])
       )
     ])
   );
@@ -11174,9 +11202,9 @@ function inner_input(date, for$2, title, recipe_titles2) {
 function planner_meal_input(pd, i, for$2, recipe_titles2) {
   let row = (() => {
     if (for$2 instanceof Lunch) {
-      return "col-start-2 xs:row-start-2";
+      return "col-start-2 md:row-start-2";
     } else {
-      return "col-start-3 xs:row-start-3";
+      return "col-start-3 md:row-start-3";
     }
   })();
   let card = (() => {
@@ -11195,7 +11223,7 @@ function planner_meal_input(pd, i, for$2, recipe_titles2) {
   return div(
     toList([
       class$(
-        "flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]\n                row-start-[var(--dayPlacement)]\n                xs:col-start-[var(--dayPlacement)] \n                snap-start scroll-p-[-40px] " + row
+        "flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]\n                row-start-[var(--dayPlacement)]\n                md:col-start-[var(--dayPlacement)] \n                snap-start scroll-p-[-40px] " + row
       ),
       style(toList([["--dayPlacement", to_string3(i + 2)]]))
     ]),
@@ -11244,7 +11272,7 @@ function edit_planner(model) {
       section(
         toList([
           class$(
-            "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2"
+            "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(65px)] gap-y-2"
           )
         ]),
         toList([
@@ -11283,7 +11311,7 @@ function edit_planner(model) {
         toList([
           id("active-week"),
           class$(
-            "mb-2 text-sm p-1 \n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-3 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            xs:col-start-[full-start] xs:col-end-[full-end]\n            xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0"
+            "mb-2 text-sm p-1 min-h-[70vh]\n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-2 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            md:col-start-[full-start] md:col-end-[full-end]\n            md:text-base md:grid-cols-[fit-content(10%)_repeat(7,_15vw)] md:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            md:snap-x md:scroll-pl-[9%] md:scroll-pt-0\n            xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]"
           ),
           on_submit(new UserSavedPlan())
         ]),
@@ -11404,15 +11432,16 @@ function get_plan() {
     (dispatch2) => {
       let _pipe = do_get_plan();
       let _pipe$1 = map_promise(_pipe, toList);
-      let _pipe$2 = map_promise(
-        _pipe$1,
+      let _pipe$2 = map_promise(_pipe$1, debug);
+      let _pipe$3 = map_promise(
+        _pipe$2,
         (_capture) => {
           return map2(_capture, decode_plan_day);
         }
       );
-      let _pipe$3 = map_promise(_pipe$2, all);
-      let _pipe$4 = map_promise(
-        _pipe$3,
+      let _pipe$4 = map_promise(_pipe$3, all);
+      let _pipe$5 = map_promise(
+        _pipe$4,
         (_capture) => {
           return map3(
             _capture,
@@ -11424,14 +11453,14 @@ function get_plan() {
           );
         }
       );
-      let _pipe$5 = map_promise(
-        _pipe$4,
+      let _pipe$6 = map_promise(
+        _pipe$5,
         (_capture) => {
           return map3(_capture, from_list);
         }
       );
-      let _pipe$6 = map_promise(
-        _pipe$5,
+      let _pipe$7 = map_promise(
+        _pipe$6,
         (_capture) => {
           return map3(
             _capture,
@@ -11442,7 +11471,7 @@ function get_plan() {
         }
       );
       tap(
-        _pipe$6,
+        _pipe$7,
         (_capture) => {
           return map3(_capture, dispatch2);
         }
@@ -11747,7 +11776,7 @@ function view_recipe_list(model) {
       )
     ]),
     toList([
-      page_title("Recipe Book", "underline-green"),
+      page_title("Recipe List", "underline-green"),
       nav(
         toList([
           class$(
@@ -12516,16 +12545,30 @@ function edit_recipe_detail(recipe, tag_options) {
       div(
         toList([
           class$(
-            "mt-4 mb-2 sm:mb-4 mr-2 flex col-start-1 col-span-11 sm:col-start-1 sm:col-span-8"
+            "inline-block mt-4 mb-2 sm:mb-4 mr-2 col-start-1 col-span-11 sm:col-start-1 sm:col-span-8"
           )
         ]),
         toList([
           textarea(
             toList([
-              id("title"),
+              id("page-title-input"),
               name("title"),
               class$(
-                "placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-x-hidden px-0 pb-1 ml-2 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100"
+                "[field-sizing:_content;] placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-x-hidden px-0 pb-1 ml-2 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100"
+              ),
+              class$(
+                (() => {
+                  let $ = length3(recipe.title);
+                  if ($ > 38) {
+                    let num = $;
+                    return "text-4xl";
+                  } else if ($ > 17) {
+                    let num = $;
+                    return "text-5.5xl";
+                  } else {
+                    return "text-7xl";
+                  }
+                })()
               ),
               attribute("title", "recipe title"),
               on_input((var0) => {
@@ -13842,7 +13885,7 @@ function view_home() {
               href("/recipes")
             ]),
             toList([
-              span(toList([class$("underline-green")]), toList([text("Book")])),
+              span(toList([class$("underline-green")]), toList([text("List")])),
               span(toList([class$("text-5xl")]), toList([text("\u{1F4D1}")]))
             ])
           ),

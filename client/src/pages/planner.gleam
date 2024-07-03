@@ -19,7 +19,9 @@ import lib/utils
 import lustre/attribute.{attribute, class, href, id, style, type_}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, element, fragment, text}
-import lustre/element/html.{a, button, div, form, h2, nav, option, section}
+import lustre/element/html.{
+  a, button, div, form, h2, input, nav, option, section,
+}
 import lustre/event.{on_submit}
 import rada/date.{type Date}
 import session.{type Recipe}
@@ -94,6 +96,7 @@ pub fn get_plan() -> Effect(PlannerMsg) {
   use dispatch <- effect.from
   do_get_plan()
   |> promise.map(array.to_list)
+  |> promise.map(io.debug)
   |> promise.map(list.map(_, decode_plan_day))
   |> promise.map(result.all)
   |> promise.map(result.map(_, list.map(_, fn(a: PlanDay) { #(a.date, a) })))
@@ -155,7 +158,7 @@ pub fn view_planner(model: Model) {
     section(
       [
         class(
-          "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2",
+          "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(65px)] gap-y-2",
         ),
       ],
       [
@@ -180,14 +183,15 @@ pub fn view_planner(model: Model) {
       [
         id("active-week"),
         class(
-          "mb-2 text-sm p-1 
+          "mb-2 text-sm p-1 min-h-[70vh]
             overflow-x-scroll overflow-y-scroll snap-mandatory snap-always
-            col-span-full row-start-3 grid gap-1 
+            col-span-full row-start-2 grid gap-1 
             grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
             snap-y scroll-pt-[9%]
-            xs:col-start-[full-start] xs:col-end-[full-end]
-            xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]
-            xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0",
+            md:col-start-[full-start] md:col-end-[full-end]
+            md:text-base md:grid-cols-[fit-content(10%)_repeat(7,_15vw)] md:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]
+            md:snap-x md:scroll-pl-[9%] md:scroll-pt-0
+            xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]",
         ),
       ],
       [
@@ -222,6 +226,7 @@ pub fn view_planner(model: Model) {
 }
 
 pub fn edit_planner(model: Model) {
+  // fit_text()
   let start_of_week = date.floor(date.today(), date.Monday)
   let find_in_week = fn(a) {
     result.unwrap(dict.get(model.plan_week, a), PlanDay(a, dict.new()))
@@ -259,7 +264,7 @@ pub fn edit_planner(model: Model) {
     section(
       [
         class(
-          "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2",
+          "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(65px)] gap-y-2",
         ),
       ],
       [
@@ -288,14 +293,15 @@ pub fn edit_planner(model: Model) {
       [
         id("active-week"),
         class(
-          "mb-2 text-sm p-1 
+          "mb-2 text-sm p-1 min-h-[70vh]
             overflow-x-scroll overflow-y-scroll snap-mandatory snap-always
-            col-span-full row-start-3 grid gap-1 
+            col-span-full row-start-2 grid gap-1 
             grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
             snap-y scroll-pt-[9%]
-            xs:col-start-[full-start] xs:col-end-[full-end]
-            xs:text-base xs:grid-cols-[fit-content(10%)_repeat(7,_1fr)] xs:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]
-            xs:snap-x xs:scroll-pl-[9%] xs:scroll-pt-0",
+            md:col-start-[full-start] md:col-end-[full-end]
+            md:text-base md:grid-cols-[fit-content(10%)_repeat(7,_15vw)] md:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]
+            md:snap-x md:scroll-pl-[9%] md:scroll-pt-0
+            xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]",
         ),
         on_submit(UserSavedPlan),
       ],
@@ -371,14 +377,14 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "subgrid-cols xs:col-start-1 row-start-1 subgrid-rows col-span-full xs:row-span-full xs:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full",
+          "subgrid-cols md:col-start-1 row-start-1 subgrid-rows col-span-full md:row-span-full md:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full",
         ),
       ],
       [
         div(
           [
             class(
-              "xs:row-start-2 xs:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50",
+              "md:row-start-2 md:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50",
             ),
           ],
           [h2([class("mx-2")], [text("Lunch")])],
@@ -386,7 +392,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
         div(
           [
             class(
-              "xs:row-start-3 xs:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50",
+              "md:row-start-3 md:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50",
             ),
           ],
           [h2([class("mx-2")], [text("Dinner")])],
@@ -396,7 +402,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "xs:col-start-2 xs:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange",
+          "md:col-start-2 md:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange",
         ),
       ],
       [
@@ -417,7 +423,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "xs:col-start-3 xs:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-3 md:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
         ),
       ],
       [
@@ -438,7 +444,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "xs:col-start-4 xs:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-4 md:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
         ),
       ],
       [
@@ -459,7 +465,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "xs:col-start-5 xs:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-5 md:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
         ),
       ],
       [
@@ -480,7 +486,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "xs:col-start-6 xs:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-6 md:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
         ),
       ],
       [
@@ -501,7 +507,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "xs:col-start-7 xs:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-7 md:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
         ),
       ],
       [
@@ -522,7 +528,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "xs:col-start-8 xs:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-8 md:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
         ),
       ],
       [
@@ -550,8 +556,8 @@ fn planner_meal_card(
   recipe_titles: List(String),
 ) -> Element(PlannerMsg) {
   let row = case for {
-    Lunch -> "col-start-2 xs:row-start-2"
-    Dinner -> "col-start-3 xs:row-start-3"
+    Lunch -> "col-start-2 md:row-start-2"
+    Dinner -> "col-start-3 md:row-start-3"
   }
   let card =
     dict.get(pd.planned_meals, for)
@@ -561,7 +567,7 @@ fn planner_meal_card(
   div(
     [class("flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                xs:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)] 
                 snap-start scroll-p-[-40px] " <> row), style([
         #("--dayPlacement", int.to_string(i + 2)),
       ])],
@@ -574,17 +580,26 @@ fn inner_card(
   recipe_titles: List(String),
 ) -> Element(PlannerMsg) {
   let PlannedMealWithStatus(m, f, c) = meal
-  h2(
+  div(
     [
-      class("text-center text-xl text-wrap"),
-      style([
-        #("text-decoration", {
-          use <- bool.guard(when: c, return: "line-through")
-          "none"
-        }),
-      ]),
+      class(
+        "flex justify-center w-11/12 h-11/12 flex-col justify-between m-1 sm:m-2 overflow-hidden",
+      ),
     ],
-    [text(m)],
+    [
+      h2(
+        [
+          class("text-center text-xl text-wrap"),
+          style([
+            #("text-decoration", {
+              use <- bool.guard(when: c, return: "line-through")
+              "none"
+            }),
+          ]),
+        ],
+        [text(m)],
+      ),
+    ],
   )
 }
 
@@ -595,8 +610,8 @@ fn planner_meal_input(
   recipe_titles: List(String),
 ) -> Element(PlannerMsg) {
   let row = case for {
-    Lunch -> "col-start-2 xs:row-start-2"
-    Dinner -> "col-start-3 xs:row-start-3"
+    Lunch -> "col-start-2 md:row-start-2"
+    Dinner -> "col-start-3 md:row-start-3"
   }
   let card =
     dict.get(pd.planned_meals, for)
@@ -606,7 +621,7 @@ fn planner_meal_input(
   div(
     [class("flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                xs:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)] 
                 snap-start scroll-p-[-40px] " <> row), style([
         #("--dayPlacement", int.to_string(i + 2)),
       ])],
@@ -620,15 +635,27 @@ fn inner_input(
   title: String,
   recipe_titles: List(String),
 ) -> Element(PlannerMsg) {
-  typeahead([
-    typeahead.recipe_titles(recipe_titles),
-    typeahead.search_term(title),
-    event.on("typeahead-change", fn(target) {
-      target
-      |> dynamic.field("detail", dynamic.string)
-      |> result.map(fn(a) { UserUpdatedPlanMeal(date, for, a) })
-    }),
-  ])
+  div(
+    [
+      class(
+        "flex justify-center w-11/12 h-11/12 flex-col justify-between m-1 sm:m-2 overflow-hidden",
+      ),
+    ],
+    [
+      typeahead([
+        typeahead.recipe_titles(recipe_titles),
+        typeahead.search_term(title),
+        event.on("typeahead-change", fn(target) {
+          target
+          |> dynamic.field("detail", dynamic.string)
+          |> result.map(fn(a) { UserUpdatedPlanMeal(date, for, a) })
+        }),
+      ]),
+      div([class("flex justify-end place-self-start sm:mx-2")], [
+        input([type_("checkbox")]),
+      ]),
+    ],
+  )
 }
 
 //-TYPES-------------------------------------------------------------
