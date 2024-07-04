@@ -16,7 +16,7 @@ import gleam/result
 import justin.{kebab_case}
 import lib/decoders
 import lib/utils
-import lustre/attribute.{attribute, class, href, id, style, type_}
+import lustre/attribute.{attribute, checked, class, href, id, style, type_}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, element, fragment, text}
 import lustre/element/html.{
@@ -26,10 +26,26 @@ import lustre/event.{on_submit}
 import rada/date.{type Date}
 import session.{type Recipe}
 
-//-MODEL---------------------------------------------
+//-TYPES-------------------------------------------------------------
+
+pub type PlanDay {
+  PlanDay(date: Date, planned_meals: Dict(Meal, PlannedMealWithStatus))
+}
+
+pub type JsPlanDay {
+  JsPlanDay(date: String, planned_meals: Json)
+}
+
+pub type PlannedMealWithStatus {
+  PlannedMealWithStatus(
+    title: Option(String),
+    for: Meal,
+    complete: Option(Bool),
+  )
+}
 
 pub type PlannerMsg {
-  UserUpdatedPlanMeal(Date, Meal, String)
+  UserUpdatedPlanMeal(Date, Meal, Option(String), Option(Bool))
   DbRetrievedPlan(PlanWeek)
   DbSavedPlan
   UserSavedPlan
@@ -53,22 +69,33 @@ fn update_plan_week(
   current: PlanWeek,
   date: Date,
   meal: Meal,
-  value: String,
+  value: Option(String),
+  complete: Option(Bool),
 ) -> PlanWeek {
   dict.update(current, date, fn(a) {
     PlanDay(
       date: date,
-      planned_meals: dict.insert(
+      planned_meals: dict.update(
         case a {
           Some(a) -> a.planned_meals
           _ -> dict.new()
         },
         meal,
-        PlannedMealWithStatus(for: meal, title: value, complete: False),
+        fn(inner) {
+          case inner {
+            Some(inner) ->
+              PlannedMealWithStatus(
+                for: meal,
+                title: option.or(value, inner.title),
+                complete: option.or(complete, inner.complete),
+              )
+            _ ->
+              PlannedMealWithStatus(for: meal, title: value, complete: complete)
+          }
+        },
       ),
     )
   })
-  |> io.debug
 }
 
 pub fn planner_update(
@@ -76,8 +103,9 @@ pub fn planner_update(
   msg: PlannerMsg,
 ) -> #(Model, Effect(PlannerMsg)) {
   case msg {
-    UserUpdatedPlanMeal(date, meal, value) -> {
-      let result = update_plan_week(model.plan_week, date, meal, value)
+    UserUpdatedPlanMeal(date, meal, value, complete) -> {
+      let result =
+        update_plan_week(model.plan_week, date, meal, value, complete)
       #(Model(..model, plan_week: result), effect.none())
     }
     UserSavedPlan -> {
@@ -199,26 +227,12 @@ pub fn view_planner(model: Model) {
         fragment({
           dict.values(week)
           |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
-          |> list.index_map(fn(x, i) {
-            planner_meal_card(
-              x,
-              i,
-              Lunch,
-              model.recipe_list |> list.map(fn(r) { r.title }),
-            )
-          })
+          |> list.index_map(fn(x, i) { planner_meal_card(x, i, Lunch) })
         }),
         fragment({
           dict.values(week)
           |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
-          |> list.index_map(fn(x, i) {
-            planner_meal_card(
-              x,
-              i,
-              Dinner,
-              model.recipe_list |> list.map(fn(r) { r.title }),
-            )
-          })
+          |> list.index_map(fn(x, i) { planner_meal_card(x, i, Dinner) })
         }),
       ],
     ),
@@ -549,19 +563,14 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
   ])
 }
 
-fn planner_meal_card(
-  pd: PlanDay,
-  i: Int,
-  for: Meal,
-  recipe_titles: List(String),
-) -> Element(PlannerMsg) {
+fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
   let row = case for {
     Lunch -> "col-start-2 md:row-start-2"
     Dinner -> "col-start-3 md:row-start-3"
   }
   let card =
     dict.get(pd.planned_meals, for)
-    |> result.map(inner_card(_, recipe_titles))
+    |> result.map(inner_card(pd.date, _))
     |> result.unwrap(element.none())
 
   div(
@@ -575,10 +584,7 @@ fn planner_meal_card(
   )
 }
 
-fn inner_card(
-  meal: PlannedMealWithStatus,
-  recipe_titles: List(String),
-) -> Element(PlannerMsg) {
+fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
   let PlannedMealWithStatus(m, f, c) = meal
   div(
     [
@@ -589,16 +595,28 @@ fn inner_card(
     [
       h2(
         [
-          class("text-center text-xl text-wrap"),
+          class("font-transitional text-xl text-wrap"),
           style([
             #("text-decoration", {
-              use <- bool.guard(when: c, return: "line-through")
+              use <- bool.guard(
+                when: option.unwrap(c, False),
+                return: "line-through",
+              )
               "none"
             }),
           ]),
         ],
-        [text(m)],
+        [text(option.unwrap(m, ""))],
       ),
+      div([class("flex justify-end place-self-start sm:mx-2")], [
+        input([
+          type_("checkbox"),
+          event.on_check(fn(a) {
+            UserUpdatedPlanMeal(date, meal.for, None, Some(a))
+          }),
+          checked(option.unwrap(meal.complete, False)),
+        ]),
+      ]),
     ],
   )
 }
@@ -615,7 +633,9 @@ fn planner_meal_input(
   }
   let card =
     dict.get(pd.planned_meals, for)
-    |> result.map(fn(a) { inner_input(pd.date, for, a.title, recipe_titles) })
+    |> result.map(fn(a) {
+      inner_input(pd.date, for, option.unwrap(a.title, ""), recipe_titles)
+    })
     |> result.unwrap(inner_input(pd.date, for, "", recipe_titles))
 
   div(
@@ -643,33 +663,17 @@ fn inner_input(
     ],
     [
       typeahead([
+        typeahead.class_list("text-lg w-full bg-ecru-white-100"),
         typeahead.recipe_titles(recipe_titles),
         typeahead.search_term(title),
         event.on("typeahead-change", fn(target) {
           target
           |> dynamic.field("detail", dynamic.string)
-          |> result.map(fn(a) { UserUpdatedPlanMeal(date, for, a) })
+          |> result.map(fn(a) { UserUpdatedPlanMeal(date, for, Some(a), None) })
         }),
-      ]),
-      div([class("flex justify-end place-self-start sm:mx-2")], [
-        input([type_("checkbox")]),
       ]),
     ],
   )
-}
-
-//-TYPES-------------------------------------------------------------
-
-pub type PlanDay {
-  PlanDay(date: Date, planned_meals: Dict(Meal, PlannedMealWithStatus))
-}
-
-pub type JsPlanDay {
-  JsPlanDay(date: String, planned_meals: Json)
-}
-
-pub type PlannedMealWithStatus {
-  PlannedMealWithStatus(title: String, for: Meal, complete: Bool)
 }
 
 //-ENCODERS-DECODERS----------------------------------------------
@@ -703,12 +707,12 @@ fn decode_planned_meals(
       decipher.enum([#("lunch", Lunch), #("dinner", Dinner)]),
       dynamic.decode3(
         PlannedMealWithStatus,
-        dynamic.field("title", dynamic.string),
+        dynamic.optional_field("title", dynamic.string),
         dynamic.field(
           "for",
           decipher.enum([#("lunch", Lunch), #("dinner", Dinner)]),
         ),
-        dynamic.field("complete", decoders.stringed_bool),
+        dynamic.optional_field("complete", decoders.stringed_bool),
       ),
     )
   decoder(d)
@@ -738,7 +742,7 @@ fn json_encode_planned_meals(dict: Dict(Meal, PlannedMealWithStatus)) -> Json {
 
 fn json_encode_planned_meal_with_status(meal: PlannedMealWithStatus) -> Json {
   json.object([
-    #("title", json.string(meal.title)),
+    #("title", json.string(option.unwrap(meal.title, ""))),
     #(
       "for",
       json.string(case meal.for {
@@ -746,6 +750,9 @@ fn json_encode_planned_meal_with_status(meal: PlannedMealWithStatus) -> Json {
         Dinner -> "dinner"
       }),
     ),
-    #("complete", json.string(bool.to_string(meal.complete))),
+    #(
+      "complete",
+      json.string(bool.to_string(option.unwrap(meal.complete, False))),
+    ),
   ])
 }

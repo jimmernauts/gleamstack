@@ -7165,7 +7165,7 @@ async function do_get_plan(startDate) {
   }
   const input2 = startDate ? startDate : `'now'`;
   const result = await db.execO(
-    `SELECT date,planned_meals FROM plan WHERE date > DATE(${input2},'localtime','weekday 0','-6 days') AND date < DATE(${input2},'localtime','weekday 0')`
+    `SELECT date,planned_meals FROM plan WHERE date > DATE(${input2},'localtime','weekday 0','-6 days') AND date <= DATE(${input2},'localtime','weekday 0')`
   );
   const mapped = result.map((day3) => {
     day3.planned_meals = JSON.parse(day3.planned_meals);
@@ -7441,11 +7441,12 @@ function get_tag_options() {
 
 // build/dev/javascript/app/components/typeahead.mjs
 var Model2 = class extends CustomType {
-  constructor(search_items, search_term2, found_items) {
+  constructor(search_items, search_term2, found_items, class_list2) {
     super();
     this.search_items = search_items;
     this.search_term = search_term2;
     this.found_items = found_items;
+    this.class_list = class_list2;
   }
 };
 var RetrievedSearchItems = class extends CustomType {
@@ -7466,6 +7467,12 @@ var UserChangedValue = class extends CustomType {
     this[0] = x0;
   }
 };
+var UserUpdatedClassList = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
 function typeahead(attrs) {
   return element("type-ahead", attrs, toList([]));
 }
@@ -7475,11 +7482,18 @@ function recipe_titles(all3) {
 function search_term(term) {
   return property("search-term", term);
 }
+function class_list(class_list2) {
+  return attribute("class", class_list2);
+}
 function init6(_) {
-  return [new Model2(toList([]), "", toList([])), none()];
+  return [new Model2(toList([]), "", toList([]), ""), none()];
 }
 function update3(model, msg) {
-  if (msg instanceof RetrievedSearchItems) {
+  debug(msg);
+  if (msg instanceof UserUpdatedClassList) {
+    let a2 = msg[0];
+    return [model.withFields({ class_list: a2 }), none()];
+  } else if (msg instanceof RetrievedSearchItems) {
     let a2 = msg[0];
     return [model.withFields({ search_items: a2 }), none()];
   } else if (msg instanceof UserUpdatedSearchTerm) {
@@ -7540,6 +7554,19 @@ function on_attribute_change() {
             }
           );
         }
+      ],
+      [
+        "class",
+        (attribute2) => {
+          let _pipe = attribute2;
+          let _pipe$1 = string(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new UserUpdatedClassList(var0);
+            }
+          );
+        }
       ]
     ])
   );
@@ -7554,9 +7581,27 @@ function view2(model) {
         "fit-text",
         toList([class$("contents"), attribute("data-target", "input")]),
         toList([
-          input(
+          textarea(
             toList([
-              class$("text-lg w-full bg-ecru-white-100"),
+              id("meal-input"),
+              class$(
+                "[field-sizing:_content;] overflow-x-hidden input-base w-full input-focus font-transitional resize-none italic text-ecru-white-950  text-xl bg-ecru-white-100"
+              ),
+              class$(
+                (() => {
+                  let $ = length3(model.search_term);
+                  if ($ > 38) {
+                    let num = $;
+                    return "text-base";
+                  } else if ($ > 17) {
+                    let num = $;
+                    return "text-lg";
+                  } else {
+                    return "text-xl";
+                  }
+                })()
+              ),
+              class$(model.class_list),
               value(model.search_term),
               attribute("list", "search_results"),
               on_input((var0) => {
@@ -7578,7 +7623,8 @@ function view2(model) {
                   );
                 }
               )
-            ])
+            ]),
+            ""
           ),
           datalist(
             toList([id("search_results")]),
@@ -10621,12 +10667,35 @@ function month_date_string(day3) {
 }
 
 // build/dev/javascript/app/pages/planner.mjs
+var PlanDay = class extends CustomType {
+  constructor(date, planned_meals) {
+    super();
+    this.date = date;
+    this.planned_meals = planned_meals;
+  }
+};
+var JsPlanDay = class extends CustomType {
+  constructor(date, planned_meals) {
+    super();
+    this.date = date;
+    this.planned_meals = planned_meals;
+  }
+};
+var PlannedMealWithStatus = class extends CustomType {
+  constructor(title, for$2, complete) {
+    super();
+    this.title = title;
+    this.for = for$2;
+    this.complete = complete;
+  }
+};
 var UserUpdatedPlanMeal = class extends CustomType {
-  constructor(x0, x1, x2) {
+  constructor(x0, x1, x2, x3) {
     super();
     this[0] = x0;
     this[1] = x1;
     this[2] = x2;
+    this[3] = x3;
   }
 };
 var DbRetrievedPlan = class extends CustomType {
@@ -10650,36 +10719,14 @@ var Lunch = class extends CustomType {
 };
 var Dinner = class extends CustomType {
 };
-var PlanDay = class extends CustomType {
-  constructor(date, planned_meals) {
-    super();
-    this.date = date;
-    this.planned_meals = planned_meals;
-  }
-};
-var JsPlanDay = class extends CustomType {
-  constructor(date, planned_meals) {
-    super();
-    this.date = date;
-    this.planned_meals = planned_meals;
-  }
-};
-var PlannedMealWithStatus = class extends CustomType {
-  constructor(title, for$2, complete) {
-    super();
-    this.title = title;
-    this.for = for$2;
-    this.complete = complete;
-  }
-};
-function update_plan_week(current, date, meal, value4) {
-  let _pipe = update(
+function update_plan_week(current, date, meal, value4, complete) {
+  return update(
     current,
     date,
     (a2) => {
       return new PlanDay(
         date,
-        insert(
+        update(
           (() => {
             if (a2 instanceof Some) {
               let a$1 = a2[0];
@@ -10689,12 +10736,22 @@ function update_plan_week(current, date, meal, value4) {
             }
           })(),
           meal,
-          new PlannedMealWithStatus(value4, meal, false)
+          (inner) => {
+            if (inner instanceof Some) {
+              let inner$1 = inner[0];
+              return new PlannedMealWithStatus(
+                or(value4, inner$1.title),
+                meal,
+                or(complete, inner$1.complete)
+              );
+            } else {
+              return new PlannedMealWithStatus(value4, meal, complete);
+            }
+          }
         )
       );
     }
   );
-  return debug(_pipe);
 }
 function planner_header_row(dates) {
   let date_keys = (() => {
@@ -10970,7 +11027,7 @@ function planner_header_row(dates) {
     ])
   );
 }
-function inner_card(meal, recipe_titles2) {
+function inner_card(date, meal) {
   let m = meal.title;
   let f = meal.for;
   let c = meal.complete;
@@ -10983,24 +11040,49 @@ function inner_card(meal, recipe_titles2) {
     toList([
       h2(
         toList([
-          class$("text-center text-xl text-wrap"),
+          class$("font-transitional text-xl text-wrap"),
           style(
             toList([
               [
                 "text-decoration",
-                guard(c, "line-through", () => {
-                  return "none";
-                })
+                guard(
+                  unwrap(c, false),
+                  "line-through",
+                  () => {
+                    return "none";
+                  }
+                )
               ]
             ])
           )
         ]),
-        toList([text(m)])
+        toList([text(unwrap(m, ""))])
+      ),
+      div(
+        toList([class$("flex justify-end place-self-start sm:mx-2")]),
+        toList([
+          input(
+            toList([
+              type_("checkbox"),
+              on_check(
+                (a2) => {
+                  return new UserUpdatedPlanMeal(
+                    date,
+                    meal.for,
+                    new None(),
+                    new Some(a2)
+                  );
+                }
+              ),
+              checked(unwrap(meal.complete, false))
+            ])
+          )
+        ])
       )
     ])
   );
 }
-function planner_meal_card(pd, i, for$2, recipe_titles2) {
+function planner_meal_card(pd, i, for$2) {
   let row = (() => {
     if (for$2 instanceof Lunch) {
       return "col-start-2 md:row-start-2";
@@ -11013,7 +11095,7 @@ function planner_meal_card(pd, i, for$2, recipe_titles2) {
     let _pipe$1 = map3(
       _pipe,
       (_capture) => {
-        return inner_card(_capture, recipe_titles2);
+        return inner_card(pd.date, _capture);
       }
     );
     return unwrap2(_pipe$1, none3());
@@ -11118,17 +11200,7 @@ function view_planner(model) {
               return index_map(
                 _pipe$1,
                 (x, i) => {
-                  return planner_meal_card(
-                    x,
-                    i,
-                    new Lunch(),
-                    (() => {
-                      let _pipe$2 = model.recipe_list;
-                      return map2(_pipe$2, (r) => {
-                        return r.title;
-                      });
-                    })()
-                  );
+                  return planner_meal_card(x, i, new Lunch());
                 }
               );
             })()
@@ -11145,17 +11217,7 @@ function view_planner(model) {
               return index_map(
                 _pipe$1,
                 (x, i) => {
-                  return planner_meal_card(
-                    x,
-                    i,
-                    new Dinner(),
-                    (() => {
-                      let _pipe$2 = model.recipe_list;
-                      return map2(_pipe$2, (r) => {
-                        return r.title;
-                      });
-                    })()
-                  );
+                  return planner_meal_card(x, i, new Dinner());
                 }
               );
             })()
@@ -11175,6 +11237,7 @@ function inner_input(date, for$2, title, recipe_titles2) {
     toList([
       typeahead(
         toList([
+          class_list("text-lg w-full bg-ecru-white-100"),
           recipe_titles(recipe_titles2),
           search_term(title),
           on2(
@@ -11185,16 +11248,17 @@ function inner_input(date, for$2, title, recipe_titles2) {
               return map3(
                 _pipe$1,
                 (a2) => {
-                  return new UserUpdatedPlanMeal(date, for$2, a2);
+                  return new UserUpdatedPlanMeal(
+                    date,
+                    for$2,
+                    new Some(a2),
+                    new None()
+                  );
                 }
               );
             }
           )
         ])
-      ),
-      div(
-        toList([class$("flex justify-end place-self-start sm:mx-2")]),
-        toList([input(toList([type_("checkbox")]))])
       )
     ])
   );
@@ -11212,7 +11276,12 @@ function planner_meal_input(pd, i, for$2, recipe_titles2) {
     let _pipe$1 = map3(
       _pipe,
       (a2) => {
-        return inner_input(pd.date, for$2, a2.title, recipe_titles2);
+        return inner_input(
+          pd.date,
+          for$2,
+          unwrap(a2.title, ""),
+          recipe_titles2
+        );
       }
     );
     return unwrap2(
@@ -11405,14 +11474,14 @@ function decode_planned_meals(d) {
       (var0, var1, var2) => {
         return new PlannedMealWithStatus(var0, var1, var2);
       },
-      field("title", string),
+      optional_field("title", string),
       field(
         "for",
         enum$(
           toList([["lunch", new Lunch()], ["dinner", new Dinner()]])
         )
       ),
-      field("complete", stringed_bool)
+      optional_field("complete", stringed_bool)
     )
   );
   return decoder(d);
@@ -11483,7 +11552,7 @@ function get_plan() {
 function json_encode_planned_meal_with_status(meal) {
   return object2(
     toList([
-      ["title", string2(meal.title)],
+      ["title", string2(unwrap(meal.title, ""))],
       [
         "for",
         string2(
@@ -11497,7 +11566,10 @@ function json_encode_planned_meal_with_status(meal) {
           })()
         )
       ],
-      ["complete", string2(to_string5(meal.complete))]
+      [
+        "complete",
+        string2(to_string5(unwrap(meal.complete, false)))
+      ]
     ])
   );
 }
@@ -11542,7 +11614,8 @@ function planner_update(model, msg) {
     let date = msg[0];
     let meal = msg[1];
     let value4 = msg[2];
-    let result = update_plan_week(model.plan_week, date, meal, value4);
+    let complete = msg[3];
+    let result = update_plan_week(model.plan_week, date, meal, value4, complete);
     return [model.withFields({ plan_week: result }), none()];
   } else if (msg instanceof UserSavedPlan) {
     return [model, save_plan(model.plan_week)];

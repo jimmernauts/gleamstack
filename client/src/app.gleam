@@ -298,7 +298,7 @@ fn view_home() {
             href("/recipes"),
           ],
           [
-            span([class("underline-green")], [text("List")]),
+            span([class("underline-green")], [text("List  ")]),
             span([class("text-5xl")], [text("📑")]),
           ],
         ),
