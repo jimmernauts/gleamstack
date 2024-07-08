@@ -1,7 +1,7 @@
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
-import gleam/option.{Some}
+import gleam/option.{type Option, None, Some}
 import gleam/pair
 import lustre/effect.{type Effect}
 import rada/date.{type Date}
@@ -30,6 +30,15 @@ pub fn dict_reindex(in dict: Dict(Int, v)) -> Dict(Int, v) {
   |> list.sort(by: fn(a, b) { int.compare(pair.first(a), pair.first(b)) })
   |> list.index_map(fn(x, i) { #(i, pair.second(x)) })
   |> dict.from_list
+}
+
+/// Return the `n`th element of a list, or `None` if the list is too short.
+pub fn list_at(list: List(a), n: Int) -> Option(a) {
+  case list {
+    [] -> None
+    [x, ..] if n == 0 -> Some(x)
+    [x, ..xs] -> list_at(xs, n - 1)
+  }
 }
 
 /// Update child view of a given view.

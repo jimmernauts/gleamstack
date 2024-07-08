@@ -73,28 +73,37 @@ fn update_plan_week(
   complete: Option(Bool),
 ) -> PlanWeek {
   dict.update(current, date, fn(a) {
-    PlanDay(
-      date: date,
-      planned_meals: dict.update(
-        case a {
-          Some(a) -> a.planned_meals
-          _ -> dict.new()
-        },
-        meal,
-        fn(inner) {
-          case inner {
-            Some(inner) ->
-              PlannedMealWithStatus(
-                for: meal,
-                title: option.or(value, inner.title),
-                complete: option.or(complete, inner.complete),
-              )
-            _ ->
-              PlannedMealWithStatus(for: meal, title: value, complete: complete)
-          }
-        },
-      ),
-    )
+    PlanDay(date: date, planned_meals: case a {
+      Some(a) ->
+        case value {
+          Some("") ->
+            a.planned_meals
+            |> dict.drop([meal])
+          _ ->
+            dict.update(a.planned_meals, meal, fn(inner) {
+              case inner {
+                Some(inner) ->
+                  PlannedMealWithStatus(
+                    for: meal,
+                    title: option.or(value, inner.title),
+                    complete: option.or(complete, inner.complete),
+                  )
+                _ ->
+                  PlannedMealWithStatus(
+                    for: meal,
+                    title: value,
+                    complete: complete,
+                  )
+              }
+            })
+        }
+      _ ->
+        dict.new()
+        |> dict.insert(
+          meal,
+          PlannedMealWithStatus(for: meal, title: value, complete: complete),
+        )
+    })
   })
 }
 
@@ -663,7 +672,6 @@ fn inner_input(
     ],
     [
       typeahead([
-        typeahead.class_list("text-lg w-full bg-ecru-white-100"),
         typeahead.recipe_titles(recipe_titles),
         typeahead.search_term(title),
         event.on("typeahead-change", fn(target) {

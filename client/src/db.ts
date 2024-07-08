@@ -83,7 +83,6 @@ export async function prepareTables() {
 }
 
 export async function listTagOptions() {
-	console.log("listTagOptions");
 	const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM tag_options)");
 	const exists = findRows[0];
 	if (!exists) {
@@ -94,7 +93,6 @@ export async function listTagOptions() {
 		x.options = JSON.parse(x.options);
 		return x;
 	});
-	console.log("tagoptions mapped: ", mapped);
 	return mapped;
 }
 
@@ -112,7 +110,6 @@ export async function addTagOption(tagOption: TagOption) {
 }
 
 export async function listRecipes() {
-	console.log("listRecipes");
 	const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM recipes)");
 	const exists = findRows[0];
 	if (!exists) {
@@ -127,7 +124,6 @@ export async function listRecipes() {
 		recipe.method_steps = JSON.parse(recipe.method_steps, reviver);
 		return recipe;
 	});
-	console.log("recipes mapped: ", mapped);
 	return mapped;
 }
 
@@ -185,13 +181,12 @@ export async function do_get_plan(startDate) {
 	}
 	const input = startDate ? startDate : `'now'`;
 	const result = await db.execO(
-		`SELECT date,planned_meals FROM plan WHERE date > DATE(${input},'localtime','weekday 0','-6 days') AND date <= DATE(${input},'localtime','weekday 0')`,
+		`SELECT date,planned_meals FROM plan WHERE date >= DATE(${input},'localtime','weekday 0','-6 days') AND date <= DATE(${input},'localtime','weekday 0')`,
 	);
 	const mapped = result.map((day) => {
 		day.planned_meals = JSON.parse(day.planned_meals);
 		return day;
 	});
-	console.log("plan result from ffi: ", mapped);
 	return result;
 }
 

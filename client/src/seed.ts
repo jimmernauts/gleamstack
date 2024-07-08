@@ -80,9 +80,9 @@ export async function seedDb() {
   console.log("beginning seedDb")
   const preparetables = await prepareTables();
 	const tagoptions = await listTagOptions();
-  console.log(tagoptions[0])
+
 	const recipes = await listRecipes();
-  console.log(recipes[0])
+
   console.log("tagoptions.length: ",tagoptions.length)
 	if (tagoptions.length === 0) {
 		for (const item of TagOptionSeed) {

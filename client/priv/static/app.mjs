@@ -327,6 +327,23 @@ var Gt = class extends CustomType {
 function to_string(x) {
   return float_to_string(x);
 }
+function floor2(x) {
+  return floor(x);
+}
+function negate(x) {
+  return -1 * x;
+}
+function do_round(x) {
+  let $ = x >= 0;
+  if ($) {
+    return round(x);
+  } else {
+    return 0 - round(negate(x));
+  }
+}
+function round2(x) {
+  return do_round(x);
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/int.mjs
 function absolute_value(x) {
@@ -379,6 +396,11 @@ function clamp(x, min_bound, max_bound) {
   let _pipe = x;
   let _pipe$1 = min(_pipe, max_bound);
   return max(_pipe$1, min_bound);
+}
+function random(max2) {
+  let _pipe = random_uniform() * to_float(max2);
+  let _pipe$1 = floor2(_pipe);
+  return round2(_pipe$1);
 }
 function modulo(dividend, divisor) {
   if (divisor === 0) {
@@ -482,6 +504,22 @@ function reverse(xs) {
 }
 function is_empty(list3) {
   return isEqual(list3, toList([]));
+}
+function contains(loop$list, loop$elem) {
+  while (true) {
+    let list3 = loop$list;
+    let elem = loop$elem;
+    if (list3.hasLength(0)) {
+      return false;
+    } else if (list3.atLeastLength(1) && isEqual(list3.head, elem)) {
+      let first$1 = list3.head;
+      return true;
+    } else {
+      let rest$1 = list3.tail;
+      loop$list = rest$1;
+      loop$elem = elem;
+    }
+  }
 }
 function first2(list3) {
   if (list3.hasLength(0)) {
@@ -2325,6 +2363,19 @@ function print_debug(string3) {
     console.log(string3);
   }
 }
+function floor(float3) {
+  return Math.floor(float3);
+}
+function round(float3) {
+  return Math.round(float3);
+}
+function random_uniform() {
+  const random_uniform_result = Math.random();
+  if (random_uniform_result === 1) {
+    return random_uniform();
+  }
+  return random_uniform_result;
+}
 function regex_check(regex, string3) {
   regex.lastIndex = 0;
   return regex.test(string3);
@@ -3389,7 +3440,7 @@ var Set2 = class extends CustomType {
     this.dict = dict2;
   }
 };
-function contains(set, member) {
+function contains2(set, member) {
   let _pipe = set.dict;
   let _pipe$1 = get(_pipe, member);
   return is_ok(_pipe$1);
@@ -3993,6 +4044,9 @@ function li(attrs, children) {
 function ol(attrs, children) {
   return element("ol", attrs, children);
 }
+function ul(attrs, children) {
+  return element("ul", attrs, children);
+}
 function a(attrs, children) {
   return element("a", attrs, children);
 }
@@ -4001,9 +4055,6 @@ function span(attrs, children) {
 }
 function button(attrs, children) {
   return element("button", attrs, children);
-}
-function datalist(attrs, children) {
-  return element("datalist", attrs, children);
 }
 function fieldset(attrs, children) {
   return element("fieldset", attrs, children);
@@ -4153,6 +4204,21 @@ function on2(name2, handler) {
 }
 function on_click(msg) {
   return on2("click", (_) => {
+    return new Ok2(msg);
+  });
+}
+function on_keydown(msg) {
+  return on2(
+    "keydown",
+    (event2) => {
+      let _pipe = event2;
+      let _pipe$1 = field("key", string)(_pipe);
+      return map3(_pipe$1, msg);
+    }
+  );
+}
+function on_focus(msg) {
+  return on2("focus", (_) => {
     return new Ok2(msg);
   });
 }
@@ -6914,276 +6980,6 @@ function page_title(title, styles) {
   );
 }
 
-// node_modules/nanoid/url-alphabet/index.js
-var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
-
-// node_modules/nanoid/index.browser.js
-var nanoid = (size2 = 21) => {
-  let id2 = "";
-  let bytes = crypto.getRandomValues(new Uint8Array(size2));
-  while (size2--) {
-    id2 += urlAlphabet[bytes[size2] & 63];
-  }
-  return id2;
-};
-
-// build/dev/javascript/app/seed.ts
-var TagOptionSeed = [
-  {
-    name: "Cuisine",
-    options: [
-      "Mediterranean",
-      "French",
-      "Italian",
-      "Chinese",
-      "Thai",
-      "Australian",
-      "Japanese",
-      "International"
-    ]
-  },
-  {
-    name: "Style",
-    options: [
-      "Veggie",
-      "Meat & Sides",
-      "Soups / Noodles / Stir Fry",
-      "Salad",
-      "Slow Cooker",
-      "Oven Bake",
-      "BBQ",
-      "Bakery"
-    ]
-  },
-  {
-    name: "Label",
-    options: [
-      "Go-to",
-      "Weeknight",
-      "Fancy",
-      "Light",
-      "Substantial"
-    ]
-  }
-];
-var RecipeSeed = [{
-  title: "Pink potato salad",
-  slug: "pink-potato-salad",
-  cook_time: 10,
-  prep_time: 10,
-  serves: 4,
-  shortlisted: false,
-  ingredients: /* @__PURE__ */ new Map([
-    ["0", { units: "g", quantity: "600", name: "Baby potato" }],
-    ["1", { units: "pc", quantity: "1 / 2", name: "Red Cabbage" }],
-    ["2", { units: "g", quantity: "200", name: "Pomegranate seeds" }],
-    ["3", { units: "tin", quantity: "1", name: "Butter Beans" }],
-    ["4", { units: "g", quantity: "100", name: "Mayonnaise" }],
-    ["5", { units: "g", quantity: "50", name: "Yoghurt" }],
-    ["6", { units: "tbsp", quantity: "3", name: "Extra Virgin Olive Oil" }],
-    ["7", { units: "pc", quantity: "1 / 2", name: "Lemon juice" }],
-    ["8", { units: "g", quantity: "15", name: "Flat - leaf parsley" }]
-  ]),
-  method_steps: /* @__PURE__ */ new Map([
-    ["0", {
-      step_text: "Boil the potatoes in salted water for 10 minutes, until they are just cooked through, then drain and rinse under running cold water to cool."
-    }],
-    ["1", {
-      step_text: "While the potatoes are cooking, shred the cabbage, deseed the pomegranate (or open the packet), and drain and rinse the beans."
-    }],
-    ["2", {
-      step_text: "In a bowl, mix the mayonnaise, yoghurt, lemon juice, oil, a teaspoon of flaky sea salt and plenty of pepper, then taste and adjust the seasoning accordingly."
-    }],
-    ["3", {
-      step_text: "Put the cooled, drained potatoes, red cabbage, pomegranate, beans and the dressing in a large bowl, then taste and adjust the seasoning if necessary. Arrange on a large plate, scatter over the parsley and serve at room temperature."
-    }]
-  ]),
-  tags: /* @__PURE__ */ new Map([["0", { name: "Cuisine", value: "Australian" }], ["1", {
-    name: "Style",
-    value: "Salad"
-  }], ["2", { name: "Label", value: "Light" }]])
-}];
-async function seedDb() {
-  console.log("beginning seedDb");
-  const preparetables = await prepareTables();
-  const tagoptions = await listTagOptions();
-  console.log(tagoptions[0]);
-  const recipes = await listRecipes();
-  console.log(recipes[0]);
-  console.log("tagoptions.length: ", tagoptions.length);
-  if (tagoptions.length === 0) {
-    for (const item of TagOptionSeed) {
-      const res = await addTagOption(item);
-    }
-  }
-  console.log("recipes.length: ", recipes.length);
-  if (recipes.length === 0) {
-    for (const item of RecipeSeed) {
-      await addOrUpdateRecipe(item);
-    }
-  }
-  console.log("finishing seedDb");
-}
-
-// build/dev/javascript/app/db.ts
-var sqliteWasm = await import("https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0");
-var sqlite = await sqliteWasm.default(
-  () => "https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0/dist/crsqlite.wasm"
-);
-var db = await sqlite.open("mealstack.db");
-function replacer(key3, value4) {
-  if (value4 instanceof Map) {
-    return {
-      dataType: "Map",
-      value: Array.from(value4.entries())
-      // or with spread: value: [...value]
-    };
-  }
-  return value4;
-}
-function reviver(key3, value4) {
-  if (typeof value4 === "object" && value4 !== null) {
-    if (value4.dataType === "Map") {
-      return new Map(value4.value);
-    }
-  }
-  return value4;
-}
-async function prepareTables() {
-  const findTagOptionsTable = await db.execA(
-    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='tag_options')"
-  );
-  const tagOptionsTableExists = findTagOptionsTable[0][0];
-  console.log("tagoptions table exists? ", tagOptionsTableExists);
-  if (!tagOptionsTableExists) {
-    console.log("creating tag_options table...");
-    await db.execA(
-      "CREATE TABLE `tag_options` ( 			`id` text PRIMARY KEY NOT NULL, 			`name` text NOT NULL, 			`options` text NOT NULL 		)"
-    );
-  }
-  const findRecipesTable = await db.execA(
-    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='recipes')"
-  );
-  const recipesTableExists = findRecipesTable[0][0];
-  console.log("recipes table exists? ", recipesTableExists);
-  if (!recipesTableExists) {
-    console.log("creating recipes table...");
-    await db.execA(
-      "CREATE TABLE `recipes` ( 			`id` text PRIMARY KEY NOT NULL, 			`slug` text, 			`title` text, 			`cook_time` integer, 			`prep_time` integer, 			`serves` integer, 			`ingredients` text, 			`method_steps` text, 			`tags` text, 			`shortlisted` integer 		)"
-    );
-  }
-  const findPlanTable = await db.execA(
-    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='plan')"
-  );
-  const planTableExists = findPlanTable[0][0];
-  console.log("plan Table exists? ", planTableExists);
-  if (!planTableExists) {
-    console.log("creating plan table...");
-    await db.execA(
-      "CREATE TABLE `plan` ( 			`date` date PRIMARY KEY NOT NULL, 			`planned_meals` text 		)"
-    );
-  }
-}
-async function listTagOptions() {
-  console.log("listTagOptions");
-  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM tag_options)");
-  const exists = findRows[0];
-  if (!exists) {
-    return new Ok2([]);
-  }
-  const result = await db.execO("SELECT * FROM tag_options");
-  const mapped = result.map((x) => {
-    x.options = JSON.parse(x.options);
-    return x;
-  });
-  console.log("tagoptions mapped: ", mapped);
-  return mapped;
-}
-async function addTagOption(tagOption) {
-  console.log("addTagOption: ", tagOption);
-  const result = await db.execA(
-    `INSERT INTO tag_options (id, name, options) VALUES (
-			'${nanoid()}'
-			,'${tagOption.name}'
-			,'${JSON.stringify(tagOption.options)}'
-		)`
-  );
-  console.log(result);
-  return result ? new Ok2(result) : new Error2(void 0);
-}
-async function listRecipes() {
-  console.log("listRecipes");
-  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM recipes)");
-  const exists = findRows[0];
-  if (!exists) {
-    return new Ok2([]);
-  }
-  const result = await db.execO(
-    "SELECT id, title, slug, prep_time, cook_time, serves, tags, ingredients, method_steps FROM recipes"
-  );
-  const mapped = result.map((recipe) => {
-    recipe.tags = JSON.parse(recipe.tags, reviver);
-    recipe.ingredients = JSON.parse(recipe.ingredients, reviver);
-    recipe.method_steps = JSON.parse(recipe.method_steps, reviver);
-    return recipe;
-  });
-  console.log("recipes mapped: ", mapped);
-  return mapped;
-}
-async function addOrUpdateRecipe(recipe) {
-  console.log("addOrUpdateRecipe: ", recipe);
-  const query = ` 		INSERT INTO recipes 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
-			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(
-    recipe.ingredients,
-    replacer
-  )}',
-			'${JSON.stringify(recipe.method_steps, replacer)}', '${JSON.stringify(
-    recipe.tags,
-    replacer
-  )}', '${recipe.shortlisted}') 		 ON CONFLICT(id) DO UPDATE SET		 slug=excluded.slug, 		 title=excluded.title, 		 cook_time=excluded.cook_time, 		 prep_time=excluded.prep_time, 		 serves=excluded.serves, 		 ingredients=excluded.ingredients, 		 method_steps=excluded.method_steps, 		 tags=excluded.tags, 		 shortlisted=excluded.shortlisted;`;
-  const result = await db.execA(query);
-  return new Ok2();
-}
-async function do_get_recipes() {
-  const _seed = await seedDb();
-  const result = await listRecipes();
-  console.log("recipe result from ffi: ", result);
-  return result;
-}
-async function do_get_tagoptions() {
-  const result = await listTagOptions();
-  console.log("tagoption result from ffi: ", result);
-  return result;
-}
-async function do_get_plan(startDate) {
-  console.log("do_get_plan");
-  const _seed = await seedDb();
-  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM plan)");
-  const exists = findRows[0];
-  if (!exists) {
-    return new Ok2([]);
-  }
-  const input2 = startDate ? startDate : `'now'`;
-  const result = await db.execO(
-    `SELECT date,planned_meals FROM plan WHERE date > DATE(${input2},'localtime','weekday 0','-6 days') AND date <= DATE(${input2},'localtime','weekday 0')`
-  );
-  const mapped = result.map((day3) => {
-    day3.planned_meals = JSON.parse(day3.planned_meals);
-    return day3;
-  });
-  console.log("plan result from ffi: ", mapped);
-  return result;
-}
-async function do_save_plan(plan) {
-  console.log("do_save_plan: ", plan);
-  for (const day3 of plan) {
-    const result = await db.execO(`
-			INSERT INTO plan 			(date,planned_meals) 			VALUES ('${day3.date}','${JSON.stringify(day3.planned_meals)}') 			ON CONFLICT(date) DO UPDATE SET 			planned_meals = excluded.planned_meals 			`);
-    console.log("inserted planday: ", result);
-  }
-  return new Ok2();
-}
-
 // build/dev/javascript/app/lib/decoders.mjs
 function stringed_bool(d) {
   let _pipe = string(d);
@@ -7223,1102 +7019,6 @@ function stringed_int(d) {
       );
     }
   );
-}
-
-// build/dev/javascript/app/session.mjs
-var DbRetrievedRecipes = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var DbRetrievedTagOptions = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var RecipeList = class extends CustomType {
-  constructor(recipes, tag_options) {
-    super();
-    this.recipes = recipes;
-    this.tag_options = tag_options;
-  }
-};
-var Recipe = class extends CustomType {
-  constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
-    super();
-    this.id = id2;
-    this.title = title;
-    this.slug = slug;
-    this.cook_time = cook_time;
-    this.prep_time = prep_time;
-    this.serves = serves;
-    this.tags = tags;
-    this.ingredients = ingredients;
-    this.method_steps = method_steps;
-  }
-};
-var TagOption = class extends CustomType {
-  constructor(id2, name2, options) {
-    super();
-    this.id = id2;
-    this.name = name2;
-    this.options = options;
-  }
-};
-var MethodStep = class extends CustomType {
-  constructor(step_text) {
-    super();
-    this.step_text = step_text;
-  }
-};
-var Tag = class extends CustomType {
-  constructor(name2, value4) {
-    super();
-    this.name = name2;
-    this.value = value4;
-  }
-};
-var Ingredient = class extends CustomType {
-  constructor(name2, ismain, quantity, units2) {
-    super();
-    this.name = name2;
-    this.ismain = ismain;
-    this.quantity = quantity;
-    this.units = units2;
-  }
-};
-function merge_recipe_into_model(recipe, model) {
-  return model.withFields({
-    recipes: (() => {
-      let _pipe = model.recipes;
-      let _pipe$1 = map2(_pipe, (a2) => {
-        return [a2.id, a2];
-      });
-      let _pipe$2 = from_list(_pipe$1);
-      let _pipe$3 = merge(
-        _pipe$2,
-        from_list(toList([[recipe.id, recipe]]))
-      );
-      return values(_pipe$3);
-    })()
-  });
-}
-function decode_ingredient(d) {
-  let decoder = decode4(
-    (var0, var1, var2, var3) => {
-      return new Ingredient(var0, var1, var2, var3);
-    },
-    optional_field("name", string),
-    optional_field("ismain", stringed_bool),
-    optional_field("quantity", string),
-    optional_field("units", string)
-  );
-  return decoder(d);
-}
-function decode_tag(d) {
-  let decoder = decode2(
-    (var0, var1) => {
-      return new Tag(var0, var1);
-    },
-    field("name", string),
-    field("value", string)
-  );
-  return decoder(d);
-}
-function decode_method_step(d) {
-  let decoder = decode1(
-    (var0) => {
-      return new MethodStep(var0);
-    },
-    field("step_text", string)
-  );
-  return decoder(d);
-}
-function decode_recipe(d) {
-  let decoder = decode9(
-    (var0, var1, var2, var3, var4, var5, var6, var7, var8) => {
-      return new Recipe(var0, var1, var2, var3, var4, var5, var6, var7, var8);
-    },
-    optional_field("id", string),
-    field("title", string),
-    field("slug", string),
-    field("cook_time", int),
-    field("prep_time", int),
-    field("serves", int),
-    optional_field("tags", dict(stringed_int, decode_tag)),
-    optional_field(
-      "ingredients",
-      dict(stringed_int, decode_ingredient)
-    ),
-    optional_field(
-      "method_steps",
-      dict(stringed_int, decode_method_step)
-    )
-  );
-  return decoder(d);
-}
-function get_recipes() {
-  return from2(
-    (dispatch2) => {
-      let _pipe = do_get_recipes();
-      let _pipe$1 = map_promise(_pipe, toList);
-      let _pipe$2 = map_promise(
-        _pipe$1,
-        (_capture) => {
-          return map2(_capture, decode_recipe);
-        }
-      );
-      let _pipe$3 = map_promise(_pipe$2, all);
-      let _pipe$4 = map_promise(
-        _pipe$3,
-        (_capture) => {
-          return map3(
-            _capture,
-            (var0) => {
-              return new DbRetrievedRecipes(var0);
-            }
-          );
-        }
-      );
-      tap(
-        _pipe$4,
-        (_capture) => {
-          return map3(_capture, dispatch2);
-        }
-      );
-      return void 0;
-    }
-  );
-}
-function decode_tag_option(d) {
-  let decoder = decode3(
-    (var0, var1, var2) => {
-      return new TagOption(var0, var1, var2);
-    },
-    optional_field("id", string),
-    field("name", string),
-    field("options", list(string))
-  );
-  let f = decoder(d);
-  return debug(f);
-}
-function get_tag_options() {
-  return from2(
-    (dispatch2) => {
-      let _pipe = do_get_tagoptions();
-      let _pipe$1 = map_promise(_pipe, toList);
-      let _pipe$2 = map_promise(
-        _pipe$1,
-        (_capture) => {
-          return map2(_capture, decode_tag_option);
-        }
-      );
-      let _pipe$3 = map_promise(_pipe$2, debug);
-      let _pipe$4 = map_promise(_pipe$3, all);
-      let _pipe$5 = map_promise(
-        _pipe$4,
-        (_capture) => {
-          return map3(
-            _capture,
-            (var0) => {
-              return new DbRetrievedTagOptions(var0);
-            }
-          );
-        }
-      );
-      tap(
-        _pipe$5,
-        (_capture) => {
-          return map3(_capture, dispatch2);
-        }
-      );
-      return void 0;
-    }
-  );
-}
-
-// build/dev/javascript/app/components/typeahead.mjs
-var Model2 = class extends CustomType {
-  constructor(search_items, search_term2, found_items, class_list2) {
-    super();
-    this.search_items = search_items;
-    this.search_term = search_term2;
-    this.found_items = found_items;
-    this.class_list = class_list2;
-  }
-};
-var RetrievedSearchItems = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserUpdatedSearchTerm = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserChangedValue = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserUpdatedClassList = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-function typeahead(attrs) {
-  return element("type-ahead", attrs, toList([]));
-}
-function recipe_titles(all3) {
-  return property("recipe-titles", all3);
-}
-function search_term(term) {
-  return property("search-term", term);
-}
-function class_list(class_list2) {
-  return attribute("class", class_list2);
-}
-function init6(_) {
-  return [new Model2(toList([]), "", toList([]), ""), none()];
-}
-function update3(model, msg) {
-  debug(msg);
-  if (msg instanceof UserUpdatedClassList) {
-    let a2 = msg[0];
-    return [model.withFields({ class_list: a2 }), none()];
-  } else if (msg instanceof RetrievedSearchItems) {
-    let a2 = msg[0];
-    return [model.withFields({ search_items: a2 }), none()];
-  } else if (msg instanceof UserUpdatedSearchTerm) {
-    let a2 = msg[0];
-    return [
-      model.withFields({
-        search_term: a2,
-        found_items: (() => {
-          let $ = length3(a2);
-          if ($ < 3) {
-            let num = $;
-            return model.search_items;
-          } else {
-            return filter(
-              model.search_items,
-              (r) => {
-                return contains_string(
-                  lowercase2(r),
-                  lowercase2(a2)
-                );
-              }
-            );
-          }
-        })()
-      }),
-      none()
-    ];
-  } else {
-    let a2 = msg[0];
-    return [model, emit2("typeahead-change", string2(a2))];
-  }
-}
-function on_attribute_change() {
-  return from_list(
-    toList([
-      [
-        "recipe-titles",
-        (attribute2) => {
-          let _pipe = attribute2;
-          let _pipe$1 = list(string)(_pipe);
-          return map3(
-            _pipe$1,
-            (var0) => {
-              return new RetrievedSearchItems(var0);
-            }
-          );
-        }
-      ],
-      [
-        "search-term",
-        (attribute2) => {
-          let _pipe = attribute2;
-          let _pipe$1 = string(_pipe);
-          return map3(
-            _pipe$1,
-            (var0) => {
-              return new UserUpdatedSearchTerm(var0);
-            }
-          );
-        }
-      ],
-      [
-        "class",
-        (attribute2) => {
-          let _pipe = attribute2;
-          let _pipe$1 = string(_pipe);
-          return map3(
-            _pipe$1,
-            (var0) => {
-              return new UserUpdatedClassList(var0);
-            }
-          );
-        }
-      ]
-    ])
-  );
-}
-function search_result(res) {
-  return option(toList([]), res);
-}
-function view2(model) {
-  return fragment(
-    toList([
-      element(
-        "fit-text",
-        toList([class$("contents"), attribute("data-target", "input")]),
-        toList([
-          textarea(
-            toList([
-              id("meal-input"),
-              class$(
-                "[field-sizing:_content;] overflow-x-hidden input-base w-full input-focus font-transitional resize-none italic text-ecru-white-950  text-xl bg-ecru-white-100"
-              ),
-              class$(
-                (() => {
-                  let $ = length3(model.search_term);
-                  if ($ > 38) {
-                    let num = $;
-                    return "text-base";
-                  } else if ($ > 17) {
-                    let num = $;
-                    return "text-lg";
-                  } else {
-                    return "text-xl";
-                  }
-                })()
-              ),
-              class$(model.class_list),
-              value(model.search_term),
-              attribute("list", "search_results"),
-              on_input((var0) => {
-                return new UserUpdatedSearchTerm(var0);
-              }),
-              on2(
-                "change",
-                (event2) => {
-                  let _pipe = event2;
-                  let _pipe$1 = field(
-                    "target",
-                    field("value", string)
-                  )(_pipe);
-                  return map3(
-                    _pipe$1,
-                    (var0) => {
-                      return new UserChangedValue(var0);
-                    }
-                  );
-                }
-              )
-            ]),
-            ""
-          ),
-          datalist(
-            toList([id("search_results")]),
-            (() => {
-              let _pipe = model.found_items;
-              let _pipe$1 = map2(_pipe, (a2) => {
-                return a2;
-              });
-              return map2(_pipe$1, search_result);
-            })()
-          )
-        ])
-      )
-    ])
-  );
-}
-function app() {
-  return component(init6, update3, view2, on_attribute_change());
-}
-
-// build/dev/javascript/birl/birl/duration.mjs
-var MicroSecond = class extends CustomType {
-};
-var MilliSecond = class extends CustomType {
-};
-var Second = class extends CustomType {
-};
-var Minute = class extends CustomType {
-};
-var Hour = class extends CustomType {
-};
-var Day = class extends CustomType {
-};
-var Week = class extends CustomType {
-};
-var Month = class extends CustomType {
-};
-var Year = class extends CustomType {
-};
-var milli_second = 1e3;
-var second2 = 1e6;
-var minute = 6e7;
-var hour = 36e8;
-var day = 864e8;
-var week = 6048e8;
-var month = 2592e9;
-var year = 31536e9;
-var unit_values = toList([
-  [new Year(), year],
-  [new Month(), month],
-  [new Week(), week],
-  [new Day(), day],
-  [new Hour(), hour],
-  [new Minute(), minute],
-  [new Second(), second2],
-  [new MilliSecond(), milli_second],
-  [new MicroSecond(), 1]
-]);
-var year_units = toList(["y", "year", "years"]);
-var month_units = toList(["mon", "month", "months"]);
-var week_units = toList(["w", "week", "weeks"]);
-var day_units = toList(["d", "day", "days"]);
-var hour_units = toList(["h", "hour", "hours"]);
-var minute_units = toList(["m", "min", "minute", "minutes"]);
-var second_units = toList(["s", "sec", "secs", "second", "seconds"]);
-var milli_second_units = toList([
-  "ms",
-  "msec",
-  "msecs",
-  "millisecond",
-  "milliseconds",
-  "milli-second",
-  "milli-seconds",
-  "milli_second",
-  "milli_seconds"
-]);
-var units = toList([
-  [new Year(), year_units],
-  [new Month(), month_units],
-  [new Week(), week_units],
-  [new Day(), day_units],
-  [new Hour(), hour_units],
-  [new Minute(), minute_units],
-  [new Second(), second_units],
-  [new MilliSecond(), milli_second_units]
-]);
-
-// build/dev/javascript/birl/birl/zones.mjs
-var list2 = toList([
-  ["Africa/Abidjan", 0],
-  ["Africa/Algiers", 3600],
-  ["Africa/Bissau", 0],
-  ["Africa/Cairo", 7200],
-  ["Africa/Casablanca", 3600],
-  ["Africa/Ceuta", 3600],
-  ["Africa/El_Aaiun", 3600],
-  ["Africa/Johannesburg", 7200],
-  ["Africa/Juba", 7200],
-  ["Africa/Khartoum", 7200],
-  ["Africa/Lagos", 3600],
-  ["Africa/Maputo", 7200],
-  ["Africa/Monrovia", 0],
-  ["Africa/Nairobi", 10800],
-  ["Africa/Ndjamena", 3600],
-  ["Africa/Sao_Tome", 0],
-  ["Africa/Tripoli", 7200],
-  ["Africa/Tunis", 3600],
-  ["Africa/Windhoek", 7200],
-  ["America/Adak", -36e3],
-  ["America/Anchorage", -32400],
-  ["America/Araguaina", -10800],
-  ["America/Argentina/Buenos_Aires", -10800],
-  ["America/Argentina/Catamarca", -10800],
-  ["America/Argentina/Cordoba", -10800],
-  ["America/Argentina/Jujuy", -10800],
-  ["America/Argentina/La_Rioja", -10800],
-  ["America/Argentina/Mendoza", -10800],
-  ["America/Argentina/Rio_Gallegos", -10800],
-  ["America/Argentina/Salta", -10800],
-  ["America/Argentina/San_Juan", -10800],
-  ["America/Argentina/San_Luis", -10800],
-  ["America/Argentina/Tucuman", -10800],
-  ["America/Argentina/Ushuaia", -10800],
-  ["America/Asuncion", -14400],
-  ["America/Bahia", -10800],
-  ["America/Bahia_Banderas", -21600],
-  ["America/Barbados", -14400],
-  ["America/Belem", -10800],
-  ["America/Belize", -21600],
-  ["America/Boa_Vista", -14400],
-  ["America/Bogota", -18e3],
-  ["America/Boise", -25200],
-  ["America/Cambridge_Bay", -25200],
-  ["America/Campo_Grande", -14400],
-  ["America/Cancun", -18e3],
-  ["America/Caracas", -14400],
-  ["America/Cayenne", -10800],
-  ["America/Chicago", -21600],
-  ["America/Chihuahua", -21600],
-  ["America/Ciudad_Juarez", -25200],
-  ["America/Costa_Rica", -21600],
-  ["America/Cuiaba", -14400],
-  ["America/Danmarkshavn", 0],
-  ["America/Dawson", -25200],
-  ["America/Dawson_Creek", -25200],
-  ["America/Denver", -25200],
-  ["America/Detroit", -18e3],
-  ["America/Edmonton", -25200],
-  ["America/Eirunepe", -18e3],
-  ["America/El_Salvador", -21600],
-  ["America/Fort_Nelson", -25200],
-  ["America/Fortaleza", -10800],
-  ["America/Glace_Bay", -14400],
-  ["America/Goose_Bay", -14400],
-  ["America/Grand_Turk", -18e3],
-  ["America/Guatemala", -21600],
-  ["America/Guayaquil", -18e3],
-  ["America/Guyana", -14400],
-  ["America/Halifax", -14400],
-  ["America/Havana", -18e3],
-  ["America/Hermosillo", -25200],
-  ["America/Indiana/Indianapolis", -18e3],
-  ["America/Indiana/Knox", -21600],
-  ["America/Indiana/Marengo", -18e3],
-  ["America/Indiana/Petersburg", -18e3],
-  ["America/Indiana/Tell_City", -21600],
-  ["America/Indiana/Vevay", -18e3],
-  ["America/Indiana/Vincennes", -18e3],
-  ["America/Indiana/Winamac", -18e3],
-  ["America/Inuvik", -25200],
-  ["America/Iqaluit", -18e3],
-  ["America/Jamaica", -18e3],
-  ["America/Juneau", -32400],
-  ["America/Kentucky/Louisville", -18e3],
-  ["America/Kentucky/Monticello", -18e3],
-  ["America/La_Paz", -14400],
-  ["America/Lima", -18e3],
-  ["America/Los_Angeles", -28800],
-  ["America/Maceio", -10800],
-  ["America/Managua", -21600],
-  ["America/Manaus", -14400],
-  ["America/Martinique", -14400],
-  ["America/Matamoros", -21600],
-  ["America/Mazatlan", -25200],
-  ["America/Menominee", -21600],
-  ["America/Merida", -21600],
-  ["America/Metlakatla", -32400],
-  ["America/Mexico_City", -21600],
-  ["America/Miquelon", -10800],
-  ["America/Moncton", -14400],
-  ["America/Monterrey", -21600],
-  ["America/Montevideo", -10800],
-  ["America/New_York", -18e3],
-  ["America/Nome", -32400],
-  ["America/Noronha", -7200],
-  ["America/North_Dakota/Beulah", -21600],
-  ["America/North_Dakota/Center", -21600],
-  ["America/North_Dakota/New_Salem", -21600],
-  ["America/Nuuk", -7200],
-  ["America/Ojinaga", -21600],
-  ["America/Panama", -18e3],
-  ["America/Paramaribo", -10800],
-  ["America/Phoenix", -25200],
-  ["America/Port-au-Prince", -18e3],
-  ["America/Porto_Velho", -14400],
-  ["America/Puerto_Rico", -14400],
-  ["America/Punta_Arenas", -10800],
-  ["America/Rankin_Inlet", -21600],
-  ["America/Recife", -10800],
-  ["America/Regina", -21600],
-  ["America/Resolute", -21600],
-  ["America/Rio_Branco", -18e3],
-  ["America/Santarem", -10800],
-  ["America/Santiago", -14400],
-  ["America/Santo_Domingo", -14400],
-  ["America/Sao_Paulo", -10800],
-  ["America/Scoresbysund", -7200],
-  ["America/Sitka", -32400],
-  ["America/St_Johns", -12600],
-  ["America/Swift_Current", -21600],
-  ["America/Tegucigalpa", -21600],
-  ["America/Thule", -14400],
-  ["America/Tijuana", -28800],
-  ["America/Toronto", -18e3],
-  ["America/Vancouver", -28800],
-  ["America/Whitehorse", -25200],
-  ["America/Winnipeg", -21600],
-  ["America/Yakutat", -32400],
-  ["Antarctica/Casey", 28800],
-  ["Antarctica/Davis", 25200],
-  ["Antarctica/Macquarie", 36e3],
-  ["Antarctica/Mawson", 18e3],
-  ["Antarctica/Palmer", -10800],
-  ["Antarctica/Rothera", -10800],
-  ["Antarctica/Troll", 0],
-  ["Antarctica/Vostok", 18e3],
-  ["Asia/Almaty", 18e3],
-  ["Asia/Amman", 10800],
-  ["Asia/Anadyr", 43200],
-  ["Asia/Aqtau", 18e3],
-  ["Asia/Aqtobe", 18e3],
-  ["Asia/Ashgabat", 18e3],
-  ["Asia/Atyrau", 18e3],
-  ["Asia/Baghdad", 10800],
-  ["Asia/Baku", 14400],
-  ["Asia/Bangkok", 25200],
-  ["Asia/Barnaul", 25200],
-  ["Asia/Beirut", 7200],
-  ["Asia/Bishkek", 21600],
-  ["Asia/Chita", 32400],
-  ["Asia/Choibalsan", 28800],
-  ["Asia/Colombo", 19800],
-  ["Asia/Damascus", 10800],
-  ["Asia/Dhaka", 21600],
-  ["Asia/Dili", 32400],
-  ["Asia/Dubai", 14400],
-  ["Asia/Dushanbe", 18e3],
-  ["Asia/Famagusta", 7200],
-  ["Asia/Gaza", 7200],
-  ["Asia/Hebron", 7200],
-  ["Asia/Ho_Chi_Minh", 25200],
-  ["Asia/Hong_Kong", 28800],
-  ["Asia/Hovd", 25200],
-  ["Asia/Irkutsk", 28800],
-  ["Asia/Jakarta", 25200],
-  ["Asia/Jayapura", 32400],
-  ["Asia/Jerusalem", 7200],
-  ["Asia/Kabul", 16200],
-  ["Asia/Kamchatka", 43200],
-  ["Asia/Karachi", 18e3],
-  ["Asia/Kathmandu", 20700],
-  ["Asia/Khandyga", 32400],
-  ["Asia/Kolkata", 19800],
-  ["Asia/Krasnoyarsk", 25200],
-  ["Asia/Kuching", 28800],
-  ["Asia/Macau", 28800],
-  ["Asia/Magadan", 39600],
-  ["Asia/Makassar", 28800],
-  ["Asia/Manila", 28800],
-  ["Asia/Nicosia", 7200],
-  ["Asia/Novokuznetsk", 25200],
-  ["Asia/Novosibirsk", 25200],
-  ["Asia/Omsk", 21600],
-  ["Asia/Oral", 18e3],
-  ["Asia/Pontianak", 25200],
-  ["Asia/Pyongyang", 32400],
-  ["Asia/Qatar", 10800],
-  ["Asia/Qostanay", 18e3],
-  ["Asia/Qyzylorda", 18e3],
-  ["Asia/Riyadh", 10800],
-  ["Asia/Sakhalin", 39600],
-  ["Asia/Samarkand", 18e3],
-  ["Asia/Seoul", 32400],
-  ["Asia/Shanghai", 28800],
-  ["Asia/Singapore", 28800],
-  ["Asia/Srednekolymsk", 39600],
-  ["Asia/Taipei", 28800],
-  ["Asia/Tashkent", 18e3],
-  ["Asia/Tbilisi", 14400],
-  ["Asia/Tehran", 12600],
-  ["Asia/Thimphu", 21600],
-  ["Asia/Tokyo", 32400],
-  ["Asia/Tomsk", 25200],
-  ["Asia/Ulaanbaatar", 28800],
-  ["Asia/Urumqi", 21600],
-  ["Asia/Ust-Nera", 36e3],
-  ["Asia/Vladivostok", 36e3],
-  ["Asia/Yakutsk", 32400],
-  ["Asia/Yangon", 23400],
-  ["Asia/Yekaterinburg", 18e3],
-  ["Asia/Yerevan", 14400],
-  ["Atlantic/Azores", -3600],
-  ["Atlantic/Bermuda", -14400],
-  ["Atlantic/Canary", 0],
-  ["Atlantic/Cape_Verde", -3600],
-  ["Atlantic/Faroe", 0],
-  ["Atlantic/Madeira", 0],
-  ["Atlantic/South_Georgia", -7200],
-  ["Atlantic/Stanley", -10800],
-  ["Australia/Adelaide", 34200],
-  ["Australia/Brisbane", 36e3],
-  ["Australia/Broken_Hill", 34200],
-  ["Australia/Darwin", 34200],
-  ["Australia/Eucla", 31500],
-  ["Australia/Hobart", 36e3],
-  ["Australia/Lindeman", 36e3],
-  ["Australia/Lord_Howe", 37800],
-  ["Australia/Melbourne", 36e3],
-  ["Australia/Perth", 28800],
-  ["Australia/Sydney", 36e3],
-  ["CET", 3600],
-  ["CST6CDT", -21600],
-  ["EET", 7200],
-  ["EST", -18e3],
-  ["EST5EDT", -18e3],
-  ["Etc/GMT", 0],
-  ["Etc/GMT+1", -3600],
-  ["Etc/GMT+10", -36e3],
-  ["Etc/GMT+11", -39600],
-  ["Etc/GMT+12", -43200],
-  ["Etc/GMT+2", -7200],
-  ["Etc/GMT+3", -10800],
-  ["Etc/GMT+4", -14400],
-  ["Etc/GMT+5", -18e3],
-  ["Etc/GMT+6", -21600],
-  ["Etc/GMT+7", -25200],
-  ["Etc/GMT+8", -28800],
-  ["Etc/GMT+9", -32400],
-  ["Etc/GMT-1", 3600],
-  ["Etc/GMT-10", 36e3],
-  ["Etc/GMT-11", 39600],
-  ["Etc/GMT-12", 43200],
-  ["Etc/GMT-13", 46800],
-  ["Etc/GMT-14", 50400],
-  ["Etc/GMT-2", 7200],
-  ["Etc/GMT-3", 10800],
-  ["Etc/GMT-4", 14400],
-  ["Etc/GMT-5", 18e3],
-  ["Etc/GMT-6", 21600],
-  ["Etc/GMT-7", 25200],
-  ["Etc/GMT-8", 28800],
-  ["Etc/GMT-9", 32400],
-  ["Etc/UTC", 0],
-  ["Europe/Andorra", 3600],
-  ["Europe/Astrakhan", 14400],
-  ["Europe/Athens", 7200],
-  ["Europe/Belgrade", 3600],
-  ["Europe/Berlin", 3600],
-  ["Europe/Brussels", 3600],
-  ["Europe/Bucharest", 7200],
-  ["Europe/Budapest", 3600],
-  ["Europe/Chisinau", 7200],
-  ["Europe/Dublin", 3600],
-  ["Europe/Gibraltar", 3600],
-  ["Europe/Helsinki", 7200],
-  ["Europe/Istanbul", 10800],
-  ["Europe/Kaliningrad", 7200],
-  ["Europe/Kirov", 10800],
-  ["Europe/Kyiv", 7200],
-  ["Europe/Lisbon", 0],
-  ["Europe/London", 0],
-  ["Europe/Madrid", 3600],
-  ["Europe/Malta", 3600],
-  ["Europe/Minsk", 10800],
-  ["Europe/Moscow", 10800],
-  ["Europe/Paris", 3600],
-  ["Europe/Prague", 3600],
-  ["Europe/Riga", 7200],
-  ["Europe/Rome", 3600],
-  ["Europe/Samara", 14400],
-  ["Europe/Saratov", 14400],
-  ["Europe/Simferopol", 10800],
-  ["Europe/Sofia", 7200],
-  ["Europe/Tallinn", 7200],
-  ["Europe/Tirane", 3600],
-  ["Europe/Ulyanovsk", 14400],
-  ["Europe/Vienna", 3600],
-  ["Europe/Vilnius", 7200],
-  ["Europe/Volgograd", 10800],
-  ["Europe/Warsaw", 3600],
-  ["Europe/Zurich", 3600],
-  ["HST", -36e3],
-  ["Indian/Chagos", 21600],
-  ["Indian/Maldives", 18e3],
-  ["Indian/Mauritius", 14400],
-  ["MET", 3600],
-  ["MST", -25200],
-  ["MST7MDT", -25200],
-  ["PST8PDT", -28800],
-  ["Pacific/Apia", 46800],
-  ["Pacific/Auckland", 43200],
-  ["Pacific/Bougainville", 39600],
-  ["Pacific/Chatham", 45900],
-  ["Pacific/Easter", -21600],
-  ["Pacific/Efate", 39600],
-  ["Pacific/Fakaofo", 46800],
-  ["Pacific/Fiji", 43200],
-  ["Pacific/Galapagos", -21600],
-  ["Pacific/Gambier", -32400],
-  ["Pacific/Guadalcanal", 39600],
-  ["Pacific/Guam", 36e3],
-  ["Pacific/Honolulu", -36e3],
-  ["Pacific/Kanton", 46800],
-  ["Pacific/Kiritimati", 50400],
-  ["Pacific/Kosrae", 39600],
-  ["Pacific/Kwajalein", 43200],
-  ["Pacific/Marquesas", -34200],
-  ["Pacific/Nauru", 43200],
-  ["Pacific/Niue", -39600],
-  ["Pacific/Norfolk", 39600],
-  ["Pacific/Noumea", 39600],
-  ["Pacific/Pago_Pago", -39600],
-  ["Pacific/Palau", 32400],
-  ["Pacific/Pitcairn", -28800],
-  ["Pacific/Port_Moresby", 36e3],
-  ["Pacific/Rarotonga", -36e3],
-  ["Pacific/Tahiti", -36e3],
-  ["Pacific/Tarawa", 43200],
-  ["Pacific/Tongatapu", 46800],
-  ["WET", 0]
-]);
-
-// build/dev/javascript/birl/birl.mjs
-var Time = class extends CustomType {
-  constructor(wall_time, offset, timezone, monotonic_time) {
-    super();
-    this.wall_time = wall_time;
-    this.offset = offset;
-    this.timezone = timezone;
-    this.monotonic_time = monotonic_time;
-  }
-};
-var Mon = class extends CustomType {
-};
-var Tue = class extends CustomType {
-};
-var Wed = class extends CustomType {
-};
-var Thu = class extends CustomType {
-};
-var Fri = class extends CustomType {
-};
-var Sat = class extends CustomType {
-};
-var Sun = class extends CustomType {
-};
-var Jan = class extends CustomType {
-};
-var Feb = class extends CustomType {
-};
-var Mar = class extends CustomType {
-};
-var Apr = class extends CustomType {
-};
-var May = class extends CustomType {
-};
-var Jun = class extends CustomType {
-};
-var Jul = class extends CustomType {
-};
-var Aug = class extends CustomType {
-};
-var Sep = class extends CustomType {
-};
-var Oct = class extends CustomType {
-};
-var Nov = class extends CustomType {
-};
-var Dec = class extends CustomType {
-};
-var unix_epoch = new Time(0, 0, new None(), new None());
-var string_to_units = toList([
-  ["year", new Year()],
-  ["month", new Month()],
-  ["week", new Week()],
-  ["day", new Day()],
-  ["hour", new Hour()],
-  ["minute", new Minute()],
-  ["second", new Second()]
-]);
-var units_to_string = toList([
-  [new Year(), "year"],
-  [new Month(), "month"],
-  [new Week(), "week"],
-  [new Day(), "day"],
-  [new Hour(), "hour"],
-  [new Minute(), "minute"],
-  [new Second(), "second"]
-]);
-var weekday_strings = toList([
-  [new Mon(), ["Monday", "Mon"]],
-  [new Tue(), ["Tuesday", "Tue"]],
-  [new Wed(), ["Wednesday", "Wed"]],
-  [new Thu(), ["Thursday", "Thu"]],
-  [new Fri(), ["Friday", "Fri"]],
-  [new Sat(), ["Saturday", "Sat"]],
-  [new Sun(), ["Sunday", "Sun"]]
-]);
-var month_strings = toList([
-  [new Jan(), ["January", "Jan"]],
-  [new Feb(), ["February", "Feb"]],
-  [new Mar(), ["March", "Mar"]],
-  [new Apr(), ["April", "Apr"]],
-  [new May(), ["May", "May"]],
-  [new Jun(), ["June", "Jun"]],
-  [new Jul(), ["July", "Jul"]],
-  [new Aug(), ["August", "Aug"]],
-  [new Sep(), ["September", "Sep"]],
-  [new Oct(), ["October", "Oct"]],
-  [new Nov(), ["November", "Nov"]],
-  [new Dec(), ["December", "Dec"]]
-]);
-
-// build/dev/javascript/decipher/decipher.mjs
-function tagged_union(tag, variants) {
-  let switch$ = from_list(variants);
-  return (dynamic3) => {
-    return try$(
-      tag(dynamic3),
-      (kind) => {
-        let $ = get(switch$, kind);
-        if ($.isOk()) {
-          let decoder = $[0];
-          return decoder(dynamic3);
-        } else {
-          let tags = (() => {
-            let _pipe = keys(switch$);
-            let _pipe$1 = map2(_pipe, inspect2);
-            return join2(_pipe$1, " | ");
-          })();
-          let path = (() => {
-            let $1 = tag(from(void 0));
-            if (!$1.isOk() && $1[0].atLeastLength(1) && $1[0].head instanceof DecodeError) {
-              let path2 = $1[0].head.path;
-              return path2;
-            } else {
-              return toList([]);
-            }
-          })();
-          return new Error2(
-            toList([new DecodeError(tags, inspect2(tag), path)])
-          );
-        }
-      }
-    );
-  };
-}
-function enum$(variants) {
-  return tagged_union(
-    string,
-    map2(
-      variants,
-      (_capture) => {
-        return map_second(
-          _capture,
-          (variant) => {
-            return (_) => {
-              return new Ok2(variant);
-            };
-          }
-        );
-      }
-    )
-  );
-}
-
-// build/dev/javascript/justin/justin.mjs
-function add2(words, word) {
-  if (word === "") {
-    return words;
-  } else {
-    return prepend(word, words);
-  }
-}
-function is_upper(g) {
-  return lowercase2(g) !== g;
-}
-function split5(loop$in, loop$up, loop$word, loop$words) {
-  while (true) {
-    let in$ = loop$in;
-    let up = loop$up;
-    let word = loop$word;
-    let words = loop$words;
-    if (in$.hasLength(0) && word === "") {
-      return reverse(words);
-    } else if (in$.hasLength(0)) {
-      return reverse(add2(words, word));
-    } else if (in$.atLeastLength(1) && in$.head === "\n") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "	") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "!") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "?") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "#") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === ".") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "-") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "_") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === " ") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add2(words, word);
-    } else {
-      let g = in$.head;
-      let in$1 = in$.tail;
-      let $ = is_upper(g);
-      if (!$) {
-        loop$in = in$1;
-        loop$up = false;
-        loop$word = word + g;
-        loop$words = words;
-      } else if ($ && up) {
-        loop$in = in$1;
-        loop$up = up;
-        loop$word = word + g;
-        loop$words = words;
-      } else {
-        loop$in = in$1;
-        loop$up = true;
-        loop$word = g;
-        loop$words = add2(words, word);
-      }
-    }
-  }
-}
-function split_words(text3) {
-  let _pipe = text3;
-  let _pipe$1 = graphemes(_pipe);
-  return split5(_pipe$1, false, "", toList([]));
-}
-function kebab_case(text3) {
-  let _pipe = text3;
-  let _pipe$1 = split_words(_pipe);
-  let _pipe$2 = join2(_pipe$1, "-");
-  return lowercase2(_pipe$2);
 }
 
 // build/dev/javascript/nibble/nibble/lexer.mjs
@@ -9210,7 +7910,7 @@ function from_string3(str) {
     return from_list2(_pipe$1);
   })();
   let is_alpha$1 = (char) => {
-    return contains(alpha, char);
+    return contains2(alpha, char);
   };
   let l = simple(
     toList([
@@ -9267,43 +7967,43 @@ function get_year_month_day() {
 }
 
 // build/dev/javascript/rada/rada/date.mjs
-var Jan2 = class extends CustomType {
+var Jan = class extends CustomType {
 };
-var Feb2 = class extends CustomType {
+var Feb = class extends CustomType {
 };
-var Mar2 = class extends CustomType {
+var Mar = class extends CustomType {
 };
-var Apr2 = class extends CustomType {
+var Apr = class extends CustomType {
 };
-var May2 = class extends CustomType {
+var May = class extends CustomType {
 };
-var Jun2 = class extends CustomType {
+var Jun = class extends CustomType {
 };
-var Jul2 = class extends CustomType {
+var Jul = class extends CustomType {
 };
-var Aug2 = class extends CustomType {
+var Aug = class extends CustomType {
 };
-var Sep2 = class extends CustomType {
+var Sep = class extends CustomType {
 };
-var Oct2 = class extends CustomType {
+var Oct = class extends CustomType {
 };
-var Nov2 = class extends CustomType {
+var Nov = class extends CustomType {
 };
-var Dec2 = class extends CustomType {
+var Dec = class extends CustomType {
 };
-var Mon2 = class extends CustomType {
+var Mon = class extends CustomType {
 };
-var Tue2 = class extends CustomType {
+var Tue = class extends CustomType {
 };
-var Wed2 = class extends CustomType {
+var Wed = class extends CustomType {
 };
-var Thu2 = class extends CustomType {
+var Thu = class extends CustomType {
 };
-var Fri2 = class extends CustomType {
+var Fri = class extends CustomType {
 };
-var Sat2 = class extends CustomType {
+var Sat = class extends CustomType {
 };
-var Sun2 = class extends CustomType {
+var Sun = class extends CustomType {
 };
 var RD = class extends CustomType {
   constructor(x0) {
@@ -9372,13 +8072,13 @@ var Weeks = class extends CustomType {
 };
 var Days = class extends CustomType {
 };
-var Year2 = class extends CustomType {
+var Year = class extends CustomType {
 };
 var Quarter = class extends CustomType {
 };
-var Month2 = class extends CustomType {
+var Month = class extends CustomType {
 };
-var Week2 = class extends CustomType {
+var Week = class extends CustomType {
 };
 var Monday = class extends CustomType {
 };
@@ -9401,44 +8101,44 @@ function string_take_left(str, count) {
   return slice(str, 0, count);
 }
 function month_to_name(month3) {
-  if (month3 instanceof Jan2) {
+  if (month3 instanceof Jan) {
     return "January";
-  } else if (month3 instanceof Feb2) {
+  } else if (month3 instanceof Feb) {
     return "February";
-  } else if (month3 instanceof Mar2) {
+  } else if (month3 instanceof Mar) {
     return "March";
-  } else if (month3 instanceof Apr2) {
+  } else if (month3 instanceof Apr) {
     return "April";
-  } else if (month3 instanceof May2) {
+  } else if (month3 instanceof May) {
     return "May";
-  } else if (month3 instanceof Jun2) {
+  } else if (month3 instanceof Jun) {
     return "June";
-  } else if (month3 instanceof Jul2) {
+  } else if (month3 instanceof Jul) {
     return "July";
-  } else if (month3 instanceof Aug2) {
+  } else if (month3 instanceof Aug) {
     return "August";
-  } else if (month3 instanceof Sep2) {
+  } else if (month3 instanceof Sep) {
     return "September";
-  } else if (month3 instanceof Oct2) {
+  } else if (month3 instanceof Oct) {
     return "October";
-  } else if (month3 instanceof Nov2) {
+  } else if (month3 instanceof Nov) {
     return "November";
   } else {
     return "December";
   }
 }
 function weekday_to_name(weekday3) {
-  if (weekday3 instanceof Mon2) {
+  if (weekday3 instanceof Mon) {
     return "Monday";
-  } else if (weekday3 instanceof Tue2) {
+  } else if (weekday3 instanceof Tue) {
     return "Tuesday";
-  } else if (weekday3 instanceof Wed2) {
+  } else if (weekday3 instanceof Wed) {
     return "Wednesday";
-  } else if (weekday3 instanceof Thu2) {
+  } else if (weekday3 instanceof Thu) {
     return "Thursday";
-  } else if (weekday3 instanceof Fri2) {
+  } else if (weekday3 instanceof Fri) {
     return "Friday";
-  } else if (weekday3 instanceof Sat2) {
+  } else if (weekday3 instanceof Sat) {
     return "Saturday";
   } else {
     return "Sunday";
@@ -9728,33 +8428,33 @@ function parse_day_of_year() {
     ])
   );
 }
-function compare4(date1, date2) {
+function compare3(date1, date2) {
   let rd_1 = date1[0];
   let rd_2 = date2[0];
   return compare(rd_1, rd_2);
 }
 function month_to_number(month3) {
-  if (month3 instanceof Jan2) {
+  if (month3 instanceof Jan) {
     return 1;
-  } else if (month3 instanceof Feb2) {
+  } else if (month3 instanceof Feb) {
     return 2;
-  } else if (month3 instanceof Mar2) {
+  } else if (month3 instanceof Mar) {
     return 3;
-  } else if (month3 instanceof Apr2) {
+  } else if (month3 instanceof Apr) {
     return 4;
-  } else if (month3 instanceof May2) {
+  } else if (month3 instanceof May) {
     return 5;
-  } else if (month3 instanceof Jun2) {
+  } else if (month3 instanceof Jun) {
     return 6;
-  } else if (month3 instanceof Jul2) {
+  } else if (month3 instanceof Jul) {
     return 7;
-  } else if (month3 instanceof Aug2) {
+  } else if (month3 instanceof Aug) {
     return 8;
-  } else if (month3 instanceof Sep2) {
+  } else if (month3 instanceof Sep) {
     return 9;
-  } else if (month3 instanceof Oct2) {
+  } else if (month3 instanceof Oct) {
     return 10;
-  } else if (month3 instanceof Nov2) {
+  } else if (month3 instanceof Nov) {
     return 11;
   } else {
     return 12;
@@ -9766,29 +8466,29 @@ function month_to_quarter(month3) {
 function number_to_month(month_number2) {
   let $ = max(1, month_number2);
   if ($ === 1) {
-    return new Jan2();
+    return new Jan();
   } else if ($ === 2) {
-    return new Feb2();
+    return new Feb();
   } else if ($ === 3) {
-    return new Mar2();
+    return new Mar();
   } else if ($ === 4) {
-    return new Apr2();
+    return new Apr();
   } else if ($ === 5) {
-    return new May2();
+    return new May();
   } else if ($ === 6) {
-    return new Jun2();
+    return new Jun();
   } else if ($ === 7) {
-    return new Jul2();
+    return new Jul();
   } else if ($ === 8) {
-    return new Aug2();
+    return new Aug();
   } else if ($ === 9) {
-    return new Sep2();
+    return new Sep();
   } else if ($ === 10) {
-    return new Oct2();
+    return new Oct();
   } else if ($ === 11) {
-    return new Nov2();
+    return new Nov();
   } else {
-    return new Dec2();
+    return new Dec();
   }
 }
 function quarter_to_month(quarter2) {
@@ -9796,17 +8496,17 @@ function quarter_to_month(quarter2) {
   return number_to_month(_pipe);
 }
 function weekday_to_number(weekday3) {
-  if (weekday3 instanceof Mon2) {
+  if (weekday3 instanceof Mon) {
     return 1;
-  } else if (weekday3 instanceof Tue2) {
+  } else if (weekday3 instanceof Tue) {
     return 2;
-  } else if (weekday3 instanceof Wed2) {
+  } else if (weekday3 instanceof Wed) {
     return 3;
-  } else if (weekday3 instanceof Thu2) {
+  } else if (weekday3 instanceof Thu) {
     return 4;
-  } else if (weekday3 instanceof Fri2) {
+  } else if (weekday3 instanceof Fri) {
     return 5;
-  } else if (weekday3 instanceof Sat2) {
+  } else if (weekday3 instanceof Sat) {
     return 6;
   } else {
     return 7;
@@ -9815,19 +8515,19 @@ function weekday_to_number(weekday3) {
 function number_to_weekday(weekday_number2) {
   let $ = max(1, weekday_number2);
   if ($ === 1) {
-    return new Mon2();
+    return new Mon();
   } else if ($ === 2) {
-    return new Tue2();
+    return new Tue();
   } else if ($ === 3) {
-    return new Wed2();
+    return new Wed();
   } else if ($ === 4) {
-    return new Thu2();
+    return new Thu();
   } else if ($ === 5) {
-    return new Fri2();
+    return new Fri();
   } else if ($ === 6) {
-    return new Sat2();
+    return new Sat();
   } else {
-    return new Sun2();
+    return new Sun();
   }
 }
 function pad_signed_int(value4, length6) {
@@ -9890,7 +8590,7 @@ function is_53_week_year(year3) {
   let wdn_jan1 = weekday_number(first_of_year(year3));
   return wdn_jan1 === 4 || wdn_jan1 === 3 && is_leap_year(year3);
 }
-function weekday2(date) {
+function weekday(date) {
   let _pipe = date;
   let _pipe$1 = weekday_number(_pipe);
   return number_to_weekday(_pipe$1);
@@ -9943,32 +8643,32 @@ function days_since_previous_weekday(weekday3, date) {
   );
 }
 function days_in_month(year3, month3) {
-  if (month3 instanceof Jan2) {
+  if (month3 instanceof Jan) {
     return 31;
-  } else if (month3 instanceof Feb2) {
+  } else if (month3 instanceof Feb) {
     let $ = is_leap_year(year3);
     if ($) {
       return 29;
     } else {
       return 28;
     }
-  } else if (month3 instanceof Mar2) {
+  } else if (month3 instanceof Mar) {
     return 31;
-  } else if (month3 instanceof Apr2) {
+  } else if (month3 instanceof Apr) {
     return 30;
-  } else if (month3 instanceof May2) {
+  } else if (month3 instanceof May) {
     return 31;
-  } else if (month3 instanceof Jun2) {
+  } else if (month3 instanceof Jun) {
     return 30;
-  } else if (month3 instanceof Jul2) {
+  } else if (month3 instanceof Jul) {
     return 31;
-  } else if (month3 instanceof Aug2) {
+  } else if (month3 instanceof Aug) {
     return 31;
-  } else if (month3 instanceof Sep2) {
+  } else if (month3 instanceof Sep) {
     return 30;
-  } else if (month3 instanceof Oct2) {
+  } else if (month3 instanceof Oct) {
     return 31;
-  } else if (month3 instanceof Nov2) {
+  } else if (month3 instanceof Nov) {
     return 30;
   } else {
     return 31;
@@ -9993,27 +8693,27 @@ function to_calendar_date_helper(loop$year, loop$month, loop$ordinal_day) {
 }
 function days_before_month(year3, month3) {
   let leap_days = to_int(is_leap_year(year3));
-  if (month3 instanceof Jan2) {
+  if (month3 instanceof Jan) {
     return 0;
-  } else if (month3 instanceof Feb2) {
+  } else if (month3 instanceof Feb) {
     return 31;
-  } else if (month3 instanceof Mar2) {
+  } else if (month3 instanceof Mar) {
     return 59 + leap_days;
-  } else if (month3 instanceof Apr2) {
+  } else if (month3 instanceof Apr) {
     return 90 + leap_days;
-  } else if (month3 instanceof May2) {
+  } else if (month3 instanceof May) {
     return 120 + leap_days;
-  } else if (month3 instanceof Jun2) {
+  } else if (month3 instanceof Jun) {
     return 151 + leap_days;
-  } else if (month3 instanceof Jul2) {
+  } else if (month3 instanceof Jul) {
     return 181 + leap_days;
-  } else if (month3 instanceof Aug2) {
+  } else if (month3 instanceof Aug) {
     return 212 + leap_days;
-  } else if (month3 instanceof Sep2) {
+  } else if (month3 instanceof Sep) {
     return 243 + leap_days;
-  } else if (month3 instanceof Oct2) {
+  } else if (month3 instanceof Oct) {
     return 273 + leap_days;
-  } else if (month3 instanceof Nov2) {
+  } else if (month3 instanceof Nov) {
     return 304 + leap_days;
   } else {
     return 334 + leap_days;
@@ -10041,7 +8741,7 @@ function today() {
 function div_with_remainder(a2, b) {
   return [floor_div(a2, b), modulo_unwrap(a2, b)];
 }
-function year2(date) {
+function year(date) {
   let rd = date[0];
   let $ = div_with_remainder(rd, 146097);
   let n400 = $[0];
@@ -10067,21 +8767,21 @@ function year2(date) {
 }
 function to_ordinal_date(date) {
   let rd = date[0];
-  let year_ = year2(date);
+  let year_ = year(date);
   return new OrdinalDate(year_, rd - days_before_year(year_));
 }
 function to_calendar_date(date) {
   let ordinal_date = to_ordinal_date(date);
   return to_calendar_date_helper(
     ordinal_date.year,
-    new Jan2(),
+    new Jan(),
     ordinal_date.ordinal_day
   );
 }
 function to_week_date(date) {
   let rd = date[0];
   let weekday_number_ = weekday_number(date);
-  let week_year$1 = year2(new RD(rd + (4 - weekday_number_)));
+  let week_year$1 = year(new RD(rd + (4 - weekday_number_)));
   let week_1_day_1 = days_before_week_year(week_year$1) + 1;
   return new WeekDate(
     week_year$1,
@@ -10092,20 +8792,20 @@ function to_week_date(date) {
 function ordinal_day(date) {
   return to_ordinal_date(date).ordinal_day;
 }
-function month2(date) {
+function month(date) {
   return to_calendar_date(date).month;
 }
 function month_number(date) {
   let _pipe = date;
-  let _pipe$1 = month2(_pipe);
+  let _pipe$1 = month(_pipe);
   return month_to_number(_pipe$1);
 }
 function quarter(date) {
   let _pipe = date;
-  let _pipe$1 = month2(_pipe);
+  let _pipe$1 = month(_pipe);
   return month_to_quarter(_pipe$1);
 }
-function day2(date) {
+function day(date) {
   return to_calendar_date(date).day;
 }
 function week_year(date) {
@@ -10123,13 +8823,13 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
     if (char === "y") {
       if (length6 === 2) {
         let _pipe = date;
-        let _pipe$1 = year2(_pipe);
+        let _pipe$1 = year(_pipe);
         let _pipe$2 = to_string3(_pipe$1);
         let _pipe$3 = pad_left(_pipe$2, 2, "0");
         return string_take_right(_pipe$3, 2);
       } else {
         let _pipe = date;
-        let _pipe$1 = year2(_pipe);
+        let _pipe$1 = year(_pipe);
         return pad_signed_int(_pipe$1, length6);
       }
     } else if (char === "Y") {
@@ -10183,15 +8883,15 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
         return pad_left(_pipe$2, 2, "0");
       } else if (length6 === 3) {
         let _pipe = date;
-        let _pipe$1 = month2(_pipe);
+        let _pipe$1 = month(_pipe);
         return language.month_name_short(_pipe$1);
       } else if (length6 === 4) {
         let _pipe = date;
-        let _pipe$1 = month2(_pipe);
+        let _pipe$1 = month(_pipe);
         return language.month_name(_pipe$1);
       } else if (length6 === 5) {
         let _pipe = date;
-        let _pipe$1 = month2(_pipe);
+        let _pipe$1 = month(_pipe);
         let _pipe$2 = language.month_name_short(_pipe$1);
         return string_take_left(_pipe$2, 1);
       } else {
@@ -10213,16 +8913,16 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
     } else if (char === "d") {
       if (length6 === 1) {
         let _pipe = date;
-        let _pipe$1 = day2(_pipe);
+        let _pipe$1 = day(_pipe);
         return to_string3(_pipe$1);
       } else if (length6 === 2) {
         let _pipe = date;
-        let _pipe$1 = day2(_pipe);
+        let _pipe$1 = day(_pipe);
         let _pipe$2 = to_string3(_pipe$1);
         return pad_left(_pipe$2, 2, "0");
       } else if (length6 === 3) {
         let _pipe = date;
-        let _pipe$1 = day2(_pipe);
+        let _pipe$1 = day(_pipe);
         return language.day_with_suffix(_pipe$1);
       } else {
         return "";
@@ -10248,28 +8948,28 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
     } else if (char === "E") {
       if (length6 === 1) {
         let _pipe = date;
-        let _pipe$1 = weekday2(_pipe);
+        let _pipe$1 = weekday(_pipe);
         return language.weekday_name_short(_pipe$1);
       } else if (length6 === 2) {
         let _pipe = date;
-        let _pipe$1 = weekday2(_pipe);
+        let _pipe$1 = weekday(_pipe);
         return language.weekday_name_short(_pipe$1);
       } else if (length6 === 3) {
         let _pipe = date;
-        let _pipe$1 = weekday2(_pipe);
+        let _pipe$1 = weekday(_pipe);
         return language.weekday_name_short(_pipe$1);
       } else if (length6 === 4) {
         let _pipe = date;
-        let _pipe$1 = weekday2(_pipe);
+        let _pipe$1 = weekday(_pipe);
         return language.weekday_name(_pipe$1);
       } else if (length6 === 5) {
         let _pipe = date;
-        let _pipe$1 = weekday2(_pipe);
+        let _pipe$1 = weekday(_pipe);
         let _pipe$2 = language.weekday_name_short(_pipe$1);
         return string_take_left(_pipe$2, 1);
       } else if (length6 === 6) {
         let _pipe = date;
-        let _pipe$1 = weekday2(_pipe);
+        let _pipe$1 = weekday(_pipe);
         let _pipe$2 = language.weekday_name_short(_pipe$1);
         return string_take_left(_pipe$2, 2);
       } else {
@@ -10326,7 +9026,7 @@ function format(date, pattern) {
 function to_iso_string(date) {
   return format(date, "yyyy-MM-dd");
 }
-function add3(loop$date, loop$count, loop$unit) {
+function add2(loop$date, loop$count, loop$unit) {
   while (true) {
     let date = loop$date;
     let count = loop$count;
@@ -10358,34 +9058,34 @@ function add3(loop$date, loop$count, loop$unit) {
 }
 function floor3(date, interval) {
   let rd = date[0];
-  if (interval instanceof Year2) {
-    return first_of_year(year2(date));
+  if (interval instanceof Year) {
+    return first_of_year(year(date));
   } else if (interval instanceof Quarter) {
     return first_of_month(
-      year2(date),
+      year(date),
       (() => {
         let _pipe = quarter(date);
         return quarter_to_month(_pipe);
       })()
     );
-  } else if (interval instanceof Month2) {
-    return first_of_month(year2(date), month2(date));
-  } else if (interval instanceof Week2) {
-    return new RD(rd - days_since_previous_weekday(new Mon2(), date));
+  } else if (interval instanceof Month) {
+    return first_of_month(year(date), month(date));
+  } else if (interval instanceof Week) {
+    return new RD(rd - days_since_previous_weekday(new Mon(), date));
   } else if (interval instanceof Monday) {
-    return new RD(rd - days_since_previous_weekday(new Mon2(), date));
+    return new RD(rd - days_since_previous_weekday(new Mon(), date));
   } else if (interval instanceof Tuesday) {
-    return new RD(rd - days_since_previous_weekday(new Tue2(), date));
+    return new RD(rd - days_since_previous_weekday(new Tue(), date));
   } else if (interval instanceof Wednesday) {
-    return new RD(rd - days_since_previous_weekday(new Wed2(), date));
+    return new RD(rd - days_since_previous_weekday(new Wed(), date));
   } else if (interval instanceof Thursday) {
-    return new RD(rd - days_since_previous_weekday(new Thu2(), date));
+    return new RD(rd - days_since_previous_weekday(new Thu(), date));
   } else if (interval instanceof Friday) {
-    return new RD(rd - days_since_previous_weekday(new Fri2(), date));
+    return new RD(rd - days_since_previous_weekday(new Fri(), date));
   } else if (interval instanceof Saturday) {
-    return new RD(rd - days_since_previous_weekday(new Sat2(), date));
+    return new RD(rd - days_since_previous_weekday(new Sat(), date));
   } else if (interval instanceof Sunday) {
-    return new RD(rd - days_since_previous_weekday(new Sun2(), date));
+    return new RD(rd - days_since_previous_weekday(new Sun(), date));
   } else {
     return date;
   }
@@ -10621,42 +9321,59 @@ function dict_reindex(dict2) {
   );
   return from_list(_pipe$3);
 }
+function list_at(loop$list, loop$n) {
+  while (true) {
+    let list3 = loop$list;
+    let n = loop$n;
+    if (list3.hasLength(0)) {
+      return new None();
+    } else if (list3.atLeastLength(1) && n === 0) {
+      let x = list3.head;
+      return new Some(x);
+    } else {
+      let x = list3.head;
+      let xs = list3.tail;
+      loop$list = xs;
+      loop$n = n - 1;
+    }
+  }
+}
 function date_num_string(day3) {
   let _pipe = day3;
-  let _pipe$1 = day2(_pipe);
+  let _pipe$1 = day(_pipe);
   return to_string3(_pipe$1);
 }
 function month_date_string(day3) {
   let n = date_num_string(day3);
   let s = (() => {
     let _pipe = day3;
-    return weekday2(_pipe);
+    return weekday(_pipe);
   })();
   let m = (() => {
     let _pipe = day3;
-    let _pipe$1 = month2(_pipe);
+    let _pipe$1 = month(_pipe);
     return ((a2) => {
-      if (a2 instanceof Jan2) {
+      if (a2 instanceof Jan) {
         return "January";
-      } else if (a2 instanceof Feb2) {
+      } else if (a2 instanceof Feb) {
         return "February";
-      } else if (a2 instanceof Mar2) {
+      } else if (a2 instanceof Mar) {
         return "March";
-      } else if (a2 instanceof Apr2) {
+      } else if (a2 instanceof Apr) {
         return "April";
-      } else if (a2 instanceof May2) {
+      } else if (a2 instanceof May) {
         return "May";
-      } else if (a2 instanceof Jun2) {
+      } else if (a2 instanceof Jun) {
         return "June";
-      } else if (a2 instanceof Jul2) {
+      } else if (a2 instanceof Jul) {
         return "July";
-      } else if (a2 instanceof Aug2) {
+      } else if (a2 instanceof Aug) {
         return "August";
-      } else if (a2 instanceof Sep2) {
+      } else if (a2 instanceof Sep) {
         return "September";
-      } else if (a2 instanceof Oct2) {
+      } else if (a2 instanceof Oct) {
         return "October";
-      } else if (a2 instanceof Nov2) {
+      } else if (a2 instanceof Nov) {
         return "November";
       } else {
         return "December";
@@ -10664,6 +9381,1607 @@ function month_date_string(day3) {
     })(_pipe$1);
   })();
   return m + " " + n;
+}
+
+// node_modules/nanoid/url-alphabet/index.js
+var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
+
+// node_modules/nanoid/index.browser.js
+var nanoid = (size2 = 21) => {
+  let id2 = "";
+  let bytes = crypto.getRandomValues(new Uint8Array(size2));
+  while (size2--) {
+    id2 += urlAlphabet[bytes[size2] & 63];
+  }
+  return id2;
+};
+
+// build/dev/javascript/app/seed.ts
+var TagOptionSeed = [
+  {
+    name: "Cuisine",
+    options: [
+      "Mediterranean",
+      "French",
+      "Italian",
+      "Chinese",
+      "Thai",
+      "Australian",
+      "Japanese",
+      "International"
+    ]
+  },
+  {
+    name: "Style",
+    options: [
+      "Veggie",
+      "Meat & Sides",
+      "Soups / Noodles / Stir Fry",
+      "Salad",
+      "Slow Cooker",
+      "Oven Bake",
+      "BBQ",
+      "Bakery"
+    ]
+  },
+  {
+    name: "Label",
+    options: [
+      "Go-to",
+      "Weeknight",
+      "Fancy",
+      "Light",
+      "Substantial"
+    ]
+  }
+];
+var RecipeSeed = [{
+  title: "Pink potato salad",
+  slug: "pink-potato-salad",
+  cook_time: 10,
+  prep_time: 10,
+  serves: 4,
+  shortlisted: false,
+  ingredients: /* @__PURE__ */ new Map([
+    ["0", { units: "g", quantity: "600", name: "Baby potato" }],
+    ["1", { units: "pc", quantity: "1 / 2", name: "Red Cabbage" }],
+    ["2", { units: "g", quantity: "200", name: "Pomegranate seeds" }],
+    ["3", { units: "tin", quantity: "1", name: "Butter Beans" }],
+    ["4", { units: "g", quantity: "100", name: "Mayonnaise" }],
+    ["5", { units: "g", quantity: "50", name: "Yoghurt" }],
+    ["6", { units: "tbsp", quantity: "3", name: "Extra Virgin Olive Oil" }],
+    ["7", { units: "pc", quantity: "1 / 2", name: "Lemon juice" }],
+    ["8", { units: "g", quantity: "15", name: "Flat - leaf parsley" }]
+  ]),
+  method_steps: /* @__PURE__ */ new Map([
+    ["0", {
+      step_text: "Boil the potatoes in salted water for 10 minutes, until they are just cooked through, then drain and rinse under running cold water to cool."
+    }],
+    ["1", {
+      step_text: "While the potatoes are cooking, shred the cabbage, deseed the pomegranate (or open the packet), and drain and rinse the beans."
+    }],
+    ["2", {
+      step_text: "In a bowl, mix the mayonnaise, yoghurt, lemon juice, oil, a teaspoon of flaky sea salt and plenty of pepper, then taste and adjust the seasoning accordingly."
+    }],
+    ["3", {
+      step_text: "Put the cooled, drained potatoes, red cabbage, pomegranate, beans and the dressing in a large bowl, then taste and adjust the seasoning if necessary. Arrange on a large plate, scatter over the parsley and serve at room temperature."
+    }]
+  ]),
+  tags: /* @__PURE__ */ new Map([["0", { name: "Cuisine", value: "Australian" }], ["1", {
+    name: "Style",
+    value: "Salad"
+  }], ["2", { name: "Label", value: "Light" }]])
+}];
+async function seedDb() {
+  console.log("beginning seedDb");
+  const preparetables = await prepareTables();
+  const tagoptions = await listTagOptions();
+  const recipes = await listRecipes();
+  console.log("tagoptions.length: ", tagoptions.length);
+  if (tagoptions.length === 0) {
+    for (const item of TagOptionSeed) {
+      const res = await addTagOption(item);
+    }
+  }
+  console.log("recipes.length: ", recipes.length);
+  if (recipes.length === 0) {
+    for (const item of RecipeSeed) {
+      await addOrUpdateRecipe(item);
+    }
+  }
+  console.log("finishing seedDb");
+}
+
+// build/dev/javascript/app/db.ts
+var sqliteWasm = await import("https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0");
+var sqlite = await sqliteWasm.default(
+  () => "https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0/dist/crsqlite.wasm"
+);
+var db = await sqlite.open("mealstack.db");
+function replacer(key3, value4) {
+  if (value4 instanceof Map) {
+    return {
+      dataType: "Map",
+      value: Array.from(value4.entries())
+      // or with spread: value: [...value]
+    };
+  }
+  return value4;
+}
+function reviver(key3, value4) {
+  if (typeof value4 === "object" && value4 !== null) {
+    if (value4.dataType === "Map") {
+      return new Map(value4.value);
+    }
+  }
+  return value4;
+}
+async function prepareTables() {
+  const findTagOptionsTable = await db.execA(
+    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='tag_options')"
+  );
+  const tagOptionsTableExists = findTagOptionsTable[0][0];
+  console.log("tagoptions table exists? ", tagOptionsTableExists);
+  if (!tagOptionsTableExists) {
+    console.log("creating tag_options table...");
+    await db.execA(
+      "CREATE TABLE `tag_options` ( 			`id` text PRIMARY KEY NOT NULL, 			`name` text NOT NULL, 			`options` text NOT NULL 		)"
+    );
+  }
+  const findRecipesTable = await db.execA(
+    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='recipes')"
+  );
+  const recipesTableExists = findRecipesTable[0][0];
+  console.log("recipes table exists? ", recipesTableExists);
+  if (!recipesTableExists) {
+    console.log("creating recipes table...");
+    await db.execA(
+      "CREATE TABLE `recipes` ( 			`id` text PRIMARY KEY NOT NULL, 			`slug` text, 			`title` text, 			`cook_time` integer, 			`prep_time` integer, 			`serves` integer, 			`ingredients` text, 			`method_steps` text, 			`tags` text, 			`shortlisted` integer 		)"
+    );
+  }
+  const findPlanTable = await db.execA(
+    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='plan')"
+  );
+  const planTableExists = findPlanTable[0][0];
+  console.log("plan Table exists? ", planTableExists);
+  if (!planTableExists) {
+    console.log("creating plan table...");
+    await db.execA(
+      "CREATE TABLE `plan` ( 			`date` date PRIMARY KEY NOT NULL, 			`planned_meals` text 		)"
+    );
+  }
+}
+async function listTagOptions() {
+  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM tag_options)");
+  const exists = findRows[0];
+  if (!exists) {
+    return new Ok2([]);
+  }
+  const result = await db.execO("SELECT * FROM tag_options");
+  const mapped = result.map((x) => {
+    x.options = JSON.parse(x.options);
+    return x;
+  });
+  return mapped;
+}
+async function addTagOption(tagOption) {
+  console.log("addTagOption: ", tagOption);
+  const result = await db.execA(
+    `INSERT INTO tag_options (id, name, options) VALUES (
+			'${nanoid()}'
+			,'${tagOption.name}'
+			,'${JSON.stringify(tagOption.options)}'
+		)`
+  );
+  console.log(result);
+  return result ? new Ok2(result) : new Error2(void 0);
+}
+async function listRecipes() {
+  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM recipes)");
+  const exists = findRows[0];
+  if (!exists) {
+    return new Ok2([]);
+  }
+  const result = await db.execO(
+    "SELECT id, title, slug, prep_time, cook_time, serves, tags, ingredients, method_steps FROM recipes"
+  );
+  const mapped = result.map((recipe) => {
+    recipe.tags = JSON.parse(recipe.tags, reviver);
+    recipe.ingredients = JSON.parse(recipe.ingredients, reviver);
+    recipe.method_steps = JSON.parse(recipe.method_steps, reviver);
+    return recipe;
+  });
+  return mapped;
+}
+async function addOrUpdateRecipe(recipe) {
+  console.log("addOrUpdateRecipe: ", recipe);
+  const query = ` 		INSERT INTO recipes 		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) 		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${recipe.title}', '${recipe.cook_time}',
+			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(
+    recipe.ingredients,
+    replacer
+  )}',
+			'${JSON.stringify(recipe.method_steps, replacer)}', '${JSON.stringify(
+    recipe.tags,
+    replacer
+  )}', '${recipe.shortlisted}') 		 ON CONFLICT(id) DO UPDATE SET		 slug=excluded.slug, 		 title=excluded.title, 		 cook_time=excluded.cook_time, 		 prep_time=excluded.prep_time, 		 serves=excluded.serves, 		 ingredients=excluded.ingredients, 		 method_steps=excluded.method_steps, 		 tags=excluded.tags, 		 shortlisted=excluded.shortlisted;`;
+  const result = await db.execA(query);
+  return new Ok2();
+}
+async function do_get_recipes() {
+  const _seed = await seedDb();
+  const result = await listRecipes();
+  console.log("recipe result from ffi: ", result);
+  return result;
+}
+async function do_get_tagoptions() {
+  const result = await listTagOptions();
+  console.log("tagoption result from ffi: ", result);
+  return result;
+}
+async function do_get_plan(startDate) {
+  console.log("do_get_plan");
+  const _seed = await seedDb();
+  const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM plan)");
+  const exists = findRows[0];
+  if (!exists) {
+    return new Ok2([]);
+  }
+  const input2 = startDate ? startDate : `'now'`;
+  const result = await db.execO(
+    `SELECT date,planned_meals FROM plan WHERE date >= DATE(${input2},'localtime','weekday 0','-6 days') AND date <= DATE(${input2},'localtime','weekday 0')`
+  );
+  const mapped = result.map((day3) => {
+    day3.planned_meals = JSON.parse(day3.planned_meals);
+    return day3;
+  });
+  return result;
+}
+async function do_save_plan(plan) {
+  console.log("do_save_plan: ", plan);
+  for (const day3 of plan) {
+    const result = await db.execO(`
+			INSERT INTO plan 			(date,planned_meals) 			VALUES ('${day3.date}','${JSON.stringify(day3.planned_meals)}') 			ON CONFLICT(date) DO UPDATE SET 			planned_meals = excluded.planned_meals 			`);
+    console.log("inserted planday: ", result);
+  }
+  return new Ok2();
+}
+
+// build/dev/javascript/app/session.mjs
+var DbRetrievedRecipes = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var DbRetrievedTagOptions = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var RecipeList = class extends CustomType {
+  constructor(recipes, tag_options) {
+    super();
+    this.recipes = recipes;
+    this.tag_options = tag_options;
+  }
+};
+var Recipe = class extends CustomType {
+  constructor(id2, title, slug, cook_time, prep_time, serves, tags, ingredients, method_steps) {
+    super();
+    this.id = id2;
+    this.title = title;
+    this.slug = slug;
+    this.cook_time = cook_time;
+    this.prep_time = prep_time;
+    this.serves = serves;
+    this.tags = tags;
+    this.ingredients = ingredients;
+    this.method_steps = method_steps;
+  }
+};
+var TagOption = class extends CustomType {
+  constructor(id2, name2, options) {
+    super();
+    this.id = id2;
+    this.name = name2;
+    this.options = options;
+  }
+};
+var MethodStep = class extends CustomType {
+  constructor(step_text) {
+    super();
+    this.step_text = step_text;
+  }
+};
+var Tag = class extends CustomType {
+  constructor(name2, value4) {
+    super();
+    this.name = name2;
+    this.value = value4;
+  }
+};
+var Ingredient = class extends CustomType {
+  constructor(name2, ismain, quantity, units2) {
+    super();
+    this.name = name2;
+    this.ismain = ismain;
+    this.quantity = quantity;
+    this.units = units2;
+  }
+};
+function merge_recipe_into_model(recipe, model) {
+  return model.withFields({
+    recipes: (() => {
+      let _pipe = model.recipes;
+      let _pipe$1 = map2(_pipe, (a2) => {
+        return [a2.id, a2];
+      });
+      let _pipe$2 = from_list(_pipe$1);
+      let _pipe$3 = merge(
+        _pipe$2,
+        from_list(toList([[recipe.id, recipe]]))
+      );
+      return values(_pipe$3);
+    })()
+  });
+}
+function decode_ingredient(d) {
+  let decoder = decode4(
+    (var0, var1, var2, var3) => {
+      return new Ingredient(var0, var1, var2, var3);
+    },
+    optional_field("name", string),
+    optional_field("ismain", stringed_bool),
+    optional_field("quantity", string),
+    optional_field("units", string)
+  );
+  return decoder(d);
+}
+function decode_tag(d) {
+  let decoder = decode2(
+    (var0, var1) => {
+      return new Tag(var0, var1);
+    },
+    field("name", string),
+    field("value", string)
+  );
+  return decoder(d);
+}
+function decode_method_step(d) {
+  let decoder = decode1(
+    (var0) => {
+      return new MethodStep(var0);
+    },
+    field("step_text", string)
+  );
+  return decoder(d);
+}
+function decode_recipe(d) {
+  let decoder = decode9(
+    (var0, var1, var2, var3, var4, var5, var6, var7, var8) => {
+      return new Recipe(var0, var1, var2, var3, var4, var5, var6, var7, var8);
+    },
+    optional_field("id", string),
+    field("title", string),
+    field("slug", string),
+    field("cook_time", int),
+    field("prep_time", int),
+    field("serves", int),
+    optional_field("tags", dict(stringed_int, decode_tag)),
+    optional_field(
+      "ingredients",
+      dict(stringed_int, decode_ingredient)
+    ),
+    optional_field(
+      "method_steps",
+      dict(stringed_int, decode_method_step)
+    )
+  );
+  return decoder(d);
+}
+function get_recipes() {
+  return from2(
+    (dispatch2) => {
+      let _pipe = do_get_recipes();
+      let _pipe$1 = map_promise(_pipe, toList);
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map2(_capture, decode_recipe);
+        }
+      );
+      let _pipe$3 = map_promise(_pipe$2, all);
+      let _pipe$4 = map_promise(
+        _pipe$3,
+        (_capture) => {
+          return map3(
+            _capture,
+            (var0) => {
+              return new DbRetrievedRecipes(var0);
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$4,
+        (_capture) => {
+          return map3(_capture, dispatch2);
+        }
+      );
+      return void 0;
+    }
+  );
+}
+function decode_tag_option(d) {
+  let decoder = decode3(
+    (var0, var1, var2) => {
+      return new TagOption(var0, var1, var2);
+    },
+    optional_field("id", string),
+    field("name", string),
+    field("options", list(string))
+  );
+  let f = decoder(d);
+  return debug(f);
+}
+function get_tag_options() {
+  return from2(
+    (dispatch2) => {
+      let _pipe = do_get_tagoptions();
+      let _pipe$1 = map_promise(_pipe, toList);
+      let _pipe$2 = map_promise(
+        _pipe$1,
+        (_capture) => {
+          return map2(_capture, decode_tag_option);
+        }
+      );
+      let _pipe$3 = map_promise(_pipe$2, debug);
+      let _pipe$4 = map_promise(_pipe$3, all);
+      let _pipe$5 = map_promise(
+        _pipe$4,
+        (_capture) => {
+          return map3(
+            _capture,
+            (var0) => {
+              return new DbRetrievedTagOptions(var0);
+            }
+          );
+        }
+      );
+      tap(
+        _pipe$5,
+        (_capture) => {
+          return map3(_capture, dispatch2);
+        }
+      );
+      return void 0;
+    }
+  );
+}
+
+// build/dev/javascript/app/components/typeahead.mjs
+var Model2 = class extends CustomType {
+  constructor(elem_id, search_items, search_term2, found_items, is_open, is_focused, hovered_item) {
+    super();
+    this.elem_id = elem_id;
+    this.search_items = search_items;
+    this.search_term = search_term2;
+    this.found_items = found_items;
+    this.is_open = is_open;
+    this.is_focused = is_focused;
+    this.hovered_item = hovered_item;
+  }
+};
+var RetrievedSearchItems = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var RetrievedInitialSearchTerm = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserTypedInSearchInput = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserPressedKeyInSearchInput = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserSelectedValue = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserSelectedOption = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserHoveredOption = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserUnHoveredOption = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserFocusedSearchInput = class extends CustomType {
+};
+var UserBlurredSearchInput = class extends CustomType {
+};
+function typeahead(attrs) {
+  return element("type-ahead", attrs, toList([]));
+}
+function recipe_titles(all3) {
+  return property("recipe-titles", all3);
+}
+function search_term(term) {
+  return property("search-term", term);
+}
+function init6(_) {
+  let elem_id = to_string3(random(999999));
+  return [
+    new Model2(elem_id, toList([]), "", toList([]), false, false, new None()),
+    none()
+  ];
+}
+function update3(model, msg) {
+  debug(msg);
+  if (msg instanceof RetrievedInitialSearchTerm) {
+    let a2 = msg[0];
+    return [model.withFields({ search_term: a2 }), none()];
+  } else if (msg instanceof RetrievedSearchItems) {
+    let a2 = msg[0];
+    return [
+      model.withFields({ search_items: a2, found_items: a2 }),
+      none()
+    ];
+  } else if (msg instanceof UserTypedInSearchInput) {
+    let a2 = msg[0];
+    return [
+      model.withFields({
+        search_term: a2,
+        found_items: (() => {
+          let $ = length3(a2);
+          if ($ < 3) {
+            let num = $;
+            return model.search_items;
+          } else {
+            return filter(
+              model.search_items,
+              (r) => {
+                return contains_string(
+                  lowercase2(r),
+                  lowercase2(a2)
+                );
+              }
+            );
+          }
+        })(),
+        is_open: !contains(model.search_items, a2)
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserSelectedValue) {
+    let a2 = msg[0];
+    return [model, emit2("typeahead-change", string2(a2))];
+  } else if (msg instanceof UserSelectedOption) {
+    let a2 = msg[0];
+    return [
+      model.withFields({ is_open: false }),
+      from2(
+        (dispatch2) => {
+          let _pipe = new UserSelectedValue(a2);
+          return dispatch2(_pipe);
+        }
+      )
+    ];
+  } else if (msg instanceof UserFocusedSearchInput) {
+    return [
+      model.withFields({
+        is_focused: true,
+        is_open: !contains(model.search_items, model.search_term)
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserBlurredSearchInput) {
+    return [
+      model.withFields({
+        is_focused: false,
+        is_open: false,
+        hovered_item: new None()
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserPressedKeyInSearchInput) {
+    let a2 = msg[0];
+    let $ = model.is_focused;
+    let $1 = model.is_open;
+    if (!$) {
+      return [model, none()];
+    } else if (a2 === "ArrowDown" && $ && $1) {
+      return [
+        model.withFields({
+          hovered_item: (() => {
+            let $2 = model.hovered_item;
+            let $3 = length(model.found_items);
+            if ($2 instanceof None) {
+              return new Some(0);
+            } else {
+              let a$1 = $2[0];
+              let b = $3;
+              return new Some(min(a$1 + 1, b));
+            }
+          })()
+        }),
+        none()
+      ];
+    } else if (a2 === "ArrowDown" && $ && !$1) {
+      return [model.withFields({ is_open: true }), none()];
+    } else if (a2 === "ArrowUp" && $ && $1) {
+      return [
+        model.withFields({
+          hovered_item: (() => {
+            let $2 = model.hovered_item;
+            if ($2 instanceof None) {
+              return new None();
+            } else {
+              let a$1 = $2[0];
+              return new Some(max(0, a$1 - 1));
+            }
+          })()
+        }),
+        none()
+      ];
+    } else if (a2 === "Enter" && $) {
+      let $2 = model.hovered_item;
+      let $3 = model.is_open;
+      if ($2 instanceof None && !$3) {
+        return [model.withFields({ is_open: true }), none()];
+      } else if ($2 instanceof Some && $3) {
+        let a$1 = $2[0];
+        return [
+          model.withFields({ is_open: false, hovered_item: new None() }),
+          from2(
+            (dispatch2) => {
+              let _pipe = new UserSelectedOption(
+                unwrap(list_at(model.found_items, a$1), "")
+              );
+              return dispatch2(_pipe);
+            }
+          )
+        ];
+      } else {
+        return [model, none()];
+      }
+    } else if (a2 === "Escape" && $ && $1) {
+      return [
+        model.withFields({ is_open: false, hovered_item: new None() }),
+        from2(
+          (dispatch2) => {
+            let _pipe = new UserBlurredSearchInput();
+            return dispatch2(_pipe);
+          }
+        )
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserHoveredOption) {
+    let a2 = msg[0];
+    return [model.withFields({ hovered_item: new Some(a2) }), none()];
+  } else {
+    let a2 = msg[0];
+    return [model.withFields({ hovered_item: new None() }), none()];
+  }
+}
+function on_attribute_change() {
+  return from_list(
+    toList([
+      [
+        "recipe-titles",
+        (attribute2) => {
+          let _pipe = attribute2;
+          let _pipe$1 = list(string)(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new RetrievedSearchItems(var0);
+            }
+          );
+        }
+      ],
+      [
+        "search-term",
+        (attribute2) => {
+          let _pipe = attribute2;
+          let _pipe$1 = string(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new RetrievedInitialSearchTerm(var0);
+            }
+          );
+        }
+      ]
+    ])
+  );
+}
+function search_result(model, res, index3) {
+  return li(
+    toList([
+      attribute("role", "option"),
+      attribute("data-index", to_string3(index3)),
+      class$(
+        (() => {
+          let $ = isEqual(model.hovered_item, new Some(index3));
+          if ($) {
+            return "bg-ecru-white-100";
+          } else {
+            return "";
+          }
+        })()
+      ),
+      class$("px-1"),
+      on_click(new UserSelectedOption(res)),
+      on2(
+        "mouseover",
+        (evt) => {
+          let _pipe = evt;
+          let _pipe$1 = field(
+            "target",
+            field(
+              "dataset",
+              field("index", stringed_int)
+            )
+          )(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new UserHoveredOption(var0);
+            }
+          );
+        }
+      ),
+      on2(
+        "mouseout",
+        (evt) => {
+          let _pipe = evt;
+          let _pipe$1 = field(
+            "target",
+            field(
+              "dataset",
+              field("index", stringed_int)
+            )
+          )(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new UserUnHoveredOption(var0);
+            }
+          );
+        }
+      )
+    ]),
+    toList([text(res)])
+  );
+}
+function view2(model) {
+  return fragment(
+    toList([
+      textarea(
+        toList([
+          id("meal-input-" + model.elem_id),
+          style(
+            toList([
+              ["field-sizing", "content"],
+              ["overflow-x", "hidden"],
+              ["width", "100%"],
+              [
+                "font-family",
+                "Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif"
+              ],
+              [
+                "font-size",
+                "clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem)"
+              ],
+              ["line-height", "1.6"],
+              ["color", "rgb(47 40 27)"],
+              ["background-color", "rgb(241 241 227)"],
+              ["border-width", "0px"],
+              ["border-bottom-width", "0px"],
+              ["padding-top", "0px"],
+              ["padding-bottom", "0px"],
+              ["line-height", "inherit"],
+              ["resize", "none"]
+            ])
+          ),
+          class$(
+            (() => {
+              let $ = length3(model.search_term);
+              if ($ > 38) {
+                let num = $;
+                return "text-base";
+              } else if ($ > 17) {
+                let num = $;
+                return "text-lg";
+              } else {
+                return "text-xl";
+              }
+            })()
+          ),
+          value(model.search_term),
+          attribute("autocapitalize", "none"),
+          attribute("autocomplete", "off"),
+          attribute("aria-autocomplete", "list"),
+          attribute("role", "combobox"),
+          on_input((var0) => {
+            return new UserTypedInSearchInput(var0);
+          }),
+          on2(
+            "change",
+            (event2) => {
+              let _pipe = event2;
+              let _pipe$1 = field(
+                "target",
+                field("value", string)
+              )(_pipe);
+              return map3(
+                _pipe$1,
+                (var0) => {
+                  return new UserSelectedValue(var0);
+                }
+              );
+            }
+          ),
+          on_keydown(
+            (var0) => {
+              return new UserPressedKeyInSearchInput(var0);
+            }
+          ),
+          on_focus(new UserFocusedSearchInput())
+        ]),
+        ""
+      ),
+      ul(
+        toList([
+          id("search-results-" + model.elem_id),
+          class$(
+            "font-mono bg-ecru-white-50 border border-ecru-white-950 text-xs"
+          ),
+          attribute("role", "listbox"),
+          style(
+            (() => {
+              let $ = model.is_open;
+              if ($) {
+                return toList([["display", "block"]]);
+              } else {
+                return toList([["display", "none"]]);
+              }
+            })()
+          ),
+          attribute(
+            "aria-expanded",
+            (() => {
+              let $ = model.is_open;
+              if ($) {
+                return "true";
+              } else {
+                return "false";
+              }
+            })()
+          )
+        ]),
+        (() => {
+          let _pipe = model.found_items;
+          let _pipe$1 = map2(_pipe, (a2) => {
+            return a2;
+          });
+          return index_map(
+            _pipe$1,
+            (a2, i) => {
+              return search_result(model, a2, i);
+            }
+          );
+        })()
+      )
+    ])
+  );
+}
+function app() {
+  return component(init6, update3, view2, on_attribute_change());
+}
+
+// build/dev/javascript/birl/birl/duration.mjs
+var MicroSecond = class extends CustomType {
+};
+var MilliSecond = class extends CustomType {
+};
+var Second = class extends CustomType {
+};
+var Minute = class extends CustomType {
+};
+var Hour = class extends CustomType {
+};
+var Day = class extends CustomType {
+};
+var Week2 = class extends CustomType {
+};
+var Month2 = class extends CustomType {
+};
+var Year2 = class extends CustomType {
+};
+var milli_second = 1e3;
+var second2 = 1e6;
+var minute = 6e7;
+var hour = 36e8;
+var day2 = 864e8;
+var week = 6048e8;
+var month2 = 2592e9;
+var year2 = 31536e9;
+var unit_values = toList([
+  [new Year2(), year2],
+  [new Month2(), month2],
+  [new Week2(), week],
+  [new Day(), day2],
+  [new Hour(), hour],
+  [new Minute(), minute],
+  [new Second(), second2],
+  [new MilliSecond(), milli_second],
+  [new MicroSecond(), 1]
+]);
+var year_units = toList(["y", "year", "years"]);
+var month_units = toList(["mon", "month", "months"]);
+var week_units = toList(["w", "week", "weeks"]);
+var day_units = toList(["d", "day", "days"]);
+var hour_units = toList(["h", "hour", "hours"]);
+var minute_units = toList(["m", "min", "minute", "minutes"]);
+var second_units = toList(["s", "sec", "secs", "second", "seconds"]);
+var milli_second_units = toList([
+  "ms",
+  "msec",
+  "msecs",
+  "millisecond",
+  "milliseconds",
+  "milli-second",
+  "milli-seconds",
+  "milli_second",
+  "milli_seconds"
+]);
+var units = toList([
+  [new Year2(), year_units],
+  [new Month2(), month_units],
+  [new Week2(), week_units],
+  [new Day(), day_units],
+  [new Hour(), hour_units],
+  [new Minute(), minute_units],
+  [new Second(), second_units],
+  [new MilliSecond(), milli_second_units]
+]);
+
+// build/dev/javascript/birl/birl/zones.mjs
+var list2 = toList([
+  ["Africa/Abidjan", 0],
+  ["Africa/Algiers", 3600],
+  ["Africa/Bissau", 0],
+  ["Africa/Cairo", 7200],
+  ["Africa/Casablanca", 3600],
+  ["Africa/Ceuta", 3600],
+  ["Africa/El_Aaiun", 3600],
+  ["Africa/Johannesburg", 7200],
+  ["Africa/Juba", 7200],
+  ["Africa/Khartoum", 7200],
+  ["Africa/Lagos", 3600],
+  ["Africa/Maputo", 7200],
+  ["Africa/Monrovia", 0],
+  ["Africa/Nairobi", 10800],
+  ["Africa/Ndjamena", 3600],
+  ["Africa/Sao_Tome", 0],
+  ["Africa/Tripoli", 7200],
+  ["Africa/Tunis", 3600],
+  ["Africa/Windhoek", 7200],
+  ["America/Adak", -36e3],
+  ["America/Anchorage", -32400],
+  ["America/Araguaina", -10800],
+  ["America/Argentina/Buenos_Aires", -10800],
+  ["America/Argentina/Catamarca", -10800],
+  ["America/Argentina/Cordoba", -10800],
+  ["America/Argentina/Jujuy", -10800],
+  ["America/Argentina/La_Rioja", -10800],
+  ["America/Argentina/Mendoza", -10800],
+  ["America/Argentina/Rio_Gallegos", -10800],
+  ["America/Argentina/Salta", -10800],
+  ["America/Argentina/San_Juan", -10800],
+  ["America/Argentina/San_Luis", -10800],
+  ["America/Argentina/Tucuman", -10800],
+  ["America/Argentina/Ushuaia", -10800],
+  ["America/Asuncion", -14400],
+  ["America/Bahia", -10800],
+  ["America/Bahia_Banderas", -21600],
+  ["America/Barbados", -14400],
+  ["America/Belem", -10800],
+  ["America/Belize", -21600],
+  ["America/Boa_Vista", -14400],
+  ["America/Bogota", -18e3],
+  ["America/Boise", -25200],
+  ["America/Cambridge_Bay", -25200],
+  ["America/Campo_Grande", -14400],
+  ["America/Cancun", -18e3],
+  ["America/Caracas", -14400],
+  ["America/Cayenne", -10800],
+  ["America/Chicago", -21600],
+  ["America/Chihuahua", -21600],
+  ["America/Ciudad_Juarez", -25200],
+  ["America/Costa_Rica", -21600],
+  ["America/Cuiaba", -14400],
+  ["America/Danmarkshavn", 0],
+  ["America/Dawson", -25200],
+  ["America/Dawson_Creek", -25200],
+  ["America/Denver", -25200],
+  ["America/Detroit", -18e3],
+  ["America/Edmonton", -25200],
+  ["America/Eirunepe", -18e3],
+  ["America/El_Salvador", -21600],
+  ["America/Fort_Nelson", -25200],
+  ["America/Fortaleza", -10800],
+  ["America/Glace_Bay", -14400],
+  ["America/Goose_Bay", -14400],
+  ["America/Grand_Turk", -18e3],
+  ["America/Guatemala", -21600],
+  ["America/Guayaquil", -18e3],
+  ["America/Guyana", -14400],
+  ["America/Halifax", -14400],
+  ["America/Havana", -18e3],
+  ["America/Hermosillo", -25200],
+  ["America/Indiana/Indianapolis", -18e3],
+  ["America/Indiana/Knox", -21600],
+  ["America/Indiana/Marengo", -18e3],
+  ["America/Indiana/Petersburg", -18e3],
+  ["America/Indiana/Tell_City", -21600],
+  ["America/Indiana/Vevay", -18e3],
+  ["America/Indiana/Vincennes", -18e3],
+  ["America/Indiana/Winamac", -18e3],
+  ["America/Inuvik", -25200],
+  ["America/Iqaluit", -18e3],
+  ["America/Jamaica", -18e3],
+  ["America/Juneau", -32400],
+  ["America/Kentucky/Louisville", -18e3],
+  ["America/Kentucky/Monticello", -18e3],
+  ["America/La_Paz", -14400],
+  ["America/Lima", -18e3],
+  ["America/Los_Angeles", -28800],
+  ["America/Maceio", -10800],
+  ["America/Managua", -21600],
+  ["America/Manaus", -14400],
+  ["America/Martinique", -14400],
+  ["America/Matamoros", -21600],
+  ["America/Mazatlan", -25200],
+  ["America/Menominee", -21600],
+  ["America/Merida", -21600],
+  ["America/Metlakatla", -32400],
+  ["America/Mexico_City", -21600],
+  ["America/Miquelon", -10800],
+  ["America/Moncton", -14400],
+  ["America/Monterrey", -21600],
+  ["America/Montevideo", -10800],
+  ["America/New_York", -18e3],
+  ["America/Nome", -32400],
+  ["America/Noronha", -7200],
+  ["America/North_Dakota/Beulah", -21600],
+  ["America/North_Dakota/Center", -21600],
+  ["America/North_Dakota/New_Salem", -21600],
+  ["America/Nuuk", -7200],
+  ["America/Ojinaga", -21600],
+  ["America/Panama", -18e3],
+  ["America/Paramaribo", -10800],
+  ["America/Phoenix", -25200],
+  ["America/Port-au-Prince", -18e3],
+  ["America/Porto_Velho", -14400],
+  ["America/Puerto_Rico", -14400],
+  ["America/Punta_Arenas", -10800],
+  ["America/Rankin_Inlet", -21600],
+  ["America/Recife", -10800],
+  ["America/Regina", -21600],
+  ["America/Resolute", -21600],
+  ["America/Rio_Branco", -18e3],
+  ["America/Santarem", -10800],
+  ["America/Santiago", -14400],
+  ["America/Santo_Domingo", -14400],
+  ["America/Sao_Paulo", -10800],
+  ["America/Scoresbysund", -7200],
+  ["America/Sitka", -32400],
+  ["America/St_Johns", -12600],
+  ["America/Swift_Current", -21600],
+  ["America/Tegucigalpa", -21600],
+  ["America/Thule", -14400],
+  ["America/Tijuana", -28800],
+  ["America/Toronto", -18e3],
+  ["America/Vancouver", -28800],
+  ["America/Whitehorse", -25200],
+  ["America/Winnipeg", -21600],
+  ["America/Yakutat", -32400],
+  ["Antarctica/Casey", 28800],
+  ["Antarctica/Davis", 25200],
+  ["Antarctica/Macquarie", 36e3],
+  ["Antarctica/Mawson", 18e3],
+  ["Antarctica/Palmer", -10800],
+  ["Antarctica/Rothera", -10800],
+  ["Antarctica/Troll", 0],
+  ["Antarctica/Vostok", 18e3],
+  ["Asia/Almaty", 18e3],
+  ["Asia/Amman", 10800],
+  ["Asia/Anadyr", 43200],
+  ["Asia/Aqtau", 18e3],
+  ["Asia/Aqtobe", 18e3],
+  ["Asia/Ashgabat", 18e3],
+  ["Asia/Atyrau", 18e3],
+  ["Asia/Baghdad", 10800],
+  ["Asia/Baku", 14400],
+  ["Asia/Bangkok", 25200],
+  ["Asia/Barnaul", 25200],
+  ["Asia/Beirut", 7200],
+  ["Asia/Bishkek", 21600],
+  ["Asia/Chita", 32400],
+  ["Asia/Choibalsan", 28800],
+  ["Asia/Colombo", 19800],
+  ["Asia/Damascus", 10800],
+  ["Asia/Dhaka", 21600],
+  ["Asia/Dili", 32400],
+  ["Asia/Dubai", 14400],
+  ["Asia/Dushanbe", 18e3],
+  ["Asia/Famagusta", 7200],
+  ["Asia/Gaza", 7200],
+  ["Asia/Hebron", 7200],
+  ["Asia/Ho_Chi_Minh", 25200],
+  ["Asia/Hong_Kong", 28800],
+  ["Asia/Hovd", 25200],
+  ["Asia/Irkutsk", 28800],
+  ["Asia/Jakarta", 25200],
+  ["Asia/Jayapura", 32400],
+  ["Asia/Jerusalem", 7200],
+  ["Asia/Kabul", 16200],
+  ["Asia/Kamchatka", 43200],
+  ["Asia/Karachi", 18e3],
+  ["Asia/Kathmandu", 20700],
+  ["Asia/Khandyga", 32400],
+  ["Asia/Kolkata", 19800],
+  ["Asia/Krasnoyarsk", 25200],
+  ["Asia/Kuching", 28800],
+  ["Asia/Macau", 28800],
+  ["Asia/Magadan", 39600],
+  ["Asia/Makassar", 28800],
+  ["Asia/Manila", 28800],
+  ["Asia/Nicosia", 7200],
+  ["Asia/Novokuznetsk", 25200],
+  ["Asia/Novosibirsk", 25200],
+  ["Asia/Omsk", 21600],
+  ["Asia/Oral", 18e3],
+  ["Asia/Pontianak", 25200],
+  ["Asia/Pyongyang", 32400],
+  ["Asia/Qatar", 10800],
+  ["Asia/Qostanay", 18e3],
+  ["Asia/Qyzylorda", 18e3],
+  ["Asia/Riyadh", 10800],
+  ["Asia/Sakhalin", 39600],
+  ["Asia/Samarkand", 18e3],
+  ["Asia/Seoul", 32400],
+  ["Asia/Shanghai", 28800],
+  ["Asia/Singapore", 28800],
+  ["Asia/Srednekolymsk", 39600],
+  ["Asia/Taipei", 28800],
+  ["Asia/Tashkent", 18e3],
+  ["Asia/Tbilisi", 14400],
+  ["Asia/Tehran", 12600],
+  ["Asia/Thimphu", 21600],
+  ["Asia/Tokyo", 32400],
+  ["Asia/Tomsk", 25200],
+  ["Asia/Ulaanbaatar", 28800],
+  ["Asia/Urumqi", 21600],
+  ["Asia/Ust-Nera", 36e3],
+  ["Asia/Vladivostok", 36e3],
+  ["Asia/Yakutsk", 32400],
+  ["Asia/Yangon", 23400],
+  ["Asia/Yekaterinburg", 18e3],
+  ["Asia/Yerevan", 14400],
+  ["Atlantic/Azores", -3600],
+  ["Atlantic/Bermuda", -14400],
+  ["Atlantic/Canary", 0],
+  ["Atlantic/Cape_Verde", -3600],
+  ["Atlantic/Faroe", 0],
+  ["Atlantic/Madeira", 0],
+  ["Atlantic/South_Georgia", -7200],
+  ["Atlantic/Stanley", -10800],
+  ["Australia/Adelaide", 34200],
+  ["Australia/Brisbane", 36e3],
+  ["Australia/Broken_Hill", 34200],
+  ["Australia/Darwin", 34200],
+  ["Australia/Eucla", 31500],
+  ["Australia/Hobart", 36e3],
+  ["Australia/Lindeman", 36e3],
+  ["Australia/Lord_Howe", 37800],
+  ["Australia/Melbourne", 36e3],
+  ["Australia/Perth", 28800],
+  ["Australia/Sydney", 36e3],
+  ["CET", 3600],
+  ["CST6CDT", -21600],
+  ["EET", 7200],
+  ["EST", -18e3],
+  ["EST5EDT", -18e3],
+  ["Etc/GMT", 0],
+  ["Etc/GMT+1", -3600],
+  ["Etc/GMT+10", -36e3],
+  ["Etc/GMT+11", -39600],
+  ["Etc/GMT+12", -43200],
+  ["Etc/GMT+2", -7200],
+  ["Etc/GMT+3", -10800],
+  ["Etc/GMT+4", -14400],
+  ["Etc/GMT+5", -18e3],
+  ["Etc/GMT+6", -21600],
+  ["Etc/GMT+7", -25200],
+  ["Etc/GMT+8", -28800],
+  ["Etc/GMT+9", -32400],
+  ["Etc/GMT-1", 3600],
+  ["Etc/GMT-10", 36e3],
+  ["Etc/GMT-11", 39600],
+  ["Etc/GMT-12", 43200],
+  ["Etc/GMT-13", 46800],
+  ["Etc/GMT-14", 50400],
+  ["Etc/GMT-2", 7200],
+  ["Etc/GMT-3", 10800],
+  ["Etc/GMT-4", 14400],
+  ["Etc/GMT-5", 18e3],
+  ["Etc/GMT-6", 21600],
+  ["Etc/GMT-7", 25200],
+  ["Etc/GMT-8", 28800],
+  ["Etc/GMT-9", 32400],
+  ["Etc/UTC", 0],
+  ["Europe/Andorra", 3600],
+  ["Europe/Astrakhan", 14400],
+  ["Europe/Athens", 7200],
+  ["Europe/Belgrade", 3600],
+  ["Europe/Berlin", 3600],
+  ["Europe/Brussels", 3600],
+  ["Europe/Bucharest", 7200],
+  ["Europe/Budapest", 3600],
+  ["Europe/Chisinau", 7200],
+  ["Europe/Dublin", 3600],
+  ["Europe/Gibraltar", 3600],
+  ["Europe/Helsinki", 7200],
+  ["Europe/Istanbul", 10800],
+  ["Europe/Kaliningrad", 7200],
+  ["Europe/Kirov", 10800],
+  ["Europe/Kyiv", 7200],
+  ["Europe/Lisbon", 0],
+  ["Europe/London", 0],
+  ["Europe/Madrid", 3600],
+  ["Europe/Malta", 3600],
+  ["Europe/Minsk", 10800],
+  ["Europe/Moscow", 10800],
+  ["Europe/Paris", 3600],
+  ["Europe/Prague", 3600],
+  ["Europe/Riga", 7200],
+  ["Europe/Rome", 3600],
+  ["Europe/Samara", 14400],
+  ["Europe/Saratov", 14400],
+  ["Europe/Simferopol", 10800],
+  ["Europe/Sofia", 7200],
+  ["Europe/Tallinn", 7200],
+  ["Europe/Tirane", 3600],
+  ["Europe/Ulyanovsk", 14400],
+  ["Europe/Vienna", 3600],
+  ["Europe/Vilnius", 7200],
+  ["Europe/Volgograd", 10800],
+  ["Europe/Warsaw", 3600],
+  ["Europe/Zurich", 3600],
+  ["HST", -36e3],
+  ["Indian/Chagos", 21600],
+  ["Indian/Maldives", 18e3],
+  ["Indian/Mauritius", 14400],
+  ["MET", 3600],
+  ["MST", -25200],
+  ["MST7MDT", -25200],
+  ["PST8PDT", -28800],
+  ["Pacific/Apia", 46800],
+  ["Pacific/Auckland", 43200],
+  ["Pacific/Bougainville", 39600],
+  ["Pacific/Chatham", 45900],
+  ["Pacific/Easter", -21600],
+  ["Pacific/Efate", 39600],
+  ["Pacific/Fakaofo", 46800],
+  ["Pacific/Fiji", 43200],
+  ["Pacific/Galapagos", -21600],
+  ["Pacific/Gambier", -32400],
+  ["Pacific/Guadalcanal", 39600],
+  ["Pacific/Guam", 36e3],
+  ["Pacific/Honolulu", -36e3],
+  ["Pacific/Kanton", 46800],
+  ["Pacific/Kiritimati", 50400],
+  ["Pacific/Kosrae", 39600],
+  ["Pacific/Kwajalein", 43200],
+  ["Pacific/Marquesas", -34200],
+  ["Pacific/Nauru", 43200],
+  ["Pacific/Niue", -39600],
+  ["Pacific/Norfolk", 39600],
+  ["Pacific/Noumea", 39600],
+  ["Pacific/Pago_Pago", -39600],
+  ["Pacific/Palau", 32400],
+  ["Pacific/Pitcairn", -28800],
+  ["Pacific/Port_Moresby", 36e3],
+  ["Pacific/Rarotonga", -36e3],
+  ["Pacific/Tahiti", -36e3],
+  ["Pacific/Tarawa", 43200],
+  ["Pacific/Tongatapu", 46800],
+  ["WET", 0]
+]);
+
+// build/dev/javascript/birl/birl.mjs
+var Time = class extends CustomType {
+  constructor(wall_time, offset, timezone, monotonic_time) {
+    super();
+    this.wall_time = wall_time;
+    this.offset = offset;
+    this.timezone = timezone;
+    this.monotonic_time = monotonic_time;
+  }
+};
+var Mon2 = class extends CustomType {
+};
+var Tue2 = class extends CustomType {
+};
+var Wed2 = class extends CustomType {
+};
+var Thu2 = class extends CustomType {
+};
+var Fri2 = class extends CustomType {
+};
+var Sat2 = class extends CustomType {
+};
+var Sun2 = class extends CustomType {
+};
+var Jan2 = class extends CustomType {
+};
+var Feb2 = class extends CustomType {
+};
+var Mar2 = class extends CustomType {
+};
+var Apr2 = class extends CustomType {
+};
+var May2 = class extends CustomType {
+};
+var Jun2 = class extends CustomType {
+};
+var Jul2 = class extends CustomType {
+};
+var Aug2 = class extends CustomType {
+};
+var Sep2 = class extends CustomType {
+};
+var Oct2 = class extends CustomType {
+};
+var Nov2 = class extends CustomType {
+};
+var Dec2 = class extends CustomType {
+};
+var unix_epoch = new Time(0, 0, new None(), new None());
+var string_to_units = toList([
+  ["year", new Year2()],
+  ["month", new Month2()],
+  ["week", new Week2()],
+  ["day", new Day()],
+  ["hour", new Hour()],
+  ["minute", new Minute()],
+  ["second", new Second()]
+]);
+var units_to_string = toList([
+  [new Year2(), "year"],
+  [new Month2(), "month"],
+  [new Week2(), "week"],
+  [new Day(), "day"],
+  [new Hour(), "hour"],
+  [new Minute(), "minute"],
+  [new Second(), "second"]
+]);
+var weekday_strings = toList([
+  [new Mon2(), ["Monday", "Mon"]],
+  [new Tue2(), ["Tuesday", "Tue"]],
+  [new Wed2(), ["Wednesday", "Wed"]],
+  [new Thu2(), ["Thursday", "Thu"]],
+  [new Fri2(), ["Friday", "Fri"]],
+  [new Sat2(), ["Saturday", "Sat"]],
+  [new Sun2(), ["Sunday", "Sun"]]
+]);
+var month_strings = toList([
+  [new Jan2(), ["January", "Jan"]],
+  [new Feb2(), ["February", "Feb"]],
+  [new Mar2(), ["March", "Mar"]],
+  [new Apr2(), ["April", "Apr"]],
+  [new May2(), ["May", "May"]],
+  [new Jun2(), ["June", "Jun"]],
+  [new Jul2(), ["July", "Jul"]],
+  [new Aug2(), ["August", "Aug"]],
+  [new Sep2(), ["September", "Sep"]],
+  [new Oct2(), ["October", "Oct"]],
+  [new Nov2(), ["November", "Nov"]],
+  [new Dec2(), ["December", "Dec"]]
+]);
+
+// build/dev/javascript/decipher/decipher.mjs
+function tagged_union(tag, variants) {
+  let switch$ = from_list(variants);
+  return (dynamic3) => {
+    return try$(
+      tag(dynamic3),
+      (kind) => {
+        let $ = get(switch$, kind);
+        if ($.isOk()) {
+          let decoder = $[0];
+          return decoder(dynamic3);
+        } else {
+          let tags = (() => {
+            let _pipe = keys(switch$);
+            let _pipe$1 = map2(_pipe, inspect2);
+            return join2(_pipe$1, " | ");
+          })();
+          let path = (() => {
+            let $1 = tag(from(void 0));
+            if (!$1.isOk() && $1[0].atLeastLength(1) && $1[0].head instanceof DecodeError) {
+              let path2 = $1[0].head.path;
+              return path2;
+            } else {
+              return toList([]);
+            }
+          })();
+          return new Error2(
+            toList([new DecodeError(tags, inspect2(tag), path)])
+          );
+        }
+      }
+    );
+  };
+}
+function enum$(variants) {
+  return tagged_union(
+    string,
+    map2(
+      variants,
+      (_capture) => {
+        return map_second(
+          _capture,
+          (variant) => {
+            return (_) => {
+              return new Ok2(variant);
+            };
+          }
+        );
+      }
+    )
+  );
+}
+
+// build/dev/javascript/justin/justin.mjs
+function add3(words, word) {
+  if (word === "") {
+    return words;
+  } else {
+    return prepend(word, words);
+  }
+}
+function is_upper(g) {
+  return lowercase2(g) !== g;
+}
+function split5(loop$in, loop$up, loop$word, loop$words) {
+  while (true) {
+    let in$ = loop$in;
+    let up = loop$up;
+    let word = loop$word;
+    let words = loop$words;
+    if (in$.hasLength(0) && word === "") {
+      return reverse(words);
+    } else if (in$.hasLength(0)) {
+      return reverse(add3(words, word));
+    } else if (in$.atLeastLength(1) && in$.head === "\n") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "	") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "!") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "?") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "#") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === ".") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "-") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "_") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === " ") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else {
+      let g = in$.head;
+      let in$1 = in$.tail;
+      let $ = is_upper(g);
+      if (!$) {
+        loop$in = in$1;
+        loop$up = false;
+        loop$word = word + g;
+        loop$words = words;
+      } else if ($ && up) {
+        loop$in = in$1;
+        loop$up = up;
+        loop$word = word + g;
+        loop$words = words;
+      } else {
+        loop$in = in$1;
+        loop$up = true;
+        loop$word = g;
+        loop$words = add3(words, word);
+      }
+    }
+  }
+}
+function split_words(text3) {
+  let _pipe = text3;
+  let _pipe$1 = graphemes(_pipe);
+  return split5(_pipe$1, false, "", toList([]));
+}
+function kebab_case(text3) {
+  let _pipe = text3;
+  let _pipe$1 = split_words(_pipe);
+  let _pipe$2 = join2(_pipe$1, "-");
+  return lowercase2(_pipe$2);
 }
 
 // build/dev/javascript/app/pages/planner.mjs
@@ -10726,29 +11044,39 @@ function update_plan_week(current, date, meal, value4, complete) {
     (a2) => {
       return new PlanDay(
         date,
-        update(
-          (() => {
-            if (a2 instanceof Some) {
-              let a$1 = a2[0];
-              return a$1.planned_meals;
+        (() => {
+          if (a2 instanceof Some) {
+            let a$1 = a2[0];
+            if (value4 instanceof Some && value4[0] === "") {
+              let _pipe = a$1.planned_meals;
+              return drop2(_pipe, toList([meal]));
             } else {
-              return new$2();
-            }
-          })(),
-          meal,
-          (inner) => {
-            if (inner instanceof Some) {
-              let inner$1 = inner[0];
-              return new PlannedMealWithStatus(
-                or(value4, inner$1.title),
+              return update(
+                a$1.planned_meals,
                 meal,
-                or(complete, inner$1.complete)
+                (inner) => {
+                  if (inner instanceof Some) {
+                    let inner$1 = inner[0];
+                    return new PlannedMealWithStatus(
+                      or(value4, inner$1.title),
+                      meal,
+                      or(complete, inner$1.complete)
+                    );
+                  } else {
+                    return new PlannedMealWithStatus(value4, meal, complete);
+                  }
+                }
               );
-            } else {
-              return new PlannedMealWithStatus(value4, meal, complete);
             }
+          } else {
+            let _pipe = new$2();
+            return insert(
+              _pipe,
+              meal,
+              new PlannedMealWithStatus(value4, meal, complete)
+            );
           }
-        )
+        })()
       );
     }
   );
@@ -10760,14 +11088,14 @@ function planner_header_row(dates) {
       _pipe,
       (_capture) => {
         return map_first(_capture, (d) => {
-          return weekday2(d);
+          return weekday(d);
         });
       }
     );
     return from_list(_pipe$1);
   })();
   let monday = (() => {
-    let _pipe = get(date_keys, new Mon2());
+    let _pipe = get(date_keys, new Mon());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -10777,7 +11105,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let tuesday = (() => {
-    let _pipe = get(date_keys, new Tue2());
+    let _pipe = get(date_keys, new Tue());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -10787,7 +11115,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let wednesday = (() => {
-    let _pipe = get(date_keys, new Wed2());
+    let _pipe = get(date_keys, new Wed());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -10797,7 +11125,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let thursday = (() => {
-    let _pipe = get(date_keys, new Thu2());
+    let _pipe = get(date_keys, new Thu());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -10807,7 +11135,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let friday = (() => {
-    let _pipe = get(date_keys, new Fri2());
+    let _pipe = get(date_keys, new Fri());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -10817,7 +11145,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let saturday = (() => {
-    let _pipe = get(date_keys, new Sat2());
+    let _pipe = get(date_keys, new Sat());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -10827,7 +11155,7 @@ function planner_header_row(dates) {
     return unwrap2(_pipe$1, "");
   })();
   let sunday = (() => {
-    let _pipe = get(date_keys, new Sun2());
+    let _pipe = get(date_keys, new Sun());
     let _pipe$1 = map3(
       _pipe,
       (d) => {
@@ -11122,28 +11450,28 @@ function view_planner(model) {
     toList([
       [start_of_week, find_in_week(start_of_week)],
       [
-        add3(start_of_week, 1, new Days()),
-        find_in_week(add3(start_of_week, 1, new Days()))
+        add2(start_of_week, 1, new Days()),
+        find_in_week(add2(start_of_week, 1, new Days()))
       ],
       [
-        add3(start_of_week, 2, new Days()),
-        find_in_week(add3(start_of_week, 2, new Days()))
+        add2(start_of_week, 2, new Days()),
+        find_in_week(add2(start_of_week, 2, new Days()))
       ],
       [
-        add3(start_of_week, 3, new Days()),
-        find_in_week(add3(start_of_week, 3, new Days()))
+        add2(start_of_week, 3, new Days()),
+        find_in_week(add2(start_of_week, 3, new Days()))
       ],
       [
-        add3(start_of_week, 4, new Days()),
-        find_in_week(add3(start_of_week, 4, new Days()))
+        add2(start_of_week, 4, new Days()),
+        find_in_week(add2(start_of_week, 4, new Days()))
       ],
       [
-        add3(start_of_week, 5, new Days()),
-        find_in_week(add3(start_of_week, 5, new Days()))
+        add2(start_of_week, 5, new Days()),
+        find_in_week(add2(start_of_week, 5, new Days()))
       ],
       [
-        add3(start_of_week, 6, new Days()),
-        find_in_week(add3(start_of_week, 6, new Days()))
+        add2(start_of_week, 6, new Days()),
+        find_in_week(add2(start_of_week, 6, new Days()))
       ]
     ])
   );
@@ -11194,7 +11522,7 @@ function view_planner(model) {
               let _pipe$1 = sort(
                 _pipe,
                 (a2, b) => {
-                  return compare4(a2.date, b.date);
+                  return compare3(a2.date, b.date);
                 }
               );
               return index_map(
@@ -11211,7 +11539,7 @@ function view_planner(model) {
               let _pipe$1 = sort(
                 _pipe,
                 (a2, b) => {
-                  return compare4(a2.date, b.date);
+                  return compare3(a2.date, b.date);
                 }
               );
               return index_map(
@@ -11237,7 +11565,6 @@ function inner_input(date, for$2, title, recipe_titles2) {
     toList([
       typeahead(
         toList([
-          class_list("text-lg w-full bg-ecru-white-100"),
           recipe_titles(recipe_titles2),
           search_term(title),
           on2(
@@ -11311,28 +11638,28 @@ function edit_planner(model) {
     toList([
       [start_of_week, find_in_week(start_of_week)],
       [
-        add3(start_of_week, 1, new Days()),
-        find_in_week(add3(start_of_week, 1, new Days()))
+        add2(start_of_week, 1, new Days()),
+        find_in_week(add2(start_of_week, 1, new Days()))
       ],
       [
-        add3(start_of_week, 2, new Days()),
-        find_in_week(add3(start_of_week, 2, new Days()))
+        add2(start_of_week, 2, new Days()),
+        find_in_week(add2(start_of_week, 2, new Days()))
       ],
       [
-        add3(start_of_week, 3, new Days()),
-        find_in_week(add3(start_of_week, 3, new Days()))
+        add2(start_of_week, 3, new Days()),
+        find_in_week(add2(start_of_week, 3, new Days()))
       ],
       [
-        add3(start_of_week, 4, new Days()),
-        find_in_week(add3(start_of_week, 4, new Days()))
+        add2(start_of_week, 4, new Days()),
+        find_in_week(add2(start_of_week, 4, new Days()))
       ],
       [
-        add3(start_of_week, 5, new Days()),
-        find_in_week(add3(start_of_week, 5, new Days()))
+        add2(start_of_week, 5, new Days()),
+        find_in_week(add2(start_of_week, 5, new Days()))
       ],
       [
-        add3(start_of_week, 6, new Days()),
-        find_in_week(add3(start_of_week, 6, new Days()))
+        add2(start_of_week, 6, new Days()),
+        find_in_week(add2(start_of_week, 6, new Days()))
       ]
     ])
   );
@@ -11392,7 +11719,7 @@ function edit_planner(model) {
               let _pipe$1 = sort(
                 _pipe,
                 (a2, b) => {
-                  return compare4(a2.date, b.date);
+                  return compare3(a2.date, b.date);
                 }
               );
               return index_map(
@@ -11419,7 +11746,7 @@ function edit_planner(model) {
               let _pipe$1 = sort(
                 _pipe,
                 (a2, b) => {
-                  return compare4(a2.date, b.date);
+                  return compare3(a2.date, b.date);
                 }
               );
               return index_map(
@@ -13958,7 +14285,10 @@ function view_home() {
               href("/recipes")
             ]),
             toList([
-              span(toList([class$("underline-green")]), toList([text("List")])),
+              span(
+                toList([class$("underline-green")]),
+                toList([text("List  ")])
+              ),
               span(toList([class$("text-5xl")]), toList([text("\u{1F4D1}")]))
             ])
           ),

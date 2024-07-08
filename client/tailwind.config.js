@@ -180,7 +180,15 @@ export default {
                     },
                     '-moz-appearance': 'textfield'
                 },
-                '.input-base': {
+                'input-base': {
+                    borderWidth: '0px',
+                    borderBottomWidth: '0px',
+                    paddingTop: '0px',
+                    paddingBottom: '0px',
+                    lineHeight: 'inherit',
+                    backgroundColor: 'transparent',
+                },
+                textarea:{
                     borderWidth: '0px',
                     borderBottomWidth: '0px',
                     paddingTop: '0px',
@@ -189,6 +197,17 @@ export default {
                     backgroundColor: 'transparent',
                 },
                 '.input-focus:focus': {
+                    outline: '2px solid transparent',
+                    outlineOffset: '2px',
+                    '--tw-ring-offset-shadow': 'var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color)',
+                    '--tw-ring-shadow': 'var(--tw-ring-inset) 0 0 0 calc(0px + var(--tw-ring-offset-width)) var(--tw-ring-color)',
+                    boxShadow: 'var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)',
+                    '--tw-border-opacity': '1',
+                    'border-color': 'rgb(80 156 94 / var(--tw-border-opacity))',
+                    borderWidth: '0px',
+                    borderBottomWidth: '1px',
+                },
+                'textarea:focus': {
                     outline: '2px solid transparent',
                     outlineOffset: '2px',
                     '--tw-ring-offset-shadow': 'var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color)',
