@@ -12,6 +12,7 @@ import lustre/element/html.{a, nav, section, span}
 import modem
 import pages/planner
 import pages/recipe
+import rada/date
 import session
 import tardis
 
@@ -42,7 +43,11 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
       current_route: Home,
       current_recipe: None,
       recipes: session.RecipeList(recipes: [], tag_options: []),
-      planner: planner.Model(plan_week: dict.new(), recipe_list: []),
+      planner: planner.Model(
+        plan_week: dict.new(),
+        recipe_list: [],
+        start_date: date.today(),
+      ),
     ),
     effect.batch([
       modem.init(on_route_change),
@@ -128,7 +133,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     )
     OnRouteChange(ViewPlanner) -> #(
       Model(..model, current_route: ViewPlanner),
-      effect.map(planner.get_plan(), Planner),
+      effect.map(
+        planner.get_plan(date.floor(date.today(), date.Monday)),
+        Planner,
+      ),
     )
     OnRouteChange(EditPlanner) -> #(
       Model(..model, current_route: EditPlanner),
@@ -147,7 +155,8 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           recipes: child_model,
           planner: planner.Model(
             plan_week: model.planner.plan_week,
-            recipe_list: child_model.recipes,
+            recipe_list: list.map(child_model.recipes, fn(a) { a.title }),
+            start_date: model.planner.start_date,
           ),
         ),
         effect.map(child_effect, RecipeList),
@@ -232,7 +241,8 @@ fn view(model: Model) -> Element(Msg) {
       element.map(
         planner.view_planner(planner.Model(
           plan_week: model.planner.plan_week,
-          recipe_list: model.recipes.recipes,
+          recipe_list: list.map(model.recipes.recipes, fn(a) { a.title }),
+          start_date: model.planner.start_date,
         )),
         Planner,
       )
@@ -240,7 +250,8 @@ fn view(model: Model) -> Element(Msg) {
       element.map(
         planner.edit_planner(planner.Model(
           plan_week: model.planner.plan_week,
-          recipe_list: model.recipes.recipes,
+          recipe_list: list.map(model.recipes.recipes, fn(a) { a.title }),
+          start_date: model.planner.start_date,
         )),
         Planner,
       )

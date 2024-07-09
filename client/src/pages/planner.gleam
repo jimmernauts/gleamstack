@@ -46,7 +46,8 @@ pub type PlannedMealWithStatus {
 
 pub type PlannerMsg {
   UserUpdatedPlanMeal(Date, Meal, Option(String), Option(Bool))
-  DbRetrievedPlan(PlanWeek)
+  UserFetchedPlan(Date)
+  DbRetrievedPlan(PlanWeek, Date)
   DbSavedPlan
   UserSavedPlan
 }
@@ -55,7 +56,7 @@ pub type PlanWeek =
   Dict(Date, PlanDay)
 
 pub type Model {
-  Model(plan_week: PlanWeek, recipe_list: List(Recipe))
+  Model(plan_week: PlanWeek, recipe_list: List(String), start_date: Date)
 }
 
 pub type Meal {
@@ -111,17 +112,27 @@ pub fn planner_update(
   model: Model,
   msg: PlannerMsg,
 ) -> #(Model, Effect(PlannerMsg)) {
+  io.debug(msg)
   case msg {
     UserUpdatedPlanMeal(date, meal, value, complete) -> {
       let result =
         update_plan_week(model.plan_week, date, meal, value, complete)
-      #(Model(..model, plan_week: result), effect.none())
+      #(Model(..model, plan_week: result), case complete {
+        Some(_) -> save_plan(result)
+        _ -> effect.none()
+      })
     }
     UserSavedPlan -> {
       #(model, save_plan(model.plan_week))
     }
-    DbRetrievedPlan(plan_week) -> {
-      #(Model(..model, plan_week: plan_week), effect.none())
+    UserFetchedPlan(date) -> {
+      #(Model(..model, start_date: date), get_plan(date))
+    }
+    DbRetrievedPlan(plan_week, start_date) -> {
+      #(
+        Model(..model, start_date: start_date, plan_week: plan_week),
+        effect.none(),
+      )
     }
     DbSavedPlan -> {
       #(model, effect.none())
@@ -129,22 +140,21 @@ pub fn planner_update(
   }
 }
 
-pub fn get_plan() -> Effect(PlannerMsg) {
+pub fn get_plan(start_date: Date) -> Effect(PlannerMsg) {
   use dispatch <- effect.from
-  do_get_plan()
+  do_get_plan(date.to_iso_string(start_date))
   |> promise.map(array.to_list)
-  |> promise.map(io.debug)
   |> promise.map(list.map(_, decode_plan_day))
   |> promise.map(result.all)
   |> promise.map(result.map(_, list.map(_, fn(a: PlanDay) { #(a.date, a) })))
   |> promise.map(result.map(_, dict.from_list))
-  |> promise.map(result.map(_, DbRetrievedPlan))
+  |> promise.map(result.map(_, DbRetrievedPlan(_, start_date)))
   |> promise.tap(result.map(_, dispatch))
   Nil
 }
 
 @external(javascript, ".././db.ts", "do_get_plan")
-fn do_get_plan() -> Promise(Array(Dynamic))
+fn do_get_plan(start_date: String) -> Promise(Array(Dynamic))
 
 pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {
   use dispatch <- effect.from
@@ -158,7 +168,9 @@ fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 //-VIEWS-------------------------------------------------------------
 
 pub fn view_planner(model: Model) {
-  let start_of_week = date.floor(date.today(), date.Monday)
+  io.debug("view_planner")
+  io.debug(model)
+  let start_of_week = date.floor(model.start_date, date.Monday)
   let find_in_week = fn(a) {
     result.unwrap(dict.get(model.plan_week, a), PlanDay(a, dict.new()))
   }
@@ -212,6 +224,24 @@ pub fn view_planner(model: Model) {
           [
             a([href("/"), class("text-center")], [text("🏠")]),
             a([href("/planner/edit"), class("text-center")], [text("✏️")]),
+            button(
+              [
+                class("text-center"),
+                event.on_click(
+                  UserFetchedPlan(date.add(start_of_week, 1, date.Weeks)),
+                ),
+              ],
+              [text("➡️")],
+            ),
+            button(
+              [
+                class("text-center"),
+                event.on_click(
+                  UserFetchedPlan(date.add(start_of_week, -1, date.Weeks)),
+                ),
+              ],
+              [text("⬅️")],
+            ),
           ],
         ),
       ],
@@ -250,7 +280,7 @@ pub fn view_planner(model: Model) {
 
 pub fn edit_planner(model: Model) {
   // fit_text()
-  let start_of_week = date.floor(date.today(), date.Monday)
+  let start_of_week = date.floor(model.start_date, date.Monday)
   let find_in_week = fn(a) {
     result.unwrap(dict.get(model.plan_week, a), PlanDay(a, dict.new()))
   }
@@ -334,24 +364,14 @@ pub fn edit_planner(model: Model) {
           dict.values(week)
           |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
           |> list.index_map(fn(x, i) {
-            planner_meal_input(
-              x,
-              i,
-              Lunch,
-              model.recipe_list |> list.map(fn(r) { r.title }),
-            )
+            planner_meal_input(x, i, Lunch, model.recipe_list)
           })
         }),
         fragment({
           dict.values(week)
           |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
           |> list.index_map(fn(x, i) {
-            planner_meal_input(
-              x,
-              i,
-              Dinner,
-              model.recipe_list |> list.map(fn(r) { r.title }),
-            )
+            planner_meal_input(x, i, Dinner, model.recipe_list)
           })
         }),
       ],

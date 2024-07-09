@@ -180,9 +180,12 @@ export async function do_get_plan(startDate) {
 		return new Ok([]);
 	}
 	const input = startDate ? startDate : `'now'`;
+	const query = `SELECT date,planned_meals FROM plan WHERE date >= DATE('${input}','localtime','weekday 0','-6 days') AND date <= DATE('${input}','localtime','weekday 0')`
+	console.log("query: ", query);
 	const result = await db.execO(
-		`SELECT date,planned_meals FROM plan WHERE date >= DATE(${input},'localtime','weekday 0','-6 days') AND date <= DATE(${input},'localtime','weekday 0')`,
+		query
 	);
+	console.log("result: ", result);
 	const mapped = result.map((day) => {
 		day.planned_meals = JSON.parse(day.planned_meals);
 		return day;
