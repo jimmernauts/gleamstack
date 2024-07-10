@@ -13,7 +13,6 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
 import gleam/result
-import justin.{kebab_case}
 import lib/decoders
 import lib/utils
 import lustre/attribute.{attribute, checked, class, href, id, style, type_}
@@ -24,7 +23,6 @@ import lustre/element/html.{
 }
 import lustre/event.{on_submit}
 import rada/date.{type Date}
-import session.{type Recipe}
 
 //-TYPES-------------------------------------------------------------
 
@@ -73,7 +71,7 @@ fn update_plan_week(
   value: Option(String),
   complete: Option(Bool),
 ) -> PlanWeek {
-  dict.update(current, date, fn(a) {
+  dict.upsert(current, date, fn(a) {
     PlanDay(date: date, planned_meals: case a {
       Some(a) ->
         case value {
@@ -81,7 +79,7 @@ fn update_plan_week(
             a.planned_meals
             |> dict.drop([meal])
           _ ->
-            dict.update(a.planned_meals, meal, fn(inner) {
+            dict.upsert(a.planned_meals, meal, fn(inner) {
               case inner {
                 Some(inner) ->
                   PlannedMealWithStatus(
@@ -168,8 +166,6 @@ fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 //-VIEWS-------------------------------------------------------------
 
 pub fn view_planner(model: Model) {
-  io.debug("view_planner")
-  io.debug(model)
   let start_of_week = date.floor(model.start_date, date.Monday)
   let find_in_week = fn(a) {
     result.unwrap(dict.get(model.plan_week, a), PlanDay(a, dict.new()))
@@ -617,7 +613,7 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
 }
 
 fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
-  let PlannedMealWithStatus(m, f, c) = meal
+  let PlannedMealWithStatus(m, _f, c) = meal
   div(
     [
       class(

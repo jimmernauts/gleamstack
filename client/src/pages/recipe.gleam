@@ -1388,9 +1388,9 @@ fn json_encode_tag_list(dict: Dict(Int, Tag)) -> Json {
   |> json.object
 }
 
-fn json_encode_tag_option_list(tag_options: List(String)) -> Json {
-  json.array(tag_options, json.string)
-}
+// fn json_encode_tag_option_list(tag_options: List(String)) -> Json {
+//  json.array(tag_options, json.string)
+//}
 
 pub fn decode_recipe(d: Dynamic) -> Result(Recipe, dynamic.DecodeErrors) {
   let decoder =

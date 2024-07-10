@@ -10,6 +10,7 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{a, nav, section, span}
 import modem
+import pages/ingest
 import pages/planner
 import pages/recipe
 import rada/date
@@ -75,6 +76,7 @@ pub type Route {
   ViewRecipeList
   ViewPlanner
   EditPlanner
+  ImportRecipe
 }
 
 pub type Msg {
@@ -82,6 +84,7 @@ pub type Msg {
   RecipeDetail(recipe.RecipeDetailMsg)
   RecipeList(session.RecipeListMsg)
   Planner(planner.PlannerMsg)
+  Import(ingest.ImportMsg)
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -198,6 +201,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         planner.planner_update(model.planner, planner_msg)
       #(Model(..model, planner: child_model), effect.map(child_effect, Planner))
     }
+    Import(import_msg) -> {
+      let #(child_model, child_effect) = ingest.update(ingest.Model, import_msg)
+      #(model, effect.map(child_effect, Import))
+    }
   }
 }
 
@@ -213,6 +220,7 @@ fn on_route_change(uri: Uri) -> Msg {
     ["recipes"] -> OnRouteChange(ViewRecipeList)
     ["planner", "edit"] -> OnRouteChange(EditPlanner)
     ["planner"] -> OnRouteChange(ViewPlanner)
+    ["import"] -> OnRouteChange(ImportRecipe)
     _ -> OnRouteChange(Home)
   }
 }
@@ -255,6 +263,7 @@ fn view(model: Model) -> Element(Msg) {
         )),
         Planner,
       )
+    ImportRecipe -> element.map(ingest.view(ingest.Model), Import)
   }
   view_base(page)
 }
