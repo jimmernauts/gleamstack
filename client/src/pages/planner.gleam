@@ -224,24 +224,27 @@ pub fn view_planner(model: Model) {
           [
             a([href("/"), class("text-center")], [text("🏠")]),
             a([href("/planner/edit"), class("text-center")], [text("✏️")]),
-            button(
-              [
-                class("text-center"),
-                event.on_click(
-                  UserFetchedPlan(date.add(start_of_week, 1, date.Weeks)),
-                ),
-              ],
-              [text("➡️")],
-            ),
-            button(
-              [
-                class("text-center"),
-                event.on_click(
-                  UserFetchedPlan(date.add(start_of_week, -1, date.Weeks)),
-                ),
-              ],
-              [text("⬅️")],
-            ),
+            div([class("flex flex-row justify-evenly px-1")], [
+              button(
+                [
+                  class("text-center"),
+                  event.on_click(
+                    UserFetchedPlan(date.add(start_of_week, -1, date.Weeks)),
+                  ),
+                ],
+                [text("⬅️")],
+              ),
+              button(
+                [
+                  type_("button"),
+                  class("text-center"),
+                  event.on_click(
+                    UserFetchedPlan(date.add(start_of_week, 1, date.Weeks)),
+                  ),
+                ],
+                [text("➡️")],
+              ),
+            ]),
           ],
         ),
       ],
@@ -251,7 +254,7 @@ pub fn view_planner(model: Model) {
         id("active-week"),
         class(
           "mb-2 text-sm p-1 min-h-[70vh]
-            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always
+            overflow-x-hidden overflow-y-scroll md:overflow-x-scroll md:overflow-y-hidden snap-mandatory snap-always
             col-span-full row-start-2 grid gap-1 
             grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
             snap-y scroll-pt-[9%]
@@ -347,7 +350,7 @@ pub fn edit_planner(model: Model) {
         id("active-week"),
         class(
           "mb-2 text-sm p-1 min-h-[70vh]
-            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always
+            overflow-x-hidden overflow-y-scroll md:overflow-x-scroll md:overflow-y-hidden snap-mandatory snap-always  
             col-span-full row-start-2 grid gap-1 
             grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
             snap-y scroll-pt-[9%]

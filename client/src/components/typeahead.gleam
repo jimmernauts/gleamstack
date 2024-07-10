@@ -1,4 +1,3 @@
-import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Decoder}
 import gleam/int
@@ -14,12 +13,8 @@ import lustre.{type App}
 import lustre/attribute.{type Attribute, attribute, class, id, name, value}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, fragment, text}
-import lustre/element/html.{datalist, div, input, li, option, textarea, ul}
-import lustre/event.{
-  on, on_blur, on_click, on_focus, on_input, on_keydown, on_mouse_over,
-}
-
-import session.{type Recipe}
+import lustre/element/html.{li, option, textarea, ul}
+import lustre/event.{on, on_click, on_focus, on_input, on_keydown}
 
 pub fn app() -> App(Nil, Model, Msg) {
   lustre.component(init, update, view, on_attribute_change())
@@ -195,7 +190,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     UserHoveredOption(a) -> {
       #(Model(..model, hovered_item: Some(a)), effect.none())
     }
-    UserUnHoveredOption(a) -> {
+    UserUnHoveredOption(_a) -> {
       #(Model(..model, hovered_item: None), effect.none())
     }
   }
@@ -295,6 +290,7 @@ fn view(model: Model) -> Element(Msg) {
         attribute("autocomplete", "off"),
         attribute("aria-autocomplete", "list"),
         attribute("role", "combobox"),
+        name("meal-input"),
         on_input(UserTypedInSearchInput),
         on("change", fn(event) {
           event
@@ -303,7 +299,7 @@ fn view(model: Model) -> Element(Msg) {
         }),
         on_keydown(UserPressedKeyInSearchInput),
         on_focus(UserFocusedSearchInput),
-        on("blur", fn(event) { Ok(UserBlurredSearchInput) }),
+        on("blur", fn(_event) { Ok(UserBlurredSearchInput) }),
       ],
       "",
     ),

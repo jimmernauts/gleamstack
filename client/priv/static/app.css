@@ -1045,6 +1045,10 @@ fieldset {
   grid-template-rows: fit-content(65px);
 }
 
+.flex-row {
+  flex-direction: row;
+}
+
 .flex-col {
   flex-direction: column;
 }
@@ -1085,6 +1089,10 @@ fieldset {
   justify-content: space-between;
 }
 
+.justify-evenly {
+  justify-content: space-evenly;
+}
+
 .gap-1 {
   gap: 0.25rem;
 }
@@ -1119,10 +1127,6 @@ fieldset {
 
 .overflow-x-hidden {
   overflow-x: hidden;
-}
-
-.overflow-x-scroll {
-  overflow-x: scroll;
 }
 
 .overflow-y-scroll {
@@ -1703,6 +1707,14 @@ fieldset {
 
   .md\:grid-rows-\[fit-content\(20\%\)_minmax\(20vh\2c 1fr\)_minmax\(20vh\2c 1fr\)\] {
     grid-template-rows: fit-content(20%) minmax(20vh,1fr) minmax(20vh,1fr);
+  }
+
+  .md\:overflow-y-hidden {
+    overflow-y: hidden;
+  }
+
+  .md\:overflow-x-scroll {
+    overflow-x: scroll;
   }
 
   .md\:text-base {

@@ -9462,6 +9462,624 @@ function after(delay, msg) {
   );
 }
 
+// build/dev/javascript/app/components/typeahead.mjs
+var Model2 = class extends CustomType {
+  constructor(elem_id, search_items, search_term2, found_items, is_open, is_focused, hovered_item) {
+    super();
+    this.elem_id = elem_id;
+    this.search_items = search_items;
+    this.search_term = search_term2;
+    this.found_items = found_items;
+    this.is_open = is_open;
+    this.is_focused = is_focused;
+    this.hovered_item = hovered_item;
+  }
+};
+var RetrievedSearchItems = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var RetrievedInitialSearchTerm = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserTypedInSearchInput = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserPressedKeyInSearchInput = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserSelectedValue = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserSelectedOption = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserHoveredOption = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserUnHoveredOption = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserFocusedSearchInput = class extends CustomType {
+};
+var UserBlurredSearchInput = class extends CustomType {
+};
+var UserClosedOptionList = class extends CustomType {
+};
+function typeahead(attrs) {
+  return element("type-ahead", attrs, toList([]));
+}
+function recipe_titles(all3) {
+  return property("recipe-titles", all3);
+}
+function search_term(term) {
+  return property("search-term", term);
+}
+function init6(_) {
+  let elem_id = to_string3(random(999999));
+  return [
+    new Model2(elem_id, toList([]), "", toList([]), false, false, new None()),
+    none()
+  ];
+}
+function update3(model, msg) {
+  debug(msg);
+  if (msg instanceof RetrievedInitialSearchTerm) {
+    let a2 = msg[0];
+    return [model.withFields({ search_term: a2 }), none()];
+  } else if (msg instanceof RetrievedSearchItems) {
+    let a2 = msg[0];
+    return [
+      model.withFields({ search_items: a2, found_items: a2 }),
+      none()
+    ];
+  } else if (msg instanceof UserTypedInSearchInput) {
+    let a2 = msg[0];
+    return [
+      model.withFields({
+        search_term: a2,
+        found_items: (() => {
+          let $ = length3(a2);
+          if ($ < 3) {
+            let num = $;
+            return model.search_items;
+          } else {
+            return filter(
+              model.search_items,
+              (r) => {
+                return contains_string(
+                  lowercase2(r),
+                  lowercase2(a2)
+                );
+              }
+            );
+          }
+        })(),
+        is_open: !contains(model.search_items, a2)
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserSelectedValue) {
+    let a2 = msg[0];
+    return [model, emit2("typeahead-change", string2(a2))];
+  } else if (msg instanceof UserSelectedOption) {
+    let a2 = msg[0];
+    return [
+      model.withFields({ is_open: false }),
+      from2(
+        (dispatch2) => {
+          let _pipe = new UserSelectedValue(a2);
+          return dispatch2(_pipe);
+        }
+      )
+    ];
+  } else if (msg instanceof UserFocusedSearchInput) {
+    return [
+      model.withFields({
+        is_focused: true,
+        is_open: !contains(model.search_items, model.search_term)
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserBlurredSearchInput) {
+    return [model, after(100, new UserBlurredSearchInput())];
+  } else if (msg instanceof UserClosedOptionList) {
+    return [
+      model.withFields({
+        is_open: false,
+        is_focused: false,
+        hovered_item: new None()
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserPressedKeyInSearchInput) {
+    let a2 = msg[0];
+    let $ = model.is_focused;
+    let $1 = model.is_open;
+    if (!$) {
+      return [model, none()];
+    } else if (a2 === "ArrowDown" && $ && $1) {
+      return [
+        model.withFields({
+          hovered_item: (() => {
+            let $2 = model.hovered_item;
+            let $3 = length(model.found_items);
+            if ($2 instanceof None) {
+              return new Some(0);
+            } else {
+              let a$1 = $2[0];
+              let b = $3;
+              return new Some(min(a$1 + 1, b));
+            }
+          })()
+        }),
+        none()
+      ];
+    } else if (a2 === "ArrowDown" && $ && !$1) {
+      return [model.withFields({ is_open: true }), none()];
+    } else if (a2 === "ArrowUp" && $ && $1) {
+      return [
+        model.withFields({
+          hovered_item: (() => {
+            let $2 = model.hovered_item;
+            if ($2 instanceof None) {
+              return new None();
+            } else {
+              let a$1 = $2[0];
+              return new Some(max(0, a$1 - 1));
+            }
+          })()
+        }),
+        none()
+      ];
+    } else if (a2 === "Enter" && $) {
+      let $2 = model.hovered_item;
+      let $3 = model.is_open;
+      if ($2 instanceof None && !$3) {
+        return [model.withFields({ is_open: true }), none()];
+      } else if ($2 instanceof Some && $3) {
+        let a$1 = $2[0];
+        return [
+          model.withFields({ is_open: false, hovered_item: new None() }),
+          from2(
+            (dispatch2) => {
+              let _pipe = new UserSelectedOption(
+                unwrap(list_at(model.found_items, a$1), "")
+              );
+              return dispatch2(_pipe);
+            }
+          )
+        ];
+      } else {
+        return [model, none()];
+      }
+    } else if (a2 === "Escape" && $ && $1) {
+      return [
+        model.withFields({ is_open: false, hovered_item: new None() }),
+        from2(
+          (dispatch2) => {
+            let _pipe = new UserBlurredSearchInput();
+            return dispatch2(_pipe);
+          }
+        )
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else if (msg instanceof UserHoveredOption) {
+    let a2 = msg[0];
+    return [model.withFields({ hovered_item: new Some(a2) }), none()];
+  } else {
+    return [model.withFields({ hovered_item: new None() }), none()];
+  }
+}
+function on_attribute_change() {
+  return from_list(
+    toList([
+      [
+        "recipe-titles",
+        (attribute2) => {
+          let _pipe = attribute2;
+          let _pipe$1 = list(string)(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new RetrievedSearchItems(var0);
+            }
+          );
+        }
+      ],
+      [
+        "search-term",
+        (attribute2) => {
+          let _pipe = attribute2;
+          let _pipe$1 = string(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new RetrievedInitialSearchTerm(var0);
+            }
+          );
+        }
+      ]
+    ])
+  );
+}
+function search_result(model, res, index3) {
+  return li(
+    toList([
+      attribute("role", "option"),
+      attribute("data-index", to_string3(index3)),
+      class$(
+        (() => {
+          let $ = isEqual(model.hovered_item, new Some(index3));
+          if ($) {
+            return "bg-ecru-white-100";
+          } else {
+            return "";
+          }
+        })()
+      ),
+      class$("px-1"),
+      on_click(new UserSelectedOption(res)),
+      on2(
+        "mouseover",
+        (evt) => {
+          let _pipe = evt;
+          let _pipe$1 = field(
+            "target",
+            field(
+              "dataset",
+              field("index", stringed_int)
+            )
+          )(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new UserHoveredOption(var0);
+            }
+          );
+        }
+      ),
+      on2(
+        "mouseout",
+        (evt) => {
+          let _pipe = evt;
+          let _pipe$1 = field(
+            "target",
+            field(
+              "dataset",
+              field("index", stringed_int)
+            )
+          )(_pipe);
+          return map3(
+            _pipe$1,
+            (var0) => {
+              return new UserUnHoveredOption(var0);
+            }
+          );
+        }
+      )
+    ]),
+    toList([text(res)])
+  );
+}
+function view2(model) {
+  return fragment(
+    toList([
+      textarea(
+        toList([
+          id("meal-input-" + model.elem_id),
+          style(
+            toList([
+              ["field-sizing", "content"],
+              ["overflow-x", "hidden"],
+              ["width", "100%"],
+              [
+                "font-family",
+                "Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif"
+              ],
+              [
+                "font-size",
+                "clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem)"
+              ],
+              ["line-height", "1.6"],
+              ["color", "rgb(47 40 27)"],
+              ["background-color", "rgb(241 241 227)"],
+              ["border-width", "0px"],
+              ["border-bottom-width", "0px"],
+              ["padding-top", "0px"],
+              ["padding-bottom", "0px"],
+              ["line-height", "inherit"],
+              ["resize", "none"]
+            ])
+          ),
+          class$(
+            (() => {
+              let $ = length3(model.search_term);
+              if ($ > 38) {
+                let num = $;
+                return "text-base";
+              } else if ($ > 17) {
+                let num = $;
+                return "text-lg";
+              } else {
+                return "text-xl";
+              }
+            })()
+          ),
+          value(model.search_term),
+          attribute("autocapitalize", "none"),
+          attribute("autocomplete", "off"),
+          attribute("aria-autocomplete", "list"),
+          attribute("role", "combobox"),
+          name("meal-input"),
+          on_input((var0) => {
+            return new UserTypedInSearchInput(var0);
+          }),
+          on2(
+            "change",
+            (event2) => {
+              let _pipe = event2;
+              let _pipe$1 = field(
+                "target",
+                field("value", string)
+              )(_pipe);
+              return map3(
+                _pipe$1,
+                (var0) => {
+                  return new UserSelectedValue(var0);
+                }
+              );
+            }
+          ),
+          on_keydown(
+            (var0) => {
+              return new UserPressedKeyInSearchInput(var0);
+            }
+          ),
+          on_focus(new UserFocusedSearchInput()),
+          on2("blur", (_) => {
+            return new Ok2(new UserBlurredSearchInput());
+          })
+        ]),
+        ""
+      ),
+      ul(
+        toList([
+          id("search-results-" + model.elem_id),
+          class$(
+            "font-mono bg-ecru-white-50 border border-ecru-white-950 text-xs"
+          ),
+          attribute("role", "listbox"),
+          style(
+            (() => {
+              let $ = model.is_open;
+              if ($) {
+                return toList([["display", "block"]]);
+              } else {
+                return toList([["display", "none"]]);
+              }
+            })()
+          ),
+          attribute(
+            "aria-expanded",
+            (() => {
+              let $ = model.is_open;
+              if ($) {
+                return "true";
+              } else {
+                return "false";
+              }
+            })()
+          )
+        ]),
+        (() => {
+          let _pipe = model.found_items;
+          let _pipe$1 = map2(_pipe, (a2) => {
+            return a2;
+          });
+          return index_map(
+            _pipe$1,
+            (a2, i) => {
+              return search_result(model, a2, i);
+            }
+          );
+        })()
+      )
+    ])
+  );
+}
+function app() {
+  return component(init6, update3, view2, on_attribute_change());
+}
+
+// build/dev/javascript/decipher/decipher.mjs
+function tagged_union(tag, variants) {
+  let switch$ = from_list(variants);
+  return (dynamic3) => {
+    return try$(
+      tag(dynamic3),
+      (kind) => {
+        let $ = get(switch$, kind);
+        if ($.isOk()) {
+          let decoder = $[0];
+          return decoder(dynamic3);
+        } else {
+          let tags = (() => {
+            let _pipe = keys(switch$);
+            let _pipe$1 = map2(_pipe, inspect2);
+            return join2(_pipe$1, " | ");
+          })();
+          let path = (() => {
+            let $1 = tag(from(void 0));
+            if (!$1.isOk() && $1[0].atLeastLength(1) && $1[0].head instanceof DecodeError) {
+              let path2 = $1[0].head.path;
+              return path2;
+            } else {
+              return toList([]);
+            }
+          })();
+          return new Error2(
+            toList([new DecodeError(tags, inspect2(tag), path)])
+          );
+        }
+      }
+    );
+  };
+}
+function enum$(variants) {
+  return tagged_union(
+    string,
+    map2(
+      variants,
+      (_capture) => {
+        return map_second(
+          _capture,
+          (variant) => {
+            return (_) => {
+              return new Ok2(variant);
+            };
+          }
+        );
+      }
+    )
+  );
+}
+
+// build/dev/javascript/justin/justin.mjs
+function add3(words, word) {
+  if (word === "") {
+    return words;
+  } else {
+    return prepend(word, words);
+  }
+}
+function is_upper(g) {
+  return lowercase2(g) !== g;
+}
+function split5(loop$in, loop$up, loop$word, loop$words) {
+  while (true) {
+    let in$ = loop$in;
+    let up = loop$up;
+    let word = loop$word;
+    let words = loop$words;
+    if (in$.hasLength(0) && word === "") {
+      return reverse(words);
+    } else if (in$.hasLength(0)) {
+      return reverse(add3(words, word));
+    } else if (in$.atLeastLength(1) && in$.head === "\n") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "	") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "!") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "?") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "#") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === ".") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "-") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === "_") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else if (in$.atLeastLength(1) && in$.head === " ") {
+      let in$1 = in$.tail;
+      loop$in = in$1;
+      loop$up = false;
+      loop$word = "";
+      loop$words = add3(words, word);
+    } else {
+      let g = in$.head;
+      let in$1 = in$.tail;
+      let $ = is_upper(g);
+      if (!$) {
+        loop$in = in$1;
+        loop$up = false;
+        loop$word = word + g;
+        loop$words = words;
+      } else if ($ && up) {
+        loop$in = in$1;
+        loop$up = up;
+        loop$word = word + g;
+        loop$words = words;
+      } else {
+        loop$in = in$1;
+        loop$up = true;
+        loop$word = g;
+        loop$words = add3(words, word);
+      }
+    }
+  }
+}
+function split_words(text3) {
+  let _pipe = text3;
+  let _pipe$1 = graphemes(_pipe);
+  return split5(_pipe$1, false, "", toList([]));
+}
+function kebab_case(text3) {
+  let _pipe = text3;
+  let _pipe$1 = split_words(_pipe);
+  let _pipe$2 = join2(_pipe$1, "-");
+  return lowercase2(_pipe$2);
+}
+
 // node_modules/nanoid/url-alphabet/index.js
 var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
 
@@ -9940,627 +10558,6 @@ function get_tag_options() {
       return void 0;
     }
   );
-}
-
-// build/dev/javascript/app/components/typeahead.mjs
-var Model2 = class extends CustomType {
-  constructor(elem_id, search_items, search_term2, found_items, is_open, is_focused, hovered_item) {
-    super();
-    this.elem_id = elem_id;
-    this.search_items = search_items;
-    this.search_term = search_term2;
-    this.found_items = found_items;
-    this.is_open = is_open;
-    this.is_focused = is_focused;
-    this.hovered_item = hovered_item;
-  }
-};
-var RetrievedSearchItems = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var RetrievedInitialSearchTerm = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserTypedInSearchInput = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserPressedKeyInSearchInput = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserSelectedValue = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserSelectedOption = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserHoveredOption = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserUnHoveredOption = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UserFocusedSearchInput = class extends CustomType {
-};
-var UserBlurredSearchInput = class extends CustomType {
-};
-var UserClosedOptionList = class extends CustomType {
-};
-function typeahead(attrs) {
-  return element("type-ahead", attrs, toList([]));
-}
-function recipe_titles(all3) {
-  return property("recipe-titles", all3);
-}
-function search_term(term) {
-  return property("search-term", term);
-}
-function init6(_) {
-  let elem_id = to_string3(random(999999));
-  return [
-    new Model2(elem_id, toList([]), "", toList([]), false, false, new None()),
-    none()
-  ];
-}
-function update3(model, msg) {
-  debug(msg);
-  if (msg instanceof RetrievedInitialSearchTerm) {
-    let a2 = msg[0];
-    return [model.withFields({ search_term: a2 }), none()];
-  } else if (msg instanceof RetrievedSearchItems) {
-    let a2 = msg[0];
-    return [
-      model.withFields({ search_items: a2, found_items: a2 }),
-      none()
-    ];
-  } else if (msg instanceof UserTypedInSearchInput) {
-    let a2 = msg[0];
-    return [
-      model.withFields({
-        search_term: a2,
-        found_items: (() => {
-          let $ = length3(a2);
-          if ($ < 3) {
-            let num = $;
-            return model.search_items;
-          } else {
-            return filter(
-              model.search_items,
-              (r) => {
-                return contains_string(
-                  lowercase2(r),
-                  lowercase2(a2)
-                );
-              }
-            );
-          }
-        })(),
-        is_open: !contains(model.search_items, a2)
-      }),
-      none()
-    ];
-  } else if (msg instanceof UserSelectedValue) {
-    let a2 = msg[0];
-    return [model, emit2("typeahead-change", string2(a2))];
-  } else if (msg instanceof UserSelectedOption) {
-    let a2 = msg[0];
-    return [
-      model.withFields({ is_open: false }),
-      from2(
-        (dispatch2) => {
-          let _pipe = new UserSelectedValue(a2);
-          return dispatch2(_pipe);
-        }
-      )
-    ];
-  } else if (msg instanceof UserFocusedSearchInput) {
-    return [
-      model.withFields({
-        is_focused: true,
-        is_open: !contains(model.search_items, model.search_term)
-      }),
-      none()
-    ];
-  } else if (msg instanceof UserBlurredSearchInput) {
-    return [model, after(100, new UserBlurredSearchInput())];
-  } else if (msg instanceof UserClosedOptionList) {
-    return [
-      model.withFields({
-        is_open: false,
-        is_focused: false,
-        hovered_item: new None()
-      }),
-      none()
-    ];
-  } else if (msg instanceof UserPressedKeyInSearchInput) {
-    let a2 = msg[0];
-    let $ = model.is_focused;
-    let $1 = model.is_open;
-    if (!$) {
-      return [model, none()];
-    } else if (a2 === "ArrowDown" && $ && $1) {
-      return [
-        model.withFields({
-          hovered_item: (() => {
-            let $2 = model.hovered_item;
-            let $3 = length(model.found_items);
-            if ($2 instanceof None) {
-              return new Some(0);
-            } else {
-              let a$1 = $2[0];
-              let b = $3;
-              return new Some(min(a$1 + 1, b));
-            }
-          })()
-        }),
-        none()
-      ];
-    } else if (a2 === "ArrowDown" && $ && !$1) {
-      return [model.withFields({ is_open: true }), none()];
-    } else if (a2 === "ArrowUp" && $ && $1) {
-      return [
-        model.withFields({
-          hovered_item: (() => {
-            let $2 = model.hovered_item;
-            if ($2 instanceof None) {
-              return new None();
-            } else {
-              let a$1 = $2[0];
-              return new Some(max(0, a$1 - 1));
-            }
-          })()
-        }),
-        none()
-      ];
-    } else if (a2 === "Enter" && $) {
-      let $2 = model.hovered_item;
-      let $3 = model.is_open;
-      if ($2 instanceof None && !$3) {
-        return [model.withFields({ is_open: true }), none()];
-      } else if ($2 instanceof Some && $3) {
-        let a$1 = $2[0];
-        return [
-          model.withFields({ is_open: false, hovered_item: new None() }),
-          from2(
-            (dispatch2) => {
-              let _pipe = new UserSelectedOption(
-                unwrap(list_at(model.found_items, a$1), "")
-              );
-              return dispatch2(_pipe);
-            }
-          )
-        ];
-      } else {
-        return [model, none()];
-      }
-    } else if (a2 === "Escape" && $ && $1) {
-      return [
-        model.withFields({ is_open: false, hovered_item: new None() }),
-        from2(
-          (dispatch2) => {
-            let _pipe = new UserBlurredSearchInput();
-            return dispatch2(_pipe);
-          }
-        )
-      ];
-    } else {
-      return [model, none()];
-    }
-  } else if (msg instanceof UserHoveredOption) {
-    let a2 = msg[0];
-    return [model.withFields({ hovered_item: new Some(a2) }), none()];
-  } else {
-    let a2 = msg[0];
-    return [model.withFields({ hovered_item: new None() }), none()];
-  }
-}
-function on_attribute_change() {
-  return from_list(
-    toList([
-      [
-        "recipe-titles",
-        (attribute2) => {
-          let _pipe = attribute2;
-          let _pipe$1 = list(string)(_pipe);
-          return map3(
-            _pipe$1,
-            (var0) => {
-              return new RetrievedSearchItems(var0);
-            }
-          );
-        }
-      ],
-      [
-        "search-term",
-        (attribute2) => {
-          let _pipe = attribute2;
-          let _pipe$1 = string(_pipe);
-          return map3(
-            _pipe$1,
-            (var0) => {
-              return new RetrievedInitialSearchTerm(var0);
-            }
-          );
-        }
-      ]
-    ])
-  );
-}
-function search_result(model, res, index3) {
-  return li(
-    toList([
-      attribute("role", "option"),
-      attribute("data-index", to_string3(index3)),
-      class$(
-        (() => {
-          let $ = isEqual(model.hovered_item, new Some(index3));
-          if ($) {
-            return "bg-ecru-white-100";
-          } else {
-            return "";
-          }
-        })()
-      ),
-      class$("px-1"),
-      on_click(new UserSelectedOption(res)),
-      on2(
-        "mouseover",
-        (evt) => {
-          let _pipe = evt;
-          let _pipe$1 = field(
-            "target",
-            field(
-              "dataset",
-              field("index", stringed_int)
-            )
-          )(_pipe);
-          return map3(
-            _pipe$1,
-            (var0) => {
-              return new UserHoveredOption(var0);
-            }
-          );
-        }
-      ),
-      on2(
-        "mouseout",
-        (evt) => {
-          let _pipe = evt;
-          let _pipe$1 = field(
-            "target",
-            field(
-              "dataset",
-              field("index", stringed_int)
-            )
-          )(_pipe);
-          return map3(
-            _pipe$1,
-            (var0) => {
-              return new UserUnHoveredOption(var0);
-            }
-          );
-        }
-      )
-    ]),
-    toList([text(res)])
-  );
-}
-function view2(model) {
-  return fragment(
-    toList([
-      textarea(
-        toList([
-          id("meal-input-" + model.elem_id),
-          style(
-            toList([
-              ["field-sizing", "content"],
-              ["overflow-x", "hidden"],
-              ["width", "100%"],
-              [
-                "font-family",
-                "Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif"
-              ],
-              [
-                "font-size",
-                "clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem)"
-              ],
-              ["line-height", "1.6"],
-              ["color", "rgb(47 40 27)"],
-              ["background-color", "rgb(241 241 227)"],
-              ["border-width", "0px"],
-              ["border-bottom-width", "0px"],
-              ["padding-top", "0px"],
-              ["padding-bottom", "0px"],
-              ["line-height", "inherit"],
-              ["resize", "none"]
-            ])
-          ),
-          class$(
-            (() => {
-              let $ = length3(model.search_term);
-              if ($ > 38) {
-                let num = $;
-                return "text-base";
-              } else if ($ > 17) {
-                let num = $;
-                return "text-lg";
-              } else {
-                return "text-xl";
-              }
-            })()
-          ),
-          value(model.search_term),
-          attribute("autocapitalize", "none"),
-          attribute("autocomplete", "off"),
-          attribute("aria-autocomplete", "list"),
-          attribute("role", "combobox"),
-          on_input((var0) => {
-            return new UserTypedInSearchInput(var0);
-          }),
-          on2(
-            "change",
-            (event2) => {
-              let _pipe = event2;
-              let _pipe$1 = field(
-                "target",
-                field("value", string)
-              )(_pipe);
-              return map3(
-                _pipe$1,
-                (var0) => {
-                  return new UserSelectedValue(var0);
-                }
-              );
-            }
-          ),
-          on_keydown(
-            (var0) => {
-              return new UserPressedKeyInSearchInput(var0);
-            }
-          ),
-          on_focus(new UserFocusedSearchInput()),
-          on2(
-            "blur",
-            (event2) => {
-              return new Ok2(new UserBlurredSearchInput());
-            }
-          )
-        ]),
-        ""
-      ),
-      ul(
-        toList([
-          id("search-results-" + model.elem_id),
-          class$(
-            "font-mono bg-ecru-white-50 border border-ecru-white-950 text-xs"
-          ),
-          attribute("role", "listbox"),
-          style(
-            (() => {
-              let $ = model.is_open;
-              if ($) {
-                return toList([["display", "block"]]);
-              } else {
-                return toList([["display", "none"]]);
-              }
-            })()
-          ),
-          attribute(
-            "aria-expanded",
-            (() => {
-              let $ = model.is_open;
-              if ($) {
-                return "true";
-              } else {
-                return "false";
-              }
-            })()
-          )
-        ]),
-        (() => {
-          let _pipe = model.found_items;
-          let _pipe$1 = map2(_pipe, (a2) => {
-            return a2;
-          });
-          return index_map(
-            _pipe$1,
-            (a2, i) => {
-              return search_result(model, a2, i);
-            }
-          );
-        })()
-      )
-    ])
-  );
-}
-function app() {
-  return component(init6, update3, view2, on_attribute_change());
-}
-
-// build/dev/javascript/decipher/decipher.mjs
-function tagged_union(tag, variants) {
-  let switch$ = from_list(variants);
-  return (dynamic3) => {
-    return try$(
-      tag(dynamic3),
-      (kind) => {
-        let $ = get(switch$, kind);
-        if ($.isOk()) {
-          let decoder = $[0];
-          return decoder(dynamic3);
-        } else {
-          let tags = (() => {
-            let _pipe = keys(switch$);
-            let _pipe$1 = map2(_pipe, inspect2);
-            return join2(_pipe$1, " | ");
-          })();
-          let path = (() => {
-            let $1 = tag(from(void 0));
-            if (!$1.isOk() && $1[0].atLeastLength(1) && $1[0].head instanceof DecodeError) {
-              let path2 = $1[0].head.path;
-              return path2;
-            } else {
-              return toList([]);
-            }
-          })();
-          return new Error2(
-            toList([new DecodeError(tags, inspect2(tag), path)])
-          );
-        }
-      }
-    );
-  };
-}
-function enum$(variants) {
-  return tagged_union(
-    string,
-    map2(
-      variants,
-      (_capture) => {
-        return map_second(
-          _capture,
-          (variant) => {
-            return (_) => {
-              return new Ok2(variant);
-            };
-          }
-        );
-      }
-    )
-  );
-}
-
-// build/dev/javascript/justin/justin.mjs
-function add3(words, word) {
-  if (word === "") {
-    return words;
-  } else {
-    return prepend(word, words);
-  }
-}
-function is_upper(g) {
-  return lowercase2(g) !== g;
-}
-function split5(loop$in, loop$up, loop$word, loop$words) {
-  while (true) {
-    let in$ = loop$in;
-    let up = loop$up;
-    let word = loop$word;
-    let words = loop$words;
-    if (in$.hasLength(0) && word === "") {
-      return reverse(words);
-    } else if (in$.hasLength(0)) {
-      return reverse(add3(words, word));
-    } else if (in$.atLeastLength(1) && in$.head === "\n") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "	") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "!") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "?") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "#") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === ".") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "-") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === "_") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else if (in$.atLeastLength(1) && in$.head === " ") {
-      let in$1 = in$.tail;
-      loop$in = in$1;
-      loop$up = false;
-      loop$word = "";
-      loop$words = add3(words, word);
-    } else {
-      let g = in$.head;
-      let in$1 = in$.tail;
-      let $ = is_upper(g);
-      if (!$) {
-        loop$in = in$1;
-        loop$up = false;
-        loop$word = word + g;
-        loop$words = words;
-      } else if ($ && up) {
-        loop$in = in$1;
-        loop$up = up;
-        loop$word = word + g;
-        loop$words = words;
-      } else {
-        loop$in = in$1;
-        loop$up = true;
-        loop$word = g;
-        loop$words = add3(words, word);
-      }
-    }
-  }
-}
-function split_words(text3) {
-  let _pipe = text3;
-  let _pipe$1 = graphemes(_pipe);
-  return split5(_pipe$1, false, "", toList([]));
-}
-function kebab_case(text3) {
-  let _pipe = text3;
-  let _pipe$1 = split_words(_pipe);
-  let _pipe$2 = join2(_pipe$1, "-");
-  return lowercase2(_pipe$2);
 }
 
 // build/dev/javascript/app/pages/planner.mjs
@@ -11092,27 +11089,33 @@ function view_planner(model) {
                 toList([href("/planner/edit"), class$("text-center")]),
                 toList([text("\u270F\uFE0F")])
               ),
-              button(
+              div(
+                toList([class$("flex flex-row justify-evenly px-1")]),
                 toList([
-                  class$("text-center"),
-                  on_click(
-                    new UserFetchedPlan(
-                      add2(start_of_week, 1, new Weeks())
-                    )
+                  button(
+                    toList([
+                      class$("text-center"),
+                      on_click(
+                        new UserFetchedPlan(
+                          add2(start_of_week, -1, new Weeks())
+                        )
+                      )
+                    ]),
+                    toList([text("\u2B05\uFE0F")])
+                  ),
+                  button(
+                    toList([
+                      type_("button"),
+                      class$("text-center"),
+                      on_click(
+                        new UserFetchedPlan(
+                          add2(start_of_week, 1, new Weeks())
+                        )
+                      )
+                    ]),
+                    toList([text("\u27A1\uFE0F")])
                   )
-                ]),
-                toList([text("\u27A1\uFE0F")])
-              ),
-              button(
-                toList([
-                  class$("text-center"),
-                  on_click(
-                    new UserFetchedPlan(
-                      add2(start_of_week, -1, new Weeks())
-                    )
-                  )
-                ]),
-                toList([text("\u2B05\uFE0F")])
+                ])
               )
             ])
           )
@@ -11122,7 +11125,7 @@ function view_planner(model) {
         toList([
           id("active-week"),
           class$(
-            "mb-2 text-sm p-1 min-h-[70vh]\n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-2 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            md:col-start-[full-start] md:col-end-[full-end]\n            md:text-base md:grid-cols-[fit-content(10%)_repeat(7,_15vw)] md:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            md:snap-x md:scroll-pl-[9%] md:scroll-pt-0\n            xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]"
+            "mb-2 text-sm p-1 min-h-[70vh]\n            overflow-x-hidden overflow-y-scroll md:overflow-x-scroll md:overflow-y-hidden snap-mandatory snap-always\n            col-span-full row-start-2 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            md:col-start-[full-start] md:col-end-[full-end]\n            md:text-base md:grid-cols-[fit-content(10%)_repeat(7,_15vw)] md:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            md:snap-x md:scroll-pl-[9%] md:scroll-pt-0\n            xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]"
           )
         ]),
         toList([
@@ -11318,7 +11321,7 @@ function edit_planner(model) {
         toList([
           id("active-week"),
           class$(
-            "mb-2 text-sm p-1 min-h-[70vh]\n            overflow-x-scroll overflow-y-scroll snap-mandatory snap-always\n            col-span-full row-start-2 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            md:col-start-[full-start] md:col-end-[full-end]\n            md:text-base md:grid-cols-[fit-content(10%)_repeat(7,_15vw)] md:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            md:snap-x md:scroll-pl-[9%] md:scroll-pt-0\n            xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]"
+            "mb-2 text-sm p-1 min-h-[70vh]\n            overflow-x-hidden overflow-y-scroll md:overflow-x-scroll md:overflow-y-hidden snap-mandatory snap-always  \n            col-span-full row-start-2 grid gap-1 \n            grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]\n            snap-y scroll-pt-[9%]\n            md:col-start-[full-start] md:col-end-[full-end]\n            md:text-base md:grid-cols-[fit-content(10%)_repeat(7,_15vw)] md:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]\n            md:snap-x md:scroll-pl-[9%] md:scroll-pt-0\n            xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]"
           ),
           on_submit(new UserSavedPlan())
         ]),
