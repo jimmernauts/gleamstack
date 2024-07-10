@@ -18,6 +18,7 @@ import lustre/element/html.{datalist, div, input, li, option, textarea, ul}
 import lustre/event.{
   on, on_blur, on_click, on_focus, on_input, on_keydown, on_mouse_over,
 }
+
 import session.{type Recipe}
 
 pub fn app() -> App(Nil, Model, Msg) {
@@ -72,6 +73,7 @@ pub type Msg {
   UserUnHoveredOption(Int)
   UserFocusedSearchInput
   UserBlurredSearchInput
+  UserClosedOptionList
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
@@ -122,8 +124,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       )
     }
     UserBlurredSearchInput -> {
+      #(model, utils.after(100, UserBlurredSearchInput))
+    }
+    UserClosedOptionList -> {
       #(
-        Model(..model, is_focused: False, is_open: False, hovered_item: None),
+        Model(..model, is_open: False, is_focused: False, hovered_item: None),
         effect.none(),
       )
     }
@@ -298,6 +303,7 @@ fn view(model: Model) -> Element(Msg) {
         }),
         on_keydown(UserPressedKeyInSearchInput),
         on_focus(UserFocusedSearchInput),
+        on("blur", fn(event) { Ok(UserBlurredSearchInput) }),
       ],
       "",
     ),

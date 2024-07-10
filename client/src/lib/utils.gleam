@@ -4,6 +4,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
 import lustre/effect.{type Effect}
+import plinth/javascript/global.{set_timeout}
 import rada/date.{type Date}
 
 /// Update a dictionary with a given key and function.
@@ -126,4 +127,11 @@ pub fn date_num_string(day: Date) -> String {
   day
   |> date.day
   |> int.to_string
+}
+
+pub fn after(delay: Int, msg: msg) -> Effect(msg) {
+  use dispatch <- effect.from
+  let _ = set_timeout(delay, fn() { dispatch(msg) })
+
+  Nil
 }

@@ -285,11 +285,11 @@ function map(option2, fun) {
     return new None();
   }
 }
-function or(first5, second3) {
+function or(first5, second2) {
   if (first5 instanceof Some) {
     return first5;
   } else {
-    return second3;
+    return second2;
   }
 }
 
@@ -402,19 +402,6 @@ function random(max2) {
   let _pipe$1 = floor2(_pipe);
   return round2(_pipe$1);
 }
-function modulo(dividend, divisor) {
-  if (divisor === 0) {
-    return new Error2(void 0);
-  } else {
-    let remainder$1 = remainderInt(dividend, divisor);
-    let $ = remainder$1 * divisor < 0;
-    if ($) {
-      return new Ok2(remainder$1 + divisor);
-    } else {
-      return new Ok2(remainder$1);
-    }
-  }
-}
 function floor_divide(dividend, divisor) {
   if (divisor === 0) {
     return new Error2(void 0);
@@ -448,8 +435,8 @@ function map_second(pair, fun) {
   let b = pair[1];
   return [a2, fun(b)];
 }
-function new$(first5, second3) {
-  return [first5, second3];
+function new$(first5, second2) {
+  return [first5, second2];
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
@@ -696,19 +683,19 @@ function take(list3, n) {
 function do_append(loop$first, loop$second) {
   while (true) {
     let first5 = loop$first;
-    let second3 = loop$second;
+    let second2 = loop$second;
     if (first5.hasLength(0)) {
-      return second3;
+      return second2;
     } else {
       let item = first5.head;
       let rest$1 = first5.tail;
       loop$first = rest$1;
-      loop$second = prepend(item, second3);
+      loop$second = prepend(item, second2);
     }
   }
 }
-function append(first5, second3) {
-  return do_append(reverse(first5), second3);
+function append(first5, second2) {
+  return do_append(reverse(first5), second2);
 }
 function prepend2(list3, item) {
   return prepend(item, list3);
@@ -1225,6 +1212,143 @@ function all(results) {
   });
 }
 
+// build/dev/javascript/gleam_stdlib/gleam/iterator.mjs
+var Stop2 = class extends CustomType {
+};
+var Continue2 = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var Iterator = class extends CustomType {
+  constructor(continuation) {
+    super();
+    this.continuation = continuation;
+  }
+};
+var Next = class extends CustomType {
+  constructor(element3, accumulator) {
+    super();
+    this.element = element3;
+    this.accumulator = accumulator;
+  }
+};
+function stop() {
+  return new Stop2();
+}
+function do_unfold(initial, f) {
+  return () => {
+    let $ = f(initial);
+    if ($ instanceof Next) {
+      let x = $.element;
+      let acc = $.accumulator;
+      return new Continue2(x, do_unfold(acc, f));
+    } else {
+      return new Stop2();
+    }
+  };
+}
+function unfold(initial, f) {
+  let _pipe = initial;
+  let _pipe$1 = do_unfold(_pipe, f);
+  return new Iterator(_pipe$1);
+}
+function repeatedly(f) {
+  return unfold(void 0, (_) => {
+    return new Next(f(), void 0);
+  });
+}
+function repeat(x) {
+  return repeatedly(() => {
+    return x;
+  });
+}
+function do_fold(loop$continuation, loop$f, loop$accumulator) {
+  while (true) {
+    let continuation = loop$continuation;
+    let f = loop$f;
+    let accumulator = loop$accumulator;
+    let $ = continuation();
+    if ($ instanceof Continue2) {
+      let elem = $[0];
+      let next2 = $[1];
+      loop$continuation = next2;
+      loop$f = f;
+      loop$accumulator = f(accumulator, elem);
+    } else {
+      return accumulator;
+    }
+  }
+}
+function fold2(iterator, initial, f) {
+  let _pipe = iterator.continuation;
+  return do_fold(_pipe, f, initial);
+}
+function to_list(iterator) {
+  let _pipe = iterator;
+  let _pipe$1 = fold2(
+    _pipe,
+    toList([]),
+    (acc, e) => {
+      return prepend(e, acc);
+    }
+  );
+  return reverse(_pipe$1);
+}
+function do_take2(continuation, desired) {
+  return () => {
+    let $ = desired > 0;
+    if (!$) {
+      return new Stop2();
+    } else {
+      let $1 = continuation();
+      if ($1 instanceof Stop2) {
+        return new Stop2();
+      } else {
+        let e = $1[0];
+        let next2 = $1[1];
+        return new Continue2(e, do_take2(next2, desired - 1));
+      }
+    }
+  };
+}
+function take2(iterator, desired) {
+  let _pipe = iterator.continuation;
+  let _pipe$1 = do_take2(_pipe, desired);
+  return new Iterator(_pipe$1);
+}
+function do_append2(first5, second2) {
+  let $ = first5();
+  if ($ instanceof Continue2) {
+    let e = $[0];
+    let first$1 = $[1];
+    return new Continue2(e, () => {
+      return do_append2(first$1, second2);
+    });
+  } else {
+    return second2();
+  }
+}
+function append2(first5, second2) {
+  let _pipe = () => {
+    return do_append2(first5.continuation, second2.continuation);
+  };
+  return new Iterator(_pipe);
+}
+function once(f) {
+  let _pipe = () => {
+    return new Continue2(f(), stop);
+  };
+  return new Iterator(_pipe);
+}
+function single(elem) {
+  return once(() => {
+    return elem;
+  });
+}
+
 // build/dev/javascript/gleam_stdlib/gleam/string_builder.mjs
 function append_builder(builder, suffix) {
   return add(builder, suffix);
@@ -1235,14 +1359,113 @@ function from_strings(strings) {
 function from_string(string3) {
   return identity(string3);
 }
-function append2(builder, second3) {
-  return append_builder(builder, from_string(second3));
+function append3(builder, second2) {
+  return append_builder(builder, from_string(second2));
 }
 function to_string4(builder) {
   return identity(builder);
 }
 function split2(iodata, pattern) {
   return split(iodata, pattern);
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/string.mjs
+function is_empty2(str) {
+  return str === "";
+}
+function length3(string3) {
+  return string_length(string3);
+}
+function replace(string3, pattern, substitute) {
+  let _pipe = string3;
+  let _pipe$1 = from_string(_pipe);
+  let _pipe$2 = string_replace(_pipe$1, pattern, substitute);
+  return to_string4(_pipe$2);
+}
+function lowercase2(string3) {
+  return lowercase(string3);
+}
+function append4(first5, second2) {
+  let _pipe = first5;
+  let _pipe$1 = from_string(_pipe);
+  let _pipe$2 = append3(_pipe$1, second2);
+  return to_string4(_pipe$2);
+}
+function concat3(strings) {
+  let _pipe = strings;
+  let _pipe$1 = from_strings(_pipe);
+  return to_string4(_pipe$1);
+}
+function repeat2(string3, times) {
+  let _pipe = repeat(string3);
+  let _pipe$1 = take2(_pipe, times);
+  let _pipe$2 = to_list(_pipe$1);
+  return concat3(_pipe$2);
+}
+function join2(strings, separator) {
+  return join(strings, separator);
+}
+function trim2(string3) {
+  return trim(string3);
+}
+function do_slice(string3, idx, len) {
+  let _pipe = string3;
+  let _pipe$1 = graphemes(_pipe);
+  let _pipe$2 = drop(_pipe$1, idx);
+  let _pipe$3 = take(_pipe$2, len);
+  return concat3(_pipe$3);
+}
+function slice(string3, idx, len) {
+  let $ = len < 0;
+  if ($) {
+    return "";
+  } else {
+    let $1 = idx < 0;
+    if ($1) {
+      let translated_idx = length3(string3) + idx;
+      let $2 = translated_idx < 0;
+      if ($2) {
+        return "";
+      } else {
+        return do_slice(string3, translated_idx, len);
+      }
+    } else {
+      return do_slice(string3, idx, len);
+    }
+  }
+}
+function split3(x, substring) {
+  if (substring === "") {
+    return graphemes(x);
+  } else {
+    let _pipe = x;
+    let _pipe$1 = from_string(_pipe);
+    let _pipe$2 = split2(_pipe$1, substring);
+    return map2(_pipe$2, to_string4);
+  }
+}
+function padding(size2, pad_string) {
+  let pad_length = length3(pad_string);
+  let num_pads = divideInt(size2, pad_length);
+  let extra = remainderInt(size2, pad_length);
+  let _pipe = repeat(pad_string);
+  let _pipe$1 = take2(_pipe, num_pads);
+  return append2(
+    _pipe$1,
+    single(slice(pad_string, 0, extra))
+  );
+}
+function pad_left(string3, desired_length, pad_string) {
+  let current_length = length3(string3);
+  let to_pad_length = desired_length - current_length;
+  let _pipe = padding(to_pad_length, pad_string);
+  let _pipe$1 = append2(_pipe, single(string3));
+  let _pipe$2 = to_list(_pipe$1);
+  return concat3(_pipe$2);
+}
+function inspect2(term) {
+  let _pipe = inspect(term);
+  return to_string4(_pipe);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
@@ -1259,9 +1482,6 @@ function from(a2) {
 }
 function unsafe_coerce(a2) {
   return identity(a2);
-}
-function string(data) {
-  return decode_string(data);
 }
 function classify(data) {
   return classify_dynamic(data);
@@ -1358,6 +1578,9 @@ function map_errors(result, f) {
       return map2(_capture, f);
     }
   );
+}
+function string(data) {
+  return decode_string(data);
 }
 function field(name2, inner_type) {
   return (value4) => {
@@ -2351,8 +2574,36 @@ function concat2(xs) {
 function contains_string(haystack, needle) {
   return haystack.indexOf(needle) >= 0;
 }
+var unicode_whitespaces = [
+  " ",
+  // Space
+  "	",
+  // Horizontal tab
+  "\n",
+  // Line feed
+  "\v",
+  // Vertical tab
+  "\f",
+  // Form feed
+  "\r",
+  // Carriage return
+  "\x85",
+  // Next line
+  "\u2028",
+  // Line separator
+  "\u2029"
+  // Paragraph separator
+].join();
+var left_trim_regex = new RegExp(`^([${unicode_whitespaces}]*)`, "g");
+var right_trim_regex = new RegExp(`([${unicode_whitespaces}]*)$`, "g");
 function trim(string3) {
-  return string3.trim();
+  return trim_left(trim_right(string3));
+}
+function trim_left(string3) {
+  return string3.replace(left_trim_regex, "");
+}
+function trim_right(string3) {
+  return string3.replace(right_trim_regex, "");
 }
 function print_debug(string3) {
   if (typeof process === "object" && process.stderr?.write) {
@@ -2528,7 +2779,7 @@ function inspect(v) {
   if (v === void 0)
     return "Nil";
   if (t === "string")
-    return JSON.stringify(v);
+    return inspectString(v);
   if (t === "bigint" || t === "number")
     return v.toString();
   if (Array.isArray(v))
@@ -2556,6 +2807,40 @@ function inspect(v) {
     return `//fn(${args.join(", ")}) { ... }`;
   }
   return inspectObject(v);
+}
+function inspectString(str) {
+  let new_str = '"';
+  for (let i = 0; i < str.length; i++) {
+    let char = str[i];
+    switch (char) {
+      case "\n":
+        new_str += "\\n";
+        break;
+      case "\r":
+        new_str += "\\r";
+        break;
+      case "	":
+        new_str += "\\t";
+        break;
+      case "\f":
+        new_str += "\\f";
+        break;
+      case "\\":
+        new_str += "\\\\";
+        break;
+      case '"':
+        new_str += '\\"';
+        break;
+      default:
+        if (char < " " || char > "~" && char < "\xA0") {
+          new_str += "\\u{" + char.charCodeAt(0).toString(16).toUpperCase().padStart(4, "0") + "}";
+        } else {
+          new_str += char;
+        }
+    }
+  }
+  new_str += '"';
+  return new_str;
 }
 function inspectDict(map9) {
   let body3 = "dict.from_list([";
@@ -2720,7 +3005,7 @@ function drop2(loop$dict, loop$disallowed_keys) {
     }
   }
 }
-function update(dict2, key3, fun) {
+function upsert(dict2, key3, fun) {
   let _pipe = dict2;
   let _pipe$1 = get(_pipe, key3);
   let _pipe$2 = from_result(_pipe$1);
@@ -2729,241 +3014,8 @@ function update(dict2, key3, fun) {
     return insert(dict2, key3, _capture);
   })(_pipe$3);
 }
-
-// build/dev/javascript/gleam_stdlib/gleam/iterator.mjs
-var Stop2 = class extends CustomType {
-};
-var Continue2 = class extends CustomType {
-  constructor(x0, x1) {
-    super();
-    this[0] = x0;
-    this[1] = x1;
-  }
-};
-var Iterator = class extends CustomType {
-  constructor(continuation) {
-    super();
-    this.continuation = continuation;
-  }
-};
-var Next = class extends CustomType {
-  constructor(element3, accumulator) {
-    super();
-    this.element = element3;
-    this.accumulator = accumulator;
-  }
-};
-function stop() {
-  return new Stop2();
-}
-function do_unfold(initial, f) {
-  return () => {
-    let $ = f(initial);
-    if ($ instanceof Next) {
-      let x = $.element;
-      let acc = $.accumulator;
-      return new Continue2(x, do_unfold(acc, f));
-    } else {
-      return new Stop2();
-    }
-  };
-}
-function unfold(initial, f) {
-  let _pipe = initial;
-  let _pipe$1 = do_unfold(_pipe, f);
-  return new Iterator(_pipe$1);
-}
-function repeatedly(f) {
-  return unfold(void 0, (_) => {
-    return new Next(f(), void 0);
-  });
-}
-function repeat(x) {
-  return repeatedly(() => {
-    return x;
-  });
-}
-function do_fold(loop$continuation, loop$f, loop$accumulator) {
-  while (true) {
-    let continuation = loop$continuation;
-    let f = loop$f;
-    let accumulator = loop$accumulator;
-    let $ = continuation();
-    if ($ instanceof Continue2) {
-      let elem = $[0];
-      let next2 = $[1];
-      loop$continuation = next2;
-      loop$f = f;
-      loop$accumulator = f(accumulator, elem);
-    } else {
-      return accumulator;
-    }
-  }
-}
-function fold2(iterator, initial, f) {
-  let _pipe = iterator.continuation;
-  return do_fold(_pipe, f, initial);
-}
-function to_list(iterator) {
-  let _pipe = iterator;
-  let _pipe$1 = fold2(
-    _pipe,
-    toList([]),
-    (acc, e) => {
-      return prepend(e, acc);
-    }
-  );
-  return reverse(_pipe$1);
-}
-function do_take2(continuation, desired) {
-  return () => {
-    let $ = desired > 0;
-    if (!$) {
-      return new Stop2();
-    } else {
-      let $1 = continuation();
-      if ($1 instanceof Stop2) {
-        return new Stop2();
-      } else {
-        let e = $1[0];
-        let next2 = $1[1];
-        return new Continue2(e, do_take2(next2, desired - 1));
-      }
-    }
-  };
-}
-function take2(iterator, desired) {
-  let _pipe = iterator.continuation;
-  let _pipe$1 = do_take2(_pipe, desired);
-  return new Iterator(_pipe$1);
-}
-function do_append2(first5, second3) {
-  let $ = first5();
-  if ($ instanceof Continue2) {
-    let e = $[0];
-    let first$1 = $[1];
-    return new Continue2(e, () => {
-      return do_append2(first$1, second3);
-    });
-  } else {
-    return second3();
-  }
-}
-function append3(first5, second3) {
-  let _pipe = () => {
-    return do_append2(first5.continuation, second3.continuation);
-  };
-  return new Iterator(_pipe);
-}
-function once(f) {
-  let _pipe = () => {
-    return new Continue2(f(), stop);
-  };
-  return new Iterator(_pipe);
-}
-function single(elem) {
-  return once(() => {
-    return elem;
-  });
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/string.mjs
-function is_empty2(str) {
-  return str === "";
-}
-function length3(string3) {
-  return string_length(string3);
-}
-function replace(string3, pattern, substitute) {
-  let _pipe = string3;
-  let _pipe$1 = from_string(_pipe);
-  let _pipe$2 = string_replace(_pipe$1, pattern, substitute);
-  return to_string4(_pipe$2);
-}
-function lowercase2(string3) {
-  return lowercase(string3);
-}
-function append4(first5, second3) {
-  let _pipe = first5;
-  let _pipe$1 = from_string(_pipe);
-  let _pipe$2 = append2(_pipe$1, second3);
-  return to_string4(_pipe$2);
-}
-function concat3(strings) {
-  let _pipe = strings;
-  let _pipe$1 = from_strings(_pipe);
-  return to_string4(_pipe$1);
-}
-function repeat2(string3, times) {
-  let _pipe = repeat(string3);
-  let _pipe$1 = take2(_pipe, times);
-  let _pipe$2 = to_list(_pipe$1);
-  return concat3(_pipe$2);
-}
-function join2(strings, separator) {
-  return join(strings, separator);
-}
-function trim2(string3) {
-  return trim(string3);
-}
-function do_slice(string3, idx, len) {
-  let _pipe = string3;
-  let _pipe$1 = graphemes(_pipe);
-  let _pipe$2 = drop(_pipe$1, idx);
-  let _pipe$3 = take(_pipe$2, len);
-  return concat3(_pipe$3);
-}
-function slice(string3, idx, len) {
-  let $ = len < 0;
-  if ($) {
-    return "";
-  } else {
-    let $1 = idx < 0;
-    if ($1) {
-      let translated_idx = length3(string3) + idx;
-      let $2 = translated_idx < 0;
-      if ($2) {
-        return "";
-      } else {
-        return do_slice(string3, translated_idx, len);
-      }
-    } else {
-      return do_slice(string3, idx, len);
-    }
-  }
-}
-function split3(x, substring) {
-  if (substring === "") {
-    return graphemes(x);
-  } else {
-    let _pipe = x;
-    let _pipe$1 = from_string(_pipe);
-    let _pipe$2 = split2(_pipe$1, substring);
-    return map2(_pipe$2, to_string4);
-  }
-}
-function padding(size2, pad_string) {
-  let pad_length = length3(pad_string);
-  let num_pads = divideInt(size2, pad_length);
-  let extra = remainderInt(size2, pad_length);
-  let _pipe = repeat(pad_string);
-  let _pipe$1 = take2(_pipe, num_pads);
-  return append3(
-    _pipe$1,
-    single(slice(pad_string, 0, extra))
-  );
-}
-function pad_left(string3, desired_length, pad_string) {
-  let current_length = length3(string3);
-  let to_pad_length = desired_length - current_length;
-  let _pipe = padding(to_pad_length, pad_string);
-  let _pipe$1 = append3(_pipe, single(string3));
-  let _pipe$2 = to_list(_pipe$1);
-  return concat3(_pipe$2);
-}
-function inspect2(term) {
-  let _pipe = inspect(term);
-  return to_string4(_pipe);
+function update(dict2, key3, fun) {
+  return upsert(dict2, key3, fun);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
@@ -5186,18 +5238,18 @@ var RD = class extends CustomType {
   }
 };
 var OrdinalDate = class extends CustomType {
-  constructor(year3, ordinal_day2) {
+  constructor(year2, ordinal_day2) {
     super();
-    this.year = year3;
+    this.year = year2;
     this.ordinal_day = ordinal_day2;
   }
 };
 var CalendarDate = class extends CustomType {
-  constructor(year3, month3, day3) {
+  constructor(year2, month2, day2) {
     super();
-    this.year = year3;
-    this.month = month3;
-    this.day = day3;
+    this.year = year2;
+    this.month = month2;
+    this.day = day2;
   }
 };
 var WeekDate = class extends CustomType {
@@ -5274,28 +5326,28 @@ function string_take_right(str, count) {
 function string_take_left(str, count) {
   return slice(str, 0, count);
 }
-function month_to_name(month3) {
-  if (month3 instanceof Jan) {
+function month_to_name(month2) {
+  if (month2 instanceof Jan) {
     return "January";
-  } else if (month3 instanceof Feb) {
+  } else if (month2 instanceof Feb) {
     return "February";
-  } else if (month3 instanceof Mar) {
+  } else if (month2 instanceof Mar) {
     return "March";
-  } else if (month3 instanceof Apr) {
+  } else if (month2 instanceof Apr) {
     return "April";
-  } else if (month3 instanceof May) {
+  } else if (month2 instanceof May) {
     return "May";
-  } else if (month3 instanceof Jun) {
+  } else if (month2 instanceof Jun) {
     return "June";
-  } else if (month3 instanceof Jul) {
+  } else if (month2 instanceof Jul) {
     return "July";
-  } else if (month3 instanceof Aug) {
+  } else if (month2 instanceof Aug) {
     return "August";
-  } else if (month3 instanceof Sep) {
+  } else if (month2 instanceof Sep) {
     return "September";
-  } else if (month3 instanceof Oct) {
+  } else if (month2 instanceof Oct) {
     return "October";
-  } else if (month3 instanceof Nov) {
+  } else if (month2 instanceof Nov) {
     return "November";
   } else {
     return "December";
@@ -5431,8 +5483,8 @@ function int_3() {
 function parse_ordinal_day() {
   return do$(
     int_3(),
-    (day3) => {
-      return return$(new OrdinalDay(day3));
+    (day2) => {
+      return return$(new OrdinalDay(day2));
     }
   );
 }
@@ -5482,7 +5534,7 @@ function int_2() {
 function parse_month_and_day(extended) {
   return do$(
     int_2(),
-    (month3) => {
+    (month2) => {
       let dash_count = to_int(extended);
       return do$(
         one_of(
@@ -5504,8 +5556,8 @@ function parse_month_and_day(extended) {
             })()
           ])
         ),
-        (day3) => {
-          return return$(new MonthAndDay(month3, day3));
+        (day2) => {
+          return return$(new MonthAndDay(month2, day2));
         }
       );
     }
@@ -5551,7 +5603,7 @@ function parse_week_and_weekday(extended) {
     (_) => {
       return do$(
         int_2(),
-        (week2) => {
+        (week) => {
           let dash_count = to_int(extended);
           return do$(
             one_of(
@@ -5568,8 +5620,8 @@ function parse_week_and_weekday(extended) {
                 succeed(1)
               ])
             ),
-            (day3) => {
-              return return$(new WeekAndWeekday(week2, day3));
+            (day2) => {
+              return return$(new WeekAndWeekday(week, day2));
             }
           );
         }
@@ -5607,35 +5659,35 @@ function compare3(date1, date2) {
   let rd_2 = date2[0];
   return compare(rd_1, rd_2);
 }
-function month_to_number(month3) {
-  if (month3 instanceof Jan) {
+function month_to_number(month2) {
+  if (month2 instanceof Jan) {
     return 1;
-  } else if (month3 instanceof Feb) {
+  } else if (month2 instanceof Feb) {
     return 2;
-  } else if (month3 instanceof Mar) {
+  } else if (month2 instanceof Mar) {
     return 3;
-  } else if (month3 instanceof Apr) {
+  } else if (month2 instanceof Apr) {
     return 4;
-  } else if (month3 instanceof May) {
+  } else if (month2 instanceof May) {
     return 5;
-  } else if (month3 instanceof Jun) {
+  } else if (month2 instanceof Jun) {
     return 6;
-  } else if (month3 instanceof Jul) {
+  } else if (month2 instanceof Jul) {
     return 7;
-  } else if (month3 instanceof Aug) {
+  } else if (month2 instanceof Aug) {
     return 8;
-  } else if (month3 instanceof Sep) {
+  } else if (month2 instanceof Sep) {
     return 9;
-  } else if (month3 instanceof Oct) {
+  } else if (month2 instanceof Oct) {
     return 10;
-  } else if (month3 instanceof Nov) {
+  } else if (month2 instanceof Nov) {
     return 11;
   } else {
     return 12;
   }
 }
-function month_to_quarter(month3) {
-  return divideInt(month_to_number(month3) + 2, 3);
+function month_to_quarter(month2) {
+  return divideInt(month_to_number(month2) + 2, 3);
 }
 function number_to_month(month_number2) {
   let $ = max(1, month_number2);
@@ -5721,9 +5773,16 @@ function pad_signed_int(value4, length6) {
   })();
   return prefix + suffix;
 }
-function floor_div(a2, b) {
-  let _pipe = floor_divide(a2, b);
-  return unwrap2(_pipe, 0);
+function floor_div(dividend, divisor) {
+  let $ = (dividend > 0 && divisor < 0 || dividend < 0 && divisor > 0) && remainderInt(
+    dividend,
+    divisor
+  ) !== 0;
+  if ($) {
+    return divideInt(dividend, divisor) - 1;
+  } else {
+    return divideInt(dividend, divisor);
+  }
 }
 function days_before_year(year1) {
   let year$1 = year1 - 1;
@@ -5733,16 +5792,21 @@ function days_before_year(year1) {
   );
   return 365 * year$1 + leap_years;
 }
-function first_of_year(year3) {
-  return new RD(days_before_year(year3) + 1);
+function first_of_year(year2) {
+  return new RD(days_before_year(year2) + 1);
 }
-function modulo_unwrap(a2, b) {
-  let _pipe = modulo(a2, b);
-  return unwrap2(_pipe, 0);
+function modulo_unwrap(dividend, divisor) {
+  let remainder = remainderInt(dividend, divisor);
+  let $ = remainder > 0 && divisor < 0 || remainder < 0 && divisor > 0;
+  if ($) {
+    return remainder + divisor;
+  } else {
+    return remainder;
+  }
 }
-function is_leap_year(year3) {
-  return modulo_unwrap(year3, 4) === 0 && modulo_unwrap(year3, 100) !== 0 || modulo_unwrap(
-    year3,
+function is_leap_year(year2) {
+  return modulo_unwrap(year2, 4) === 0 && modulo_unwrap(year2, 100) !== 0 || modulo_unwrap(
+    year2,
     400
   ) === 0;
 }
@@ -5756,13 +5820,13 @@ function weekday_number(date) {
     return n;
   }
 }
-function days_before_week_year(year3) {
-  let jan4 = days_before_year(year3) + 4;
+function days_before_week_year(year2) {
+  let jan4 = days_before_year(year2) + 4;
   return jan4 - weekday_number(new RD(jan4));
 }
-function is_53_week_year(year3) {
-  let wdn_jan1 = weekday_number(first_of_year(year3));
-  return wdn_jan1 === 4 || wdn_jan1 === 3 && is_leap_year(year3);
+function is_53_week_year(year2) {
+  let wdn_jan1 = weekday_number(first_of_year(year2));
+  return wdn_jan1 === 4 || wdn_jan1 === 3 && is_leap_year(year2);
 }
 function weekday(date) {
   let _pipe = date;
@@ -5816,33 +5880,33 @@ function days_since_previous_weekday(weekday3, date) {
     7
   );
 }
-function days_in_month(year3, month3) {
-  if (month3 instanceof Jan) {
+function days_in_month(year2, month2) {
+  if (month2 instanceof Jan) {
     return 31;
-  } else if (month3 instanceof Feb) {
-    let $ = is_leap_year(year3);
+  } else if (month2 instanceof Feb) {
+    let $ = is_leap_year(year2);
     if ($) {
       return 29;
     } else {
       return 28;
     }
-  } else if (month3 instanceof Mar) {
+  } else if (month2 instanceof Mar) {
     return 31;
-  } else if (month3 instanceof Apr) {
+  } else if (month2 instanceof Apr) {
     return 30;
-  } else if (month3 instanceof May) {
+  } else if (month2 instanceof May) {
     return 31;
-  } else if (month3 instanceof Jun) {
+  } else if (month2 instanceof Jun) {
     return 30;
-  } else if (month3 instanceof Jul) {
+  } else if (month2 instanceof Jul) {
     return 31;
-  } else if (month3 instanceof Aug) {
+  } else if (month2 instanceof Aug) {
     return 31;
-  } else if (month3 instanceof Sep) {
+  } else if (month2 instanceof Sep) {
     return 30;
-  } else if (month3 instanceof Oct) {
+  } else if (month2 instanceof Oct) {
     return 31;
-  } else if (month3 instanceof Nov) {
+  } else if (month2 instanceof Nov) {
     return 30;
   } else {
     return 31;
@@ -5850,58 +5914,58 @@ function days_in_month(year3, month3) {
 }
 function to_calendar_date_helper(loop$year, loop$month, loop$ordinal_day) {
   while (true) {
-    let year3 = loop$year;
-    let month3 = loop$month;
+    let year2 = loop$year;
+    let month2 = loop$month;
     let ordinal_day2 = loop$ordinal_day;
-    let month_days = days_in_month(year3, month3);
-    let month_number$1 = month_to_number(month3);
+    let month_days = days_in_month(year2, month2);
+    let month_number$1 = month_to_number(month2);
     let $ = month_number$1 < 12 && ordinal_day2 > month_days;
     if ($) {
-      loop$year = year3;
+      loop$year = year2;
       loop$month = number_to_month(month_number$1 + 1);
       loop$ordinal_day = ordinal_day2 - month_days;
     } else {
-      return new CalendarDate(year3, month3, ordinal_day2);
+      return new CalendarDate(year2, month2, ordinal_day2);
     }
   }
 }
-function days_before_month(year3, month3) {
-  let leap_days = to_int(is_leap_year(year3));
-  if (month3 instanceof Jan) {
+function days_before_month(year2, month2) {
+  let leap_days = to_int(is_leap_year(year2));
+  if (month2 instanceof Jan) {
     return 0;
-  } else if (month3 instanceof Feb) {
+  } else if (month2 instanceof Feb) {
     return 31;
-  } else if (month3 instanceof Mar) {
+  } else if (month2 instanceof Mar) {
     return 59 + leap_days;
-  } else if (month3 instanceof Apr) {
+  } else if (month2 instanceof Apr) {
     return 90 + leap_days;
-  } else if (month3 instanceof May) {
+  } else if (month2 instanceof May) {
     return 120 + leap_days;
-  } else if (month3 instanceof Jun) {
+  } else if (month2 instanceof Jun) {
     return 151 + leap_days;
-  } else if (month3 instanceof Jul) {
+  } else if (month2 instanceof Jul) {
     return 181 + leap_days;
-  } else if (month3 instanceof Aug) {
+  } else if (month2 instanceof Aug) {
     return 212 + leap_days;
-  } else if (month3 instanceof Sep) {
+  } else if (month2 instanceof Sep) {
     return 243 + leap_days;
-  } else if (month3 instanceof Oct) {
+  } else if (month2 instanceof Oct) {
     return 273 + leap_days;
-  } else if (month3 instanceof Nov) {
+  } else if (month2 instanceof Nov) {
     return 304 + leap_days;
   } else {
     return 334 + leap_days;
   }
 }
-function first_of_month(year3, month3) {
-  return new RD(days_before_year(year3) + days_before_month(year3, month3) + 1);
+function first_of_month(year2, month2) {
+  return new RD(days_before_year(year2) + days_before_month(year2, month2) + 1);
 }
-function from_calendar_date(year3, month3, day3) {
+function from_calendar_date(year2, month2, day2) {
   return new RD(
-    days_before_year(year3) + days_before_month(year3, month3) + clamp(
-      day3,
+    days_before_year(year2) + days_before_month(year2, month2) + clamp(
+      day2,
       1,
-      days_in_month(year3, month3)
+      days_in_month(year2, month2)
     )
   );
 }
@@ -6267,9 +6331,9 @@ function floor3(date, interval) {
 function is_between_int(value4, lower, upper) {
   return lower <= value4 && value4 <= upper;
 }
-function from_ordinal_parts(year3, ordinal) {
+function from_ordinal_parts(year2, ordinal) {
   let days_in_year = (() => {
-    let $2 = is_leap_year(year3);
+    let $2 = is_leap_year(year2);
     if ($2) {
       return 366;
     } else {
@@ -6281,55 +6345,55 @@ function from_ordinal_parts(year3, ordinal) {
     return new Error2(
       "Invalid ordinal date: " + ("ordinal-day " + to_string3(ordinal) + " is out of range") + (" (1 to " + to_string3(
         days_in_year
-      ) + ")") + (" for " + to_string3(year3)) + ("; received (year " + to_string3(
-        year3
+      ) + ")") + (" for " + to_string3(year2)) + ("; received (year " + to_string3(
+        year2
       ) + ", ordinal-day " + to_string3(ordinal) + ")")
     );
   } else {
-    return new Ok2(new RD(days_before_year(year3) + ordinal));
+    return new Ok2(new RD(days_before_year(year2) + ordinal));
   }
 }
-function from_calendar_parts(year3, month_number2, day3) {
+function from_calendar_parts(year2, month_number2, day2) {
   let $ = is_between_int(month_number2, 1, 12);
   let $1 = is_between_int(
-    day3,
+    day2,
     1,
-    days_in_month(year3, number_to_month(month_number2))
+    days_in_month(year2, number_to_month(month_number2))
   );
   if (!$) {
     return new Error2(
       "Invalid date: " + ("month " + to_string3(month_number2) + " is out of range") + " (1 to 12)" + ("; received (year " + to_string3(
-        year3
+        year2
       ) + ", month " + to_string3(month_number2) + ", day " + to_string3(
-        day3
+        day2
       ) + ")")
     );
   } else if ($ && !$1) {
     return new Error2(
-      "Invalid date: " + ("day " + to_string3(day3) + " is out of range") + (" (1 to " + to_string3(
-        days_in_month(year3, number_to_month(month_number2))
+      "Invalid date: " + ("day " + to_string3(day2) + " is out of range") + (" (1 to " + to_string3(
+        days_in_month(year2, number_to_month(month_number2))
       ) + ")") + (" for " + (() => {
         let _pipe = month_number2;
         let _pipe$1 = number_to_month(_pipe);
         return month_to_name(_pipe$1);
       })()) + (() => {
-        let $2 = month_number2 === 2 && day3 === 29;
+        let $2 = month_number2 === 2 && day2 === 29;
         if ($2) {
-          return " (" + to_string3(year3) + " is not a leap year)";
+          return " (" + to_string3(year2) + " is not a leap year)";
         } else {
           return "";
         }
-      })() + ("; received (year " + to_string3(year3) + ", month " + to_string3(
+      })() + ("; received (year " + to_string3(year2) + ", month " + to_string3(
         month_number2
-      ) + ", day " + to_string3(day3) + ")")
+      ) + ", day " + to_string3(day2) + ")")
     );
   } else {
     return new Ok2(
       new RD(
-        days_before_year(year3) + days_before_month(
-          year3,
+        days_before_year(year2) + days_before_month(
+          year2,
           number_to_month(month_number2)
-        ) + day3
+        ) + day2
       )
     );
   }
@@ -6371,28 +6435,28 @@ function from_week_parts(week_year2, week_number2, weekday_number2) {
     );
   }
 }
-function from_year_and_day_of_year(year3, day_of_year) {
+function from_year_and_day_of_year(year2, day_of_year) {
   if (day_of_year instanceof MonthAndDay) {
     let month_number$1 = day_of_year[0];
     let day$1 = day_of_year[1];
-    return from_calendar_parts(year3, month_number$1, day$1);
+    return from_calendar_parts(year2, month_number$1, day$1);
   } else if (day_of_year instanceof WeekAndWeekday) {
     let week_number$1 = day_of_year[0];
     let weekday_number$1 = day_of_year[1];
-    return from_week_parts(year3, week_number$1, weekday_number$1);
+    return from_week_parts(year2, week_number$1, weekday_number$1);
   } else {
     let ordinal_day$1 = day_of_year[0];
-    return from_ordinal_parts(year3, ordinal_day$1);
+    return from_ordinal_parts(year2, ordinal_day$1);
   }
 }
 function parser2() {
   return do$(
     int_4(),
-    (year3) => {
+    (year2) => {
       return do$(
         parse_day_of_year(),
         (day_of_year) => {
-          return return$(from_year_and_day_of_year(year3, day_of_year));
+          return return$(from_year_and_day_of_year(year2, day_of_year));
         }
       );
     }
@@ -6571,7 +6635,7 @@ function isBrowser() {
 var NotABrowser2 = class extends CustomType {
 };
 
-// build/dev/javascript/gleam_javascript/ffi.mjs
+// build/dev/javascript/gleam_javascript/gleam_javascript_ffi.mjs
 var PromiseLayer = class _PromiseLayer {
   constructor(promise) {
     this.promise = promise;
@@ -6836,7 +6900,7 @@ function prepareCache(cache_) {
 }
 function renderCache(cache2) {
   cache2.diff();
-  return new Error2(null);
+  return new Ok2(null);
 }
 
 // build/dev/javascript/sketch/errors.ffi.mjs
@@ -7565,7 +7629,7 @@ function save_color_scheme(color_scheme) {
     }
   );
 }
-var ayu_dark = new Colors(
+var ayu_dark = /* @__PURE__ */ new Colors(
   "#111",
   "#333",
   "#ffcc66",
@@ -7612,7 +7676,7 @@ function ayu_dark_class() {
   );
   return to_lustre(_pipe);
 }
-var ayu_light = new Colors(
+var ayu_light = /* @__PURE__ */ new Colors(
   "white",
   "#ccc",
   "#ffd596",
@@ -7659,7 +7723,7 @@ function ayu_light_class() {
   );
   return to_lustre(_pipe);
 }
-var catpuccin_light = new Colors(
+var catpuccin_light = /* @__PURE__ */ new Colors(
   "#e6e9ef",
   "#dce0e8",
   "#dc8a78",
@@ -7706,7 +7770,7 @@ function catpuccin_light_class() {
   );
   return to_lustre(_pipe);
 }
-var catpuccin_frappe = new Colors(
+var catpuccin_frappe = /* @__PURE__ */ new Colors(
   "#292c3c",
   "#232634",
   "#f2d5cf",
@@ -7753,7 +7817,7 @@ function catpuccin_frappe_class() {
   );
   return to_lustre(_pipe);
 }
-var gleam = new Colors(
+var gleam = /* @__PURE__ */ new Colors(
   "#2f2f2f",
   "#2f2f2f",
   "#ffaff3",
@@ -9284,6 +9348,11 @@ function stringed_int(d) {
   );
 }
 
+// build/dev/javascript/plinth/global_ffi.mjs
+function setTimeout(delay, callback) {
+  return globalThis.setTimeout(callback, delay);
+}
+
 // build/dev/javascript/app/lib/utils.mjs
 function dict_update(dict2, key3, fun) {
   let item = (() => {
@@ -9338,19 +9407,19 @@ function list_at(loop$list, loop$n) {
     }
   }
 }
-function date_num_string(day3) {
-  let _pipe = day3;
+function date_num_string(day2) {
+  let _pipe = day2;
   let _pipe$1 = day(_pipe);
   return to_string3(_pipe$1);
 }
-function month_date_string(day3) {
-  let n = date_num_string(day3);
+function month_date_string(day2) {
+  let n = date_num_string(day2);
   let s = (() => {
-    let _pipe = day3;
+    let _pipe = day2;
     return weekday(_pipe);
   })();
   let m = (() => {
-    let _pipe = day3;
+    let _pipe = day2;
     let _pipe$1 = month(_pipe);
     return ((a2) => {
       if (a2 instanceof Jan) {
@@ -9381,6 +9450,16 @@ function month_date_string(day3) {
     })(_pipe$1);
   })();
   return m + " " + n;
+}
+function after(delay, msg) {
+  return from2(
+    (dispatch2) => {
+      let $ = setTimeout(delay, () => {
+        return dispatch2(msg);
+      });
+      return void 0;
+    }
+  );
 }
 
 // node_modules/nanoid/url-alphabet/index.js
@@ -9633,17 +9712,17 @@ async function do_get_plan(startDate) {
     query
   );
   console.log("result: ", result);
-  const mapped = result.map((day3) => {
-    day3.planned_meals = JSON.parse(day3.planned_meals);
-    return day3;
+  const mapped = result.map((day2) => {
+    day2.planned_meals = JSON.parse(day2.planned_meals);
+    return day2;
   });
   return result;
 }
 async function do_save_plan(plan) {
   console.log("do_save_plan: ", plan);
-  for (const day3 of plan) {
+  for (const day2 of plan) {
     const result = await db.execO(`
-			INSERT INTO plan 			(date,planned_meals) 			VALUES ('${day3.date}','${JSON.stringify(day3.planned_meals)}') 			ON CONFLICT(date) DO UPDATE SET 			planned_meals = excluded.planned_meals 			`);
+			INSERT INTO plan 			(date,planned_meals) 			VALUES ('${day2.date}','${JSON.stringify(day2.planned_meals)}') 			ON CONFLICT(date) DO UPDATE SET 			planned_meals = excluded.planned_meals 			`);
     console.log("inserted planday: ", result);
   }
   return new Ok2();
@@ -9705,12 +9784,12 @@ var Tag = class extends CustomType {
   }
 };
 var Ingredient = class extends CustomType {
-  constructor(name2, ismain, quantity, units2) {
+  constructor(name2, ismain, quantity, units) {
     super();
     this.name = name2;
     this.ismain = ismain;
     this.quantity = quantity;
-    this.units = units2;
+    this.units = units;
   }
 };
 function merge_recipe_into_model(recipe, model) {
@@ -9928,6 +10007,8 @@ var UserFocusedSearchInput = class extends CustomType {
 };
 var UserBlurredSearchInput = class extends CustomType {
 };
+var UserClosedOptionList = class extends CustomType {
+};
 function typeahead(attrs) {
   return element("type-ahead", attrs, toList([]));
 }
@@ -10004,10 +10085,12 @@ function update3(model, msg) {
       none()
     ];
   } else if (msg instanceof UserBlurredSearchInput) {
+    return [model, after(100, new UserBlurredSearchInput())];
+  } else if (msg instanceof UserClosedOptionList) {
     return [
       model.withFields({
-        is_focused: false,
         is_open: false,
+        is_focused: false,
         hovered_item: new None()
       }),
       none()
@@ -10258,7 +10341,13 @@ function view2(model) {
               return new UserPressedKeyInSearchInput(var0);
             }
           ),
-          on_focus(new UserFocusedSearchInput())
+          on_focus(new UserFocusedSearchInput()),
+          on2(
+            "blur",
+            (event2) => {
+              return new Ok2(new UserBlurredSearchInput());
+            }
+          )
         ]),
         ""
       ),
@@ -10310,519 +10399,6 @@ function view2(model) {
 function app() {
   return component(init6, update3, view2, on_attribute_change());
 }
-
-// build/dev/javascript/birl/birl/duration.mjs
-var MicroSecond = class extends CustomType {
-};
-var MilliSecond = class extends CustomType {
-};
-var Second = class extends CustomType {
-};
-var Minute = class extends CustomType {
-};
-var Hour = class extends CustomType {
-};
-var Day = class extends CustomType {
-};
-var Week2 = class extends CustomType {
-};
-var Month2 = class extends CustomType {
-};
-var Year2 = class extends CustomType {
-};
-var milli_second = 1e3;
-var second2 = 1e6;
-var minute = 6e7;
-var hour = 36e8;
-var day2 = 864e8;
-var week = 6048e8;
-var month2 = 2592e9;
-var year2 = 31536e9;
-var unit_values = toList([
-  [new Year2(), year2],
-  [new Month2(), month2],
-  [new Week2(), week],
-  [new Day(), day2],
-  [new Hour(), hour],
-  [new Minute(), minute],
-  [new Second(), second2],
-  [new MilliSecond(), milli_second],
-  [new MicroSecond(), 1]
-]);
-var year_units = toList(["y", "year", "years"]);
-var month_units = toList(["mon", "month", "months"]);
-var week_units = toList(["w", "week", "weeks"]);
-var day_units = toList(["d", "day", "days"]);
-var hour_units = toList(["h", "hour", "hours"]);
-var minute_units = toList(["m", "min", "minute", "minutes"]);
-var second_units = toList(["s", "sec", "secs", "second", "seconds"]);
-var milli_second_units = toList([
-  "ms",
-  "msec",
-  "msecs",
-  "millisecond",
-  "milliseconds",
-  "milli-second",
-  "milli-seconds",
-  "milli_second",
-  "milli_seconds"
-]);
-var units = toList([
-  [new Year2(), year_units],
-  [new Month2(), month_units],
-  [new Week2(), week_units],
-  [new Day(), day_units],
-  [new Hour(), hour_units],
-  [new Minute(), minute_units],
-  [new Second(), second_units],
-  [new MilliSecond(), milli_second_units]
-]);
-
-// build/dev/javascript/birl/birl/zones.mjs
-var list2 = toList([
-  ["Africa/Abidjan", 0],
-  ["Africa/Algiers", 3600],
-  ["Africa/Bissau", 0],
-  ["Africa/Cairo", 7200],
-  ["Africa/Casablanca", 3600],
-  ["Africa/Ceuta", 3600],
-  ["Africa/El_Aaiun", 3600],
-  ["Africa/Johannesburg", 7200],
-  ["Africa/Juba", 7200],
-  ["Africa/Khartoum", 7200],
-  ["Africa/Lagos", 3600],
-  ["Africa/Maputo", 7200],
-  ["Africa/Monrovia", 0],
-  ["Africa/Nairobi", 10800],
-  ["Africa/Ndjamena", 3600],
-  ["Africa/Sao_Tome", 0],
-  ["Africa/Tripoli", 7200],
-  ["Africa/Tunis", 3600],
-  ["Africa/Windhoek", 7200],
-  ["America/Adak", -36e3],
-  ["America/Anchorage", -32400],
-  ["America/Araguaina", -10800],
-  ["America/Argentina/Buenos_Aires", -10800],
-  ["America/Argentina/Catamarca", -10800],
-  ["America/Argentina/Cordoba", -10800],
-  ["America/Argentina/Jujuy", -10800],
-  ["America/Argentina/La_Rioja", -10800],
-  ["America/Argentina/Mendoza", -10800],
-  ["America/Argentina/Rio_Gallegos", -10800],
-  ["America/Argentina/Salta", -10800],
-  ["America/Argentina/San_Juan", -10800],
-  ["America/Argentina/San_Luis", -10800],
-  ["America/Argentina/Tucuman", -10800],
-  ["America/Argentina/Ushuaia", -10800],
-  ["America/Asuncion", -14400],
-  ["America/Bahia", -10800],
-  ["America/Bahia_Banderas", -21600],
-  ["America/Barbados", -14400],
-  ["America/Belem", -10800],
-  ["America/Belize", -21600],
-  ["America/Boa_Vista", -14400],
-  ["America/Bogota", -18e3],
-  ["America/Boise", -25200],
-  ["America/Cambridge_Bay", -25200],
-  ["America/Campo_Grande", -14400],
-  ["America/Cancun", -18e3],
-  ["America/Caracas", -14400],
-  ["America/Cayenne", -10800],
-  ["America/Chicago", -21600],
-  ["America/Chihuahua", -21600],
-  ["America/Ciudad_Juarez", -25200],
-  ["America/Costa_Rica", -21600],
-  ["America/Cuiaba", -14400],
-  ["America/Danmarkshavn", 0],
-  ["America/Dawson", -25200],
-  ["America/Dawson_Creek", -25200],
-  ["America/Denver", -25200],
-  ["America/Detroit", -18e3],
-  ["America/Edmonton", -25200],
-  ["America/Eirunepe", -18e3],
-  ["America/El_Salvador", -21600],
-  ["America/Fort_Nelson", -25200],
-  ["America/Fortaleza", -10800],
-  ["America/Glace_Bay", -14400],
-  ["America/Goose_Bay", -14400],
-  ["America/Grand_Turk", -18e3],
-  ["America/Guatemala", -21600],
-  ["America/Guayaquil", -18e3],
-  ["America/Guyana", -14400],
-  ["America/Halifax", -14400],
-  ["America/Havana", -18e3],
-  ["America/Hermosillo", -25200],
-  ["America/Indiana/Indianapolis", -18e3],
-  ["America/Indiana/Knox", -21600],
-  ["America/Indiana/Marengo", -18e3],
-  ["America/Indiana/Petersburg", -18e3],
-  ["America/Indiana/Tell_City", -21600],
-  ["America/Indiana/Vevay", -18e3],
-  ["America/Indiana/Vincennes", -18e3],
-  ["America/Indiana/Winamac", -18e3],
-  ["America/Inuvik", -25200],
-  ["America/Iqaluit", -18e3],
-  ["America/Jamaica", -18e3],
-  ["America/Juneau", -32400],
-  ["America/Kentucky/Louisville", -18e3],
-  ["America/Kentucky/Monticello", -18e3],
-  ["America/La_Paz", -14400],
-  ["America/Lima", -18e3],
-  ["America/Los_Angeles", -28800],
-  ["America/Maceio", -10800],
-  ["America/Managua", -21600],
-  ["America/Manaus", -14400],
-  ["America/Martinique", -14400],
-  ["America/Matamoros", -21600],
-  ["America/Mazatlan", -25200],
-  ["America/Menominee", -21600],
-  ["America/Merida", -21600],
-  ["America/Metlakatla", -32400],
-  ["America/Mexico_City", -21600],
-  ["America/Miquelon", -10800],
-  ["America/Moncton", -14400],
-  ["America/Monterrey", -21600],
-  ["America/Montevideo", -10800],
-  ["America/New_York", -18e3],
-  ["America/Nome", -32400],
-  ["America/Noronha", -7200],
-  ["America/North_Dakota/Beulah", -21600],
-  ["America/North_Dakota/Center", -21600],
-  ["America/North_Dakota/New_Salem", -21600],
-  ["America/Nuuk", -7200],
-  ["America/Ojinaga", -21600],
-  ["America/Panama", -18e3],
-  ["America/Paramaribo", -10800],
-  ["America/Phoenix", -25200],
-  ["America/Port-au-Prince", -18e3],
-  ["America/Porto_Velho", -14400],
-  ["America/Puerto_Rico", -14400],
-  ["America/Punta_Arenas", -10800],
-  ["America/Rankin_Inlet", -21600],
-  ["America/Recife", -10800],
-  ["America/Regina", -21600],
-  ["America/Resolute", -21600],
-  ["America/Rio_Branco", -18e3],
-  ["America/Santarem", -10800],
-  ["America/Santiago", -14400],
-  ["America/Santo_Domingo", -14400],
-  ["America/Sao_Paulo", -10800],
-  ["America/Scoresbysund", -7200],
-  ["America/Sitka", -32400],
-  ["America/St_Johns", -12600],
-  ["America/Swift_Current", -21600],
-  ["America/Tegucigalpa", -21600],
-  ["America/Thule", -14400],
-  ["America/Tijuana", -28800],
-  ["America/Toronto", -18e3],
-  ["America/Vancouver", -28800],
-  ["America/Whitehorse", -25200],
-  ["America/Winnipeg", -21600],
-  ["America/Yakutat", -32400],
-  ["Antarctica/Casey", 28800],
-  ["Antarctica/Davis", 25200],
-  ["Antarctica/Macquarie", 36e3],
-  ["Antarctica/Mawson", 18e3],
-  ["Antarctica/Palmer", -10800],
-  ["Antarctica/Rothera", -10800],
-  ["Antarctica/Troll", 0],
-  ["Antarctica/Vostok", 18e3],
-  ["Asia/Almaty", 18e3],
-  ["Asia/Amman", 10800],
-  ["Asia/Anadyr", 43200],
-  ["Asia/Aqtau", 18e3],
-  ["Asia/Aqtobe", 18e3],
-  ["Asia/Ashgabat", 18e3],
-  ["Asia/Atyrau", 18e3],
-  ["Asia/Baghdad", 10800],
-  ["Asia/Baku", 14400],
-  ["Asia/Bangkok", 25200],
-  ["Asia/Barnaul", 25200],
-  ["Asia/Beirut", 7200],
-  ["Asia/Bishkek", 21600],
-  ["Asia/Chita", 32400],
-  ["Asia/Choibalsan", 28800],
-  ["Asia/Colombo", 19800],
-  ["Asia/Damascus", 10800],
-  ["Asia/Dhaka", 21600],
-  ["Asia/Dili", 32400],
-  ["Asia/Dubai", 14400],
-  ["Asia/Dushanbe", 18e3],
-  ["Asia/Famagusta", 7200],
-  ["Asia/Gaza", 7200],
-  ["Asia/Hebron", 7200],
-  ["Asia/Ho_Chi_Minh", 25200],
-  ["Asia/Hong_Kong", 28800],
-  ["Asia/Hovd", 25200],
-  ["Asia/Irkutsk", 28800],
-  ["Asia/Jakarta", 25200],
-  ["Asia/Jayapura", 32400],
-  ["Asia/Jerusalem", 7200],
-  ["Asia/Kabul", 16200],
-  ["Asia/Kamchatka", 43200],
-  ["Asia/Karachi", 18e3],
-  ["Asia/Kathmandu", 20700],
-  ["Asia/Khandyga", 32400],
-  ["Asia/Kolkata", 19800],
-  ["Asia/Krasnoyarsk", 25200],
-  ["Asia/Kuching", 28800],
-  ["Asia/Macau", 28800],
-  ["Asia/Magadan", 39600],
-  ["Asia/Makassar", 28800],
-  ["Asia/Manila", 28800],
-  ["Asia/Nicosia", 7200],
-  ["Asia/Novokuznetsk", 25200],
-  ["Asia/Novosibirsk", 25200],
-  ["Asia/Omsk", 21600],
-  ["Asia/Oral", 18e3],
-  ["Asia/Pontianak", 25200],
-  ["Asia/Pyongyang", 32400],
-  ["Asia/Qatar", 10800],
-  ["Asia/Qostanay", 18e3],
-  ["Asia/Qyzylorda", 18e3],
-  ["Asia/Riyadh", 10800],
-  ["Asia/Sakhalin", 39600],
-  ["Asia/Samarkand", 18e3],
-  ["Asia/Seoul", 32400],
-  ["Asia/Shanghai", 28800],
-  ["Asia/Singapore", 28800],
-  ["Asia/Srednekolymsk", 39600],
-  ["Asia/Taipei", 28800],
-  ["Asia/Tashkent", 18e3],
-  ["Asia/Tbilisi", 14400],
-  ["Asia/Tehran", 12600],
-  ["Asia/Thimphu", 21600],
-  ["Asia/Tokyo", 32400],
-  ["Asia/Tomsk", 25200],
-  ["Asia/Ulaanbaatar", 28800],
-  ["Asia/Urumqi", 21600],
-  ["Asia/Ust-Nera", 36e3],
-  ["Asia/Vladivostok", 36e3],
-  ["Asia/Yakutsk", 32400],
-  ["Asia/Yangon", 23400],
-  ["Asia/Yekaterinburg", 18e3],
-  ["Asia/Yerevan", 14400],
-  ["Atlantic/Azores", -3600],
-  ["Atlantic/Bermuda", -14400],
-  ["Atlantic/Canary", 0],
-  ["Atlantic/Cape_Verde", -3600],
-  ["Atlantic/Faroe", 0],
-  ["Atlantic/Madeira", 0],
-  ["Atlantic/South_Georgia", -7200],
-  ["Atlantic/Stanley", -10800],
-  ["Australia/Adelaide", 34200],
-  ["Australia/Brisbane", 36e3],
-  ["Australia/Broken_Hill", 34200],
-  ["Australia/Darwin", 34200],
-  ["Australia/Eucla", 31500],
-  ["Australia/Hobart", 36e3],
-  ["Australia/Lindeman", 36e3],
-  ["Australia/Lord_Howe", 37800],
-  ["Australia/Melbourne", 36e3],
-  ["Australia/Perth", 28800],
-  ["Australia/Sydney", 36e3],
-  ["CET", 3600],
-  ["CST6CDT", -21600],
-  ["EET", 7200],
-  ["EST", -18e3],
-  ["EST5EDT", -18e3],
-  ["Etc/GMT", 0],
-  ["Etc/GMT+1", -3600],
-  ["Etc/GMT+10", -36e3],
-  ["Etc/GMT+11", -39600],
-  ["Etc/GMT+12", -43200],
-  ["Etc/GMT+2", -7200],
-  ["Etc/GMT+3", -10800],
-  ["Etc/GMT+4", -14400],
-  ["Etc/GMT+5", -18e3],
-  ["Etc/GMT+6", -21600],
-  ["Etc/GMT+7", -25200],
-  ["Etc/GMT+8", -28800],
-  ["Etc/GMT+9", -32400],
-  ["Etc/GMT-1", 3600],
-  ["Etc/GMT-10", 36e3],
-  ["Etc/GMT-11", 39600],
-  ["Etc/GMT-12", 43200],
-  ["Etc/GMT-13", 46800],
-  ["Etc/GMT-14", 50400],
-  ["Etc/GMT-2", 7200],
-  ["Etc/GMT-3", 10800],
-  ["Etc/GMT-4", 14400],
-  ["Etc/GMT-5", 18e3],
-  ["Etc/GMT-6", 21600],
-  ["Etc/GMT-7", 25200],
-  ["Etc/GMT-8", 28800],
-  ["Etc/GMT-9", 32400],
-  ["Etc/UTC", 0],
-  ["Europe/Andorra", 3600],
-  ["Europe/Astrakhan", 14400],
-  ["Europe/Athens", 7200],
-  ["Europe/Belgrade", 3600],
-  ["Europe/Berlin", 3600],
-  ["Europe/Brussels", 3600],
-  ["Europe/Bucharest", 7200],
-  ["Europe/Budapest", 3600],
-  ["Europe/Chisinau", 7200],
-  ["Europe/Dublin", 3600],
-  ["Europe/Gibraltar", 3600],
-  ["Europe/Helsinki", 7200],
-  ["Europe/Istanbul", 10800],
-  ["Europe/Kaliningrad", 7200],
-  ["Europe/Kirov", 10800],
-  ["Europe/Kyiv", 7200],
-  ["Europe/Lisbon", 0],
-  ["Europe/London", 0],
-  ["Europe/Madrid", 3600],
-  ["Europe/Malta", 3600],
-  ["Europe/Minsk", 10800],
-  ["Europe/Moscow", 10800],
-  ["Europe/Paris", 3600],
-  ["Europe/Prague", 3600],
-  ["Europe/Riga", 7200],
-  ["Europe/Rome", 3600],
-  ["Europe/Samara", 14400],
-  ["Europe/Saratov", 14400],
-  ["Europe/Simferopol", 10800],
-  ["Europe/Sofia", 7200],
-  ["Europe/Tallinn", 7200],
-  ["Europe/Tirane", 3600],
-  ["Europe/Ulyanovsk", 14400],
-  ["Europe/Vienna", 3600],
-  ["Europe/Vilnius", 7200],
-  ["Europe/Volgograd", 10800],
-  ["Europe/Warsaw", 3600],
-  ["Europe/Zurich", 3600],
-  ["HST", -36e3],
-  ["Indian/Chagos", 21600],
-  ["Indian/Maldives", 18e3],
-  ["Indian/Mauritius", 14400],
-  ["MET", 3600],
-  ["MST", -25200],
-  ["MST7MDT", -25200],
-  ["PST8PDT", -28800],
-  ["Pacific/Apia", 46800],
-  ["Pacific/Auckland", 43200],
-  ["Pacific/Bougainville", 39600],
-  ["Pacific/Chatham", 45900],
-  ["Pacific/Easter", -21600],
-  ["Pacific/Efate", 39600],
-  ["Pacific/Fakaofo", 46800],
-  ["Pacific/Fiji", 43200],
-  ["Pacific/Galapagos", -21600],
-  ["Pacific/Gambier", -32400],
-  ["Pacific/Guadalcanal", 39600],
-  ["Pacific/Guam", 36e3],
-  ["Pacific/Honolulu", -36e3],
-  ["Pacific/Kanton", 46800],
-  ["Pacific/Kiritimati", 50400],
-  ["Pacific/Kosrae", 39600],
-  ["Pacific/Kwajalein", 43200],
-  ["Pacific/Marquesas", -34200],
-  ["Pacific/Nauru", 43200],
-  ["Pacific/Niue", -39600],
-  ["Pacific/Norfolk", 39600],
-  ["Pacific/Noumea", 39600],
-  ["Pacific/Pago_Pago", -39600],
-  ["Pacific/Palau", 32400],
-  ["Pacific/Pitcairn", -28800],
-  ["Pacific/Port_Moresby", 36e3],
-  ["Pacific/Rarotonga", -36e3],
-  ["Pacific/Tahiti", -36e3],
-  ["Pacific/Tarawa", 43200],
-  ["Pacific/Tongatapu", 46800],
-  ["WET", 0]
-]);
-
-// build/dev/javascript/birl/birl.mjs
-var Time = class extends CustomType {
-  constructor(wall_time, offset, timezone, monotonic_time) {
-    super();
-    this.wall_time = wall_time;
-    this.offset = offset;
-    this.timezone = timezone;
-    this.monotonic_time = monotonic_time;
-  }
-};
-var Mon2 = class extends CustomType {
-};
-var Tue2 = class extends CustomType {
-};
-var Wed2 = class extends CustomType {
-};
-var Thu2 = class extends CustomType {
-};
-var Fri2 = class extends CustomType {
-};
-var Sat2 = class extends CustomType {
-};
-var Sun2 = class extends CustomType {
-};
-var Jan2 = class extends CustomType {
-};
-var Feb2 = class extends CustomType {
-};
-var Mar2 = class extends CustomType {
-};
-var Apr2 = class extends CustomType {
-};
-var May2 = class extends CustomType {
-};
-var Jun2 = class extends CustomType {
-};
-var Jul2 = class extends CustomType {
-};
-var Aug2 = class extends CustomType {
-};
-var Sep2 = class extends CustomType {
-};
-var Oct2 = class extends CustomType {
-};
-var Nov2 = class extends CustomType {
-};
-var Dec2 = class extends CustomType {
-};
-var unix_epoch = new Time(0, 0, new None(), new None());
-var string_to_units = toList([
-  ["year", new Year2()],
-  ["month", new Month2()],
-  ["week", new Week2()],
-  ["day", new Day()],
-  ["hour", new Hour()],
-  ["minute", new Minute()],
-  ["second", new Second()]
-]);
-var units_to_string = toList([
-  [new Year2(), "year"],
-  [new Month2(), "month"],
-  [new Week2(), "week"],
-  [new Day(), "day"],
-  [new Hour(), "hour"],
-  [new Minute(), "minute"],
-  [new Second(), "second"]
-]);
-var weekday_strings = toList([
-  [new Mon2(), ["Monday", "Mon"]],
-  [new Tue2(), ["Tuesday", "Tue"]],
-  [new Wed2(), ["Wednesday", "Wed"]],
-  [new Thu2(), ["Thursday", "Thu"]],
-  [new Fri2(), ["Friday", "Fri"]],
-  [new Sat2(), ["Saturday", "Sat"]],
-  [new Sun2(), ["Sunday", "Sun"]]
-]);
-var month_strings = toList([
-  [new Jan2(), ["January", "Jan"]],
-  [new Feb2(), ["February", "Feb"]],
-  [new Mar2(), ["March", "Mar"]],
-  [new Apr2(), ["April", "Apr"]],
-  [new May2(), ["May", "May"]],
-  [new Jun2(), ["June", "Jun"]],
-  [new Jul2(), ["July", "Jul"]],
-  [new Aug2(), ["August", "Aug"]],
-  [new Sep2(), ["September", "Sep"]],
-  [new Oct2(), ["October", "Oct"]],
-  [new Nov2(), ["November", "Nov"]],
-  [new Dec2(), ["December", "Dec"]]
-]);
 
 // build/dev/javascript/decipher/decipher.mjs
 function tagged_union(tag, variants) {
@@ -11459,7 +11035,7 @@ function view_planner(model) {
       new PlanDay(a2, new$2())
     );
   };
-  let week2 = from_list(
+  let week = from_list(
     toList([
       [start_of_week, find_in_week(start_of_week)],
       [
@@ -11550,10 +11126,10 @@ function view_planner(model) {
           )
         ]),
         toList([
-          planner_header_row(week2),
+          planner_header_row(week),
           fragment(
             (() => {
-              let _pipe = values(week2);
+              let _pipe = values(week);
               let _pipe$1 = sort(
                 _pipe,
                 (a2, b) => {
@@ -11570,7 +11146,7 @@ function view_planner(model) {
           ),
           fragment(
             (() => {
-              let _pipe = values(week2);
+              let _pipe = values(week);
               let _pipe$1 = sort(
                 _pipe,
                 (a2, b) => {
@@ -11669,7 +11245,7 @@ function edit_planner(model) {
       new PlanDay(a2, new$2())
     );
   };
-  let week2 = from_list(
+  let week = from_list(
     toList([
       [start_of_week, find_in_week(start_of_week)],
       [
@@ -11747,10 +11323,10 @@ function edit_planner(model) {
           on_submit(new UserSavedPlan())
         ]),
         toList([
-          planner_header_row(week2),
+          planner_header_row(week),
           fragment(
             (() => {
-              let _pipe = values(week2);
+              let _pipe = values(week);
               let _pipe$1 = sort(
                 _pipe,
                 (a2, b) => {
@@ -11772,7 +11348,7 @@ function edit_planner(model) {
           ),
           fragment(
             (() => {
-              let _pipe = values(week2);
+              let _pipe = values(week);
               let _pipe$1 = sort(
                 _pipe,
                 (a2, b) => {
