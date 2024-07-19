@@ -7,6 +7,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/io
 import gleam/javascript/array.{type Array}
+import gleam/javascript/map.{type Map}
 import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
@@ -27,17 +28,17 @@ import rada/date.{type Date}
 //-TYPES-------------------------------------------------------------
 
 pub type PlanDay {
-  PlanDay(date: Date, planned_meals: Dict(Meal, PlannedMealWithStatus))
+  PlanDay(date: Date, planned_meals: List(PlannedMealWithStatus))
 }
 
 pub type JsPlanDay {
-  JsPlanDay(date: String, planned_meals: Json)
+  JsPlanDay(date: Int, planned_meals: String)
 }
 
 pub type PlannedMealWithStatus {
   PlannedMealWithStatus(
-    title: Option(String),
     for: Meal,
+    title: Option(String),
     complete: Option(Bool),
   )
 }
@@ -46,7 +47,7 @@ pub type PlannerMsg {
   UserUpdatedPlanMeal(Date, Meal, Option(String), Option(Bool))
   UserFetchedPlan(Date)
   DbRetrievedPlan(PlanWeek, Date)
-  DbSavedPlan
+  DbSavedPlan(Date)
   UserSavedPlan
 }
 
@@ -77,31 +78,29 @@ fn update_plan_week(
         case value {
           Some("") ->
             a.planned_meals
-            |> dict.drop([meal])
+            |> list.filter(fn(a) { a.for != meal })
           _ ->
-            dict.upsert(a.planned_meals, meal, fn(inner) {
-              case inner {
-                Some(inner) ->
+            a.planned_meals
+            |> list.pop(fn(a) { a.for == meal })
+            |> result.map(fn(tuple) {
+              let #(found, rest) = tuple
+              list.append(
+                [
                   PlannedMealWithStatus(
                     for: meal,
-                    title: option.or(value, inner.title),
-                    complete: option.or(complete, inner.complete),
-                  )
-                _ ->
-                  PlannedMealWithStatus(
-                    for: meal,
-                    title: value,
-                    complete: complete,
-                  )
-              }
+                    title: option.or(value, found.title),
+                    complete: option.or(complete, found.complete),
+                  ),
+                ],
+                rest,
+              )
             })
+            |> result.unwrap([
+              PlannedMealWithStatus(for: meal, title: value, complete: complete),
+            ])
         }
-      _ ->
-        dict.new()
-        |> dict.insert(
-          meal,
-          PlannedMealWithStatus(for: meal, title: value, complete: complete),
-        )
+
+      _ -> [PlannedMealWithStatus(for: meal, title: value, complete: complete)]
     })
   })
 }
@@ -132,7 +131,7 @@ pub fn planner_update(
         effect.none(),
       )
     }
-    DbSavedPlan -> {
+    DbSavedPlan(_date) -> {
       #(model, effect.none())
     }
   }
@@ -140,27 +139,34 @@ pub fn planner_update(
 
 pub fn get_plan(start_date: Date) -> Effect(PlannerMsg) {
   use dispatch <- effect.from
-  do_get_plan(date.to_iso_string(start_date))
-  |> promise.map(array.to_list)
-  |> promise.map(list.map(_, decode_plan_day))
-  |> promise.map(result.all)
-  |> promise.map(result.map(_, list.map(_, fn(a: PlanDay) { #(a.date, a) })))
-  |> promise.map(result.map(_, dict.from_list))
+  do_get_plan(
+    date.to_rata_die(start_date),
+    date.to_rata_die(date.add(start_date, 1, date.Weeks)),
+  )
+  |> promise.map(io.debug)
+  |> promise.map(dynamic.dict(decode_string_day, decode_plan_day))
+  |> promise.map(io.debug)
   |> promise.map(result.map(_, DbRetrievedPlan(_, start_date)))
   |> promise.tap(result.map(_, dispatch))
   Nil
 }
 
-@external(javascript, ".././db.ts", "do_get_plan")
-fn do_get_plan(start_date: String) -> Promise(Array(Dynamic))
+@external(javascript, ".././db3.ts", "do_get_plan")
+fn do_get_plan(start_date: Int, end_date: Int) -> Promise(Dynamic)
 
 pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {
   use dispatch <- effect.from
   do_save_plan(list.map(dict.values(planweek), encode_plan_day))
-  DbSavedPlan |> dispatch
+
+  dict.keys(planweek)
+  |> list.sort(date.compare)
+  |> list.first
+  |> result.map(DbSavedPlan)
+  |> result.map(dispatch)
+  Nil
 }
 
-@external(javascript, ".././db.ts", "do_save_plan")
+@external(javascript, ".././db3.ts", "do_save_plan")
 fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 
 //-VIEWS-------------------------------------------------------------
@@ -168,7 +174,7 @@ fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 pub fn view_planner(model: Model) {
   let start_of_week = date.floor(model.start_date, date.Monday)
   let find_in_week = fn(a) {
-    result.unwrap(dict.get(model.plan_week, a), PlanDay(a, dict.new()))
+    result.unwrap(dict.get(model.plan_week, a), PlanDay(a, []))
   }
   let week =
     dict.from_list([
@@ -278,10 +284,9 @@ pub fn view_planner(model: Model) {
 }
 
 pub fn edit_planner(model: Model) {
-  // fit_text()
   let start_of_week = date.floor(model.start_date, date.Monday)
   let find_in_week = fn(a) {
-    result.unwrap(dict.get(model.plan_week, a), PlanDay(a, dict.new()))
+    result.unwrap(dict.get(model.plan_week, a), PlanDay(a, []))
   }
   let week =
     dict.from_list([
@@ -596,11 +601,12 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
     Lunch -> "col-start-2 md:row-start-2"
     Dinner -> "col-start-3 md:row-start-3"
   }
-  let card =
-    dict.get(pd.planned_meals, for)
-    |> result.map(inner_card(pd.date, _))
-    |> result.unwrap(element.none())
-
+  let card = {
+    use <- bool.guard(when: pd.planned_meals == [], return: element.none())
+    list.filter(pd.planned_meals, fn(a) { a.for == for })
+    |> list.map(inner_card(pd.date, _))
+    |> element.fragment
+  }
   div(
     [class("flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
@@ -613,7 +619,7 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
 }
 
 fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
-  let PlannedMealWithStatus(m, _f, c) = meal
+  let PlannedMealWithStatus(_f, t, c) = meal
   div(
     [
       class(
@@ -634,7 +640,7 @@ fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
             }),
           ]),
         ],
-        [text(option.unwrap(m, ""))],
+        [text(option.unwrap(t, ""))],
       ),
       div([class("flex justify-end place-self-start sm:mx-2")], [
         input([
@@ -659,13 +665,21 @@ fn planner_meal_input(
     Lunch -> "col-start-2 md:row-start-2"
     Dinner -> "col-start-3 md:row-start-3"
   }
-  let card =
-    dict.get(pd.planned_meals, for)
-    |> result.map(fn(a) {
+  let card = {
+    use <- bool.guard(
+      when: pd.planned_meals == [],
+      return: inner_input(pd.date, for, "", recipe_titles),
+    )
+    use <- bool.guard(
+      when: list.filter(pd.planned_meals, fn(a) { a.for == for }) == [],
+      return: inner_input(pd.date, for, "", recipe_titles),
+    )
+    list.filter(pd.planned_meals, fn(a) { a.for == for })
+    |> list.map(fn(a) {
       inner_input(pd.date, for, option.unwrap(a.title, ""), recipe_titles)
     })
-    |> result.unwrap(inner_input(pd.date, for, "", recipe_titles))
-
+    |> element.fragment
+  }
   div(
     [class("flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
@@ -709,62 +723,55 @@ fn decode_plan_day(d: Dynamic) -> Result(PlanDay, dynamic.DecodeErrors) {
   let decoder =
     dynamic.decode2(
       PlanDay,
-      dynamic.field("date", of: decode_stringed_day),
+      dynamic.field("date", of: decode_int_day),
       dynamic.field("planned_meals", of: decode_planned_meals),
     )
   decoder(d)
 }
 
-fn decode_stringed_day(d: Dynamic) -> Result(Date, dynamic.DecodeErrors) {
+fn decode_int_day(d: Dynamic) -> Result(Date, dynamic.DecodeErrors) {
+  let decoder = dynamic.int
+  decoder(d)
+  |> result.map(fn(a) { date.from_rata_die(a) })
+}
+
+fn decode_string_day(d: Dynamic) -> Result(Date, dynamic.DecodeErrors) {
   let decoder = dynamic.string
-  result.then(decoder(d), fn(a) {
-    a
-    |> date.from_iso_string
-    |> result.map_error(fn(_x) {
-      [dynamic.DecodeError("a stringed day", "something else", ["*"])]
-    })
-  })
+  decoder(d)
+  |> result.map(int.parse)
+  |> result.map(fn(a) { date.from_rata_die(result.unwrap(a, 0)) })
 }
 
 fn decode_planned_meals(
   d: Dynamic,
-) -> Result(Dict(Meal, PlannedMealWithStatus), dynamic.DecodeErrors) {
+) -> Result(List(PlannedMealWithStatus), dynamic.DecodeErrors) {
   let decoder =
-    dynamic.dict(
-      decipher.enum([#("lunch", Lunch), #("dinner", Dinner)]),
-      dynamic.decode3(
-        PlannedMealWithStatus,
-        dynamic.optional_field("title", dynamic.string),
-        dynamic.field(
-          "for",
-          decipher.enum([#("lunch", Lunch), #("dinner", Dinner)]),
-        ),
-        dynamic.optional_field("complete", decoders.stringed_bool),
+    dynamic.list(dynamic.decode3(
+      PlannedMealWithStatus,
+      dynamic.field(
+        "for",
+        decipher.enum([#("lunch", Lunch), #("dinner", Dinner)]),
       ),
-    )
-  decoder(d)
+      dynamic.optional_field("title", dynamic.string),
+      dynamic.optional_field("complete", decoders.stringed_bool),
+    ))
+  dynamic.string(d)
+  |> result.map(json.decode(_, decoder))
+  |> utils.result_unnest(utils.json_decodeerror_to_decodeerror)
 }
 
 fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {
   JsPlanDay(
-    date: date.to_iso_string(plan_day.date),
-    planned_meals: json_encode_planned_meals(plan_day.planned_meals),
+    date: date.to_rata_die(plan_day.date),
+    planned_meals: json.to_string(json_encode_planned_meals(
+      plan_day.planned_meals,
+    )),
   )
 }
 
-fn json_encode_planned_meals(dict: Dict(Meal, PlannedMealWithStatus)) -> Json {
-  dict
-  |> dict.to_list
-  |> list.map(fn(pair: #(Meal, PlannedMealWithStatus)) {
-    #(
-      case pair.0 {
-        Lunch -> "lunch"
-        Dinner -> "dinner"
-      },
-      json_encode_planned_meal_with_status(pair.1),
-    )
-  })
-  |> json.object
+fn json_encode_planned_meals(input: List(PlannedMealWithStatus)) -> Json {
+  input
+  |> json.array(of: json_encode_planned_meal_with_status)
 }
 
 fn json_encode_planned_meal_with_status(meal: PlannedMealWithStatus) -> Json {

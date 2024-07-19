@@ -2,6 +2,7 @@
     "compilerOptions": {
       // Enable latest features
       "lib": ["ESNext","DOM"],
+      "plugins": [{"name":"ts-gleam"}],
       "target": "ESNext",
       "module": "ESNext",
       "moduleDetection": "force",
@@ -22,6 +23,6 @@
       // Some stricter flags
       "noUnusedLocals": true,
       "noUnusedParameters": true,
-      "noPropertyAccessFromIndexSignature": true
+      "noPropertyAccessFromIndexSignature": false
     }
   }

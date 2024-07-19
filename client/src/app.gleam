@@ -36,6 +36,7 @@ pub fn main() {
   |> tardis.wrap(with: main)
   |> lustre.start("#app", Nil)
   |> tardis.activate(with: main)
+  main
 }
 
 fn init(_flags) -> #(Model, Effect(Msg)) {
@@ -47,8 +48,9 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
       planner: planner.Model(
         plan_week: dict.new(),
         recipe_list: [],
-        start_date: date.today(),
+        start_date: date.floor(date.today(), date.Monday),
       ),
+      import_url: ingest.ImportModel(url: ""),
     ),
     effect.batch([
       modem.init(on_route_change),
@@ -66,17 +68,23 @@ pub type Model {
     current_recipe: recipe.RecipeDetail,
     recipes: session.RecipeList,
     planner: planner.Model,
+    import_url: ingest.ImportModel,
   )
 }
 
 pub type Route {
   Home
   ViewRecipeDetail(slug: String)
-  EditRecipeDetail(slug: String)
+  EditRecipeDetail(RouteParams)
   ViewRecipeList
   ViewPlanner
   EditPlanner
   ImportRecipe
+}
+
+pub type RouteParams {
+  SlugParam(slug: String)
+  RecipeParam(recipe: session.Recipe)
 }
 
 pub type Msg {
@@ -106,10 +114,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       ),
       effect.none(),
     )
-    OnRouteChange(EditRecipeDetail(slug: "")) -> #(
+    OnRouteChange(EditRecipeDetail(SlugParam(slug: ""))) -> #(
       Model(
         ..model,
-        current_route: EditRecipeDetail(slug: ""),
+        current_route: EditRecipeDetail(SlugParam(slug: "")),
         current_recipe: Some(session.Recipe(
           None,
           "New Recipe",
@@ -126,11 +134,19 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       ),
       effect.map(session.get_tag_options(), RecipeList),
     )
-    OnRouteChange(EditRecipeDetail(slug: slug)) -> #(
+    OnRouteChange(EditRecipeDetail(SlugParam(slug: slug))) -> #(
       Model(
         ..model,
-        current_route: EditRecipeDetail(slug: slug),
+        current_route: EditRecipeDetail(SlugParam(slug: slug)),
         current_recipe: lookup_recipe_by_slug(model, slug),
+      ),
+      effect.none(),
+    )
+    OnRouteChange(EditRecipeDetail(RecipeParam(recipe: recipe))) -> #(
+      Model(
+        ..model,
+        current_route: EditRecipeDetail(RecipeParam(recipe: recipe)),
+        current_recipe: Some(recipe),
       ),
       effect.none(),
     )
@@ -186,9 +202,12 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(child_effect, RecipeDetail),
       )
     }
-    Planner(planner.DbSavedPlan) -> {
+    Planner(planner.DbSavedPlan(date)) -> {
       #(
-        model,
+        Model(
+          ..model,
+          planner: planner.Model(..model.planner, start_date: date),
+        ),
         // TODO: Better handle navigating in response to the updated data
         {
           use dispatch <- effect.from
@@ -201,9 +220,19 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         planner.planner_update(model.planner, planner_msg)
       #(Model(..model, planner: child_model), effect.map(child_effect, Planner))
     }
+    Import(ingest.ParsedRecipefromUrl(recipe)) -> {
+      #(Model(..model, current_recipe: Some(recipe)), {
+        use dispatch <- effect.from
+        OnRouteChange(EditRecipeDetail(RecipeParam(recipe))) |> dispatch
+      })
+    }
     Import(import_msg) -> {
-      let #(child_model, child_effect) = ingest.update(ingest.Model, import_msg)
-      #(model, effect.map(child_effect, Import))
+      let #(child_model, child_effect) =
+        ingest.update(model.import_url, import_msg)
+      #(
+        Model(..model, import_url: child_model),
+        effect.map(child_effect, Import),
+      )
     }
   }
 }
@@ -214,8 +243,9 @@ fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(session.Recipe) {
 
 fn on_route_change(uri: Uri) -> Msg {
   case uri.path_segments(uri.path) {
-    ["recipes", "new"] -> OnRouteChange(EditRecipeDetail(slug: ""))
-    ["recipes", slug, "edit"] -> OnRouteChange(EditRecipeDetail(slug: slug))
+    ["recipes", "new"] -> OnRouteChange(EditRecipeDetail(SlugParam(slug: "")))
+    ["recipes", slug, "edit"] ->
+      OnRouteChange(EditRecipeDetail(SlugParam(slug: slug)))
     ["recipes", slug] -> OnRouteChange(ViewRecipeDetail(slug: slug))
     ["recipes"] -> OnRouteChange(ViewRecipeList)
     ["planner", "edit"] -> OnRouteChange(EditPlanner)
@@ -237,12 +267,17 @@ fn view(model: Model) -> Element(Msg) {
         recipe.lookup_and_view_recipe(model.current_recipe),
         RecipeDetail,
       )
-    EditRecipeDetail(slug: _slug) ->
+    EditRecipeDetail(SlugParam(slug: _slug)) ->
       element.map(
         recipe.lookup_and_edit_recipe(
           model.current_recipe,
           model.recipes.tag_options,
         ),
+        RecipeDetail,
+      )
+    EditRecipeDetail(RecipeParam(recipe: recipe)) ->
+      element.map(
+        recipe.edit_recipe_detail(recipe, model.recipes.tag_options),
         RecipeDetail,
       )
     ViewPlanner ->
@@ -263,7 +298,8 @@ fn view(model: Model) -> Element(Msg) {
         )),
         Planner,
       )
-    ImportRecipe -> element.map(ingest.view(ingest.Model), Import)
+    ImportRecipe ->
+      element.map(ingest.view(ingest.ImportModel(model.import_url.url)), Import)
   }
   view_base(page)
 }

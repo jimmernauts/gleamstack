@@ -1,8 +1,11 @@
 import gleam/dict.{type Dict}
+import gleam/dynamic
 import gleam/int
+import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
+import gleam/result
 import lustre/effect.{type Effect}
 import plinth/javascript/global.{set_timeout}
 import rada/date.{type Date}
@@ -134,4 +137,43 @@ pub fn after(delay: Int, msg: msg) -> Effect(msg) {
   let _ = set_timeout(delay, fn() { dispatch(msg) })
 
   Nil
+}
+
+/// Flatten a result nested within another result, merging the errors.
+/// 
+/// Result(
+///      Result(List(PlannedMealWithStatus), gleam/json.DecodeError),
+///      List(DecodeError)
+pub fn result_unnest(
+  results: Result(Result(a, b), c),
+  transform_error: fn(b) -> c,
+) -> Result(a, c) {
+  results
+  |> result.map(fn(inner) { result.map_error(inner, transform_error) })
+  |> result.flatten
+}
+
+pub fn json_decodeerror_to_decodeerror(
+  input: json.DecodeError,
+) -> dynamic.DecodeErrors {
+  case input {
+    json.UnexpectedEndOfInput -> [
+      dynamic.DecodeError(
+        expected: "end of input",
+        found: "something else",
+        path: [""],
+      ),
+    ]
+    json.UnexpectedByte(a, b) -> [
+      dynamic.DecodeError(expected: "unexpected byte", found: a, path: [
+        int.to_string(b),
+      ]),
+    ]
+    json.UnexpectedSequence(a, b) -> [
+      dynamic.DecodeError(expected: "unexpected sequence", found: a, path: [
+        int.to_string(b),
+      ]),
+    ]
+    json.UnexpectedFormat(a) -> a
+  }
 }

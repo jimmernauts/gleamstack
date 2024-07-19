@@ -2,7 +2,6 @@ import { Ok, Error } from "./gleam.mjs";
 import { nanoid } from "nanoid";
 import type { Recipe, TagOption, PlanDay } from "./types.ts";
 import { seedDb } from "./seed.ts";
-import { CompressionType } from "@aws-sdk/client-s3";
 
 const sqliteWasm = await import("https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0");
 const sqlite = await sqliteWasm.default(

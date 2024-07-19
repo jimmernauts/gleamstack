@@ -44,7 +44,7 @@ pub fn get_recipes() -> Effect(RecipeListMsg) {
   Nil
 }
 
-@external(javascript, "./db.ts", "do_get_recipes")
+@external(javascript, "./db3.ts", "do_get_recipes")
 fn do_get_recipes() -> Promise(Array(Dynamic))
 
 pub fn get_tag_options() -> Effect(RecipeListMsg) {
@@ -59,7 +59,7 @@ pub fn get_tag_options() -> Effect(RecipeListMsg) {
   Nil
 }
 
-@external(javascript, "./db.ts", "do_get_tagoptions")
+@external(javascript, "./db3.ts", "do_get_tagoptions")
 fn do_get_tagoptions() -> Promise(Array(Dynamic))
 
 //-TYPES-------------------------------------------------------------

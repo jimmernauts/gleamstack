@@ -5,9 +5,9 @@ export type Recipe = {
 	cook_time: number;
 	prep_time: number;
 	serves: number;
-	ingredients?: Map<string,Ingredient>;
-	method_steps?: Map<string,MethodStep>;
-	tags?: Map<string,Tag>;
+	ingredients?: string;
+	method_steps?: string;
+	tags?: string;
 	shortlisted?: boolean;
 };
 
@@ -36,14 +36,17 @@ export type MethodStep = {
 };
 
 export type PlanDay = {
-	date: string;
+	date: number;
 	planned_meals: {
 		lunch: MealWithStatus;
 		dinner: MealWithStatus;
 	};
 }
 
+export type Meal = "lunch" | "dinner";
+
 export type MealWithStatus = {
-	title: string;
-	complete?: string;
+	for: Meal;
+	title?: string;
+	complete?: boolean;
 };

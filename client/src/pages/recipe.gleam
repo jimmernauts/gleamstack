@@ -83,7 +83,7 @@ fn save_recipe(recipe: session.Recipe) -> Effect(RecipeDetailMsg) {
   DbSavedUpdatedRecipe(recipe) |> dispatch
 }
 
-@external(javascript, ".././db.ts", "addOrUpdateRecipe")
+@external(javascript, ".././db3.ts", "do_save_recipe")
 fn do_save_recipe(recipe: JsRecipe) -> Nil
 
 type JsRecipe {

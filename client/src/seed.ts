@@ -1,6 +1,6 @@
 import { addOrUpdateRecipe, listRecipes, addTagOption, listTagOptions, prepareTables } from "./db.ts";
 
-const TagOptionSeed = [
+export const TagOptionSeed = [
   {
     name: "Cuisine",
     options: [
@@ -38,7 +38,7 @@ const TagOptionSeed = [
     ],
   },
 ];
-const RecipeSeed = [{
+export const RecipeSeed = [{
   title: "Pink potato salad",
   slug: 'pink-potato-salad',
   cook_time: 10,

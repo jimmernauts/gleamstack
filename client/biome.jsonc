@@ -5,6 +5,11 @@
     },
     "linter": {
       // Only the linter ignores the following files
-      "ignore": ["test/**"]
+      "ignore": ["test/**"],
+      "rules": {
+        "complexity":{
+          "useLiteralKeys": "off"
+        }
     }
   }
+}
