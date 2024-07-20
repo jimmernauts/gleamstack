@@ -14,7 +14,6 @@ import gleam/pair
 import gleam/result
 import gleam/string
 import justin.{kebab_case}
-import lib/decoders
 import lib/utils
 import lustre/attribute.{
   attribute, checked, class, disabled, for, href, id, name, placeholder,
@@ -72,11 +71,15 @@ fn save_recipe(recipe: session.Recipe) -> Effect(RecipeDetailMsg) {
       cook_time: recipe.cook_time,
       prep_time: recipe.prep_time,
       serves: recipe.serves,
-      tags: recipe.tags |> json.nullable(json_encode_tag_list),
+      tags: recipe.tags
+        |> json.nullable(session.json_encode_tag_list)
+        |> json.to_string,
       ingredients: recipe.ingredients
-        |> json.nullable(json_encode_ingredient_list),
+        |> json.nullable(session.json_encode_ingredient_list)
+        |> json.to_string,
       method_steps: recipe.method_steps
-        |> json.nullable(json_encode_method_step_list),
+        |> json.nullable(session.json_encode_method_step_list)
+        |> json.to_string,
     )
   use dispatch <- effect.from
   do_save_recipe(js_recipe)
@@ -94,9 +97,9 @@ type JsRecipe {
     cook_time: Int,
     prep_time: Int,
     serves: Int,
-    tags: Json,
-    ingredients: Json,
-    method_steps: Json,
+    tags: String,
+    ingredients: String,
+    method_steps: String,
   )
 }
 
@@ -1333,119 +1336,4 @@ fn method_step_input(index: Int, method_step: Option(MethodStep)) {
     ),
   ])
 }
-
 //-TYPES-------------------------------------------------------------
-
-//-ENCODERS-DECODERS----------------------------------------------
-
-fn json_encode_ingredient(ingredient: Ingredient) -> Json {
-  json.object([
-    #("name", json.string(option.unwrap(ingredient.name, ""))),
-    #("quantity", json.string(option.unwrap(ingredient.quantity, ""))),
-    #("units", json.string(option.unwrap(ingredient.units, ""))),
-    #(
-      "ismain",
-      json.string(bool.to_string(option.unwrap(ingredient.ismain, False))),
-    ),
-  ])
-}
-
-fn json_encode_ingredient_list(dict: Dict(Int, Ingredient)) -> Json {
-  dict
-  |> dict.to_list
-  |> list.map(fn(pair: #(Int, Ingredient)) {
-    #(int.to_string(pair.0), json_encode_ingredient(pair.1))
-  })
-  |> json.object
-}
-
-fn json_encode_method_step(method_step: MethodStep) -> Json {
-  json.object([#("step_text", json.string(method_step.step_text))])
-}
-
-fn json_encode_method_step_list(dict: Dict(Int, MethodStep)) -> Json {
-  dict
-  |> dict.to_list
-  |> list.map(fn(pair: #(Int, MethodStep)) {
-    #(int.to_string(pair.0), json_encode_method_step(pair.1))
-  })
-  |> json.object
-}
-
-fn json_encode_tag(tag: Tag) -> Json {
-  json.object([
-    #("name", json.string(tag.name)),
-    #("value", json.string(tag.value)),
-  ])
-}
-
-fn json_encode_tag_list(dict: Dict(Int, Tag)) -> Json {
-  dict
-  |> dict.to_list
-  |> list.map(fn(pair: #(Int, Tag)) {
-    #(int.to_string(pair.0), json_encode_tag(pair.1))
-  })
-  |> json.object
-}
-
-// fn json_encode_tag_option_list(tag_options: List(String)) -> Json {
-//  json.array(tag_options, json.string)
-//}
-
-pub fn decode_recipe(d: Dynamic) -> Result(Recipe, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode9(
-      Recipe,
-      optional_field("id", of: string),
-      field("title", of: string),
-      field("slug", of: string),
-      field("cook_time", of: int),
-      field("prep_time", of: int),
-      field("serves", of: int),
-      optional_field("tags", of: dict(decoders.stringed_int, decode_tag)),
-      optional_field(
-        "ingredients",
-        of: dict(decoders.stringed_int, decode_ingredient),
-      ),
-      optional_field(
-        "method_steps",
-        of: dict(decoders.stringed_int, decode_method_step),
-      ),
-    )
-  decoder(d)
-}
-
-fn decode_ingredient(d: Dynamic) -> Result(Ingredient, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode4(
-      Ingredient,
-      optional_field("name", of: string),
-      optional_field("ismain", of: decoders.stringed_bool),
-      optional_field("quantity", of: string),
-      optional_field("units", of: string),
-    )
-  decoder(d)
-}
-
-fn decode_tag(d: Dynamic) -> Result(Tag, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode2(Tag, field("name", of: string), field("value", of: string))
-  decoder(d)
-}
-
-fn decode_method_step(d: Dynamic) -> Result(MethodStep, dynamic.DecodeErrors) {
-  let decoder = dynamic.decode1(MethodStep, field("step_text", of: string))
-  decoder(d)
-}
-
-fn decode_tag_option(d: Dynamic) -> Result(TagOption, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode3(
-      TagOption,
-      optional_field("id", of: string),
-      field("name", of: string),
-      field("options", of: list(of: string)),
-    )
-  let f = decoder(d)
-  io.debug(f)
-}

@@ -14,7 +14,6 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
 import gleam/result
-import lib/decoders
 import lib/utils
 import lustre/attribute.{attribute, checked, class, href, id, style, type_}
 import lustre/effect.{type Effect}
@@ -24,6 +23,7 @@ import lustre/element/html.{
 }
 import lustre/event.{on_submit}
 import rada/date.{type Date}
+import session
 
 //-TYPES-------------------------------------------------------------
 
@@ -143,9 +143,7 @@ pub fn get_plan(start_date: Date) -> Effect(PlannerMsg) {
     date.to_rata_die(start_date),
     date.to_rata_die(date.add(start_date, 1, date.Weeks)),
   )
-  |> promise.map(io.debug)
   |> promise.map(dynamic.dict(decode_string_day, decode_plan_day))
-  |> promise.map(io.debug)
   |> promise.map(result.map(_, DbRetrievedPlan(_, start_date)))
   |> promise.tap(result.map(_, dispatch))
   Nil
@@ -158,12 +156,17 @@ pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {
   use dispatch <- effect.from
   do_save_plan(list.map(dict.values(planweek), encode_plan_day))
 
-  dict.keys(planweek)
-  |> list.sort(date.compare)
-  |> list.first
-  |> result.map(DbSavedPlan)
-  |> result.map(dispatch)
-  Nil
+  let first_day =
+    dict.keys(planweek)
+    |> list.sort(date.compare)
+    |> list.first
+  result.unwrap(first_day, date.today())
+  |> io.debug
+  // This is actually returning too quickly, because the db loops over each day in the plan within an await block
+  // so the outer function has already returned before the inner function can finish.
+  // Need to work out how to make the db call wait until all work is done before returning.
+  |> DbSavedPlan
+  |> dispatch
 }
 
 @external(javascript, ".././db3.ts", "do_save_plan")
@@ -753,7 +756,7 @@ fn decode_planned_meals(
         decipher.enum([#("lunch", Lunch), #("dinner", Dinner)]),
       ),
       dynamic.optional_field("title", dynamic.string),
-      dynamic.optional_field("complete", decoders.stringed_bool),
+      dynamic.optional_field("complete", session.decode_stringed_bool),
     ))
   dynamic.string(d)
   |> result.map(json.decode(_, decoder))

@@ -1,5 +1,5 @@
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Decoder}
+import gleam/dynamic.{type Decoder, type Dynamic}
 import gleam/int
 import gleam/io
 import gleam/json
@@ -7,7 +7,6 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import lib/decoders
 import lib/utils
 import lustre.{type App}
 import lustre/attribute.{type Attribute, attribute, class, id, name, value}
@@ -230,10 +229,7 @@ fn search_result(model: Model, res: String, index: Int) -> Element(Msg) {
         evt
         |> dynamic.field(
           "target",
-          dynamic.field(
-            "dataset",
-            dynamic.field("index", decoders.stringed_int),
-          ),
+          dynamic.field("dataset", dynamic.field("index", decode_stringed_int)),
         )
         |> result.map(UserHoveredOption)
       }),
@@ -241,10 +237,7 @@ fn search_result(model: Model, res: String, index: Int) -> Element(Msg) {
         evt
         |> dynamic.field(
           "target",
-          dynamic.field(
-            "dataset",
-            dynamic.field("index", decoders.stringed_int),
-          ),
+          dynamic.field("dataset", dynamic.field("index", decode_stringed_int)),
         )
         |> result.map(UserUnHoveredOption)
       }),
@@ -324,4 +317,31 @@ fn view(model: Model) -> Element(Msg) {
       },
     ),
   ])
+}
+
+pub fn decode_stringed_bool(d: Dynamic) -> Result(Bool, dynamic.DecodeErrors) {
+  dynamic.string(d)
+  |> result.map(fn(a) {
+    case a {
+      "True" -> True
+      "true" -> True
+      "1" -> True
+      _ -> False
+    }
+  })
+}
+
+pub fn decode_stringed_int(d: Dynamic) -> Result(Int, dynamic.DecodeErrors) {
+  let decoder = dynamic.string
+  decoder(d)
+  |> result.map(int.parse)
+  |> result.then(result.map_error(_, fn(_x) {
+    [
+      dynamic.DecodeError(
+        expected: "a stringed int",
+        found: "something else",
+        path: [""],
+      ),
+    ]
+  }))
 }

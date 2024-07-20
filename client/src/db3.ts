@@ -28,7 +28,20 @@ export async function do_get_tagoptions() {
 }
 
 export async function do_save_recipe(recipe: Recipe) {
-    const result = await client.insert('recipes', recipe)
+    //https://stackoverflow.com/questions/11704267/in-javascript-how-to-conditionally-add-a-member-to-an-object
+    const obj: Recipe = {
+        ...((recipe.id !== "" )? {id: recipe.id} : {}),
+        slug: recipe.slug,
+        title:recipe.title,
+        cook_time: recipe.cook_time,
+        prep_time: recipe.prep_time,
+        serves: recipe.serves,
+        tags: recipe.tags,
+        ingredients: recipe.ingredients,
+        method_steps: recipe.method_steps
+     }
+     console.log("do_save_recipe obj: ", obj);
+    const result = await client.insert('recipes', obj)
     return result;
 }
 
