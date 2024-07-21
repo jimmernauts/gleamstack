@@ -1,208 +1,65 @@
 import { Ok, Error } from "./gleam.mjs";
-import { nanoid } from "nanoid";
-import type { Recipe, TagOption, PlanDay } from "./types.ts";
-import { seedDb } from "./seed.ts";
+import { schema } from './schema.ts';
+import { TriplitClient } from "@triplit/client";
+import type { Recipe, PlanDay } from "./types.ts";
+ 
+export const client = new TriplitClient({
+    storage: 'indexeddb',
+    schema,
+    serverUrl: "https://912d44e1-48a6-46b7-b6b9-7bc0fcd59a81.triplit.io",
+    token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ4LXRyaXBsaXQtdG9rZW4tdHlwZSI6ImFub24iLCJ4LXRyaXBsaXQtcHJvamVjdC1pZCI6IjkxMmQ0NGUxLTQ4YTYtNDZiNy1iNmI5LTdiYzBmY2Q1OWE4MSIsImlhdCI6MTcyMTU2ODg2OX0.mLTejtnhczt5RxdYK1cnnNbeQ7vevO5z7oQD23MJA6AIfiyYS9S5F1il5PcCyLwJyObGomOJE9qIJbfwoHsBzs1QQEg3HOjgMBJAIRhbaWhOJn1BZZ8h2eaZWKpwBQuUpHi37-T0uTnABP7WUTZEFshHWEv5JlUYczehBvUFA8AulNjZDJJrJuEqHNgL3e0OaUZbstWArftiJpoR0htiZ7_HzFRHm5nivgsVO5zSBVeURM5Eygf67N6y6krLxK7jNHIjP0EbFu2DvC2nB9wrfjebChf-x6FRDFZpnMsrMuGn9-gWoyTapMjm-q4br1Sns7oIFbKKhJI1-9LzqifwYaflWrwLEroXvkoG9fJwJConmEPE9HWR20s_75wH7B7-g3ihgHP9I820qQ1WpWuVCF6xIIG3_RwDgt-T_b08HPMAQdo5H5fHxcxSeY-pSua1TUKFeDZjKNdtZhexWfHxAGJP9gKdS2sTY4pz43dRKvIahUGRsoQ5jOMv0jONsT2z8iMnXPsmOiyLZd36Ba6FKaltJBgpoM22GkdsMFd8OIYAa-ROjgKkF1ku2WX78V53AkdAEika26-zdNv3LAK1b40tebvt58imnmR2H2PPx62wAWgsXTTuMSVhm4dMDb1zeKGXOsQCHkNUw-DsgY-3bvj0-TMG8WPU3GPpvBIj_l8",
+    logLevel: 'debug'
+});
 
-const sqliteWasm = await import("https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0");
-const sqlite = await sqliteWasm.default(
-	() => "https://esm.sh/@vlcn.io/crsqlite-wasm@0.16.0/dist/crsqlite.wasm",
-);
-const db = await sqlite.open("mealstack.db");
-
-function replacer(key, value) {
-	if (value instanceof Map) {
-		return {
-			dataType: "Map",
-			value: Array.from(value.entries()), // or with spread: value: [...value]
-		};
-	}
-	return value;
-}
-function reviver(key, value) {
-	if (typeof value === "object" && value !== null) {
-		if (value.dataType === "Map") {
-			return new Map(value.value);
-		}
-	}
-	return value;
-}
-
-export async function prepareTables() {
-	const findTagOptionsTable = await db.execA(
-		"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='tag_options')",
-	);
-	const tagOptionsTableExists = findTagOptionsTable[0][0];
-	console.log("tagoptions table exists? ", tagOptionsTableExists);
-	if (!tagOptionsTableExists) {
-		console.log("creating tag_options table...");
-		await db.execA(
-			"CREATE TABLE `tag_options` ( \
-			`id` text PRIMARY KEY NOT NULL, \
-			`name` text NOT NULL, \
-			`options` text NOT NULL \
-		)",
-		);
-	}
-	const findRecipesTable = await db.execA(
-		"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='recipes')",
-	);
-	const recipesTableExists = findRecipesTable[0][0];
-	console.log("recipes table exists? ", recipesTableExists);
-	if (!recipesTableExists) {
-		console.log("creating recipes table...");
-		await db.execA(
-			"CREATE TABLE `recipes` ( \
-			`id` text PRIMARY KEY NOT NULL, \
-			`slug` text, \
-			`title` text, \
-			`cook_time` integer, \
-			`prep_time` integer, \
-			`serves` integer, \
-			`ingredients` text, \
-			`method_steps` text, \
-			`tags` text, \
-			`shortlisted` integer \
-		)",
-		);
-	}
-	const findPlanTable = await db.execA(
-		"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE `type`='table' AND `name`='plan')",
-	);
-	const planTableExists = findPlanTable[0][0];
-	console.log("plan Table exists? ", planTableExists);
-	if (!planTableExists) {
-		console.log("creating plan table...");
-		await db.execA(
-			"CREATE TABLE `plan` ( \
-			`date` date PRIMARY KEY NOT NULL, \
-			`planned_meals` text \
-		)",
-		);
-	}
-}
-
-export async function listTagOptions() {
-	const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM tag_options)");
-	const exists = findRows[0];
-	if (!exists) {
-		return new Ok([]);
-	}
-	const result = await db.execO("SELECT * FROM tag_options");
-	const mapped = result.map((x) => {
-		x.options = JSON.parse(x.options);
-		return x;
-	});
-	return mapped;
-}
-
-export async function addTagOption(tagOption: TagOption) {
-	console.log("addTagOption: ", tagOption);
-	const result = await db.execA(
-		`INSERT INTO tag_options (id, name, options) VALUES (
-			'${nanoid()}'
-			,'${tagOption.name}'
-			,'${JSON.stringify(tagOption.options)}'
-		)`,
-	);
-	console.log(result);
-	return result ? new Ok(result) : new Error(undefined);
-}
-
-export async function listRecipes() {
-	const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM recipes)");
-	const exists = findRows[0];
-	if (!exists) {
-		return new Ok([]);
-	}
-	const result = await db.execO(
-		"SELECT id, title, slug, prep_time, cook_time, serves, tags, ingredients, method_steps FROM recipes",
-	);
-	const mapped = result.map((recipe) => {
-		recipe.tags = JSON.parse(recipe.tags, reviver);
-		recipe.ingredients = JSON.parse(recipe.ingredients, reviver);
-		recipe.method_steps = JSON.parse(recipe.method_steps, reviver);
-		return recipe;
-	});
-	return mapped;
-}
-
-//TODO: either wrap all the ffi functions, or unwrap them
-export async function addOrUpdateRecipe(recipe: Recipe) {
-	console.log("addOrUpdateRecipe: ", recipe);
-	const query = ` \
-		INSERT INTO recipes \
-		(id, slug, title, cook_time, prep_time, serves, ingredients, method_steps, tags, shortlisted) \
-		 VALUES ('${recipe.id ? recipe.id : nanoid()}', '${recipe.slug}', '${
-				recipe.title
-			}', '${recipe.cook_time}',
-			'${recipe.prep_time}', '${recipe.serves}', '${JSON.stringify(
-				recipe.ingredients,
-				replacer,
-			)}',
-			'${JSON.stringify(recipe.method_steps, replacer)}', '${JSON.stringify(
-				recipe.tags,
-				replacer,
-			)}', '${recipe.shortlisted}') \
-		 ON CONFLICT(id) DO UPDATE SET\
-		 slug=excluded.slug, \
-		 title=excluded.title, \
-		 cook_time=excluded.cook_time, \
-		 prep_time=excluded.prep_time, \
-		 serves=excluded.serves, \
-		 ingredients=excluded.ingredients, \
-		 method_steps=excluded.method_steps, \
-		 tags=excluded.tags, \
-		 shortlisted=excluded.shortlisted;`;
-	const result = await db.execA(query);
-	return new Ok();
-}
+if (typeof window !== 'undefined') window.client = client;
 
 export async function do_get_recipes() {
-	const _seed = await seedDb();
-	const result = await listRecipes();
-	console.log("recipe result from ffi: ", result);
+    const query = client.query('recipes').build(); 
+    const result = await client.fetch(query)
+	console.log("do_get_recipes result: ", result);
 	return result;
 }
 
 export async function do_get_tagoptions() {
-	const result = await listTagOptions();
-	console.log("tagoption result from ffi: ", result);
+    const query = client.query('tag_options').build(); 
+    const result = await client.fetch(query)
+	console.log("do_get_tag_options result: ", result);
 	return result;
 }
 
-export async function do_get_plan(startDate) {
-	console.log("do_get_plan");
-	const _seed = await seedDb();
-	const findRows = await db.execO("SELECT EXISTS(SELECT 1 FROM plan)");
-	const exists = findRows[0];
-	if (!exists) {
-		return new Ok([]);
-	}
-	const input = startDate ? startDate : `'now'`;
-	const query = `SELECT date,planned_meals FROM plan WHERE date >= DATE('${input}','localtime','weekday 0','-6 days') AND date <= DATE('${input}','localtime','weekday 0')`
-	console.log("query: ", query);
-	const result = await db.execO(
-		query
-	);
-	console.log("result: ", result);
-	const mapped = result.map((day) => {
-		day.planned_meals = JSON.parse(day.planned_meals);
-		return day;
-	});
-	return result;
+export async function do_save_recipe(recipe: Recipe) {
+    //https://stackoverflow.com/questions/11704267/in-javascript-how-to-conditionally-add-a-member-to-an-object
+    const obj: Recipe = {
+        ...((recipe.id !== "" )? {id: recipe.id} : {}),
+        slug: recipe.slug,
+        title:recipe.title,
+        cook_time: recipe.cook_time,
+        prep_time: recipe.prep_time,
+        serves: recipe.serves,
+        tags: recipe.tags,
+        ingredients: recipe.ingredients,
+        method_steps: recipe.method_steps
+     }
+     console.log("do_save_recipe obj: ", obj);
+    const result = await client.insert('recipes', obj)
+    return result;
+}
+
+export async function do_get_plan(startDate: number, endDate: number) {
+    console.log(client)
+    const query = client.query('plan').where([['date','>=',startDate],['date','<=',endDate]]).build(); 
+    const result = await client.fetch(query, { policy: 'local-and-remote'})
+	console.log("do_get_plan result: ", result);
+	return result
 }
 
 export async function do_save_plan(plan: PlanDay[]) {
-	console.log("do_save_plan: ", plan);
-	for (const day of plan) {
-		const result = await db.execO(`
-			INSERT INTO plan \
-			(date,planned_meals) \
-			VALUES ('${day.date}','${JSON.stringify(day.planned_meals)}') \
-			ON CONFLICT(date) DO UPDATE SET \
-			planned_meals = excluded.planned_meals \
-			`);
-		console.log("inserted planday: ", result);
-	}
-	return new Ok();
+    await client.transact(async (tx) => {
+    for (const day of plan) {
+        console.log("do_save_plan day: ", { id: day.date.toString(), ...day });
+        const result = await tx.insert('plan', { id: day.date.toString(), ...day })
+        console.log("do_save_plan result: ", result);
+    }
+})
+    return plan
 }

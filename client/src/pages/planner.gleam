@@ -159,7 +159,7 @@ pub fn get_plan(start_date: Date) -> Effect(PlannerMsg) {
   Nil
 }
 
-@external(javascript, ".././db3.ts", "do_get_plan")
+@external(javascript, ".././db.ts", "do_get_plan")
 fn do_get_plan(start_date: Int, end_date: Int) -> Promise(Dynamic)
 
 pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {
@@ -175,7 +175,7 @@ pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {
   |> dispatch
 }
 
-@external(javascript, ".././db3.ts", "do_save_plan")
+@external(javascript, ".././db.ts", "do_save_plan")
 fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 
 //-VIEWS-------------------------------------------------------------
