@@ -54,10 +54,12 @@ export async function do_get_plan(startDate: number, endDate: number) {
 }
 
 export async function do_save_plan(plan: PlanDay[]) {
+    await client.transact(async (tx) => {
     for (const day of plan) {
         console.log("do_save_plan day: ", { id: day.date.toString(), ...day });
-        const result = await client.insert('plan', { id: day.date.toString(), ...day })
+        const result = await tx.insert('plan', { id: day.date.toString(), ...day })
         console.log("do_save_plan result: ", result);
     }
+})
     return plan
 }

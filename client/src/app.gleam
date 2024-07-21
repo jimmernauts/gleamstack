@@ -1,6 +1,7 @@
 import components/page_title.{page_title}
 import components/typeahead
 import gleam/dict
+import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/uri.{type Uri, Uri}
@@ -77,8 +78,8 @@ pub type Route {
   ViewRecipeDetail(slug: String)
   EditRecipeDetail(RouteParams)
   ViewRecipeList
-  ViewPlanner
-  EditPlanner
+  ViewPlanner(start_date: date.Date)
+  EditPlanner(start_date: date.Date)
   ImportRecipe
 }
 
@@ -98,6 +99,7 @@ pub type Msg {
 // UPDATE ----------------------------------------------------------------------
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
+  io.debug(msg)
   case msg {
     OnRouteChange(ViewRecipeList) -> #(
       Model(..model, current_route: ViewRecipeList),
@@ -150,15 +152,12 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       ),
       effect.none(),
     )
-    OnRouteChange(ViewPlanner) -> #(
-      Model(..model, current_route: ViewPlanner),
-      effect.map(
-        planner.get_plan(date.floor(date.today(), date.Monday)),
-        Planner,
-      ),
+    OnRouteChange(ViewPlanner(start_date)) -> #(
+      Model(..model, current_route: ViewPlanner(start_date)),
+      effect.map(planner.get_plan(date.floor(start_date, date.Monday)), Planner),
     )
-    OnRouteChange(EditPlanner) -> #(
-      Model(..model, current_route: EditPlanner),
+    OnRouteChange(EditPlanner(start_date)) -> #(
+      Model(..model, current_route: EditPlanner(start_date)),
       effect.none(),
     )
     OnRouteChange(route) -> #(
@@ -202,17 +201,27 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(child_effect, RecipeDetail),
       )
     }
-    Planner(planner.DbSavedPlan(date)) -> {
+    // Planner(planner.DbSavedPlan(date)) -> {
+    //   #(
+    //     Model(
+    //       ..model,
+    //       planner: planner.Model(..model.planner, start_date: date),
+    //     ),
+    //     // TODO: Better handle navigating in response to the updated data
+    //     {
+    //       use dispatch <- effect.from
+    //       OnRouteChange(ViewPlanner(date)) |> dispatch
+    //     },
+    //   )
+    // }
+    Planner(planner.DbRetrievedPlan(plan_week, start_date)) -> {
       #(
         Model(
           ..model,
-          planner: planner.Model(..model.planner, start_date: date),
+          current_route: ViewPlanner(start_date),
+          planner: planner.Model(..model.planner, plan_week: plan_week),
         ),
-        // TODO: Better handle navigating in response to the updated data
-        {
-          use dispatch <- effect.from
-          OnRouteChange(ViewPlanner) |> dispatch
-        },
+        effect.none(),
       )
     }
     Planner(planner_msg) -> {
@@ -248,8 +257,8 @@ fn on_route_change(uri: Uri) -> Msg {
       OnRouteChange(EditRecipeDetail(SlugParam(slug: slug)))
     ["recipes", slug] -> OnRouteChange(ViewRecipeDetail(slug: slug))
     ["recipes"] -> OnRouteChange(ViewRecipeList)
-    ["planner", "edit"] -> OnRouteChange(EditPlanner)
-    ["planner"] -> OnRouteChange(ViewPlanner)
+    ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
+    ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
     ["import"] -> OnRouteChange(ImportRecipe)
     _ -> OnRouteChange(Home)
   }
@@ -280,21 +289,21 @@ fn view(model: Model) -> Element(Msg) {
         recipe.edit_recipe_detail(recipe, model.recipes.tag_options),
         RecipeDetail,
       )
-    ViewPlanner ->
+    ViewPlanner(start_date) ->
       element.map(
         planner.view_planner(planner.Model(
           plan_week: model.planner.plan_week,
           recipe_list: list.map(model.recipes.recipes, fn(a) { a.title }),
-          start_date: model.planner.start_date,
+          start_date: start_date,
         )),
         Planner,
       )
-    EditPlanner ->
+    EditPlanner(start_date) ->
       element.map(
         planner.edit_planner(planner.Model(
           plan_week: model.planner.plan_week,
           recipe_list: list.map(model.recipes.recipes, fn(a) { a.title }),
-          start_date: model.planner.start_date,
+          start_date: start_date,
         )),
         Planner,
       )

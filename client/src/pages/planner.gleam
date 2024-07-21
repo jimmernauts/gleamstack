@@ -44,7 +44,8 @@ pub type PlannedMealWithStatus {
 }
 
 pub type PlannerMsg {
-  UserUpdatedPlanMeal(Date, Meal, Option(String), Option(Bool))
+  UserUpdatedMealTitle(Date, Meal, String)
+  UserToggledMealComplete(Date, Meal, Bool)
   UserFetchedPlan(Date)
   DbRetrievedPlan(PlanWeek, Date)
   DbSavedPlan(Date)
@@ -65,43 +66,52 @@ pub type Meal {
 
 //-UPDATE---------------------------------------------
 
-fn update_plan_week(
+fn update_meal_title_in_plan(
   current: PlanWeek,
   date: Date,
   meal: Meal,
-  value: Option(String),
-  complete: Option(Bool),
+  value: String,
 ) -> PlanWeek {
   dict.upsert(current, date, fn(a) {
     PlanDay(date: date, planned_meals: case a {
       Some(a) ->
         case value {
-          Some("") ->
+          "" ->
             a.planned_meals
             |> list.filter(fn(a) { a.for != meal })
           _ ->
             a.planned_meals
-            |> list.pop(fn(a) { a.for == meal })
-            |> result.map(fn(tuple) {
-              let #(found, rest) = tuple
-              list.append(
-                [
-                  PlannedMealWithStatus(
-                    for: meal,
-                    title: option.or(value, found.title),
-                    complete: option.or(complete, found.complete),
-                  ),
-                ],
-                rest,
-              )
+            |> list.map(fn(b) {
+              case b.for == meal {
+                True -> PlannedMealWithStatus(..b, title: Some(value))
+                False -> b
+              }
             })
-            |> result.unwrap([
-              PlannedMealWithStatus(for: meal, title: value, complete: complete),
-            ])
         }
-
-      _ -> [PlannedMealWithStatus(for: meal, title: value, complete: complete)]
+      None -> [
+        PlannedMealWithStatus(for: meal, title: Some(value), complete: None),
+      ]
     })
+  })
+}
+
+fn toggle_meal_complete_in_plan(
+  current: PlanWeek,
+  date: Date,
+  meal: Meal,
+  complete: Bool,
+) -> PlanWeek {
+  utils.dict_update(current, date, fn(a) {
+    PlanDay(
+      date: date,
+      planned_meals: a.planned_meals
+        |> list.map(fn(b) {
+          case b.for == meal {
+            True -> PlannedMealWithStatus(..b, complete: Some(complete))
+            False -> b
+          }
+        }),
+    )
   })
 }
 
@@ -111,13 +121,15 @@ pub fn planner_update(
 ) -> #(Model, Effect(PlannerMsg)) {
   io.debug(msg)
   case msg {
-    UserUpdatedPlanMeal(date, meal, value, complete) -> {
+    //TODO: have a separate event handler for the checkboxes that operates on the individual mealday, not the whole week
+    UserUpdatedMealTitle(date, meal, value) -> {
+      let result = update_meal_title_in_plan(model.plan_week, date, meal, value)
+      #(Model(..model, plan_week: result), effect.none())
+    }
+    UserToggledMealComplete(date, meal, complete) -> {
       let result =
-        update_plan_week(model.plan_week, date, meal, value, complete)
-      #(Model(..model, plan_week: result), case complete {
-        Some(_) -> save_plan(result)
-        _ -> effect.none()
-      })
+        toggle_meal_complete_in_plan(model.plan_week, date, meal, complete)
+      #(Model(..model, plan_week: result), save_plan(result))
     }
     UserSavedPlan -> {
       #(model, save_plan(model.plan_week))
@@ -125,11 +137,9 @@ pub fn planner_update(
     UserFetchedPlan(date) -> {
       #(Model(..model, start_date: date), get_plan(date))
     }
-    DbRetrievedPlan(plan_week, start_date) -> {
-      #(
-        Model(..model, start_date: start_date, plan_week: plan_week),
-        effect.none(),
-      )
+    //DbRetrievedPlan is handled in the layer above in app.gleam
+    DbRetrievedPlan(_plan_week, _start_date) -> {
+      #(model, effect.none())
     }
     DbSavedPlan(_date) -> {
       #(model, effect.none())
@@ -161,10 +171,6 @@ pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {
     |> list.sort(date.compare)
     |> list.first
   result.unwrap(first_day, date.today())
-  |> io.debug
-  // This is actually returning too quickly, because the db loops over each day in the plan within an await block
-  // so the outer function has already returned before the inner function can finish.
-  // Need to work out how to make the db call wait until all work is done before returning.
   |> DbSavedPlan
   |> dispatch
 }
@@ -648,9 +654,7 @@ fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
       div([class("flex justify-end place-self-start sm:mx-2")], [
         input([
           type_("checkbox"),
-          event.on_check(fn(a) {
-            UserUpdatedPlanMeal(date, meal.for, None, Some(a))
-          }),
+          event.on_check(fn(a) { UserToggledMealComplete(date, meal.for, a) }),
           checked(option.unwrap(meal.complete, False)),
         ]),
       ]),
@@ -713,7 +717,7 @@ fn inner_input(
         event.on("typeahead-change", fn(target) {
           target
           |> dynamic.field("detail", dynamic.string)
-          |> result.map(fn(a) { UserUpdatedPlanMeal(date, for, Some(a), None) })
+          |> result.map(fn(a) { UserUpdatedMealTitle(date, for, a) })
         }),
       ]),
     ],
