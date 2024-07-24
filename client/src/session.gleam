@@ -39,9 +39,7 @@ pub fn merge_recipe_into_model(recipe: Recipe, model: RecipeList) -> RecipeList 
 pub fn get_recipes() -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
   do_get_recipes()
-  |> promise.map(io.debug)
   |> promise.map(dynamic.dict(dynamic.string, decode_recipe))
-  |> promise.map(io.debug)
   |> promise.map(result.map(_, dict.values))
   |> promise.map(result.map(_, DbRetrievedRecipes))
   |> promise.tap(result.map(_, dispatch))
@@ -54,6 +52,7 @@ fn do_get_recipes() -> Promise(Dynamic)
 pub fn get_tag_options() -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
   do_get_tagoptions()
+  |> promise.map(io.debug)
   |> promise.map(dynamic.dict(dynamic.string, decode_tag_option))
   |> promise.map(result.map(_, dict.values))
   |> promise.map(result.map(_, DbRetrievedTagOptions))
@@ -222,15 +221,19 @@ fn decode_method_steps(
 }
 
 fn decode_tag_option(d: Dynamic) -> Result(TagOption, dynamic.DecodeErrors) {
+  let options_decoder = fn(d) {
+    dynamic.string(d)
+    |> result.map(json.decode(_, dynamic.list(of: dynamic.string)))
+    |> utils.result_unnest(utils.json_decodeerror_to_decodeerror)
+  }
   let decoder =
     dynamic.decode3(
       TagOption,
       optional_field("id", of: string),
       field("name", of: string),
-      field("options", of: list(of: string)),
+      field("options", of: options_decoder),
     )
-  let f = decoder(d)
-  io.debug(f)
+  decoder(d)
 }
 
 pub fn decode_stringed_bool(d: Dynamic) -> Result(Bool, dynamic.DecodeErrors) {

@@ -23,7 +23,7 @@ export async function do_get_recipes() {
 export async function do_get_tagoptions() {
     const query = client.query('tag_options').build(); 
     const result = await client.fetch(query)
-	console.log("do_get_tag_options result: ", result);
+	console.log("do_get_tagoptions result: ", result);
 	return result;
 }
 
