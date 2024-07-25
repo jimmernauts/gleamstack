@@ -4,6 +4,7 @@ import gleam/dict
 import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/uri.{type Uri, Uri}
 import lustre
 import lustre/attribute.{class, href}
@@ -41,9 +42,18 @@ pub fn main() {
 }
 
 fn init(_flags) -> #(Model, Effect(Msg)) {
+  let initial_route =
+    modem.initial_uri()
+    |> result.map(on_route_change)
+    |> result.map(fn(x) {
+      case x {
+        OnRouteChange(route) -> route
+        _ -> Home
+      }
+    })
   #(
     Model(
-      current_route: Home,
+      current_route: result.unwrap(initial_route, Home),
       current_recipe: None,
       recipes: session.RecipeList(recipes: [], tag_options: []),
       planner: planner.Model(
@@ -251,16 +261,35 @@ fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(session.Recipe) {
 }
 
 fn on_route_change(uri: Uri) -> Msg {
-  case uri.path_segments(uri.path) {
-    ["recipes", "new"] -> OnRouteChange(EditRecipeDetail(SlugParam(slug: "")))
-    ["recipes", slug, "edit"] ->
+  case uri.query, uri.path_segments(uri.path) {
+    Some(query), ["planner", "edit"] -> {
+      case uri.parse_query(query) {
+        Ok([#("date", v)]) ->
+          OnRouteChange(
+            EditPlanner(result.unwrap(date.from_iso_string(v), date.today())),
+          )
+        _ -> OnRouteChange(EditPlanner(date.today()))
+      }
+    }
+    Some(query), ["planner"] -> {
+      case uri.parse_query(query) {
+        Ok([#("date", v)]) ->
+          OnRouteChange(
+            ViewPlanner(result.unwrap(date.from_iso_string(v), date.today())),
+          )
+        _ -> OnRouteChange(EditPlanner(date.today()))
+      }
+    }
+    _, ["recipes", "new"] ->
+      OnRouteChange(EditRecipeDetail(SlugParam(slug: "")))
+    _, ["recipes", slug, "edit"] ->
       OnRouteChange(EditRecipeDetail(SlugParam(slug: slug)))
-    ["recipes", slug] -> OnRouteChange(ViewRecipeDetail(slug: slug))
-    ["recipes"] -> OnRouteChange(ViewRecipeList)
-    ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
-    ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
-    ["import"] -> OnRouteChange(ImportRecipe)
-    _ -> OnRouteChange(Home)
+    _, ["recipes", slug] -> OnRouteChange(ViewRecipeDetail(slug: slug))
+    _, ["recipes"] -> OnRouteChange(ViewRecipeList)
+    _, ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
+    _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
+    _, ["import"] -> OnRouteChange(ImportRecipe)
+    _, _ -> OnRouteChange(Home)
   }
 }
 
@@ -323,7 +352,8 @@ fn view_base(children) {
     lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_85ch_[main-end]_3fr_[full-end]_1fr_[end]]
     md:grid-cols-[[start_full-start]_1fr_[main-start]_70ch_[main-end]_1fr_[full-end_end]]
     grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
-    min-h-[90vh]",
+    min-h-[90vh]
+    bg-ecru-white-50  text-ecru-white-950 font-old-style text-lg",
       ),
     ],
     [children],

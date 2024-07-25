@@ -1,5 +1,5 @@
 export default {
-    content: ['./src/**/*.{astro,gleam,html,js,jsx,md,mdx,svelte,ts,tsx,vue}','./src/*.{astro,gleam,html,js,jsx,md,mdx,svelte,ts,tsx,vue}','./priv/index.html'],
+    content: ['./src/**/*.{astro,gleam,html,js,jsx,md,mdx,svelte,ts,tsx,vue}','./src/*.{astro,gleam,html,js,jsx,md,mdx,svelte,ts,tsx,vue}','./priv/index.html','./index.html'],
     theme: {
         extend: {
             screens:{
@@ -144,7 +144,6 @@ export default {
           }),
         ({ addComponents, addUtilities }) => {
             addComponents({
-
                 '.wrapper': {
                     display: 'grid',
                     'grid-template-columns': '1fr min(85ch, 100%) 1fr',
@@ -293,8 +292,8 @@ export default {
                 '.font-transitional':{
                     'font-family':"Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif"
                 },
-                '.font-old-style':{
-                    'font-family':"'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif"
+                '.font-old-style ':{
+                    'font-family':" 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif"
                 },
                 '.font-mono':{
                     'font-family':"ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace"

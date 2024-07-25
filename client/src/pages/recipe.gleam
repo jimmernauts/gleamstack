@@ -584,10 +584,9 @@ pub fn edit_recipe_detail(
           fieldset(
             [class("flex flex-wrap justify-between items-baseline mb-2")],
             [
-              label(
-                [class("justify-self-start font-mono italic"), for("prep_time")],
-                [text("Prep:")],
-              ),
+              label([class("justify-self-start font-mono "), for("prep_time")], [
+                text("Prep:"),
+              ]),
               div([class("justify-self-start")], [
                 div(
                   [class("after:content-['h'] after:text-base inline-block")],
@@ -635,10 +634,9 @@ pub fn edit_recipe_detail(
           fieldset(
             [class("flex flex-wrap justify-between items-baseline mb-2")],
             [
-              label(
-                [class("justify-self-start font-mono italic"), for("prep_time")],
-                [text("Cook:")],
-              ),
+              label([class("justify-self-start font-mono "), for("prep_time")], [
+                text("Cook:"),
+              ]),
               div([class("justify-self-start")], [
                 div(
                   [class("after:content-['h'] after:text-base inline-block")],
@@ -686,10 +684,9 @@ pub fn edit_recipe_detail(
           fieldset(
             [class("flex flex-wrap justify-between items-baseline mb-2")],
             [
-              label(
-                [class("justify-self-start font-mono italic"), for("serves")],
-                [text("Serves:")],
-              ),
+              label([class("justify-self-start font-mono "), for("serves")], [
+                text("Serves:"),
+              ]),
               input([
                 id("serves"),
                 class(
@@ -752,7 +749,7 @@ pub fn edit_recipe_detail(
           ),
         ],
         [
-          legend([class("mx-2 px-1 font-mono italic")], [text("Ingredients")]),
+          legend([class("mx-2 px-1 font-mono ")], [text("Ingredients")]),
           case recipe.ingredients {
             Some(ings) -> {
               let children =
@@ -780,7 +777,7 @@ pub fn edit_recipe_detail(
           ),
         ],
         [
-          legend([class("mx-2 px-1 font-mono italic")], [text("Method")]),
+          legend([class("mx-2 px-1 font-mono ")], [text("Method")]),
           case recipe.method_steps {
             Some(steps) -> {
               let children =
@@ -824,9 +821,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
           fieldset(
             [class("flex flex-wrap justify-between items-baseline mb-2")],
             [
-              label([for("prep_time"), class("font-mono italic")], [
-                text("Prep:"),
-              ]),
+              label([for("prep_time"), class("font-mono ")], [text("Prep:")]),
               div([class("text-base")], [
                 text(
                   case recipe.prep_time > 59 {
@@ -848,9 +843,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
           fieldset(
             [class("flex flex-wrap justify-between items-baseline mb-2")],
             [
-              label([for("cook_time"), class("font-mono italic")], [
-                text("Cook:"),
-              ]),
+              label([for("cook_time"), class("font-mono ")], [text("Cook:")]),
               div([class("text-base")], [
                 text(
                   case recipe.cook_time > 59 {
@@ -872,9 +865,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
           fieldset(
             [class("flex flex-wrap justify-between items-baseline mb-2")],
             [
-              label([for("cook_time"), class("font-mono italic")], [
-                text("Serves:"),
-              ]),
+              label([for("cook_time"), class("font-mono ")], [text("Serves:")]),
               div([class("mr-2 sm:mr-4 text-base")], [
                 text(int.to_string(recipe.serves)),
               ]),
@@ -927,9 +918,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
           ),
         ],
         [
-          legend([class("mx-2 px-1 text-lg font-mono italic")], [
-            text("Ingredients"),
-          ]),
+          legend([class("mx-2 px-1 text-lg font-mono ")], [text("Ingredients")]),
           case recipe.ingredients {
             Some(ings) -> {
               let children =
@@ -957,7 +946,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
           ),
         ],
         [
-          legend([class("mx-2 px-1 font-mono italic")], [text("Method")]),
+          legend([class("mx-2 px-1 font-mono ")], [text("Method")]),
           ol(
             [
               class(

@@ -121,7 +121,6 @@ pub fn planner_update(
 ) -> #(Model, Effect(PlannerMsg)) {
   io.debug(msg)
   case msg {
-    //TODO: have a separate event handler for the checkboxes that operates on the individual mealday, not the whole week
     UserUpdatedMealTitle(date, meal, value) -> {
       let result = update_meal_title_in_plan(model.plan_week, date, meal, value)
       #(Model(..model, plan_week: result), effect.none())
@@ -236,22 +235,27 @@ pub fn view_planner(model: Model) {
             a([href("/"), class("text-center")], [text("🏠")]),
             a([href("/planner/edit"), class("text-center")], [text("✏️")]),
             div([class("flex flex-row justify-evenly px-1")], [
-              button(
+              a(
                 [
-                  class("text-center"),
-                  event.on_click(
-                    UserFetchedPlan(date.add(start_of_week, -1, date.Weeks)),
+                  href(
+                    "/planner?date="
+                    <> date.to_iso_string(date.add(
+                      start_of_week,
+                      -1,
+                      date.Weeks,
+                    )),
                   ),
+                  class("text-center"),
                 ],
                 [text("⬅️")],
               ),
-              button(
+              a(
                 [
-                  type_("button"),
-                  class("text-center"),
-                  event.on_click(
-                    UserFetchedPlan(date.add(start_of_week, 1, date.Weeks)),
+                  href(
+                    "/planner?date="
+                    <> date.to_iso_string(date.add(start_of_week, 1, date.Weeks)),
                   ),
+                  class("text-center"),
                 ],
                 [text("➡️")],
               ),
@@ -346,11 +350,39 @@ pub fn edit_planner(model: Model) {
           ],
           [
             a([href("/"), class("text-center")], [text("🏠")]),
-            a([href("/planner/"), class("text-center")], [text("❎")]),
-            button(
-              [type_("submit"), attribute("form", "active-week"), class("")],
-              [text("💾")],
-            ),
+            div([class("flex flex-row justify-evenly px-1")], [
+              a([href("/planner/"), class("text-center")], [text("❎")]),
+              button(
+                [type_("submit"), attribute("form", "active-week"), class("")],
+                [text("💾")],
+              ),
+            ]),
+            div([class("flex flex-row justify-evenly px-1")], [
+              a(
+                [
+                  href(
+                    "/planner/edit?date="
+                    <> date.to_iso_string(date.add(
+                      start_of_week,
+                      -1,
+                      date.Weeks,
+                    )),
+                  ),
+                  class("text-center"),
+                ],
+                [text("⬅️")],
+              ),
+              a(
+                [
+                  href(
+                    "/planner/edit?date="
+                    <> date.to_iso_string(date.add(start_of_week, 1, date.Weeks)),
+                  ),
+                  class("text-center"),
+                ],
+                [text("➡️")],
+              ),
+            ]),
           ],
         ),
       ],
@@ -443,7 +475,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               "md:row-start-2 md:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50",
             ),
           ],
-          [h2([class("mx-2")], [text("Lunch")])],
+          [h2([class("mx-2 ")], [text("Lunch")])],
         ),
         div(
           [
@@ -451,7 +483,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               "md:row-start-3 md:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50",
             ),
           ],
-          [h2([class("mx-2")], [text("Dinner")])],
+          [h2([class("mx-2 ")], [text("Dinner")])],
         ),
       ],
     ),
@@ -469,7 +501,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longMon", "'Monday " <> monday <> "'"),
             ]),
             class(
-              "text-center before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]",
+              "text-center  before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]",
             ),
           ],
           [],
@@ -490,7 +522,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longTue", "'Tuesday " <> tuesday <> "'"),
             ]),
             class(
-              "text-center before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]",
+              "text-center  before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]",
             ),
           ],
           [],
@@ -511,7 +543,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longWed", "'Wednesday " <> wednesday <> "'"),
             ]),
             class(
-              "text-center before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]",
+              "text-center  before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]",
             ),
           ],
           [],
@@ -532,7 +564,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longThu", "'Thursday " <> thursday <> "'"),
             ]),
             class(
-              "text-center before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]",
+              "text-center  before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]",
             ),
           ],
           [],
@@ -553,7 +585,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longFri", "'Friday " <> friday <> "'"),
             ]),
             class(
-              "text-center before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]",
+              "text-center  before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]",
             ),
           ],
           [],
@@ -574,7 +606,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longSat", "'Saturday " <> saturday <> "'"),
             ]),
             class(
-              "text-center before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]",
+              "text-center  before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]",
             ),
           ],
           [],
@@ -595,7 +627,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longSun", "'Sunday " <> sunday <> "'"),
             ]),
             class(
-              "text-center before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]",
+              "text-center  before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]",
             ),
           ],
           [],
@@ -638,7 +670,7 @@ fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
     [
       h2(
         [
-          class("font-transitional text-xl text-wrap"),
+          class("text-xl text-wrap"),
           style([
             #("text-decoration", {
               use <- bool.guard(
