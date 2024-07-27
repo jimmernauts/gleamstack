@@ -6,7 +6,7 @@ import lustre/attribute.{attribute, class, href, id, name, type_, value}
 import lustre/effect.{type Effect}
 import lustre/element
 import lustre/element/html.{
-  a, button, div, fieldset, form, input, legend, nav, section, span, text,
+  a, button, div, fieldset, form, input, legend, nav, section, text,
 }
 import lustre/event.{on_input}
 import session

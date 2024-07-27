@@ -1,3 +1,4 @@
+import decode
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{
@@ -5,7 +6,6 @@ import gleam/dynamic.{
 }
 import gleam/int
 import gleam/io
-import gleam/javascript/array.{type Array}
 import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
@@ -40,6 +40,7 @@ pub fn get_recipes() -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
   do_get_recipes()
   |> promise.map(dynamic.dict(dynamic.string, decode_recipe))
+  |> promise.map(io.debug)
   |> promise.map(result.map(_, dict.values))
   |> promise.map(result.map(_, DbRetrievedRecipes))
   |> promise.tap(result.map(_, dispatch))
@@ -73,9 +74,12 @@ pub type Recipe {
     cook_time: Int,
     prep_time: Int,
     serves: Int,
+    author: Option(String),
+    source: Option(String),
     tags: Option(Dict(Int, Tag)),
     ingredients: Option(Dict(Int, Ingredient)),
     method_steps: Option(Dict(Int, MethodStep)),
+    shortlisted: Option(Bool),
   )
 }
 
@@ -157,67 +161,97 @@ pub fn json_encode_tag_list(dict: Dict(Int, Tag)) -> Json {
 //}
 
 pub fn decode_recipe(d: Dynamic) -> Result(Recipe, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode9(
-      Recipe,
-      optional_field("id", of: string),
-      field("title", of: string),
-      field("slug", of: string),
-      field("cook_time", of: int),
-      field("prep_time", of: int),
-      field("serves", of: int),
-      optional_field("tags", of: decode_tags),
-      optional_field("ingredients", of: decode_ingredients),
-      optional_field("method_steps", of: decode_method_steps),
+  decode.into({
+    use id <- decode.parameter
+    use title <- decode.parameter
+    use slug <- decode.parameter
+    use cook_time <- decode.parameter
+    use prep_time <- decode.parameter
+    use serves <- decode.parameter
+    use author <- decode.parameter
+    use source <- decode.parameter
+    use tags <- decode.parameter
+    use ingredients <- decode.parameter
+    use method_steps <- decode.parameter
+    use shortlisted <- decode.parameter
+    Recipe(
+      id: id,
+      title: title,
+      slug: slug,
+      cook_time: cook_time,
+      prep_time: prep_time,
+      serves: serves,
+      author: author,
+      source: source,
+      tags: tags,
+      ingredients: ingredients,
+      method_steps: method_steps,
+      shortlisted: shortlisted,
     )
-  decoder(d)
+  })
+  |> decode.field("id", decode.optional(decode.string))
+  |> decode.field("title", decode.string)
+  |> decode.field("slug", decode.string)
+  |> decode.field("cook_time", decode.int)
+  |> decode.field("prep_time", decode.int)
+  |> decode.field("serves", decode.int)
+  |> decode.field("author", decode.optional(decode.string))
+  |> decode.field("source", decode.optional(decode.string))
+  |> decode.field(
+    "tags",
+    decode.optional(json_string_decoder(decode_json_tags())),
+  )
+  |> decode.field(
+    "ingredients",
+    decode.optional(json_string_decoder(decode_json_ingredients())),
+  )
+  |> decode.field(
+    "method_steps",
+    decode.optional(json_string_decoder(decode_json_method_steps())),
+  )
+  |> decode.field("shortlisted", decode.optional(decode.bool))
+  |> decode.from(d)
 }
 
-fn decode_ingredients(
-  d: Dynamic,
-) -> Result(Dict(Int, Ingredient), dynamic.DecodeErrors) {
-  let decoder =
-    dict(
-      decode_stringed_int,
-      dynamic.decode4(
-        Ingredient,
-        optional_field("name", of: string),
-        optional_field("ismain", of: decode_stringed_bool),
-        optional_field("quantity", of: string),
-        optional_field("units", of: string),
-      ),
-    )
-  dynamic.string(d)
-  |> result.map(json.decode(_, decoder))
-  |> utils.result_unnest(utils.json_decodeerror_to_decodeerror)
+fn decode_json_ingredients() -> decode.Decoder(Dict(Int, Ingredient)) {
+  let ingredient_decoder =
+    decode.into({
+      use name <- decode.parameter
+      use ismain <- decode.parameter
+      use quantity <- decode.parameter
+      use units <- decode.parameter
+      Ingredient(name: name, ismain: ismain, quantity: quantity, units: units)
+    })
+    |> decode.field("name", decode.optional(decode.string))
+    |> decode.field("ismain", decode.optional(stringed_bool_decoder()))
+    |> decode.field("quantity", decode.optional(decode.string))
+    |> decode.field("units", decode.optional(decode.string))
+
+  decode.dict(stringed_int_decoder(), ingredient_decoder)
 }
 
-fn decode_tags(d: Dynamic) -> Result(Dict(Int, Tag), dynamic.DecodeErrors) {
-  let decoder =
-    dict(
-      decode_stringed_int,
-      dynamic.decode2(
-        Tag,
-        field("name", of: string),
-        field("value", of: string),
-      ),
-    )
-  dynamic.string(d)
-  |> result.map(json.decode(_, decoder))
-  |> utils.result_unnest(utils.json_decodeerror_to_decodeerror)
+fn decode_json_tags() -> decode.Decoder(Dict(Int, Tag)) {
+  let tag_decoder =
+    decode.into({
+      use name <- decode.parameter
+      use value <- decode.parameter
+      Tag(name: name, value: value)
+    })
+    |> decode.field("name", decode.string)
+    |> decode.field("value", decode.string)
+
+  decode.dict(stringed_int_decoder(), tag_decoder)
 }
 
-fn decode_method_steps(
-  d: Dynamic,
-) -> Result(Dict(Int, MethodStep), dynamic.DecodeErrors) {
-  let decoder =
-    dict(
-      decode_stringed_int,
-      dynamic.decode1(MethodStep, field("step_text", of: string)),
-    )
-  dynamic.string(d)
-  |> result.map(json.decode(_, decoder))
-  |> utils.result_unnest(utils.json_decodeerror_to_decodeerror)
+fn decode_json_method_steps() -> decode.Decoder(Dict(Int, MethodStep)) {
+  let method_step_decoder =
+    decode.into({
+      use step_text <- decode.parameter
+      MethodStep(step_text: step_text)
+    })
+    |> decode.field("step_text", decode.string)
+
+  decode.dict(stringed_int_decoder(), method_step_decoder)
 }
 
 fn decode_tag_option(d: Dynamic) -> Result(TagOption, dynamic.DecodeErrors) {
@@ -236,6 +270,18 @@ fn decode_tag_option(d: Dynamic) -> Result(TagOption, dynamic.DecodeErrors) {
   decoder(d)
 }
 
+fn json_string_decoder(inner_decoder: decode.Decoder(t)) -> decode.Decoder(t) {
+  let wrapper = fn(a) { decode.from(inner_decoder, a) }
+
+  decode.string
+  |> decode.then(fn(json_string) {
+    case json.decode(json_string, wrapper) {
+      Ok(a) -> decode.into(a)
+      _ -> decode.fail("Expected a json string")
+    }
+  })
+}
+
 pub fn decode_stringed_bool(d: Dynamic) -> Result(Bool, dynamic.DecodeErrors) {
   dynamic.string(d)
   |> result.map(fn(a) {
@@ -244,6 +290,18 @@ pub fn decode_stringed_bool(d: Dynamic) -> Result(Bool, dynamic.DecodeErrors) {
       "true" -> True
       "1" -> True
       _ -> False
+    }
+  })
+}
+
+fn stringed_bool_decoder() -> decode.Decoder(Bool) {
+  decode.string
+  |> decode.then(fn(d) {
+    case d {
+      "True" -> decode.into(True)
+      "true" -> decode.into(True)
+      "1" -> decode.into(True)
+      _ -> decode.into(False)
     }
   })
 }
@@ -261,4 +319,14 @@ pub fn decode_stringed_int(d: Dynamic) -> Result(Int, dynamic.DecodeErrors) {
       ),
     ]
   }))
+}
+
+fn stringed_int_decoder() -> decode.Decoder(Int) {
+  decode.string
+  |> decode.then(fn(d) {
+    case int.parse(d) {
+      Ok(a) -> decode.into(a)
+      _ -> decode.fail("Expected a stringed int")
+    }
+  })
 }

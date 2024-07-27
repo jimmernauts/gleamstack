@@ -41,7 +41,7 @@ pub fn list_at(list: List(a), n: Int) -> Option(a) {
   case list {
     [] -> None
     [x, ..] if n == 0 -> Some(x)
-    [x, ..xs] -> list_at(xs, n - 1)
+    [_x, ..xs] -> list_at(xs, n - 1)
   }
 }
 
@@ -63,7 +63,7 @@ pub fn update_child(
 
 pub fn month_date_string(day: Date) -> String {
   let n = date_num_string(day)
-  let s =
+  let _s =
     day
     |> date.weekday
   let m =

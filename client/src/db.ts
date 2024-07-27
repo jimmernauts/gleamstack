@@ -36,9 +36,12 @@ export async function do_save_recipe(recipe: Recipe) {
         cook_time: recipe.cook_time,
         prep_time: recipe.prep_time,
         serves: recipe.serves,
+        ...((Object.hasOwn(recipe,"author") )? {author: recipe.author} : {}),
+        ...((Object.hasOwn(recipe,"source") )? {source: recipe.source} : {}),
         tags: recipe.tags,
         ingredients: recipe.ingredients,
-        method_steps: recipe.method_steps
+        method_steps: recipe.method_steps,
+        ...((Object.hasOwn(recipe,"shortlisted") )? {shortlisted: recipe.shortlisted} : {}),
      }
      console.log("do_save_recipe obj: ", obj);
     const result = await client.insert('recipes', obj)

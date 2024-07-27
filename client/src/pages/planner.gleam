@@ -6,8 +6,6 @@ import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/io
-import gleam/javascript/array.{type Array}
-import gleam/javascript/map.{type Map}
 import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list

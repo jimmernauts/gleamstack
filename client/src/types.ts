@@ -5,13 +5,15 @@ export type Recipe = {
 	cook_time: number;
 	prep_time: number;
 	serves: number;
+	author?: string;
+	source?: string;
 	ingredients?: string;
 	method_steps?: string;
 	tags?: string;
 	shortlisted?: boolean;
 };
 
-export type RecipeSummary = Pick<Recipe, "id" | "title" | "slug" | "cook_time" | "prep_time" | "serves" | "tags" | "shortlisted">;
+export type RecipeSummary = Pick<Recipe, "id" | "title" | "slug" | "cook_time" | "prep_time" | "serves" | "author" | "source" | "tags" | "shortlisted">;
 
 export type Tag = {
 	name?: string;

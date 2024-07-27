@@ -131,17 +131,20 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         ..model,
         current_route: EditRecipeDetail(SlugParam(slug: "")),
         current_recipe: Some(session.Recipe(
-          None,
-          "New Recipe",
-          "",
-          0,
-          0,
-          0,
-          Some(dict.from_list([#(0, session.Tag("", ""))])),
-          Some(
+          id: None,
+          title: "New Recipe",
+          slug: "",
+          cook_time: 0,
+          prep_time: 0,
+          serves: 0,
+          author: None,
+          source: None,
+          tags: Some(dict.from_list([#(0, session.Tag("", ""))])),
+          ingredients: Some(
             dict.from_list([#(0, session.Ingredient(None, None, None, None))]),
           ),
-          Some(dict.from_list([#(0, session.MethodStep(""))])),
+          method_steps: Some(dict.from_list([#(0, session.MethodStep(""))])),
+          shortlisted: None,
         )),
       ),
       effect.map(session.get_tag_options(), RecipeList),
@@ -346,7 +349,7 @@ fn view_base(children) {
   html.main(
     [
       class(
-        "grid ml-1 mr-2 gap-2
+        "grid ml-2 mr-2 gap-2
     2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_105ch_[main-end]_3fr_[full-end]_1fr_[end]]
     xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95ch_[main-end]_3fr_[full-end]_1fr_[end]]
     lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_85ch_[main-end]_3fr_[full-end]_1fr_[end]]

@@ -16,6 +16,8 @@ export const schema = {
         cook_time: S.Number(),
         prep_time: S.Number(),
         serves: S.Number(),
+        author: S.Optional(S.String()),
+        source: S.Optional(S.String()),
         ingredients: S.Optional(S.String()),
         method_steps: S.Optional(S.String()),
         tags: S.Optional(S.String()), 

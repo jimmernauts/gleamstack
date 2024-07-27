@@ -1,13 +1,9 @@
 import components/page_title.{page_title}
-import gleam/bool
-import gleam/dict.{type Dict}
-import gleam/dynamic.{
-  type Dynamic, bool, dict, field, int, list, optional_field, string,
-}
+import gleam/dict
+import gleam/dynamic.{dict, int, list, string}
 import gleam/function
 import gleam/int
-import gleam/io
-import gleam/json.{type Json}
+import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
@@ -35,6 +31,8 @@ import session.{
 
 pub type RecipeDetailMsg {
   UserUpdatedRecipeTitle(String)
+  UserUpdatedRecipeAuthor(String)
+  UserUpdatedRecipeSource(String)
   UserUpdatedRecipePrepTimeHrs(String)
   UserUpdatedRecipePrepTimeMins(String)
   UserUpdatedRecipeCookTimeHrs(String)
@@ -71,6 +69,8 @@ fn save_recipe(recipe: session.Recipe) -> Effect(RecipeDetailMsg) {
       cook_time: recipe.cook_time,
       prep_time: recipe.prep_time,
       serves: recipe.serves,
+      author: option.unwrap(recipe.author, ""),
+      source: option.unwrap(recipe.source, ""),
       tags: recipe.tags
         |> json.nullable(session.json_encode_tag_list)
         |> json.to_string,
@@ -80,6 +80,7 @@ fn save_recipe(recipe: session.Recipe) -> Effect(RecipeDetailMsg) {
       method_steps: recipe.method_steps
         |> json.nullable(session.json_encode_method_step_list)
         |> json.to_string,
+      shortlisted: option.unwrap(recipe.shortlisted, False),
     )
   use dispatch <- effect.from
   do_save_recipe(js_recipe)
@@ -97,9 +98,12 @@ type JsRecipe {
     cook_time: Int,
     prep_time: Int,
     serves: Int,
+    author: String,
+    source: String,
     tags: String,
     ingredients: String,
     method_steps: String,
+    shortlisted: Bool,
   )
 }
 
@@ -111,6 +115,18 @@ pub fn detail_update(
     UserUpdatedRecipeTitle(newtitle) -> {
       case model {
         Some(a) -> #(Some(Recipe(..a, title: newtitle)), effect.none())
+        _ -> #(model, effect.none())
+      }
+    }
+    UserUpdatedRecipeAuthor(newauthor) -> {
+      case model {
+        Some(a) -> #(Some(Recipe(..a, author: Some(newauthor))), effect.none())
+        _ -> #(model, effect.none())
+      }
+    }
+    UserUpdatedRecipeSource(newsource) -> {
+      case model {
+        Some(a) -> #(Some(Recipe(..a, source: Some(newsource))), effect.none())
         _ -> #(model, effect.none())
       }
     }
@@ -549,11 +565,7 @@ pub fn edit_recipe_detail(
     ],
     [
       div(
-        [
-          class(
-            "inline-block mt-4 mb-2 sm:mb-4 mr-2 col-start-1 col-span-11 sm:col-start-1 sm:col-span-8",
-          ),
-        ],
+        [class("inline-block mt-4 mb-2 sm:mb-4 mr-2 col-start-1 col-span-11")],
         [
           textarea(
             [
@@ -574,10 +586,55 @@ pub fn edit_recipe_detail(
           ),
         ],
       ),
+      nav(
+        [
+          class(
+            "flex flex-col justify-start items-middle col-span-1 col-start-12 row-span-2 text-base md:text-lg mt-4",
+          ),
+        ],
+        [
+          a([href("/"), class("text-center")], [text("🏠")]),
+          a([href("/recipes/" <> recipe.slug), class("text-center")], [
+            text("❎"),
+          ]),
+          button([type_("submit"), class("")], [text("💾")]),
+        ],
+      ),
+      fieldset(
+        [class("flex gap-1 items-baseline col-span-11 row-start-2 row-span-1")],
+        [],
+      ),
       fieldset(
         [
           class(
-            "mt-0 sm:mt-4 sm:mx-4 row-start-2 col-span-5 col-start-8 sm:row-start-1 sm:col-span-3 sm:col-start-9",
+            "col-span-full row-start-3 content-start sm:col-span-5 sm:mt-2 flex flex-wrap gap-1 items-baseline gap-3",
+          ),
+        ],
+        [
+          case recipe.tags {
+            Some(tags) -> {
+              let children =
+                tags
+                |> dict.to_list
+                |> list.sort(by: fn(a, b) {
+                  int.compare(pair.first(a), pair.first(b))
+                })
+                |> list.map(fn(a) {
+                  #(
+                    int.to_string(pair.first(a)),
+                    tag_input(tag_options, pair.first(a), Some(pair.second(a))),
+                  )
+                })
+              element.keyed(html.div([class("contents")], _), children)
+            }
+            _ -> tag_input(tag_options, 0, None)
+          },
+        ],
+      ),
+      fieldset(
+        [
+          class(
+            "flex flex-row row-start-4 gap-2 col-span-full sm:row-start-3 sm:col-span-7 sm:col-start-6",
           ),
         ],
         [
@@ -701,47 +758,6 @@ pub fn edit_recipe_detail(
           ),
         ],
       ),
-      nav(
-        [
-          class(
-            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-sm sm:text-base md:text-lg my-4 text-center",
-          ),
-        ],
-        [
-          a([href("/"), class("text-center")], [text("🏠")]),
-          a([href("/recipes/" <> recipe.slug), class("text-center")], [
-            text("❎"),
-          ]),
-          button([type_("submit"), class("")], [text("💾")]),
-        ],
-      ),
-      fieldset(
-        [
-          class(
-            "col-span-7 row-start-2 content-start sm:col-span-full flex flex-wrap gap-1 items-baseline mx-1 gap-3",
-          ),
-        ],
-        [
-          case recipe.tags {
-            Some(tags) -> {
-              let children =
-                tags
-                |> dict.to_list
-                |> list.sort(by: fn(a, b) {
-                  int.compare(pair.first(a), pair.first(b))
-                })
-                |> list.map(fn(a) {
-                  #(
-                    int.to_string(pair.first(a)),
-                    tag_input(tag_options, pair.first(a), Some(pair.second(a))),
-                  )
-                })
-              element.keyed(html.div([class("contents")], _), children)
-            }
-            _ -> tag_input(tag_options, 0, None)
-          },
-        ],
-      ),
       fieldset(
         [
           class(
@@ -811,72 +827,10 @@ pub fn view_recipe_detail(recipe: Recipe) {
     ],
     [
       page_title(recipe.title, "underline-green"),
-      fieldset(
-        [
-          class(
-            "sm:mt-4 lg:mx-4 row-start-2 col-start-9 col-span-4 sm:row-start-1 sm:col-span-3 sm:col-start-9",
-          ),
-        ],
-        [
-          fieldset(
-            [class("flex flex-wrap justify-between items-baseline mb-2")],
-            [
-              label([for("prep_time"), class("font-mono ")], [text("Prep:")]),
-              div([class("text-base")], [
-                text(
-                  case recipe.prep_time > 59 {
-                    True ->
-                      int.floor_divide(recipe.prep_time, 60)
-                      |> result.unwrap(0)
-                      |> int.to_string
-                      |> string.replace("0", "")
-                      <> "h "
-                    _ -> ""
-                  }
-                  <> recipe.prep_time % 60
-                  |> int.to_string
-                  <> "m",
-                ),
-              ]),
-            ],
-          ),
-          fieldset(
-            [class("flex flex-wrap justify-between items-baseline mb-2")],
-            [
-              label([for("cook_time"), class("font-mono ")], [text("Cook:")]),
-              div([class("text-base")], [
-                text(
-                  case recipe.cook_time > 59 {
-                    True ->
-                      int.floor_divide(recipe.cook_time, 60)
-                      |> result.unwrap(0)
-                      |> int.to_string
-                      |> string.replace("0", "")
-                      <> "h "
-                    _ -> ""
-                  }
-                  <> recipe.cook_time % 60
-                  |> int.to_string
-                  <> "m",
-                ),
-              ]),
-            ],
-          ),
-          fieldset(
-            [class("flex flex-wrap justify-between items-baseline mb-2")],
-            [
-              label([for("cook_time"), class("font-mono ")], [text("Serves:")]),
-              div([class("mr-2 sm:mr-4 text-base")], [
-                text(int.to_string(recipe.serves)),
-              ]),
-            ],
-          ),
-        ],
-      ),
       nav(
         [
           class(
-            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
+            "flex flex-col justify-start items-middle col-span-1 col-start-12 row-span-2 text-base md:text-lg mt-4",
           ),
         ],
         [
@@ -888,9 +842,28 @@ pub fn view_recipe_detail(recipe: Recipe) {
         ],
       ),
       fieldset(
+        [class("flex gap-1 items-baseline col-span-11 row-start-2 row-span-1")],
+        list.flatten([
+          case recipe.author {
+            Some(a) -> [
+              html.span([class("text-sm")], [text("🧾")]),
+              html.span([class("text-base")], [text(a)]),
+            ]
+            _ -> []
+          },
+          case recipe.source {
+            Some(a) -> [
+              html.span([class("text-sm")], [text("📗")]),
+              html.span([class("text-base")], [text(a)]),
+            ]
+            _ -> []
+          },
+        ]),
+      ),
+      fieldset(
         [
           class(
-            "col-span-7 row-start-2 content-start sm:col-span-full flex flex-wrap gap-1 items-baseline mx-1 gap-3",
+            "col-span-full row-start-3 content-start sm:col-span-5 sm:mt-2 flex flex-wrap gap-1 items-baseline gap-3",
           ),
         ],
         [
@@ -914,7 +887,60 @@ pub fn view_recipe_detail(recipe: Recipe) {
       fieldset(
         [
           class(
-            "col-span-full text-base my-1 mb-6 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#a3d2ab] mr-1",
+            "flex flex-row row-start-4 gap-2 col-span-full sm:row-start-3 sm:col-span-7 sm:col-start-6",
+          ),
+        ],
+        [
+          fieldset([class("flex flex-wrap justify-start items-baseline")], [
+            label([for("prep_time"), class("font-mono ")], [text("Prep:")]),
+            div([class("text-base ml-2")], [
+              text(
+                case recipe.prep_time > 59 {
+                  True ->
+                    int.floor_divide(recipe.prep_time, 60)
+                    |> result.unwrap(0)
+                    |> int.to_string
+                    |> string.replace("0", "")
+                    <> "h "
+                  _ -> ""
+                }
+                <> recipe.prep_time % 60
+                |> int.to_string
+                <> "m",
+              ),
+            ]),
+          ]),
+          fieldset([class("flex flex-wrap justify-start items-baseline")], [
+            label([for("cook_time"), class("font-mono ")], [text("Cook:")]),
+            div([class("text-base ml-2")], [
+              text(
+                case recipe.cook_time > 59 {
+                  True ->
+                    int.floor_divide(recipe.cook_time, 60)
+                    |> result.unwrap(0)
+                    |> int.to_string
+                    |> string.replace("0", "")
+                    <> "h "
+                  _ -> ""
+                }
+                <> recipe.cook_time % 60
+                |> int.to_string
+                <> "m",
+              ),
+            ]),
+          ]),
+          fieldset([class("flex flex-wrap justify-start items-baseline")], [
+            label([for("cook_time"), class("font-mono ")], [text("Serves:")]),
+            div([class("mr-2 sm:mr-4 ml-2 text-base")], [
+              text(int.to_string(recipe.serves)),
+            ]),
+          ]),
+        ],
+      ),
+      fieldset(
+        [
+          class(
+            "col-span-full text-base my-1 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#a3d2ab] mr-1",
           ),
         ],
         [
@@ -942,7 +968,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
       fieldset(
         [
           class(
-            "flex justify-start flex-wrap col-span-full my-1 mb-6 pt-1 mr-1 sm:mr-2 ml-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#a3d2ab]",
+            "flex justify-start flex-wrap col-span-full my-1 pt-1 mr-1 sm:mr-2 ml-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#a3d2ab]",
           ),
         ],
         [
@@ -1036,9 +1062,10 @@ fn view_ingredient(ingredient: Ingredient) {
 }
 
 fn view_method_step(method_step: MethodStep) {
-  li([class("w-full justify-self-start list-decimal text-left ml-8 pr-2")], [
-    text(method_step.step_text),
-  ])
+  li(
+    [class("w-full justify-self-start list-decimal text-left ml-8 pr-2 mb-2")],
+    [text(method_step.step_text)],
+  )
 }
 
 fn view_tag(tag: Tag) {
