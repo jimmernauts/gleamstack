@@ -564,28 +564,25 @@ pub fn edit_recipe_detail(
       event.on_submit(UserSavedUpdatedRecipe(recipe)),
     ],
     [
-      div(
-        [class("inline-block mt-4 mb-2 sm:mb-4 mr-2 col-start-1 col-span-11")],
-        [
-          textarea(
-            [
-              id("page-title-input"),
-              name("title"),
-              class(
-                "[field-sizing:_content;] placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-x-hidden px-0 pb-1 ml-2 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100",
-              ),
-              class(case string.length(recipe.title) {
-                num if num > 38 -> "text-4xl"
-                num if num > 17 -> "text-5.5xl"
-                _ -> "text-7xl"
-              }),
-              attribute("title", "recipe title"),
-              on_input(UserUpdatedRecipeTitle),
-            ],
-            recipe.title,
-          ),
-        ],
-      ),
+      div([class("inline-block mt-4 mr-2 col-start-1 col-span-11")], [
+        textarea(
+          [
+            id("page-title-input"),
+            name("title"),
+            class(
+              "[field-sizing:_content;] placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-x-hidden px-0 pb-1 ml-2 input-base w-full input-focus font-transitional resize-none font-bold italic text-ecru-white-950  text-7xl bg-ecru-white-100",
+            ),
+            class(case string.length(recipe.title) {
+              num if num > 38 -> "text-4xl"
+              num if num > 17 -> "text-5.5xl"
+              _ -> "text-7xl"
+            }),
+            attribute("title", "recipe title"),
+            on_input(UserUpdatedRecipeTitle),
+          ],
+          recipe.title,
+        ),
+      ]),
       nav(
         [
           class(
@@ -602,7 +599,24 @@ pub fn edit_recipe_detail(
       ),
       fieldset(
         [class("flex gap-1 items-baseline col-span-11 row-start-2 row-span-1")],
-        [],
+        [
+          div([class("justify-self-start")], [
+            label([class("justify-self-start font-mono "), for("author")], [
+              text("🧾"),
+            ]),
+            input([
+              id("author"),
+              class(
+                "bg-ecru-white-100 input-base input-focus pr-0.5 w-[2ch] text-right text-base",
+              ),
+              type_("text"),
+              name("author"),
+              attribute("title", "author"),
+              value(recipe.author |> option.unwrap("")),
+              on_input(UserUpdatedRecipeAuthor),
+            ]),
+          ]),
+        ],
       ),
       fieldset(
         [
