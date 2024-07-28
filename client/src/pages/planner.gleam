@@ -231,7 +231,13 @@ pub fn view_planner(model: Model) {
           ],
           [
             a([href("/"), class("text-center")], [text("🏠")]),
-            a([href("/planner/edit"), class("text-center")], [text("✏️")]),
+            a(
+              [
+                href("/planner/edit?date=" <> date.to_iso_string(start_of_week)),
+                class("text-center"),
+              ],
+              [text("✏️")],
+            ),
             div([class("flex flex-row justify-evenly px-1")], [
               a(
                 [
@@ -349,7 +355,13 @@ pub fn edit_planner(model: Model) {
           [
             a([href("/"), class("text-center")], [text("🏠")]),
             div([class("flex flex-row justify-evenly px-1")], [
-              a([href("/planner/"), class("text-center")], [text("❎")]),
+              a(
+                [
+                  href("/planner?date=" <> date.to_iso_string(start_of_week)),
+                  class("text-center"),
+                ],
+                [text("❎")],
+              ),
               button(
                 [type_("submit"), attribute("form", "active-week"), class("")],
                 [text("💾")],

@@ -214,19 +214,19 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(child_effect, RecipeDetail),
       )
     }
-    // Planner(planner.DbSavedPlan(date)) -> {
-    //   #(
-    //     Model(
-    //       ..model,
-    //       planner: planner.Model(..model.planner, start_date: date),
-    //     ),
-    //     // TODO: Better handle navigating in response to the updated data
-    //     {
-    //       use dispatch <- effect.from
-    //       OnRouteChange(ViewPlanner(date)) |> dispatch
-    //     },
-    //   )
-    // }
+    Planner(planner.DbSavedPlan(date)) -> {
+      #(
+        Model(
+          ..model,
+          planner: planner.Model(..model.planner, start_date: date),
+        ),
+        // TODO: Better handle navigating in response to the updated data
+        {
+          use dispatch <- effect.from
+          OnRouteChange(ViewPlanner(date)) |> dispatch
+        },
+      )
+    }
     Planner(planner.DbRetrievedPlan(plan_week, start_date)) -> {
       #(
         Model(
@@ -356,7 +356,7 @@ fn view_base(children) {
     md:grid-cols-[[start_full-start]_1fr_[main-start]_70ch_[main-end]_1fr_[full-end_end]]
     grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
     min-h-[90vh]
-    bg-ecru-white-50  text-ecru-white-950 font-old-style text-lg",
+    bg-ecru-white-50  text-ecru-white-950 font-transitional text-lg",
       ),
     ],
     [children],
