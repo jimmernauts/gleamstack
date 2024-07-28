@@ -17,10 +17,20 @@ import lustre/effect.{type Effect}
 pub type RecipeListMsg {
   DbRetrievedRecipes(List(Recipe))
   DbRetrievedTagOptions(List(TagOption))
+  UserGroupedRecipeListByTag(String)
+}
+
+pub type RecipeListGroupBy {
+  GroupByTag(String)
+  GroupByAuthor(String)
 }
 
 pub type RecipeList {
-  RecipeList(recipes: List(Recipe), tag_options: List(TagOption))
+  RecipeList(
+    recipes: List(Recipe),
+    tag_options: List(TagOption),
+    group_by: Option(RecipeListGroupBy),
+  )
 }
 
 //-UPDATE------------------------------------------------------------

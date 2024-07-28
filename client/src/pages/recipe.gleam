@@ -18,8 +18,8 @@ import lustre/attribute.{
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, fragment, text}
 import lustre/element/html.{
-  a, button, div, fieldset, form, input, label, legend, li, nav, ol, option,
-  section, select, span, textarea,
+  a, button, details, div, fieldset, form, input, label, legend, li, nav, ol,
+  option, section, select, span, summary, textarea,
 }
 import lustre/event.{on_check, on_click, on_input}
 import session.{
@@ -504,16 +504,89 @@ pub fn list_update(
       RecipeList(..model, tag_options: tag_options),
       effect.none(),
     )
+    session.UserGroupedRecipeListByTag(tag) -> {
+      case model.group_by {
+        Some(session.GroupByTag(a)) if a == tag -> #(
+          RecipeList(..model, group_by: None),
+          effect.none(),
+        )
+        _ -> #(
+          RecipeList(..model, group_by: Some(session.GroupByTag(tag))),
+          effect.none(),
+        )
+      }
+    }
   }
 }
 
 //-VIEWS-------------------------------------------------------------
 
+pub fn view_recipe_groupby(model: session.RecipeList) {
+  let tags =
+    model.recipes
+    |> list.map(fn(x) {
+      case x.tags {
+        Some(a) -> list.map(dict.values(a), fn(x) { x.name })
+        _ -> []
+      }
+    })
+    |> list.flatten
+  let authors =
+    model.recipes
+    |> list.map(fn(x) {
+      case x.author {
+        Some(a) -> [a]
+        _ -> []
+      }
+    })
+    |> list.flatten
+  list.map(tags, fn(a) {
+    button(
+      [
+        class(
+          "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+        ),
+        on_click(session.UserGroupedRecipeListByTag(a)),
+      ],
+      [text(a)],
+    )
+  })
+}
+
+pub fn view_recipe_groups(recipes: List(session.Recipe), tag: String) {
+  let groups =
+    list.group(recipes, fn(a) {
+      case a.tags {
+        Some(a) ->
+          list.filter(dict.values(a), fn(b) { b.name == tag })
+          |> list.map(fn(x) { x.value })
+          |> list.first
+          |> result.unwrap("")
+        _ -> ""
+      }
+    })
+  groups
+  |> dict.map_values(fn(k, v) {
+    details([class("contents")], [
+      summary(
+        [
+          class(
+            "col-start-1 col-span-full flex gap-2  text-lg cursor-pointer marker:content-none",
+          ),
+        ],
+        [text("📑"), span([class("font-mono italic")], [text(k)])],
+      ),
+      html.div([class("contents")], list.map(v, view_recipe_summary)),
+    ])
+  })
+  |> dict.values
+}
+
 pub fn view_recipe_list(model: session.RecipeList) {
   section(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr]",
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2",
       ),
     ],
     [
@@ -526,10 +599,21 @@ pub fn view_recipe_list(model: session.RecipeList) {
         ],
         [a([href("/"), class("text-center")], [text("🏠")])],
       ),
-      // div([class("col-span-full flex flex-wrap items-center justify-start gap-3")],[
-      // TODO: Group By tag buttons go here
-      //])
-      div([class("contents")], list.map(model.recipes, view_recipe_summary)),
+      div(
+        [class("col-span-full flex flex-wrap items-center justify-start gap-3")],
+        view_recipe_groupby(model),
+      ),
+      {
+        case model.group_by {
+          Some(session.GroupByTag(tag)) ->
+            div([class("contents")], view_recipe_groups(model.recipes, tag))
+          _ ->
+            div(
+              [class("contents")],
+              list.map(model.recipes, view_recipe_summary),
+            )
+        }
+      },
     ],
   )
 }

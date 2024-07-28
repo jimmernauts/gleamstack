@@ -55,7 +55,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
     Model(
       current_route: result.unwrap(initial_route, Home),
       current_recipe: None,
-      recipes: session.RecipeList(recipes: [], tag_options: []),
+      recipes: session.RecipeList(recipes: [], tag_options: [], group_by: None),
       planner: planner.Model(
         plan_week: dict.new(),
         recipe_list: [],
