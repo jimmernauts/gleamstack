@@ -521,72 +521,11 @@ pub fn list_update(
 
 //-VIEWS-------------------------------------------------------------
 
-pub fn view_recipe_groupby(model: session.RecipeList) {
-  let tags =
-    model.recipes
-    |> list.map(fn(x) {
-      case x.tags {
-        Some(a) -> list.map(dict.values(a), fn(x) { x.name })
-        _ -> []
-      }
-    })
-    |> list.flatten
-  let authors =
-    model.recipes
-    |> list.map(fn(x) {
-      case x.author {
-        Some(a) -> [a]
-        _ -> []
-      }
-    })
-    |> list.flatten
-  list.map(tags, fn(a) {
-    button(
-      [
-        class(
-          "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
-        ),
-        on_click(session.UserGroupedRecipeListByTag(a)),
-      ],
-      [text(a)],
-    )
-  })
-}
-
-pub fn view_recipe_groups(recipes: List(session.Recipe), tag: String) {
-  let groups =
-    list.group(recipes, fn(a) {
-      case a.tags {
-        Some(a) ->
-          list.filter(dict.values(a), fn(b) { b.name == tag })
-          |> list.map(fn(x) { x.value })
-          |> list.first
-          |> result.unwrap("")
-        _ -> ""
-      }
-    })
-  groups
-  |> dict.map_values(fn(k, v) {
-    details([class("contents")], [
-      summary(
-        [
-          class(
-            "col-start-1 col-span-full flex gap-2  text-lg cursor-pointer marker:content-none",
-          ),
-        ],
-        [text("📑"), span([class("font-mono italic")], [text(k)])],
-      ),
-      html.div([class("contents")], list.map(v, view_recipe_summary)),
-    ])
-  })
-  |> dict.values
-}
-
 pub fn view_recipe_list(model: session.RecipeList) {
   section(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_1fr] gap-y-2",
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_fit-content(100px)_fit-content(100px)_fit-content(100px)_fit-content(100px)_1fr] gap-y-2",
       ),
     ],
     [
@@ -606,11 +545,10 @@ pub fn view_recipe_list(model: session.RecipeList) {
       {
         case model.group_by {
           Some(session.GroupByTag(tag)) ->
-            div([class("contents")], view_recipe_groups(model.recipes, tag))
+            element.fragment(view_recipe_groups(model.recipes, tag))
           _ ->
-            div(
-              [class("contents")],
-              list.map(model.recipes, view_recipe_summary),
+            element.fragment(
+              list.map(model.recipes, view_recipe_summary(_, "")),
             )
         }
       },
@@ -1113,35 +1051,100 @@ pub fn view_recipe_detail(recipe: Recipe) {
 
 //-COMPONENTS--------------------------------------------------
 
-fn view_recipe_summary(recipe: Recipe) {
+pub fn view_recipe_groupby(model: session.RecipeList) {
+  let tags =
+    model.recipes
+    |> list.map(fn(x) {
+      case x.tags {
+        Some(a) -> list.map(dict.values(a), fn(x) { x.name })
+        _ -> []
+      }
+    })
+    |> list.flatten
+  let authors =
+    model.recipes
+    |> list.map(fn(x) {
+      case x.author {
+        Some(a) -> [a]
+        _ -> []
+      }
+    })
+    |> list.flatten
+  list.map(tags, fn(a) {
+    button(
+      [
+        class(
+          "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+        ),
+        on_click(session.UserGroupedRecipeListByTag(a)),
+      ],
+      [text(a)],
+    )
+  })
+}
+
+pub fn view_recipe_groups(recipes: List(session.Recipe), tag: String) {
+  let groups =
+    list.group(recipes, fn(a) {
+      case a.tags {
+        Some(a) ->
+          list.filter(dict.values(a), fn(b) { b.name == tag })
+          |> list.map(fn(x) { x.value })
+          |> list.first
+          |> result.unwrap("")
+        _ -> ""
+      }
+    })
+  groups
+  |> dict.map_values(fn(k, v) {
+    details([class("contents")], [
+      summary(
+        [
+          class(
+            "col-start-1 col-span-full flex gap-2  text-base cursor-pointer marker:content-none",
+          ),
+        ],
+        [
+          text("📑"),
+          span([class("font-mono")], [text(k)]),
+          element.element("hr", [class("flex-grow mx-2 self-center")], []),
+        ],
+      ),
+      element.fragment(list.map(v, view_recipe_summary(_, "ml-2 text-lg"))),
+    ])
+  })
+  |> dict.values
+}
+
+fn view_recipe_summary(recipe: Recipe, class_props: String) {
   div(
     [
       class(
-        "col-span-full flex flex-wrap items-baseline justify-start my-1 text-base",
+        "col-span-full  text-xl flex flex-wrap items-baseline justify-start",
       ),
+      class(class_props),
     ],
     [
-      div([class("text-xl flex flex-nowrap gap-1 my-1 ml-2 items-baseline")], [
-        a([href(string.append("/recipes/", recipe.slug))], [
-          span([], [text(recipe.title)]),
-          span([class("text-sm")], [
-            text(" • "),
-            case recipe.prep_time + recipe.cook_time > 59 {
-              True ->
-                text(
-                  int.floor_divide({ recipe.prep_time + recipe.cook_time }, 60)
-                  |> result.unwrap(0)
-                  |> int.to_string()
-                  <> "h",
-                )
-              _ -> element.none()
-            },
-            text(
-              { recipe.prep_time + recipe.cook_time } % 60
-              |> int.to_string(),
-            ),
-            text("m"),
-          ]),
+      element.element("hr", [class("w-[1ch] mr-2 self-center")], []),
+      a([href(string.append("/recipes/", recipe.slug))], [
+        span([], [text(recipe.title)]),
+        span([class("text-sm")], [
+          text(" • "),
+          case recipe.prep_time + recipe.cook_time > 59 {
+            True ->
+              text(
+                int.floor_divide({ recipe.prep_time + recipe.cook_time }, 60)
+                |> result.unwrap(0)
+                |> int.to_string()
+                <> "h",
+              )
+            _ -> element.none()
+          },
+          text(
+            { recipe.prep_time + recipe.cook_time } % 60
+            |> int.to_string(),
+          ),
+          text("m"),
         ]),
       ]),
     ],
