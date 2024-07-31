@@ -280,7 +280,9 @@ fn decode_tag_option(d: Dynamic) -> Result(TagOption, dynamic.DecodeErrors) {
   decoder(d)
 }
 
-fn json_string_decoder(inner_decoder: decode.Decoder(t)) -> decode.Decoder(t) {
+pub fn json_string_decoder(
+  inner_decoder: decode.Decoder(t),
+) -> decode.Decoder(t) {
   let wrapper = fn(a) { decode.from(inner_decoder, a) }
 
   decode.string
@@ -304,7 +306,7 @@ pub fn decode_stringed_bool(d: Dynamic) -> Result(Bool, dynamic.DecodeErrors) {
   })
 }
 
-fn stringed_bool_decoder() -> decode.Decoder(Bool) {
+pub fn stringed_bool_decoder() -> decode.Decoder(Bool) {
   decode.string
   |> decode.then(fn(d) {
     case d {

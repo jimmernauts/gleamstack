@@ -1,6 +1,7 @@
 import components/page_title.{page_title}
 import components/typeahead.{typeahead}
 import decipher
+import decode
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
@@ -769,13 +770,21 @@ fn inner_input(
 //-ENCODERS-DECODERS----------------------------------------------
 
 fn decode_plan_day(d: Dynamic) -> Result(PlanDay, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode2(
-      PlanDay,
-      dynamic.field("date", of: decode_int_day),
-      dynamic.field("planned_meals", of: decode_planned_meals),
-    )
-  decoder(d)
+  decode.into({
+    use date <- decode.parameter
+    use planned_meals <- decode.parameter
+    PlanDay(date: date, planned_meals: planned_meals)
+  })
+  |> decode.field(
+    "date",
+    decode.int
+      |> decode.then(fn(a) { decode.into(date.from_rata_die(a)) }),
+  )
+  |> decode.field(
+    "planned_meals",
+    session.json_string_decoder(decode_planned_meals()),
+  )
+  |> decode.from(d)
 }
 
 fn decode_int_day(d: Dynamic) -> Result(Date, dynamic.DecodeErrors) {
@@ -791,22 +800,32 @@ fn decode_string_day(d: Dynamic) -> Result(Date, dynamic.DecodeErrors) {
   |> result.map(fn(a) { date.from_rata_die(result.unwrap(a, 0)) })
 }
 
-fn decode_planned_meals(
-  d: Dynamic,
-) -> Result(List(PlannedMealWithStatus), dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.list(dynamic.decode3(
-      PlannedMealWithStatus,
-      dynamic.field(
-        "for",
-        decipher.enum([#("lunch", Lunch), #("dinner", Dinner)]),
-      ),
-      dynamic.optional_field("title", dynamic.string),
-      dynamic.optional_field("complete", session.decode_stringed_bool),
-    ))
-  dynamic.string(d)
-  |> result.map(json.decode(_, decoder))
-  |> utils.result_unnest(utils.json_decodeerror_to_decodeerror)
+fn decode_planned_meals() -> decode.Decoder(List(PlannedMealWithStatus)) {
+  let enum_decoder = {
+    decode.string
+    |> decode.then(fn(decoded_string) {
+      case decoded_string {
+        "lunch" -> decode.into(Lunch)
+        "dinner" -> decode.into(Dinner)
+        _ -> decode.fail("PlannedMealWithStatus")
+      }
+    })
+  }
+  let record_decoder = {
+    decode.into({
+      use for <- decode.parameter
+      use title <- decode.parameter
+      use complete <- decode.parameter
+      PlannedMealWithStatus(for: for, title: title, complete: complete)
+    })
+    |> decode.field("for", enum_decoder)
+    |> decode.field("title", decode.optional(decode.string))
+    |> decode.field(
+      "complete",
+      decode.optional(session.stringed_bool_decoder()),
+    )
+  }
+  decode.list(of: record_decoder)
 }
 
 fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {
