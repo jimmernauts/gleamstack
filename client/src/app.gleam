@@ -350,9 +350,9 @@ fn view_base(children) {
     [
       class(
         "grid ml-2 mr-2 gap-2
-    2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_105ch_[main-end]_3fr_[full-end]_1fr_[end]]
-    xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95ch_[main-end]_3fr_[full-end]_1fr_[end]]
-    lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_85ch_[main-end]_3fr_[full-end]_1fr_[end]]
+    2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_100ch_[main-end]_3fr_[full-end]_1fr_[end]]
+    xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90ch_[main-end]_3fr_[full-end]_1fr_[end]]
+    lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_80ch_[main-end]_3fr_[full-end]_1fr_[end]]
     md:grid-cols-[[start_full-start]_1fr_[main-start]_70ch_[main-end]_1fr_[full-end_end]]
     grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
     min-h-[90vh]
