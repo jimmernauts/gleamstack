@@ -12,7 +12,6 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{a, nav, section, span}
 import modem
-import pages/ingest
 import pages/planner
 import pages/recipe
 import rada/date
@@ -23,23 +22,23 @@ import tardis
 
 // WITHOUT DEBUGGER
 
-// pub fn main() {
-//   lustre.register(typeahead.app(), "type-ahead")
-//  let app = lustre.application(init, update, view)
-//  let assert Ok(_) = lustre.start(app, "#app", Nil)
-// }
+pub fn main() {
+  lustre.register(typeahead.app(), "type-ahead")
+  let app = lustre.application(init, update, view)
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
+}
 
 // WITH DEBUGGER
 
-pub fn main() {
-  let assert Ok(main) = tardis.single("main")
-  lustre.register(typeahead.app(), "type-ahead")
-  lustre.application(init, update, view)
-  |> tardis.wrap(with: main)
-  |> lustre.start("#app", Nil)
-  |> tardis.activate(with: main)
-  main
-}
+// pub fn main() {
+//   let assert Ok(main) = tardis.single("main")
+//   lustre.register(typeahead.app(), "type-ahead")
+//   lustre.application(init, update, view)
+//   |> tardis.wrap(with: main)
+//   |> lustre.start("#app", Nil)
+//   |> tardis.activate(with: main)
+//   main
+// }
 
 fn init(_flags) -> #(Model, Effect(Msg)) {
   let initial_route =
@@ -61,7 +60,6 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         recipe_list: [],
         start_date: date.floor(date.today(), date.Monday),
       ),
-      import_url: ingest.ImportModel(url: ""),
     ),
     effect.batch([
       modem.init(on_route_change),
@@ -79,7 +77,6 @@ pub type Model {
     current_recipe: recipe.RecipeDetail,
     recipes: session.RecipeList,
     planner: planner.Model,
-    import_url: ingest.ImportModel,
   )
 }
 
@@ -90,7 +87,6 @@ pub type Route {
   ViewRecipeList
   ViewPlanner(start_date: date.Date)
   EditPlanner(start_date: date.Date)
-  ImportRecipe
 }
 
 pub type RouteParams {
@@ -103,7 +99,6 @@ pub type Msg {
   RecipeDetail(recipe.RecipeDetailMsg)
   RecipeList(session.RecipeListMsg)
   Planner(planner.PlannerMsg)
-  Import(ingest.ImportMsg)
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -242,20 +237,6 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         planner.planner_update(model.planner, planner_msg)
       #(Model(..model, planner: child_model), effect.map(child_effect, Planner))
     }
-    Import(ingest.ParsedRecipefromUrl(recipe)) -> {
-      #(Model(..model, current_recipe: Some(recipe)), {
-        use dispatch <- effect.from
-        OnRouteChange(EditRecipeDetail(RecipeParam(recipe))) |> dispatch
-      })
-    }
-    Import(import_msg) -> {
-      let #(child_model, child_effect) =
-        ingest.update(model.import_url, import_msg)
-      #(
-        Model(..model, import_url: child_model),
-        effect.map(child_effect, Import),
-      )
-    }
   }
 }
 
@@ -291,7 +272,6 @@ fn on_route_change(uri: Uri) -> Msg {
     _, ["recipes"] -> OnRouteChange(ViewRecipeList)
     _, ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
     _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
-    _, ["import"] -> OnRouteChange(ImportRecipe)
     _, _ -> OnRouteChange(Home)
   }
 }
@@ -339,8 +319,6 @@ fn view(model: Model) -> Element(Msg) {
         )),
         Planner,
       )
-    ImportRecipe ->
-      element.map(ingest.view(ingest.ImportModel(model.import_url.url)), Import)
   }
   view_base(page)
 }
@@ -410,18 +388,6 @@ fn view_home() {
           [
             span([class("underline-blue")], [text("New")]),
             span([class("text-5xl")], [text("📝")]),
-          ],
-        ),
-        a(
-          [
-            class(
-              "flex items-baseline col-span-full sm:col-span-6 justify-between pr-4",
-            ),
-            href("/import"),
-          ],
-          [
-            span([class("underline-yellow")], [text("Import")]),
-            span([class("text-5xl")], [text("📩")]),
           ],
         ),
       ],
