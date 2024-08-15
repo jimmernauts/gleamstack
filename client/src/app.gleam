@@ -21,24 +21,24 @@ import tardis
 // MAIN ------------------------------------------------------------------------
 
 // WITHOUT DEBUGGER
-
-pub fn main() {
-  lustre.register(typeahead.app(), "type-ahead")
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
-}
+// 
+// pub fn main() {
+//   lustre.register(typeahead.app(), "type-ahead")
+//   let app = lustre.application(init, update, view)
+//   let assert Ok(_) = lustre.start(app, "#app", Nil)
+// }
 
 // WITH DEBUGGER
 
-// pub fn main() {
-//   let assert Ok(main) = tardis.single("main")
-//   lustre.register(typeahead.app(), "type-ahead")
-//   lustre.application(init, update, view)
-//   |> tardis.wrap(with: main)
-//   |> lustre.start("#app", Nil)
-//   |> tardis.activate(with: main)
-//   main
-// }
+pub fn main() {
+  let assert Ok(main) = tardis.single("main")
+  lustre.register(typeahead.app(), "type-ahead")
+  lustre.application(init, update, view)
+  |> tardis.wrap(with: main)
+  |> lustre.start("#app", Nil)
+  |> tardis.activate(with: main)
+  main
+}
 
 fn init(_flags) -> #(Model, Effect(Msg)) {
   let initial_route =
@@ -63,8 +63,10 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
     ),
     effect.batch([
       modem.init(on_route_change),
-      effect.map(session.get_recipes(), RecipeList),
-      effect.map(session.get_tag_options(), RecipeList),
+      {
+        use dispatch <- effect.from
+        OnRouteChange(result.unwrap(initial_route, Home)) |> dispatch
+      },
     ]),
   )
 }
