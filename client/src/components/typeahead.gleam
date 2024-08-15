@@ -14,6 +14,7 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, fragment, text}
 import lustre/element/html.{li, option, textarea, ul}
 import lustre/event.{on, on_click, on_focus, on_input, on_keydown}
+import plinth/javascript/global
 
 pub fn app() -> App(Nil, Model, Msg) {
   lustre.component(init, update, view, on_attribute_change())
@@ -45,13 +46,14 @@ pub type Model {
     found_items: List(String),
     is_open: Bool,
     is_focused: Bool,
+    blur_debounce_timer: Option(global.TimerID),
     hovered_item: Option(Int),
   )
 }
 
 fn init(_) -> #(Model, Effect(Msg)) {
   let elem_id = int.to_string(int.random(999_999))
-  #(Model(elem_id, [], "", [], False, False, None), effect.none())
+  #(Model(elem_id, [], "", [], False, False, None, None), effect.none())
 }
 
 //-UPDATE------------------------------------------------------
@@ -66,6 +68,7 @@ pub type Msg {
   UserHoveredOption(Int)
   UserUnHoveredOption(Int)
   UserFocusedSearchInput
+  UserMousedDownOption
   UserBlurredSearchInput
   UserClosedOptionList
 }
@@ -86,7 +89,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           search_term: a,
           found_items: {
             case string.length(a) {
-              num if num < 3 -> model.search_items
+              num if num < 1 -> []
               _ ->
                 list.filter(model.search_items, fn(r) {
                   string.contains(string.lowercase(r), string.lowercase(a))
@@ -117,8 +120,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.none(),
       )
     }
+    UserMousedDownOption -> {
+      #(model, effect.none())
+    }
     UserBlurredSearchInput -> {
-      #(model, utils.after(100, UserBlurredSearchInput))
+      #(Model(..model, is_focused: False, is_open: False), effect.none())
     }
     UserClosedOptionList -> {
       #(
@@ -212,7 +218,7 @@ fn on_attribute_change() -> Dict(String, Decoder(Msg)) {
 
 //-VIEW--------------------------------------------------------
 
-fn search_result(model: Model, res: String, index: Int) -> Element(Msg) {
+fn search_result(model: Model, result_value: String, index: Int) -> Element(Msg) {
   li(
     [
       attribute("role", "option"),
@@ -224,7 +230,7 @@ fn search_result(model: Model, res: String, index: Int) -> Element(Msg) {
         }
       }),
       class("px-1"),
-      on_click(UserSelectedOption(res)),
+      on_click(UserSelectedOption(result_value)),
       on("mouseover", fn(evt) {
         evt
         |> dynamic.field(
@@ -241,8 +247,12 @@ fn search_result(model: Model, res: String, index: Int) -> Element(Msg) {
         )
         |> result.map(UserUnHoveredOption)
       }),
+      on("mousedown", fn(evt) {
+        event.prevent_default(evt)
+        Ok(UserMousedDownOption)
+      }),
     ],
-    [text(res)],
+    [text(result_value)],
   )
 }
 

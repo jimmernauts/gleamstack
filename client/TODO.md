@@ -9,3 +9,4 @@
 [] Build auth
 [] Build importer (must be serverside)
 [] Build shopping list
+[] SSR ?

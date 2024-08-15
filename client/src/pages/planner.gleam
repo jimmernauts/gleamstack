@@ -77,14 +77,28 @@ fn update_meal_title_in_plan(
           "" ->
             a.planned_meals
             |> list.filter(fn(a) { a.for != meal })
-          _ ->
-            a.planned_meals
-            |> list.map(fn(b) {
-              case b.for == meal {
-                True -> PlannedMealWithStatus(..b, title: Some(value))
-                False -> b
-              }
-            })
+          _ -> {
+            let tup =
+              a.planned_meals
+              |> list.split_while(fn(b) { b.for == meal })
+            io.debug(tup)
+            case tup {
+              #([], b) ->
+                list.append(
+                  [
+                    PlannedMealWithStatus(
+                      for: meal,
+                      title: Some(value),
+                      complete: None,
+                    ),
+                  ],
+                  b,
+                )
+              #([a], b) ->
+                list.append([PlannedMealWithStatus(..a, title: Some(value))], b)
+              #(_, _) -> []
+            }
+          }
         }
       None -> [
         PlannedMealWithStatus(for: meal, title: Some(value), complete: None),
@@ -121,6 +135,7 @@ pub fn planner_update(
   case msg {
     UserUpdatedMealTitle(date, meal, value) -> {
       let result = update_meal_title_in_plan(model.plan_week, date, meal, value)
+      io.debug(result)
       #(Model(..model, plan_week: result), effect.none())
     }
     UserToggledMealComplete(date, meal, complete) -> {
