@@ -1,0 +1,106 @@
+{
+    "title": "Mustard, mushroom and walnut flammekuech",
+    "cook_time": 20,
+    "prep_time": 30,
+    "serves": 2,
+    "ingredients": [
+        {
+            "name": "Cr\u00e8me fra\u00eeche",
+            "quantity": "1 egg",
+            "units": null,
+            "ismain": true
+        },
+        {
+            "name": "Dijon mustard",
+            "quantity": "1 tablespoon",
+            "units": null,
+            "ismain": true
+        },
+        {
+            "name": "Plain flour",
+            "quantity": "250g",
+            "units": null,
+            "ismain": true
+        },
+        {
+            "name": "Sea salt",
+            "quantity": "A pinch",
+            "units": null,
+            "ismain": false
+        },
+        {
+            "name": "Warm water",
+            "quantity": "85ml",
+            "units": null,
+            "ismain": false
+        },
+        {
+            "name": "Wholegrain mustard",
+            "quantity": "A upfront bit",
+            "units": null,
+            "ismain": true
+        },
+        {
+            "name": "Mushrooms (mixed)",
+            "quantity": null,
+            "units": null,
+            "ismain": true
+        },
+        {
+            "name": "Swiss chard or spinach",
+            "quantity": null,
+            "units": null,
+            "ismain": true
+        },
+        {
+            "name": "Olive oil",
+            "quantity": null,
+            "units": null,
+            "ismain": false
+        },
+        {
+            "name": "Honey",
+            "quantity": "1 teaspoon",
+            "units": null,
+            "ismain": true
+        },
+        {
+            "name": "Fennel seeds",
+            "quantity": "1 teaspoon bashed",
+            "units": null,
+            "ismain": true
+        },
+        {
+            "name": "Walnuts",
+            "quantity": null,
+            "units": null,
+            "ismain": true
+        },
+        {
+            "name": "Thyme",
+            "quantity": "A few sprigs",
+            "units": null,
+            "ismain": false
+        }
+    ],
+    "method_steps": [
+        {
+            "step_text": "Preheat the oven to 220\u00b0C fan. Preheat the oven to 220\u00b0C fan then place a large baking tray into the oven. Put 250g of plain flour, a big pinch of sea salt, 1 teaspoon of thyme leaves, 85ml warm water into a large mixing bowl with 5 tablespoons of olive oil. Mix together and knead by hand to form a dough. Put the dough onto a floured surface and roll it out into a roughly 14-sized rectangle. Transfer the dough to the hot baking tray in the oven."
+        },
+        {
+            "step_text": "Make the mustard filling by mixing an egg creme fraiche into a medium mixing bowl with 1 tablespoon wholegrain mustard, 1 tablespoon Dijon mustard, 1 teaspoon runny honey, the grated zest of 1\u20442 an unwaxed lemon, 1\u20442 a teaspoon bashed fennel seeds, and 1og freshly grated Parmesan. Put to one side."
+        },
+        {
+            "step_text": "Cook the greens by removing leaves from stems of Swiss chard or spinach and finely chop the stems. Heat a frying pan over a medium heat and add some olive oil. Once hot, add the stems and cook for 2-3 minutes. Roughly chop the leaves then add these too, cooking them for 4-5 minutes until wilted and all the moisture has evaporated. Set aside to cool."
+        },
+        {
+            "step_text": "Prepare the mushrooms by using a brush or a piece of kitchen paper to remove any dirt from mixed mushrooms, then tear them into bite-sized pieces, varying the size and shape. Put the mushrooms in a bowl with 1 teaspoon of Dijon mustard and stir gently so they are all coated in the mustard."
+        },
+        {
+            "step_text": "Working quickly, spread the dough with the cr\u00e8me fra\u00eeche mixture, top with the wilted greens and finish with the musardy mushrooms, then grate over 50g of Parmesan."
+        },
+        {
+            "step_text": "Bake the tart for 15-18 minutes until the edges are deep golden and the filling is bubbling. Cool on the baking tray for 5 minutes, then carefully slide onto a wire rack to cool. Serve at room temperature (or hot from the oven if you like!) with a bright green salad like the one on page 20."
+        }
+    ]
+}

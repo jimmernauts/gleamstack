@@ -4,7 +4,6 @@
   "type": "module",
   "dependencies": {
     "@triplit/client": "^0.3.70",
-    "@vlcn.io/crsqlite-wasm": "^0.16.0",
     "change-case": "^5.4.4",
     "esbuild-plugin-wasm": "^1.1.0",
     "iso8601-duration": "^2.1.2",

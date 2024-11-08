@@ -430,20 +430,8 @@ pub fn edit_planner(model: Model) {
       ],
       [
         planner_header_row(week),
-        fragment({
-          dict.values(week)
-          |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
-          |> list.index_map(fn(x, i) {
-            planner_meal_input(x, i, Lunch, model.recipe_list)
-          })
-        }),
-        fragment({
-          dict.values(week)
-          |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
-          |> list.index_map(fn(x, i) {
-            planner_meal_input(x, i, Dinner, model.recipe_list)
-          })
-        }),
+        planner_input_row(Lunch, week, model.recipe_list),
+        planner_input_row(Dinner, week, model.recipe_list),
       ],
     ),
   ])
@@ -660,6 +648,20 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
       ],
     ),
   ])
+}
+
+fn planner_input_row(
+  for: Meal,
+  week: PlanWeek,
+  recipe_list: List(String),
+) -> Element(PlannerMsg) {
+  element.keyed(fragment, {
+    dict.values(week)
+    |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
+    |> list.index_map(fn(x, i) {
+      #(int.to_string(i), planner_meal_input(x, i, for, recipe_list))
+    })
+  })
 }
 
 fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
