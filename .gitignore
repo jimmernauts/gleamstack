@@ -1,4 +1,4 @@
-
+*.env
 notebooks/.venv
 notebooks/.venv/*
 notebooks/__pycache__
@@ -12,3 +12,5 @@ client/dist
 client/dist/*
 build
 build/*
+notebooks/**
+notebooks/**/*
