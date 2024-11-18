@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.9.15"
+__generated_with = "0.9.16"
 app = marimo.App(width="medium")
 
 
@@ -14,8 +14,10 @@ def __():
     from PIL import Image
 
     path = dotenv.find_dotenv(usecwd=True)
-    dotenv.load_dotenv(path)
-    client = Anthropic()
+    print(dotenv.load_dotenv(path))
+    my_api_key = os.getenv("ANTHROPIC_API_KEY")
+    client = Anthropic(api_key=my_api_key)
+
 
     def ocr_all_images(path):
         tools = [
@@ -25,7 +27,10 @@ def __():
                 "input_schema": {
                     "type": "object",
                     "properties": {
-                        "title": {"type": "string", "description": "The recipe title"},
+                        "title": {
+                            "type": "string",
+                            "description": "The recipe title",
+                        },
                         "cook_time": {
                             "type": "integer",
                             "description": "How long it takes to cook the recipe, in minutes",
@@ -88,12 +93,16 @@ def __():
         for file in os.listdir(directory):
             filename = os.fsdecode(file)
             if filename.endswith(".jpg") or filename.endswith(".jpeg"):
+                print(path+filename)
                 # first check if larger than 5mb, if so, optimize
-                size = os.stat(path+filename).st_size / (1024 * 1024)
-                if size > 5:
-                    Image.open(path+filename).save(path+filename, optimize=True, quality=95)
+                size = os.stat(path + filename).st_size / (1024 * 1024)
+                print(size)
+                if size > 2:
+                    Image.open(path + filename).save(
+                        path + filename, optimize=True, quality=95
+                    )
                 # opens the image file in "read binary" mode
-                with open(path+filename, "rb") as image_file:
+                with open(path + filename, "rb") as image_file:
                     # reads the contents of the image as a bytes object
                     binary_data = image_file.read()
                     # encodes the binary data using Base64 encoding
@@ -113,11 +122,13 @@ def __():
                                     "data": base64_string,
                                 },
                             },
-                            {"type": "text", "text": "use the recipe_formatter tool"},
+                            {
+                                "type": "text",
+                                "text": "use the recipe_formatter tool",
+                            },
                         ],
                     },
                 ]
-
 
                 response = client.messages.create(
                     model="claude-3-sonnet-20240229",
@@ -130,7 +141,10 @@ def __():
 
                 formatted_recipe = None
                 for content in response.content:
-                    if content.type == "tool_use" and content.name == "recipe_formatter":
+                    if (
+                        content.type == "tool_use"
+                        and content.name == "recipe_formatter"
+                    ):
                         formatted_recipe = content.input
                         break
                 if formatted_recipe:
@@ -148,6 +162,7 @@ def __():
         client,
         dotenv,
         json,
+        my_api_key,
         ocr_all_images,
         os,
         path,
@@ -155,8 +170,8 @@ def __():
 
 
 @app.cell
-def __():
-    #ocr_all_images("./prompting_images/")
+def __(ocr_all_images):
+    ocr_all_images("./prompting_images/")
     return
 
 

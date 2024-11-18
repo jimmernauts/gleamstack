@@ -1,9 +1,4 @@
 *.env
-notebooks/.venv
-notebooks/.venv/*
-notebooks/__pycache__
-notebooks/__pycache__/*
-notebooks/.env
 client/.env
 client/build
 client/build/*
@@ -12,5 +7,5 @@ client/dist
 client/dist/*
 build
 build/*
-notebooks/**
-notebooks/**/*
+notebooks/*
+!notebooks/claude.py
