@@ -11,6 +11,7 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
+import gleam/string
 import lib/utils
 import lustre/effect.{type Effect}
 
@@ -289,7 +290,15 @@ pub fn json_string_decoder(
   |> decode.then(fn(json_string) {
     case json.decode(json_string, wrapper) {
       Ok(a) -> decode.into(a)
-      _ -> decode.fail("Expected a json string")
+      b ->
+        decode.fail(
+          string.concat([
+            "Expected a json string, but I got ",
+            json_string,
+            "The inner error was: ",
+            string.inspect(b),
+          ]),
+        )
     }
   })
 }
