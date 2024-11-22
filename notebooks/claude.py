@@ -54,8 +54,8 @@ def __():
                                         "description": "The ingredient name",
                                     },
                                     "ismain": {
-                                        "type": "boolean",
-                                        "description": "Denotes whether this is a main ingredient of the recipe",
+                                        "type": "string",
+                                        "description": "Denotes whether this is a main ingredient of the recipe. Must be either 'true' or 'false'.",
                                     },
                                     "quantity": {
                                         "type": "string",
