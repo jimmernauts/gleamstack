@@ -51,9 +51,9 @@ pub fn merge_recipe_into_model(recipe: Recipe, model: RecipeList) -> RecipeList 
 pub fn get_recipes() -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
   do_get_recipes()
-  |> promise.map(dynamic.dict(dynamic.string, decode_recipe))
   |> promise.map(io.debug)
-  |> promise.map(result.map(_, dict.values))
+  |> promise.map(dynamic.list(decode_recipe))
+  |> promise.map(io.debug)
   |> promise.map(result.map(_, DbRetrievedRecipes))
   |> promise.tap(result.map(_, dispatch))
   Nil
@@ -65,9 +65,8 @@ fn do_get_recipes() -> Promise(Dynamic)
 pub fn get_tag_options() -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
   do_get_tagoptions()
+  |> promise.map(dynamic.list(decode_tag_option))
   |> promise.map(io.debug)
-  |> promise.map(dynamic.dict(dynamic.string, decode_tag_option))
-  |> promise.map(result.map(_, dict.values))
   |> promise.map(result.map(_, DbRetrievedTagOptions))
   |> promise.tap(result.map(_, dispatch))
   Nil
