@@ -165,7 +165,10 @@ pub fn get_plan(start_date: Date) -> Effect(PlannerMsg) {
     date.to_rata_die(start_date),
     date.to_rata_die(date.add(start_date, 1, date.Weeks)),
   )
-  |> promise.map(dynamic.dict(decode_string_day, decode_plan_day))
+  |> promise.map(io.debug)
+  |> promise.map(dynamic.list(decode_plan_day))
+  |> promise.map(result.map(_, list.map(_, fn(x: PlanDay) { #(x.date, x) })))
+  |> promise.map(result.map(_, dict.from_list))
   |> promise.map(result.map(_, DbRetrievedPlan(_, start_date)))
   |> promise.tap(result.map(_, dispatch))
   Nil
