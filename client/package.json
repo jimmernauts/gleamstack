@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "type": "module",
   "dependencies": {
+    "@chouqueth/gleam": "^1.6.2",
     "@triplit/client": "^0.3.84",
     "change-case": "^5.4.4",
     "esbuild-plugin-wasm": "^1.1.0",
