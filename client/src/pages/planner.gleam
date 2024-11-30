@@ -691,7 +691,7 @@ fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
   div(
     [
       class(
-        "flex justify-center w-11/12 h-11/12 flex-col justify-between m-1 sm:m-2 overflow-hidden",
+        "flex justify-center w-11/12 h-11/12 flex-col justify-between m-1 sm:m-2",
       ),
     ],
     [
@@ -766,7 +766,7 @@ fn inner_input(
   div(
     [
       class(
-        "flex justify-center w-11/12 h-11/12 flex-col justify-between m-1 sm:m-2 overflow-hidden",
+        "flex justify-center w-11/12 h-11/12 flex-col justify-between m-1 sm:m-2",
       ),
     ],
     [

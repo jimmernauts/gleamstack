@@ -309,11 +309,14 @@ fn view(model: Model) -> Element(Msg) {
     ul(
       [
         id("search-results-" <> model.elem_id),
-        class("font-mono bg-ecru-white-50 border border-ecru-white-950 text-xs"),
+        class(
+          "font-mono z-10 absolute bg-ecru-white-50 border border-ecru-white-950 text-xs max-h-full overflow-x-visible overflow-y-scroll w-[240px]",
+        ),
         attribute("role", "listbox"),
-        attribute.style(case model.is_open {
-          True -> [#("display", "block")]
-          False -> [#("display", "none")]
+        attribute.style(case model.is_open, list.length(model.found_items) {
+          True, 0 -> [#("display", "none")]
+          True, _ -> [#("display", "block")]
+          False, _ -> [#("display", "none")]
         }),
         attribute("aria-expanded", case model.is_open {
           True -> "true"
