@@ -4,7 +4,7 @@
   "type": "module",
   "dependencies": {
     "@chouqueth/gleam": "^1.6.2",
-    "@triplit/client": "^0.3.84",
+    "@triplit/client": "^0.6.7",
     "change-case": "^5.4.4",
     "esbuild-plugin-wasm": "^1.1.0",
     "iso8601-duration": "^2.1.2",
@@ -15,13 +15,13 @@
   },
   "devDependencies": {
     "@triplit/cli": "^0.4.24",
-    "@types/bun": "^1.1.13",
+    "@types/bun": "^1.1.14",
     "@types/jsonld": "^1.5.15",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "ts-gleam": "^1.0.1",
     "vite": "^5.4.11",
     "vite-gleam": "^0.4.3",
-    "wrangler": "^3.89.0"
+    "wrangler": "^3.91.0"
   }
 }
