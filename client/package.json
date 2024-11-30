@@ -8,7 +8,8 @@
     "esbuild-plugin-wasm": "^1.1.0",
     "iso8601-duration": "^2.1.2",
     "jsonld": "^8.3.2",
-    "linkedom": "^0.18.5"
+    "linkedom": "^0.18.5",
+    "tailwindcss": "^3.4.15"
   },
   "devDependencies": {
     "@triplit/cli": "^0.4.24",
