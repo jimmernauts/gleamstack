@@ -516,6 +516,18 @@ pub fn list_update(
         )
       }
     }
+    session.UserGroupedRecipeListByAuthor -> {
+      case model.group_by {
+        Some(session.GroupByAuthor) -> #(
+          RecipeList(..model, group_by: None),
+          effect.none(),
+        )
+        _ -> #(
+          RecipeList(..model, group_by: Some(session.GroupByAuthor)),
+          effect.none(),
+        )
+      }
+    }
   }
 }
 
@@ -545,7 +557,9 @@ pub fn view_recipe_list(model: session.RecipeList) {
       {
         case model.group_by {
           Some(session.GroupByTag(tag)) ->
-            element.fragment(view_recipe_groups(model.recipes, tag))
+            element.fragment(view_recipe_tag_groups(model.recipes, tag))
+          Some(session.GroupByAuthor) ->
+            element.fragment(view_recipe_author_groups(model.recipes))
           _ ->
             element.fragment(
               list.map(model.recipes, view_recipe_summary(_, "")),
@@ -1061,29 +1075,33 @@ pub fn view_recipe_groupby(model: session.RecipeList) {
       }
     })
     |> list.flatten
-  let authors =
-    model.recipes
-    |> list.map(fn(x) {
-      case x.author {
-        Some(a) -> [a]
-        _ -> []
-      }
-    })
-    |> list.flatten
-  list.map(tags, fn(a) {
-    button(
-      [
-        class(
-          "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
-        ),
-        on_click(session.UserGroupedRecipeListByTag(a)),
-      ],
-      [text(a)],
-    )
-  })
+  list.append(
+    list.map(tags, fn(a) {
+      button(
+        [
+          class(
+            "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+          ),
+          on_click(session.UserGroupedRecipeListByTag(a)),
+        ],
+        [text(a)],
+      )
+    }),
+    [
+      button(
+        [
+          class(
+            "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+          ),
+          on_click(session.UserGroupedRecipeListByAuthor),
+        ],
+        [text("Author")],
+      ),
+    ],
+  )
 }
 
-pub fn view_recipe_groups(recipes: List(session.Recipe), tag: String) {
+pub fn view_recipe_tag_groups(recipes: List(session.Recipe), tag: String) {
   let groups =
     list.group(recipes, fn(a) {
       case a.tags {
@@ -1097,7 +1115,36 @@ pub fn view_recipe_groups(recipes: List(session.Recipe), tag: String) {
     })
   groups
   |> dict.map_values(fn(k, v) {
-    details([class("contents")], [
+    details([class("subgrid-cols")], [
+      summary(
+        [
+          class(
+            "col-start-1 col-span-full flex gap-2  text-base cursor-pointer marker:content-none",
+          ),
+        ],
+        [
+          text("📑"),
+          span([class("font-mono")], [text(k)]),
+          element.element("hr", [class("flex-grow mx-2 self-center")], []),
+        ],
+      ),
+      element.fragment(list.map(v, view_recipe_summary(_, "ml-2 text-lg"))),
+    ])
+  })
+  |> dict.values
+}
+
+pub fn view_recipe_author_groups(recipes: List(session.Recipe)) {
+  let groups =
+    list.group(recipes, fn(a) {
+      case a.author {
+        Some(a) -> a
+        _ -> ""
+      }
+    })
+  groups
+  |> dict.map_values(fn(k, v) {
+    details([class("col-span-full subgrid-cols")], [
       summary(
         [
           class(
@@ -1119,9 +1166,7 @@ pub fn view_recipe_groups(recipes: List(session.Recipe), tag: String) {
 fn view_recipe_summary(recipe: Recipe, class_props: String) {
   div(
     [
-      class(
-        "col-span-full  text-xl flex flex-wrap items-baseline justify-start",
-      ),
+      class("col-span-full text-xl flex flex-wrap items-baseline justify-start"),
       class(class_props),
     ],
     [

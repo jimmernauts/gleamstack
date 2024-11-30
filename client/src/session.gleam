@@ -19,11 +19,12 @@ pub type RecipeListMsg {
   DbRetrievedRecipes(List(Recipe))
   DbRetrievedTagOptions(List(TagOption))
   UserGroupedRecipeListByTag(String)
+  UserGroupedRecipeListByAuthor
 }
 
 pub type RecipeListGroupBy {
   GroupByTag(String)
-  GroupByAuthor(String)
+  GroupByAuthor
 }
 
 pub type RecipeList {
