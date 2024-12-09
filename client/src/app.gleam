@@ -1,7 +1,6 @@
 import components/page_title.{page_title}
 import components/typeahead
 import gleam/dict
-import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -67,6 +66,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         use dispatch <- effect.from
         OnRouteChange(result.unwrap(initial_route, Home)) |> dispatch
       },
+      effect.map(session.subscribe_to_recipe_summaries(), RecipeList),
     ]),
   )
 }
@@ -106,14 +106,10 @@ pub type Msg {
 // UPDATE ----------------------------------------------------------------------
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  io.debug(msg)
   case msg {
     OnRouteChange(ViewRecipeList) -> #(
       Model(..model, current_route: ViewRecipeList),
-      effect.batch([
-        effect.map(session.get_recipes(), RecipeList),
-        effect.map(session.get_tag_options(), RecipeList),
-      ]),
+      effect.map(session.get_tag_options(), RecipeList),
     )
     OnRouteChange(ViewRecipeDetail(slug: slug)) -> #(
       Model(
@@ -121,7 +117,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         current_route: ViewRecipeDetail(slug: slug),
         current_recipe: lookup_recipe_by_slug(model, slug),
       ),
-      effect.none(),
+      effect.map(session.get_one_recipe_by_slug(slug), RecipeList),
     )
     OnRouteChange(EditRecipeDetail(SlugParam(slug: ""))) -> #(
       Model(
@@ -164,7 +160,16 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     )
     OnRouteChange(ViewPlanner(start_date)) -> #(
       Model(..model, current_route: ViewPlanner(start_date)),
-      effect.map(planner.get_plan(date.floor(start_date, date.Monday)), Planner),
+      effect.batch([
+        effect.map(
+          planner.get_plan(date.floor(start_date, date.Monday)),
+          Planner,
+        ),
+        case list.length(model.recipes.recipes) {
+          0 -> effect.map(session.get_recipes(), RecipeList)
+          _ -> effect.none()
+        },
+      ]),
     )
     OnRouteChange(EditPlanner(start_date)) -> #(
       Model(..model, current_route: EditPlanner(start_date)),
@@ -263,7 +268,7 @@ fn on_route_change(uri: Uri) -> Msg {
           OnRouteChange(
             ViewPlanner(result.unwrap(date.from_iso_string(v), date.today())),
           )
-        _ -> OnRouteChange(EditPlanner(date.today()))
+        _ -> OnRouteChange(ViewPlanner(date.today()))
       }
     }
     _, ["recipes", "new"] ->

@@ -3,6 +3,8 @@
 [X] Deploy to prod
 [X] Add author to recipe model, view & edit pages
 [X] Add grouping buttons to recipe list
+[] Make slimmer version of recipe list in model
+[] Try subcribing to db queries instead of fetching
 [] PWA
 [] Add bunch of recipes
 [] Build OCR scanner (serverside?)

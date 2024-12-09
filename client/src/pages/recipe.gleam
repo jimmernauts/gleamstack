@@ -25,6 +25,7 @@ import lustre/event.{on_check, on_click, on_input}
 import session.{
   type Ingredient, type MethodStep, type Recipe, type RecipeList, type Tag,
   type TagOption, Ingredient, MethodStep, Recipe, RecipeList, Tag, TagOption,
+  decode_recipe,
 }
 
 //-MODEL---------------------------------------------
@@ -496,8 +497,23 @@ pub fn list_update(
   msg: session.RecipeListMsg,
 ) -> #(RecipeList, Effect(session.RecipeListMsg)) {
   case msg {
+    session.DbSubcribedRecipes(jsdata) -> {
+      let try_decode = jsdata |> dynamic.list(decode_recipe)
+      let try_effect = case try_decode {
+        Ok(recipes) -> {
+          use dispatch <- effect.from
+          session.DbRetrievedRecipes(recipes) |> dispatch
+        }
+        Error(_) -> effect.none()
+      }
+      #(model, try_effect)
+    }
     session.DbRetrievedRecipes(recipes) -> #(
       RecipeList(..model, recipes: recipes),
+      effect.none(),
+    )
+    session.DbRetrievedOneRecipe(recipe) -> #(
+      session.merge_recipe_into_model(recipe, model),
       effect.none(),
     )
     session.DbRetrievedTagOptions(tag_options) -> #(

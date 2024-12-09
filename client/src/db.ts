@@ -51,7 +51,7 @@ export async function do_save_recipe(recipe: Recipe) {
 export async function do_get_plan(startDate: number, endDate: number) {
     console.log(client)
     const query = client.query('plan').where([['date','>=',startDate],['date','<=',endDate]]).build(); 
-    const result = await client.fetch(query, { policy: 'local-and-remote'})
+    const result = await client.fetch(query)
 	console.log("do_get_plan result: ", result);
 	return result
 }
@@ -65,4 +65,21 @@ export async function do_save_plan(plan: PlanDay[]) {
     }
 })
     return plan
+}
+
+
+export async function do_subscribe_to_recipe_summaries(dispatch: any) {
+    const query = client.query('recipes').select(['id','title','slug','cook_time','prep_time','serves','author','source','tags']).build();
+    const result = await client.subscribe(query, dispatch,() => {})
+    return result;
+}
+
+export async function do_get_one_recipe_by_slug(slug: string) {
+    const query = client.query('recipes').where([['slug','=',slug]]).build();
+    const result = await client.fetchOne(query)
+    result.ingredients = JSON.parse(result.ingredients)
+    result.tags = JSON.parse(result.tags)
+    result.method_steps = JSON.parse(result.method_steps)
+    console.log("do_get_one_recipe_by_slug result: ", result);
+    return result;
 }

@@ -1,4 +1,5 @@
 import decode
+import decode/zero as decode2
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{
@@ -16,7 +17,9 @@ import lib/utils
 import lustre/effect.{type Effect}
 
 pub type RecipeListMsg {
+  DbSubcribedRecipes(Dynamic)
   DbRetrievedRecipes(List(Recipe))
+  DbRetrievedOneRecipe(Recipe)
   DbRetrievedTagOptions(List(TagOption))
   UserGroupedRecipeListByTag(String)
   UserGroupedRecipeListByAuthor
@@ -48,6 +51,20 @@ pub fn merge_recipe_into_model(recipe: Recipe, model: RecipeList) -> RecipeList 
   )
 }
 
+pub fn get_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_get_one_recipe_by_slug(slug)
+  |> promise.map(io.debug)
+  |> promise.map(decode2_recipe)
+  |> promise.map(io.debug)
+  |> promise.map(result.map(_, DbRetrievedOneRecipe))
+  |> promise.tap(result.map(_, dispatch))
+  Nil
+}
+
+@external(javascript, "./db.ts", "do_get_one_recipe_by_slug")
+fn do_get_one_recipe_by_slug(slug: String) -> Promise(Dynamic)
+
 pub fn get_recipes() -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
   do_get_recipes()
@@ -74,6 +91,15 @@ pub fn get_tag_options() -> Effect(RecipeListMsg) {
 
 @external(javascript, "./db.ts", "do_get_tagoptions")
 fn do_get_tagoptions() -> Promise(Dynamic)
+
+pub fn subscribe_to_recipe_summaries() -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  use data <- do_subscribe_to_recipe_summaries
+  data |> DbSubcribedRecipes |> dispatch
+}
+
+@external(javascript, "./db.ts", "do_subscribe_to_recipe_summaries")
+fn do_subscribe_to_recipe_summaries(callback: fn(a) -> Nil) -> Nil
 
 //-TYPES-------------------------------------------------------------
 
@@ -170,6 +196,135 @@ pub fn json_encode_tag_list(dict: Dict(Int, Tag)) -> Json {
 // fn json_encode_tag_option_list(tag_options: List(String)) -> Json {
 //  json.array(tag_options, json.string)
 //}
+
+pub fn decode2_recipe(d: Dynamic) -> Result(Recipe, dynamic.DecodeErrors) {
+  let decoder = {
+    use id <- decode2.optional_field(
+      "id",
+      option.None,
+      decode2.optional(decode2.string),
+    )
+    use title <- decode2.field("title", decode2.string)
+    use slug <- decode2.field("slug", decode2.string)
+    use cook_time <- decode2.field("cook_time", decode2.int)
+    use prep_time <- decode2.field("prep_time", decode2.int)
+    use serves <- decode2.field("serves", decode2.int)
+    use author <- decode2.optional_field(
+      "author",
+      option.None,
+      decode2.optional(decode2.string),
+    )
+    use source <- decode2.optional_field(
+      "source",
+      option.None,
+      decode2.optional(decode2.string),
+    )
+    use tags <- decode2.optional_field(
+      "tags",
+      option.None,
+      decode2.optional(decode2_json_string(decode2_tags(), dict.from_list([]))),
+    )
+    use ingredients <- decode2.optional_field(
+      "ingredients",
+      option.None,
+      decode2.optional(decode2_json_string(
+        decode2_ingredients(),
+        dict.from_list([]),
+      )),
+    )
+    use method_steps <- decode2.optional_field(
+      "method_steps",
+      option.None,
+      decode2.optional(decode2_json_string(
+        decode2_method_steps(),
+        dict.from_list([]),
+      )),
+    )
+    use shortlisted <- decode2.optional_field(
+      "shortlisted",
+      option.None,
+      decode2.optional(decode2.bool),
+    )
+    decode2.success(Recipe(
+      id:,
+      title:,
+      slug:,
+      cook_time:,
+      prep_time:,
+      serves:,
+      author:,
+      source:,
+      tags:,
+      ingredients:,
+      method_steps:,
+      shortlisted:,
+    ))
+  }
+
+  decode2.run(d, decoder)
+}
+
+fn decode2_tags() -> decode2.Decoder(Dict(Int, Tag)) {
+  let tag_decoder = {
+    use name <- decode2.field("name", decode2.string)
+    use value <- decode2.field("value", decode2.string)
+    decode2.success(Tag(name:, value:))
+  }
+  decode2.dict(decode2_stringed_int(), tag_decoder)
+}
+
+fn decode2_ingredients() -> decode2.Decoder(Dict(Int, Ingredient)) {
+  let ingredient_decoder = {
+    use name <- decode2.field("name", decode2.optional(decode2.string))
+    use ismain <- decode2.field("ismain", decode2.optional(decode2.bool))
+    use quantity <- decode2.field("quantity", decode2.optional(decode2.string))
+    use units <- decode2.field("units", decode2.optional(decode2.string))
+    decode2.success(Ingredient(
+      name: name,
+      ismain: ismain,
+      quantity: quantity,
+      units: units,
+    ))
+  }
+
+  decode2.dict(decode2_stringed_int(), ingredient_decoder)
+}
+
+fn decode2_method_steps() -> decode2.Decoder(Dict(Int, MethodStep)) {
+  let method_step_decoder = {
+    use step_text <- decode2.field("step_text", decode2.string)
+    decode2.success(MethodStep(step_text:))
+  }
+  decode2.dict(decode2_stringed_int(), method_step_decoder)
+}
+
+fn decode2_stringed_int() -> decode2.Decoder(Int) {
+  decode2.string |> decode2.map(int.parse) |> decode2.map(result.unwrap(_, 0))
+}
+
+fn decode2_json_string(
+  inner_decoder: decode2.Decoder(a),
+  default: a,
+) -> decode2.Decoder(a) {
+  let wrapper = fn(a) { decode2.run(a, inner_decoder) }
+
+  decode2.string
+  |> decode2.then(fn(json_string) {
+    case json.decode(json_string, wrapper) {
+      Ok(a) -> decode2.success(a)
+      b ->
+        decode2.failure(
+          default,
+          string.concat([
+            "Expected json, but I got ",
+            json_string,
+            "The inner error was: ",
+            string.inspect(b),
+          ]),
+        )
+    }
+  })
+}
 
 pub fn decode_recipe(d: Dynamic) -> Result(Recipe, dynamic.DecodeErrors) {
   decode.into({
