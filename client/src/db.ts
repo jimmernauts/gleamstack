@@ -38,9 +38,9 @@ export async function do_save_recipe(recipe: Recipe) {
         serves: recipe.serves,
         ...((Object.hasOwn(recipe,"author") )? {author: recipe.author} : {}),
         ...((Object.hasOwn(recipe,"source") )? {source: recipe.source} : {}),
-        tags: recipe.tags,
-        ingredients: recipe.ingredients,
-        method_steps: recipe.method_steps,
+        ...((Object.hasOwn(recipe,"tags") )? {tags: recipe.tags} : {}),
+        ...((Object.hasOwn(recipe,"ingredients") )? {ingredients: recipe.ingredients} : {}),
+        ...((Object.hasOwn(recipe,"method_steps") )? {method_steps: recipe.method_steps} : {}),
         ...((Object.hasOwn(recipe,"shortlisted") )? {shortlisted: recipe.shortlisted} : {}),
      }
      console.log("do_save_recipe obj: ", obj);
@@ -77,9 +77,6 @@ export async function do_subscribe_to_recipe_summaries(dispatch: any) {
 export async function do_get_one_recipe_by_slug(slug: string) {
     const query = client.query('recipes').where([['slug','=',slug]]).build();
     const result = await client.fetchOne(query)
-    result.ingredients = JSON.parse(result.ingredients)
-    result.tags = JSON.parse(result.tags)
-    result.method_steps = JSON.parse(result.method_steps)
     console.log("do_get_one_recipe_by_slug result: ", result);
     return result;
 }

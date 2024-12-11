@@ -179,6 +179,16 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(..model, current_route: route, current_recipe: None),
       effect.none(),
     )
+    RecipeList(session.DbRetrievedOneRecipe(recipe)) -> {
+      #(
+        Model(
+          ..model,
+          current_recipe: Some(recipe),
+          recipes: session.merge_recipe_into_model(recipe, model.recipes),
+        ),
+        effect.none(),
+      )
+    }
     RecipeList(list_msg) -> {
       let #(child_model, child_effect) =
         recipe.list_update(model.recipes, list_msg)

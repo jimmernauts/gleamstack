@@ -1,8 +1,10 @@
 import components/page_title.{page_title}
+import decode/zero as decode2
 import gleam/dict
 import gleam/dynamic.{dict, int, list, string}
 import gleam/function
 import gleam/int
+import gleam/io
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -25,7 +27,7 @@ import lustre/event.{on_check, on_click, on_input}
 import session.{
   type Ingredient, type MethodStep, type Recipe, type RecipeList, type Tag,
   type TagOption, Ingredient, MethodStep, Recipe, RecipeList, Tag, TagOption,
-  decode_recipe,
+  decode2_recipe, decode_recipe,
 }
 
 //-MODEL---------------------------------------------
@@ -498,7 +500,9 @@ pub fn list_update(
 ) -> #(RecipeList, Effect(session.RecipeListMsg)) {
   case msg {
     session.DbSubcribedRecipes(jsdata) -> {
-      let try_decode = jsdata |> dynamic.list(decode_recipe)
+      let decoder = decode2.list(decode2_recipe())
+      let try_decode = decode2.run(jsdata, decoder)
+      io.debug(try_decode)
       let try_effect = case try_decode {
         Ok(recipes) -> {
           use dispatch <- effect.from
@@ -564,7 +568,10 @@ pub fn view_recipe_list(model: session.RecipeList) {
             "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
           ),
         ],
-        [a([href("/"), class("text-center")], [text("🏠")])],
+        [
+          a([href("/"), class("text-center")], [text("🏠")]),
+          a([href("/planner"), class("text-center")], [text("📅")]),
+        ],
       ),
       div(
         [class("col-span-full flex flex-wrap items-center justify-start gap-3")],
@@ -896,6 +903,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
         ],
         [
           a([href("/"), class("text-center")], [text("🏠")]),
+          a([href("/recipes"), class("text-center")], [text("📑")]),
           a(
             [href("/recipes/" <> recipe.slug <> "/edit"), class("text-center")],
             [text("✏️")],

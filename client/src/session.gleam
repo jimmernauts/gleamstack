@@ -54,9 +54,7 @@ pub fn merge_recipe_into_model(recipe: Recipe, model: RecipeList) -> RecipeList 
 pub fn get_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
   do_get_one_recipe_by_slug(slug)
-  |> promise.map(io.debug)
-  |> promise.map(decode2_recipe)
-  |> promise.map(io.debug)
+  |> promise.map(decode2.run(_, decode2_recipe()))
   |> promise.map(result.map(_, DbRetrievedOneRecipe))
   |> promise.tap(result.map(_, dispatch))
   Nil
@@ -197,71 +195,67 @@ pub fn json_encode_tag_list(dict: Dict(Int, Tag)) -> Json {
 //  json.array(tag_options, json.string)
 //}
 
-pub fn decode2_recipe(d: Dynamic) -> Result(Recipe, dynamic.DecodeErrors) {
-  let decoder = {
-    use id <- decode2.optional_field(
-      "id",
-      option.None,
-      decode2.optional(decode2.string),
-    )
-    use title <- decode2.field("title", decode2.string)
-    use slug <- decode2.field("slug", decode2.string)
-    use cook_time <- decode2.field("cook_time", decode2.int)
-    use prep_time <- decode2.field("prep_time", decode2.int)
-    use serves <- decode2.field("serves", decode2.int)
-    use author <- decode2.optional_field(
-      "author",
-      option.None,
-      decode2.optional(decode2.string),
-    )
-    use source <- decode2.optional_field(
-      "source",
-      option.None,
-      decode2.optional(decode2.string),
-    )
-    use tags <- decode2.optional_field(
-      "tags",
-      option.None,
-      decode2.optional(decode2_json_string(decode2_tags(), dict.from_list([]))),
-    )
-    use ingredients <- decode2.optional_field(
-      "ingredients",
-      option.None,
-      decode2.optional(decode2_json_string(
-        decode2_ingredients(),
-        dict.from_list([]),
-      )),
-    )
-    use method_steps <- decode2.optional_field(
-      "method_steps",
-      option.None,
-      decode2.optional(decode2_json_string(
-        decode2_method_steps(),
-        dict.from_list([]),
-      )),
-    )
-    use shortlisted <- decode2.optional_field(
-      "shortlisted",
-      option.None,
-      decode2.optional(decode2.bool),
-    )
-    decode2.success(Recipe(
-      id:,
-      title:,
-      slug:,
-      cook_time:,
-      prep_time:,
-      serves:,
-      author:,
-      source:,
-      tags:,
-      ingredients:,
-      method_steps:,
-      shortlisted:,
-    ))
-  }
-
-  decode2.run(d, decoder)
+pub fn decode2_recipe() -> decode2.Decoder(Recipe) {
+  use id <- decode2.optional_field(
+    "id",
+    option.None,
+    decode2.optional(decode2.string),
+  )
+  use title <- decode2.field("title", decode2.string)
+  use slug <- decode2.field("slug", decode2.string)
+  use cook_time <- decode2.field("cook_time", decode2.int)
+  use prep_time <- decode2.field("prep_time", decode2.int)
+  use serves <- decode2.field("serves", decode2.int)
+  use author <- decode2.optional_field(
+    "author",
+    option.None,
+    decode2.optional(decode2.string),
+  )
+  use source <- decode2.optional_field(
+    "source",
+    option.None,
+    decode2.optional(decode2.string),
+  )
+  use tags <- decode2.optional_field(
+    "tags",
+    option.None,
+    decode2.optional(decode2_json_string(decode2_tags(), dict.from_list([]))),
+  )
+  use ingredients <- decode2.optional_field(
+    "ingredients",
+    option.None,
+    decode2.optional(decode2_json_string(
+      decode2_ingredients(),
+      dict.from_list([]),
+    )),
+  )
+  use method_steps <- decode2.optional_field(
+    "method_steps",
+    option.None,
+    decode2.optional(decode2_json_string(
+      decode2_method_steps(),
+      dict.from_list([]),
+    )),
+  )
+  use shortlisted <- decode2.optional_field(
+    "shortlisted",
+    option.None,
+    decode2.optional(decode2.bool),
+  )
+  decode2.success(Recipe(
+    id:,
+    title:,
+    slug:,
+    cook_time:,
+    prep_time:,
+    serves:,
+    author:,
+    source:,
+    tags:,
+    ingredients:,
+    method_steps:,
+    shortlisted:,
+  ))
 }
 
 fn decode2_tags() -> decode2.Decoder(Dict(Int, Tag)) {
@@ -275,10 +269,26 @@ fn decode2_tags() -> decode2.Decoder(Dict(Int, Tag)) {
 
 fn decode2_ingredients() -> decode2.Decoder(Dict(Int, Ingredient)) {
   let ingredient_decoder = {
-    use name <- decode2.field("name", decode2.optional(decode2.string))
-    use ismain <- decode2.field("ismain", decode2.optional(decode2.bool))
-    use quantity <- decode2.field("quantity", decode2.optional(decode2.string))
-    use units <- decode2.field("units", decode2.optional(decode2.string))
+    use name <- decode2.optional_field(
+      "name",
+      option.None,
+      decode2.optional(decode2.string),
+    )
+    use ismain <- decode2.optional_field(
+      "ismain",
+      option.None,
+      decode2.optional(decode2_stringed_bool()),
+    )
+    use quantity <- decode2.optional_field(
+      "quantity",
+      option.None,
+      decode2.optional(decode2.string),
+    )
+    use units <- decode2.optional_field(
+      "units",
+      option.None,
+      decode2.optional(decode2.string),
+    )
     decode2.success(Ingredient(
       name: name,
       ismain: ismain,
@@ -300,6 +310,18 @@ fn decode2_method_steps() -> decode2.Decoder(Dict(Int, MethodStep)) {
 
 fn decode2_stringed_int() -> decode2.Decoder(Int) {
   decode2.string |> decode2.map(int.parse) |> decode2.map(result.unwrap(_, 0))
+}
+
+fn decode2_stringed_bool() -> decode2.Decoder(Bool) {
+  decode2.string
+  |> decode2.then(fn(d) {
+    case d {
+      "True" -> decode2.success(True)
+      "true" -> decode2.success(True)
+      "1" -> decode2.success(True)
+      _ -> decode2.success(False)
+    }
+  })
 }
 
 fn decode2_json_string(
