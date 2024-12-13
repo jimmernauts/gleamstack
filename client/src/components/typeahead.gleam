@@ -74,7 +74,6 @@ pub type Msg {
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  io.debug(msg)
   case msg {
     RetrievedInitialSearchTerm(a) -> {
       #(Model(..model, search_term: a), effect.none())

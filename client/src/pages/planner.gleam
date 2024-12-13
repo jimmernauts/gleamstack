@@ -81,7 +81,6 @@ fn update_meal_title_in_plan(
             let tup =
               a.planned_meals
               |> list.split_while(fn(b) { b.for == meal })
-            io.debug(tup)
             case tup {
               #([], b) ->
                 list.append(
@@ -131,11 +130,9 @@ pub fn planner_update(
   model: Model,
   msg: PlannerMsg,
 ) -> #(Model, Effect(PlannerMsg)) {
-  io.debug(msg)
   case msg {
     UserUpdatedMealTitle(date, meal, value) -> {
       let result = update_meal_title_in_plan(model.plan_week, date, meal, value)
-      io.debug(result)
       #(Model(..model, plan_week: result), effect.none())
     }
     UserToggledMealComplete(date, meal, complete) -> {
@@ -165,7 +162,6 @@ pub fn get_plan(start_date: Date) -> Effect(PlannerMsg) {
     date.to_rata_die(start_date),
     date.to_rata_die(date.add(start_date, 1, date.Weeks)),
   )
-  |> promise.map(io.debug)
   |> promise.map(dynamic.list(decode_plan_day))
   |> promise.map(result.map(_, list.map(_, fn(x: PlanDay) { #(x.date, x) })))
   |> promise.map(result.map(_, dict.from_list))

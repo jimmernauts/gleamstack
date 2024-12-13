@@ -66,9 +66,7 @@ fn do_get_one_recipe_by_slug(slug: String) -> Promise(Dynamic)
 pub fn get_recipes() -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
   do_get_recipes()
-  |> promise.map(io.debug)
   |> promise.map(dynamic.list(decode_recipe))
-  |> promise.map(io.debug)
   |> promise.map(result.map(_, DbRetrievedRecipes))
   |> promise.tap(result.map(_, dispatch))
   Nil
@@ -81,7 +79,6 @@ pub fn get_tag_options() -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
   do_get_tagoptions()
   |> promise.map(dynamic.list(decode_tag_option))
-  |> promise.map(io.debug)
   |> promise.map(result.map(_, DbRetrievedTagOptions))
   |> promise.tap(result.map(_, dispatch))
   Nil

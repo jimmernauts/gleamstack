@@ -1,6 +1,7 @@
 import components/page_title.{page_title}
 import components/typeahead
 import gleam/dict
+import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -148,7 +149,13 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         current_route: EditRecipeDetail(SlugParam(slug: slug)),
         current_recipe: lookup_recipe_by_slug(model, slug),
       ),
-      effect.none(),
+      effect.batch([
+        effect.map(session.get_one_recipe_by_slug(slug), RecipeList),
+        case model.recipes.tag_options {
+          [] -> effect.map(session.get_tag_options(), RecipeList)
+          _ -> effect.none()
+        },
+      ]),
     )
     OnRouteChange(EditRecipeDetail(RecipeParam(recipe: recipe))) -> #(
       Model(
@@ -305,7 +312,7 @@ fn view(model: Model) -> Element(Msg) {
         recipe.lookup_and_view_recipe(model.current_recipe),
         RecipeDetail,
       )
-    EditRecipeDetail(SlugParam(slug: _slug)) ->
+    EditRecipeDetail(SlugParam(slug: _slug)) -> {
       element.map(
         recipe.lookup_and_edit_recipe(
           model.current_recipe,
@@ -313,6 +320,7 @@ fn view(model: Model) -> Element(Msg) {
         ),
         RecipeDetail,
       )
+    }
     EditRecipeDetail(RecipeParam(recipe: recipe)) ->
       element.map(
         recipe.edit_recipe_detail(recipe, model.recipes.tag_options),

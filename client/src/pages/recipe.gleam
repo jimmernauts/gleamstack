@@ -114,6 +114,7 @@ pub fn detail_update(
   model: RecipeDetail,
   msg: RecipeDetailMsg,
 ) -> #(RecipeDetail, Effect(RecipeDetailMsg)) {
+  io.debug(msg)
   case msg {
     UserUpdatedRecipeTitle(newtitle) -> {
       case model {
@@ -228,12 +229,18 @@ pub fn detail_update(
             Recipe(
               ..a,
               tags: {
-                a.tags
-                |> option.map(utils.dict_update(
-                  _,
-                  i,
-                  fn(_tag) { Tag(name: new_tag_name, value: "") },
-                ))
+                case a.tags {
+                  Some(x) ->
+                    x
+                    |> utils.dict_update(i, fn(_tag) {
+                      Tag(name: new_tag_name, value: "")
+                    })
+                    |> Some
+                  _ ->
+                    Some(
+                      dict.from_list([#(0, Tag(name: new_tag_name, value: ""))]),
+                    )
+                }
               },
             ),
           ),
@@ -502,7 +509,7 @@ pub fn list_update(
     session.DbSubcribedRecipes(jsdata) -> {
       let decoder = decode2.list(decode2_recipe())
       let try_decode = decode2.run(jsdata, decoder)
-      io.debug(try_decode)
+
       let try_effect = case try_decode {
         Ok(recipes) -> {
           use dispatch <- effect.from
@@ -806,8 +813,8 @@ pub fn edit_recipe_detail(
           ),
         ],
         [
-          case recipe.tags {
-            Some(tags) -> {
+          case recipe.tags, option.map(recipe.tags, dict.is_empty) {
+            Some(tags), Some(False) -> {
               let children =
                 tags
                 |> dict.to_list
@@ -822,7 +829,7 @@ pub fn edit_recipe_detail(
                 })
               element.keyed(html.div([class("contents")], _), children)
             }
-            _ -> tag_input(tag_options, 0, None)
+            _, _ -> span([on_click(UserAddedTagAtIndex(0))], [text("🏷️")])
           },
         ],
       ),
@@ -910,37 +917,47 @@ pub fn view_recipe_detail(recipe: Recipe) {
           ),
         ],
       ),
-      fieldset(
-        [class("flex gap-1 items-baseline col-span-11 row-start-2 row-span-1")],
-        list.flatten([
-          case recipe.author {
-            Some(a) -> [
-              html.span([class("text-sm")], [text("🧾")]),
-              html.span(
-                [
-                  class("text-base"),
-                  {
-                    case string.length(a) > 19 {
-                      True ->
-                        class("w-[" <> int.to_string(string.length(a)) <> "]")
-                      _ -> class("w-[19ch]")
-                    }
-                  },
-                ],
-                [text(a)],
+      case recipe.author, recipe.source {
+        None, None -> element.none()
+        _, _ ->
+          fieldset(
+            [
+              class(
+                "flex gap-1 items-baseline col-span-11 row-start-2 row-span-1",
               ),
-            ]
-            _ -> []
-          },
-          case recipe.source {
-            Some(a) -> [
-              html.span([class("text-sm")], [text("📗")]),
-              html.span([class("text-base")], [text(a)]),
-            ]
-            _ -> []
-          },
-        ]),
-      ),
+            ],
+            list.flatten([
+              case recipe.author {
+                Some(a) -> [
+                  html.span([class("text-sm")], [text("🧾")]),
+                  html.span(
+                    [
+                      class("text-base"),
+                      {
+                        case string.length(a) > 19 {
+                          True ->
+                            class(
+                              "w-[" <> int.to_string(string.length(a)) <> "]",
+                            )
+                          _ -> class("w-[19ch]")
+                        }
+                      },
+                    ],
+                    [text(a)],
+                  ),
+                ]
+                _ -> []
+              },
+              case recipe.source {
+                Some(a) -> [
+                  html.span([class("text-sm")], [text("📗")]),
+                  html.span([class("text-base")], [text(a)]),
+                ]
+                _ -> []
+              },
+            ]),
+          )
+      },
       fieldset(
         [
           class(
@@ -1275,6 +1292,7 @@ fn tag_input(
   let update_value_with_index = function.curry2(UserUpdatedTagValueAtIndex)
 
   let tagnames = list.map(available_tags, fn(x) { x.name })
+  io.debug(tagnames)
   let tag = option.unwrap(input, Tag("", ""))
   fieldset(
     [
@@ -1298,34 +1316,34 @@ fn tag_input(
           value(tag.name),
           on_input(update_name_with_index(index)),
         ],
-        [
-          option(
-            [
-              class(
-                "text-xs font-mono custom-select input-focus bg-ecru-white-100",
-              ),
-              attribute("hidden", ""),
-              disabled(True),
-              value(""),
-              selected(string.is_empty(tag.name)),
-            ],
-            "",
-          ),
-          fragment(
-            list.map(tagnames, fn(tag_name) {
-              option(
-                [
-                  value(tag_name),
-                  selected(tag_name == tag.name),
-                  class(
-                    "text-xs font-mono custom-select input-focus bg-ecru-white-50",
-                  ),
-                ],
-                tag_name,
-              )
-            }),
-          ),
-        ],
+        list.append(
+          [
+            option(
+              [
+                class(
+                  "text-xs font-mono custom-select input-focus bg-ecru-white-100",
+                ),
+                attribute("hidden", ""),
+                disabled(True),
+                value(""),
+                selected(string.is_empty(tag.name)),
+              ],
+              "",
+            ),
+          ],
+          list.map(tagnames, fn(tag_name) {
+            option(
+              [
+                value(tag_name),
+                selected(tag_name == tag.name),
+                class(
+                  "text-xs font-mono custom-select input-focus bg-ecru-white-50",
+                ),
+              ],
+              tag_name,
+            )
+          }),
+        ),
       ),
       {
         select(
@@ -1342,19 +1360,21 @@ fn tag_input(
             on_input(update_value_with_index(index)),
             value(tag.value),
           ],
-          [
-            option(
-              [
-                class(
-                  "text-xs font-mono custom-select input-focus bg-ecru-white-50",
-                ),
-                attribute("hidden", ""),
-                disabled(True),
-                value(""),
-                selected(string.is_empty(tag.value)),
-              ],
-              "",
-            ),
+          list.append(
+            [
+              option(
+                [
+                  class(
+                    "text-xs font-mono custom-select input-focus bg-ecru-white-50",
+                  ),
+                  attribute("hidden", ""),
+                  disabled(True),
+                  value(""),
+                  selected(string.is_empty(tag.value)),
+                ],
+                "",
+              ),
+            ],
             {
               let is_selected = fn(x: TagOption) { x.name == tag.name }
               let options = fn(x: TagOption) {
@@ -1374,9 +1394,8 @@ fn tag_input(
               list.find(available_tags, is_selected)
               |> result.map(options)
               |> result.unwrap([element.none()])
-              |> fragment
             },
-          ],
+          ),
         )
       },
       button(
