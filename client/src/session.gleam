@@ -17,7 +17,9 @@ import lib/utils
 import lustre/effect.{type Effect}
 
 pub type RecipeListMsg {
-  DbSubcribedRecipes(Dynamic)
+  DbSubscriptionOpened(String, fn() -> Nil)
+  DbSubscribedOneRecipe(Dynamic)
+  DbSubscribedRecipes(Dynamic)
   DbRetrievedRecipes(List(Recipe))
   DbRetrievedOneRecipe(Recipe)
   DbRetrievedTagOptions(List(TagOption))
@@ -55,6 +57,7 @@ pub fn get_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
   do_get_one_recipe_by_slug(slug)
   |> promise.map(decode2.run(_, decode2_recipe()))
+  |> promise.map(io.debug)
   |> promise.map(result.map(_, DbRetrievedOneRecipe))
   |> promise.tap(result.map(_, dispatch))
   Nil
@@ -62,6 +65,24 @@ pub fn get_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
 
 @external(javascript, "./db.ts", "do_get_one_recipe_by_slug")
 fn do_get_one_recipe_by_slug(slug: String) -> Promise(Dynamic)
+
+pub fn subscribe_to_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_subscribe_to_one_recipe_by_slug(slug, fn(data) {
+    data
+    |> DbSubscribedOneRecipe
+    |> dispatch
+  })
+  |> DbSubscriptionOpened(slug, _)
+  |> dispatch
+  Nil
+}
+
+@external(javascript, "./db.ts", "do_subscribe_to_one_recipe_by_slug")
+fn do_subscribe_to_one_recipe_by_slug(
+  slug: String,
+  callback: fn(a) -> Nil,
+) -> fn() -> Nil
 
 pub fn get_recipes() -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
@@ -89,12 +110,18 @@ fn do_get_tagoptions() -> Promise(Dynamic)
 
 pub fn subscribe_to_recipe_summaries() -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
-  use data <- do_subscribe_to_recipe_summaries
-  data |> DbSubcribedRecipes |> dispatch
+  do_subscribe_to_recipe_summaries(fn(data) {
+    data
+    |> DbSubscribedRecipes
+    |> dispatch
+  })
+  |> DbSubscriptionOpened("recipes", _)
+  |> dispatch
+  Nil
 }
 
 @external(javascript, "./db.ts", "do_subscribe_to_recipe_summaries")
-fn do_subscribe_to_recipe_summaries(callback: fn(a) -> Nil) -> Nil
+fn do_subscribe_to_recipe_summaries(callback: fn(a) -> Nil) -> fn() -> Nil
 
 //-TYPES-------------------------------------------------------------
 

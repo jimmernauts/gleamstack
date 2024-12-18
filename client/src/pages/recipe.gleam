@@ -27,7 +27,7 @@ import lustre/event.{on_check, on_click, on_input}
 import session.{
   type Ingredient, type MethodStep, type Recipe, type RecipeList, type Tag,
   type TagOption, Ingredient, MethodStep, Recipe, RecipeList, Tag, TagOption,
-  decode2_recipe, decode_recipe,
+  decode2_recipe,
 }
 
 //-MODEL---------------------------------------------
@@ -506,7 +506,21 @@ pub fn list_update(
   msg: session.RecipeListMsg,
 ) -> #(RecipeList, Effect(session.RecipeListMsg)) {
   case msg {
-    session.DbSubcribedRecipes(jsdata) -> {
+    // we actually handle DbSubscriptionOpened in the top layer of the model
+    session.DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
+    session.DbSubscribedOneRecipe(jsdata) -> {
+      let decoder = decode2_recipe()
+      let try_decode = decode2.run(jsdata, decode2.at([0], decoder))
+      let try_effect = case try_decode {
+        Ok(recipe) -> {
+          use dispatch <- effect.from
+          session.DbRetrievedOneRecipe(recipe) |> dispatch
+        }
+        Error(_) -> effect.none()
+      }
+      #(model, try_effect)
+    }
+    session.DbSubscribedRecipes(jsdata) -> {
       let decoder = decode2.list(decode2_recipe())
       let try_decode = decode2.run(jsdata, decoder)
 
@@ -1233,6 +1247,7 @@ fn view_recipe_summary(recipe: Recipe, class_props: String) {
           text("m"),
         ]),
       ]),
+      element.element("hr", [class("flex-grow mx-2 self-center")], []),
     ],
   )
 }

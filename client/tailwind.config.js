@@ -286,6 +286,9 @@ export default {
                     content: "'❗'",
                     alignSelf:"baseline",
                   }
+                ,"details[open]::details-content" : {
+                    display: "contents"
+                  }
                  
             })
             addUtilities({

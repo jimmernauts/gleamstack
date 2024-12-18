@@ -1,10 +1,12 @@
 import components/page_title.{page_title}
 import components/typeahead
-import gleam/dict
+import gleam/dict.{type Dict}
 import gleam/io
+import gleam/javascript/promise.{type Promise}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/string
 import gleam/uri.{type Uri, Uri}
 import lustre
 import lustre/attribute.{class, href}
@@ -60,6 +62,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         recipe_list: [],
         start_date: date.floor(date.today(), date.Monday),
       ),
+      db_subscriptions: dict.from_list([]),
     ),
     effect.batch([
       modem.init(on_route_change),
@@ -68,6 +71,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         OnRouteChange(result.unwrap(initial_route, Home)) |> dispatch
       },
       effect.map(session.subscribe_to_recipe_summaries(), RecipeList),
+      effect.map(session.get_tag_options(), RecipeList),
     ]),
   )
 }
@@ -80,6 +84,7 @@ pub type Model {
     current_recipe: recipe.RecipeDetail,
     recipes: session.RecipeList,
     planner: planner.Model,
+    db_subscriptions: Dict(String, fn() -> Nil),
   )
 }
 
@@ -107,19 +112,26 @@ pub type Msg {
 // UPDATE ----------------------------------------------------------------------
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+  let step1 = case msg {
     OnRouteChange(ViewRecipeList) -> #(
       Model(..model, current_route: ViewRecipeList),
-      effect.map(session.get_tag_options(), RecipeList),
+      effect.none(),
     )
-    OnRouteChange(ViewRecipeDetail(slug: slug)) -> #(
-      Model(
-        ..model,
-        current_route: ViewRecipeDetail(slug: slug),
-        current_recipe: lookup_recipe_by_slug(model, slug),
-      ),
-      effect.map(session.get_one_recipe_by_slug(slug), RecipeList),
-    )
+    OnRouteChange(ViewRecipeDetail(slug: slug)) -> {
+      let effect_to_run = case dict.get(model.db_subscriptions, slug) {
+        Ok(_) -> effect.none()
+        _ ->
+          effect.map(session.subscribe_to_one_recipe_by_slug(slug), RecipeList)
+      }
+      #(
+        Model(
+          ..model,
+          current_route: ViewRecipeDetail(slug: slug),
+          current_recipe: lookup_recipe_by_slug(model, slug),
+        ),
+        effect_to_run,
+      )
+    }
     OnRouteChange(EditRecipeDetail(SlugParam(slug: ""))) -> #(
       Model(
         ..model,
@@ -141,22 +153,23 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           shortlisted: None,
         )),
       ),
-      effect.map(session.get_tag_options(), RecipeList),
+      effect.none(),
     )
-    OnRouteChange(EditRecipeDetail(SlugParam(slug: slug))) -> #(
-      Model(
-        ..model,
-        current_route: EditRecipeDetail(SlugParam(slug: slug)),
-        current_recipe: lookup_recipe_by_slug(model, slug),
-      ),
-      effect.batch([
-        effect.map(session.get_one_recipe_by_slug(slug), RecipeList),
-        case model.recipes.tag_options {
-          [] -> effect.map(session.get_tag_options(), RecipeList)
-          _ -> effect.none()
-        },
-      ]),
-    )
+    OnRouteChange(EditRecipeDetail(SlugParam(slug: slug))) -> {
+      let effect_to_run = case dict.get(model.db_subscriptions, slug) {
+        Ok(_) -> effect.none()
+        _ ->
+          effect.map(session.subscribe_to_one_recipe_by_slug(slug), RecipeList)
+      }
+      #(
+        Model(
+          ..model,
+          current_route: EditRecipeDetail(SlugParam(slug: slug)),
+          current_recipe: lookup_recipe_by_slug(model, slug),
+        ),
+        effect_to_run,
+      )
+    }
     OnRouteChange(EditRecipeDetail(RecipeParam(recipe: recipe))) -> #(
       Model(
         ..model,
@@ -196,6 +209,17 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.none(),
       )
     }
+    RecipeList(session.DbSubscriptionOpened(key, callback)) -> #(
+      Model(
+        ..model,
+        db_subscriptions: dict.upsert(
+          in: model.db_subscriptions,
+          update: key,
+          with: fn(_) { callback },
+        ),
+      ),
+      effect.none(),
+    )
     RecipeList(list_msg) -> {
       let #(child_model, child_effect) =
         recipe.list_update(model.recipes, list_msg)
@@ -219,10 +243,13 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           recipes: session.merge_recipe_into_model(new_recipe, model.recipes),
         ),
         // TODO: Better handle navigating in response to the updated data
-        {
-          use dispatch <- effect.from
-          OnRouteChange(ViewRecipeDetail(slug: new_recipe.slug)) |> dispatch
-        },
+        effect.batch([
+          {
+            use dispatch <- effect.from
+            OnRouteChange(ViewRecipeDetail(slug: new_recipe.slug)) |> dispatch
+          },
+          modem.push(string.append("/recipes/", new_recipe.slug), None, None),
+        ]),
       )
     }
     RecipeDetail(detail_msg) -> {
@@ -261,6 +288,30 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         planner.planner_update(model.planner, planner_msg)
       #(Model(..model, planner: child_model), effect.map(child_effect, Planner))
     }
+  }
+  case model.current_route {
+    EditRecipeDetail(SlugParam(slug: slug)) | ViewRecipeDetail(slug) -> {
+      case msg, dict.get(model.db_subscriptions, slug) {
+        OnRouteChange(EditRecipeDetail(SlugParam(_slug))), _ -> #(
+          step1.0,
+          step1.1,
+        )
+        OnRouteChange(ViewRecipeDetail(_slug)), _ -> #(step1.0, step1.1)
+        OnRouteChange(_), Ok(_) -> #(
+          Model(
+            ..step1.0,
+            db_subscriptions: dict.drop(model.db_subscriptions, [slug]),
+          ),
+          {
+            dict.get(model.db_subscriptions, slug)
+            |> result.map(fn(a) { a() })
+            step1.1
+          },
+        )
+        _, _ -> #(step1.0, step1.1)
+      }
+    }
+    _ -> #(step1.0, step1.1)
   }
 }
 

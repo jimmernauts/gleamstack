@@ -36,14 +36,32 @@ export async function do_save_recipe(recipe: Recipe) {
         cook_time: recipe.cook_time,
         prep_time: recipe.prep_time,
         serves: recipe.serves,
-        ...((Object.hasOwn(recipe,"author") )? {author: recipe.author} : {}),
-        ...((Object.hasOwn(recipe,"source") )? {source: recipe.source} : {}),
-        ...((Object.hasOwn(recipe,"tags") )? {tags: recipe.tags} : {}),
-        ...((Object.hasOwn(recipe,"ingredients") )? {ingredients: recipe.ingredients} : {}),
-        ...((Object.hasOwn(recipe,"method_steps") )? {method_steps: recipe.method_steps} : {}),
-        ...((Object.hasOwn(recipe,"shortlisted") )? {shortlisted: recipe.shortlisted} : {}),
+        ...((recipe.author !== "" )? {author: recipe.author} : {}),
+        ...((recipe.source !== "" )? {source: recipe.source} : {}),
+        ...((recipe.tags !== "null" && recipe.tags !== "{}" )? {tags: recipe.tags} : {}),
+        ...((recipe.ingredients !== "null" && recipe.ingredients !== "{}" )? {ingredients: recipe.ingredients} : {}),
+        ...((recipe.method_steps !== "null" && recipe.method_steps !== "{}" )? {method_steps: recipe.method_steps} : {}),
+        ...((recipe.shortlisted !== false)? {shortlisted: recipe.shortlisted} : {}),
      }
-     console.log("do_save_recipe obj: ", obj);
+    if (recipe.id) {
+        console.log("do_save_recipe update: ", obj);
+        const result = await client.update('recipes',recipe.id, async (e) => {
+            e.slug = obj.slug
+            e.title = obj.title
+            e.cook_time = obj.cook_time
+            e.prep_time = obj.prep_time
+            e.serves = obj.serves
+            e.author = obj.author
+            e.source = obj.source
+            e.tags = obj.tags
+            e.ingredients = obj.ingredients
+            e.method_steps = obj.method_steps
+            e.shortlisted = obj.shortlisted
+        })
+        return result
+    }
+
+    console.log("do_save_recipe insert: ", obj);
     const result = await client.insert('recipes', obj)
     return result;
 }
@@ -68,10 +86,16 @@ export async function do_save_plan(plan: PlanDay[]) {
 }
 
 
-export async function do_subscribe_to_recipe_summaries(dispatch: any) {
+export function do_subscribe_to_recipe_summaries(dispatch: any) {
     const query = client.query('recipes').select(['id','title','slug','cook_time','prep_time','serves','author','source','tags']).build();
-    const result = await client.subscribe(query, dispatch,() => {})
+    const result = client.subscribe(query, dispatch,() => {})
     return result;
+}
+
+export function do_subscribe_to_one_recipe_by_slug(slug: string, dispatch: any) {
+    const query = client.query('recipes').where([['slug','=',slug]]).limit(1).build();
+    const result = client.subscribe(query, dispatch, () => {})
+    return result
 }
 
 export async function do_get_one_recipe_by_slug(slug: string) {
