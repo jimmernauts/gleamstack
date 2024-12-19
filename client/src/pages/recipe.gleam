@@ -2,7 +2,6 @@ import components/page_title.{page_title}
 import decode/zero as decode2
 import gleam/dict
 import gleam/dynamic.{dict, int, list, string}
-import gleam/function
 import gleam/int
 import gleam/io
 import gleam/json
@@ -18,7 +17,7 @@ import lustre/attribute.{
   selected, style, type_, value,
 }
 import lustre/effect.{type Effect}
-import lustre/element.{type Element, fragment, text}
+import lustre/element.{type Element, text}
 import lustre/element/html.{
   a, button, details, div, fieldset, form, input, label, legend, li, nav, ol,
   option, section, select, span, summary, textarea,
@@ -578,7 +577,7 @@ pub fn view_recipe_list(model: session.RecipeList) {
   section(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_fit-content(100px)_fit-content(100px)_fit-content(100px)_fit-content(100px)_1fr] gap-y-2",
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(12,_fit-content(100px))] gap-y-2",
       ),
     ],
     [
@@ -697,7 +696,7 @@ pub fn edit_recipe_detail(
           ]),
           div([class("justify-self-start")], [
             label(
-              [class("justify-self-start font-mono text-sm"), for("author")],
+              [class("justify-self-start font-mono text-sm"), for("source")],
               [text("📗")],
             ),
             input([
@@ -722,7 +721,7 @@ pub fn edit_recipe_detail(
         ],
         [
           fieldset([class("flex flex-wrap justify-between items-baseline")], [
-            label([class("justify-self-start font-mono "), for("prep_time")], [
+            label([class("justify-self-start  "), for("prep_time")], [
               text("Prep:"),
             ]),
             div([class("justify-self-start")], [
@@ -763,7 +762,7 @@ pub fn edit_recipe_detail(
             ]),
           ]),
           fieldset([class("flex flex-wrap justify-between items-baseline")], [
-            label([class("justify-self-start font-mono "), for("prep_time")], [
+            label([class("justify-self-start"), for("cook_time")], [
               text("Cook:"),
             ]),
             div([class("justify-self-start")], [
@@ -804,7 +803,7 @@ pub fn edit_recipe_detail(
             ]),
           ]),
           fieldset([class("flex flex-wrap justify-between items-baseline")], [
-            label([class("justify-self-start font-mono "), for("serves")], [
+            label([class("justify-self-start  "), for("serves")], [
               text("Serves:"),
             ]),
             input([
@@ -854,7 +853,7 @@ pub fn edit_recipe_detail(
           ),
         ],
         [
-          legend([class("mx-2 px-1 font-mono ")], [text("Ingredients")]),
+          legend([class("mx-2 px-1  ")], [text("Ingredients")]),
           case recipe.ingredients {
             Some(ings) -> {
               let children =
@@ -882,7 +881,7 @@ pub fn edit_recipe_detail(
           ),
         ],
         [
-          legend([class("mx-2 px-1 font-mono ")], [text("Method")]),
+          legend([class("mx-2 px-1  ")], [text("Method")]),
           case recipe.method_steps {
             Some(steps) -> {
               let children =
@@ -980,7 +979,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
         ],
         [
           fieldset([class("flex flex-wrap justify-start items-baseline")], [
-            label([for("prep_time"), class("font-mono ")], [text("Prep:")]),
+            label([for("prep_time"), class(" ")], [text("Prep:")]),
             div([class("text-base ml-2")], [
               text(
                 case recipe.prep_time > 59 {
@@ -999,7 +998,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
             ]),
           ]),
           fieldset([class("flex flex-wrap justify-start items-baseline")], [
-            label([for("cook_time"), class("font-mono ")], [text("Cook:")]),
+            label([for("cook_time"), class("")], [text("Cook:")]),
             div([class("text-base ml-2")], [
               text(
                 case recipe.cook_time > 59 {
@@ -1018,7 +1017,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
             ]),
           ]),
           fieldset([class("flex flex-wrap justify-start items-baseline")], [
-            label([for("cook_time"), class("font-mono ")], [text("Serves:")]),
+            label([for("cook_time"), class(" ")], [text("Serves:")]),
             div([class("mr-2 sm:mr-4 ml-2 text-base")], [
               text(int.to_string(recipe.serves)),
             ]),
@@ -1056,7 +1055,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
           ),
         ],
         [
-          legend([class("mx-2 px-1 text-lg font-mono ")], [text("Ingredients")]),
+          legend([class("mx-2 px-1 text-base")], [text("Ingredients")]),
           case recipe.ingredients {
             Some(ings) -> {
               let children =
@@ -1084,11 +1083,11 @@ pub fn view_recipe_detail(recipe: Recipe) {
           ),
         ],
         [
-          legend([class("mx-2 px-1 font-mono ")], [text("Method")]),
+          legend([class("mx-2 px-1 text-base")], [text("Method")]),
           ol(
             [
               class(
-                "flex flex-wrap w-full mb-1 list-decimal marker:text-sm marker:font-mono text-base items-baseline col-span-full",
+                "flex flex-wrap justify-start gap-1 w-full list-decimal marker:text-sm marker:font-mono text-base items-baseline col-span-full",
               ),
             ],
             [
@@ -1170,7 +1169,7 @@ pub fn view_recipe_tag_groups(recipes: List(session.Recipe), tag: String) {
     })
   groups
   |> dict.map_values(fn(k, v) {
-    details([class("subgrid-cols")], [
+    details([class("col-span-full subgrid-cols gap-y-1")], [
       summary(
         [
           class(
@@ -1179,7 +1178,7 @@ pub fn view_recipe_tag_groups(recipes: List(session.Recipe), tag: String) {
         ],
         [
           text("📑"),
-          span([class("font-mono")], [text(k)]),
+          span([class("")], [text(k)]),
           element.element("hr", [class("flex-grow mx-2 self-center")], []),
         ],
       ),
@@ -1199,7 +1198,7 @@ pub fn view_recipe_author_groups(recipes: List(session.Recipe)) {
     })
   groups
   |> dict.map_values(fn(k, v) {
-    details([class("col-span-full subgrid-cols")], [
+    details([class("col-span-full subgrid-cols gap-y-1")], [
       summary(
         [
           class(
@@ -1208,7 +1207,7 @@ pub fn view_recipe_author_groups(recipes: List(session.Recipe)) {
         ],
         [
           text("📑"),
-          span([class("font-mono")], [text(k)]),
+          span([class("")], [text(k)]),
           element.element("hr", [class("flex-grow mx-2 self-center")], []),
         ],
       ),
@@ -1258,7 +1257,7 @@ fn view_ingredient(ingredient: Ingredient) {
     _ -> ""
   }
   div([class("flex justify-start col-span-6 items-baseline")], [
-    div([class("flex-grow-[2] text-left flex justify-start" <> bold)], [
+    div([class("flex-grow-[2] text-left flex text-lg justify-start" <> bold)], [
       option.unwrap(option.map(ingredient.name, text(_)), element.none()),
     ]),
     div([class("col-span-1 text-sm")], [
@@ -1272,7 +1271,11 @@ fn view_ingredient(ingredient: Ingredient) {
 
 fn view_method_step(method_step: MethodStep) {
   li(
-    [class("w-full justify-self-start list-decimal text-left ml-8 pr-2 mb-2")],
+    [
+      class(
+        "w-full justify-self-start list-decimal text-lg text-left ml-8 pr-2",
+      ),
+    ],
     [text(method_step.step_text)],
   )
 }
@@ -1303,8 +1306,10 @@ fn tag_input(
   index: Int,
   input: Option(Tag),
 ) -> Element(RecipeDetailMsg) {
-  let update_name_with_index = function.curry2(UserUpdatedTagNameAtIndex)
-  let update_value_with_index = function.curry2(UserUpdatedTagValueAtIndex)
+  let update_name_with_index = fn(index) { UserUpdatedTagNameAtIndex(index, _) }
+  let update_value_with_index = fn(index) {
+    UserUpdatedTagValueAtIndex(index, _)
+  }
 
   let tagnames = list.map(available_tags, fn(x) { x.name })
   io.debug(tagnames)
@@ -1436,11 +1441,18 @@ fn tag_input(
 }
 
 fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
-  let update_name_with_index = function.curry2(UserUpdatedIngredientNameAtIndex)
-  let update_main_with_index = function.curry2(UserUpdatedIngredientMainAtIndex)
-  let update_qty_with_index = function.curry2(UserUpdatedIngredientQtyAtIndex)
-  let update_units_with_index =
-    function.curry2(UserUpdatedIngredientUnitsAtIndex)
+  let update_name_with_index = fn(index) {
+    UserUpdatedIngredientNameAtIndex(index, _)
+  }
+  let update_main_with_index = fn(index) {
+    UserUpdatedIngredientMainAtIndex(index, _)
+  }
+  let update_qty_with_index = fn(index) {
+    UserUpdatedIngredientQtyAtIndex(index, _)
+  }
+  let update_units_with_index = fn(index) {
+    UserUpdatedIngredientUnitsAtIndex(index, _)
+  }
 
   div([class("my-0.5 w-full flex justify-between items-baseline  text-base")], [
     input([
@@ -1525,7 +1537,9 @@ fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
 }
 
 fn method_step_input(index: Int, method_step: Option(MethodStep)) {
-  let update_methodstep_at_index = function.curry2(UserUpdatedMethodStepAtIndex)
+  let update_methodstep_at_index = fn(index) {
+    UserUpdatedMethodStepAtIndex(index, _)
+  }
   div([class("flex w-full items-baseline col-span-full px-1 mb-1 text-base")], [
     label([class("font-mono text-sm")], [
       text(index + 1 |> int.to_string <> "."),
@@ -1534,7 +1548,9 @@ fn method_step_input(index: Int, method_step: Option(MethodStep)) {
       [
         name("method-step-" <> index |> int.to_string),
         id("method-step-" <> index |> int.to_string),
-        class("mx-3 bg-ecru-white-100 w-full input-focus text-base resize-none"),
+        class(
+          "mx-3 bg-ecru-white-100 w-full input-focus text-base resize-none [field-sizing:content]",
+        ),
         attribute("rows", "3"),
         on_input(update_methodstep_at_index(index)),
       ],

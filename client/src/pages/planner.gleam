@@ -5,7 +5,6 @@ import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/int
-import gleam/io
 import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
@@ -800,19 +799,6 @@ fn decode_plan_day(d: Dynamic) -> Result(PlanDay, dynamic.DecodeErrors) {
     session.json_string_decoder(decode_planned_meals()),
   )
   |> decode.from(d)
-}
-
-fn decode_int_day(d: Dynamic) -> Result(Date, dynamic.DecodeErrors) {
-  let decoder = dynamic.int
-  decoder(d)
-  |> result.map(fn(a) { date.from_rata_die(a) })
-}
-
-fn decode_string_day(d: Dynamic) -> Result(Date, dynamic.DecodeErrors) {
-  let decoder = dynamic.string
-  decoder(d)
-  |> result.map(int.parse)
-  |> result.map(fn(a) { date.from_rata_die(result.unwrap(a, 0)) })
 }
 
 fn decode_planned_meals() -> decode.Decoder(List(PlannedMealWithStatus)) {

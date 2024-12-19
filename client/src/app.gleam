@@ -1,8 +1,6 @@
 import components/page_title.{page_title}
 import components/typeahead
 import gleam/dict.{type Dict}
-import gleam/io
-import gleam/javascript/promise.{type Promise}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -34,11 +32,12 @@ import tardis
 
 pub fn main() {
   let assert Ok(main) = tardis.single("main")
-  lustre.register(typeahead.app(), "type-ahead")
-  lustre.application(init, update, view)
-  |> tardis.wrap(with: main)
-  |> lustre.start("#app", Nil)
-  |> tardis.activate(with: main)
+  let _ = lustre.register(typeahead.app(), "type-ahead")
+  let _ =
+    lustre.application(init, update, view)
+    |> tardis.wrap(with: main)
+    |> lustre.start("#app", Nil)
+    |> tardis.activate(with: main)
   main
 }
 
@@ -303,8 +302,9 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             db_subscriptions: dict.drop(model.db_subscriptions, [slug]),
           ),
           {
-            dict.get(model.db_subscriptions, slug)
-            |> result.map(fn(a) { a() })
+            let _ =
+              dict.get(model.db_subscriptions, slug)
+              |> result.map(fn(a) { a() })
             step1.1
           },
         )

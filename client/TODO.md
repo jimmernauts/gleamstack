@@ -7,7 +7,7 @@
 [X] Try subscribing to db queries instead of fetching
 [X] Unsubcribe to all db queries on route change
 [X] Move tagoption query to init
-[] Fix Recipe List grouped UI
+[X] Fix Recipe List grouped UI
 [] Change planner to subscription
 [] Clean up special characters in slug generation
 [] Add cooking notes and ratings to recipes, group by rating

@@ -1,7 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Decoder, type Dynamic}
 import gleam/int
-import gleam/io
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
