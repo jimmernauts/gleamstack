@@ -1,0 +1,1 @@
+FROM rocicorp/zero:latest

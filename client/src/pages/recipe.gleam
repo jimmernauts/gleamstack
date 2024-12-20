@@ -10,7 +10,6 @@ import gleam/option.{type Option, None, Some}
 import gleam/pair
 import gleam/result
 import gleam/string
-import justin.{kebab_case}
 import lib/utils
 import lustre/attribute.{
   attribute, checked, class, disabled, for, href, id, name, placeholder,
@@ -491,7 +490,7 @@ pub fn detail_update(
     }
     UserSavedUpdatedRecipe(recipe) -> {
       #(Some(recipe), {
-        save_recipe(Recipe(..recipe, slug: kebab_case(recipe.title)))
+        save_recipe(Recipe(..recipe, slug: utils.slugify(recipe.title)))
       })
     }
     DbSavedUpdatedRecipe(recipe) -> {

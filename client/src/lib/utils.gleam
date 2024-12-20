@@ -5,7 +5,9 @@ import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
+import gleam/regexp
 import gleam/result
+import justin
 import lustre/effect.{type Effect}
 import plinth/javascript/global.{set_timeout}
 import rada/date.{type Date}
@@ -176,4 +178,34 @@ pub fn json_decodeerror_to_decodeerror(
     ]
     json.UnexpectedFormat(a) -> a
   }
+}
+
+/// Turn a string into a pretty slug.
+/// 
+/// Replaces special characters with hyphens, and converts to lowercase.
+/// Replaces accented characters with their unaccented equivalents.
+/// Removes non-alphanumeric characters.
+pub fn slugify(text: String) -> String {
+  let assert Ok(a) = regexp.from_string("[áàäâàãåäÁÀÂÄÅÃÄ]")
+  let assert Ok(e) = regexp.from_string("[éèëêÉÈÊË]")
+  let assert Ok(i) = regexp.from_string("[íìïîÍÌÏÎ]")
+  let assert Ok(o) = regexp.from_string("[óòöôÓÒÖÔ]")
+  let assert Ok(u) = regexp.from_string("[úùüûÚÙÜÛ]")
+  let assert Ok(n) = regexp.from_string("[ñÑ]")
+  let assert Ok(special_chars) =
+    regexp.from_string("[\\$\\(\\)\\*\\+\\.\\/\\?\\[\\]\\^\\{\\|\\}]")
+  let assert Ok(punctuation) = regexp.from_string("[&@%&=~`:;'\"<>,]")
+  let assert Ok(invalid_chars) = regexp.from_string("[^a-zA-Z0-9 \\-]")
+
+  text
+  |> regexp.replace(each: a, in: _, with: "a")
+  |> regexp.replace(each: e, in: _, with: "e")
+  |> regexp.replace(each: i, in: _, with: "i")
+  |> regexp.replace(each: o, in: _, with: "o")
+  |> regexp.replace(each: u, in: _, with: "u")
+  |> regexp.replace(each: n, in: _, with: "n")
+  |> regexp.replace(each: special_chars, in: _, with: "-")
+  |> regexp.replace(each: punctuation, in: _, with: "-")
+  |> regexp.replace(each: invalid_chars, in: _, with: "")
+  |> justin.kebab_case
 }
