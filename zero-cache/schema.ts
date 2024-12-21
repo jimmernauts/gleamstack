@@ -39,7 +39,7 @@ const plansSchema = createTableSchema({
   primaryKey: 'id',
 });
 
-export const schema = createSchema({
+export default createSchema({
   version: 1,
   tables: {recipes: recipesSchema,
   tag_options: tagOptionsSchema,
