@@ -9,7 +9,7 @@
 [X] Move tagoption query to init
 [X] Fix Recipe List grouped UI
 [] Change planner to subscription
-[] Clean up special characters in slug generation
+[X] Clean up special characters in slug generation
 [] Add cooking notes and ratings to recipes, group by rating
 [] PWA
 [] Add bunch of recipes
@@ -20,4 +20,4 @@
 [] Build importer (must be serverside)
 [] Build shopping list
 [] SSR ?
-[] Switch to Electric + postgres instead of triplit
+[] Switch to Electric + postgres OR zero-sync instead of triplit

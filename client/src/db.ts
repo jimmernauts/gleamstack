@@ -66,14 +66,6 @@ export async function do_save_recipe(recipe: Recipe) {
     return result;
 }
 
-export async function do_get_plan(startDate: number, endDate: number) {
-    console.log(client)
-    const query = client.query('plan').where([['date','>=',startDate],['date','<=',endDate]]).build(); 
-    const result = await client.fetch(query)
-	console.log("do_get_plan result: ", result);
-	return result
-}
-
 export async function do_save_plan(plan: PlanDay[]) {
     await client.transact(async (tx) => {
     for (const day of plan) {
@@ -83,6 +75,20 @@ export async function do_save_plan(plan: PlanDay[]) {
     }
 })
     return plan
+}
+
+export async function do_get_plan(startDate: number, endDate: number) {
+    console.log(client)
+    const query = client.query('plan').where([['date','>=',startDate],['date','<=',endDate]]).build(); 
+    const result = await client.fetch(query)
+	console.log("do_get_plan result: ", result);
+	return result
+}
+
+export function do_subscribe_to_plan(dispatch: any, startDate: number, endDate: number) {
+    const query = client.query('plan').where([['date','>=',startDate],['date','<=',endDate]]).build(); 
+    const result = client.subscribe(query, dispatch,() => {})
+    return result;
 }
 
 

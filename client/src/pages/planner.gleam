@@ -1,6 +1,7 @@
 import components/page_title.{page_title}
 import components/typeahead.{typeahead}
 import decode
+import decode/zero as decode2
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
@@ -41,10 +42,12 @@ pub type PlannedMealWithStatus {
 }
 
 pub type PlannerMsg {
+  DbSubscriptionOpened(Date, fn() -> Nil)
   UserUpdatedMealTitle(Date, Meal, String)
   UserToggledMealComplete(Date, Meal, Bool)
   UserFetchedPlan(Date)
   DbRetrievedPlan(PlanWeek, Date)
+  DbSubscribedPlan(Dynamic)
   DbSavedPlan(Date)
   UserSavedPlan
 }
@@ -149,6 +152,24 @@ pub fn planner_update(
     DbRetrievedPlan(_plan_week, _start_date) -> {
       #(model, effect.none())
     }
+    // DbSubscriptionOpened is handled in the layer above in app.gleam
+    DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
+    DbSubscribedPlan(jsdata) -> {
+      let decoder = decode2.list(plan_day_decoder())
+      let try_decode = decode2.run(jsdata, decoder)
+      let try_effect = case try_decode {
+        Ok(plan_days) -> {
+          use dispatch <- effect.from
+          plan_days
+          |> list.map(fn(x: PlanDay) { #(x.date, x) })
+          |> dict.from_list
+          |> DbRetrievedPlan(model.start_date)
+          |> dispatch
+        }
+        Error(_) -> effect.none()
+      }
+      #(model, try_effect)
+    }
     DbSavedPlan(_date) -> {
       #(model, effect.none())
     }
@@ -171,6 +192,29 @@ pub fn get_plan(start_date: Date) -> Effect(PlannerMsg) {
 
 @external(javascript, ".././db.ts", "do_get_plan")
 fn do_get_plan(start_date: Int, end_date: Int) -> Promise(Dynamic)
+
+pub fn subscribe_to_plan(start_date: Date) -> Effect(PlannerMsg) {
+  use dispatch <- effect.from
+  do_subscribe_to_plan(
+    date.to_rata_die(start_date),
+    date.to_rata_die(date.add(start_date, 1, date.Weeks)),
+    fn(data) {
+      data
+      |> DbSubscribedPlan
+      |> dispatch
+    },
+  )
+  |> DbSubscriptionOpened(start_date, _)
+  |> dispatch
+  Nil
+}
+
+@external(javascript, ".././db.ts", "do_subscribe_to_plan")
+fn do_subscribe_to_plan(
+  start_date: Int,
+  end_date: Int,
+  callback: fn(a) -> Nil,
+) -> fn() -> Nil
 
 pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {
   use dispatch <- effect.from
@@ -801,6 +845,15 @@ fn decode_plan_day(d: Dynamic) -> Result(PlanDay, dynamic.DecodeErrors) {
   |> decode.from(d)
 }
 
+fn plan_day_decoder() -> decode2.Decoder(PlanDay) {
+  use date <- decode2.field(
+    "date",
+    decode2.int |> decode2.map(fn(a) { date.from_rata_die(a) }),
+  )
+  use planned_meals <- decode2.field("planned_meals", planned_meals_decoder())
+  decode2.success(PlanDay(date: date, planned_meals: planned_meals))
+}
+
 fn decode_planned_meals() -> decode.Decoder(List(PlannedMealWithStatus)) {
   let enum_decoder = {
     decode.string
@@ -827,6 +880,36 @@ fn decode_planned_meals() -> decode.Decoder(List(PlannedMealWithStatus)) {
     )
   }
   decode.list(of: record_decoder)
+}
+
+fn planned_meals_decoder() -> decode2.Decoder(List(PlannedMealWithStatus)) {
+  let enum_decoder = {
+    use decoded_string <- decode2.then(decode2.string)
+    case decoded_string {
+      "lunch" -> decode2.success(Lunch)
+      "dinner" -> decode2.success(Dinner)
+      _ -> decode2.failure(Lunch, "Meal")
+    }
+  }
+  let record_decoder = {
+    use for <- decode2.field("for", enum_decoder)
+    use title <- decode2.optional_field(
+      "title",
+      option.None,
+      decode2.optional(decode2.string),
+    )
+    use complete <- decode2.optional_field(
+      "complete",
+      option.None,
+      decode2.optional(session.decode2_stringed_bool()),
+    )
+    decode2.success(PlannedMealWithStatus(
+      for: for,
+      title: title,
+      complete: complete,
+    ))
+  }
+  decode2.list(of: record_decoder)
 }
 
 fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {

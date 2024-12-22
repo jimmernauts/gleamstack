@@ -181,7 +181,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(..model, current_route: ViewPlanner(start_date)),
       effect.batch([
         effect.map(
-          planner.get_plan(date.floor(start_date, date.Monday)),
+          planner.subscribe_to_plan(date.floor(start_date, date.Monday)),
           Planner,
         ),
         case list.length(model.recipes.recipes) {
@@ -282,6 +282,17 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.none(),
       )
     }
+    Planner(planner.DbSubscriptionOpened(key, callback)) -> #(
+      Model(
+        ..model,
+        db_subscriptions: dict.upsert(
+          in: model.db_subscriptions,
+          update: date.to_iso_string(key),
+          with: fn(_) { callback },
+        ),
+      ),
+      effect.none(),
+    )
     Planner(planner_msg) -> {
       let #(child_model, child_effect) =
         planner.planner_update(model.planner, planner_msg)
@@ -304,6 +315,30 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           {
             let _ =
               dict.get(model.db_subscriptions, slug)
+              |> result.map(fn(a) { a() })
+            step1.1
+          },
+        )
+        _, _ -> #(step1.0, step1.1)
+      }
+    }
+    ViewPlanner(start_date) | EditPlanner(start_date) -> {
+      case
+        msg,
+        dict.get(model.db_subscriptions, date.to_iso_string(start_date))
+      {
+        OnRouteChange(ViewPlanner(_start_date)), _ -> #(step1.0, step1.1)
+        OnRouteChange(EditPlanner(_start_date)), _ -> #(step1.0, step1.1)
+        OnRouteChange(_), Ok(_) -> #(
+          Model(
+            ..step1.0,
+            db_subscriptions: dict.drop(model.db_subscriptions, [
+              date.to_iso_string(start_date),
+            ]),
+          ),
+          {
+            let _ =
+              dict.get(model.db_subscriptions, date.to_iso_string(start_date))
               |> result.map(fn(a) { a() })
             step1.1
           },

@@ -336,7 +336,7 @@ fn decode2_stringed_int() -> decode2.Decoder(Int) {
   decode2.string |> decode2.map(int.parse) |> decode2.map(result.unwrap(_, 0))
 }
 
-fn decode2_stringed_bool() -> decode2.Decoder(Bool) {
+pub fn decode2_stringed_bool() -> decode2.Decoder(Bool) {
   decode2.string
   |> decode2.then(fn(d) {
     case d {
