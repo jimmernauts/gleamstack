@@ -12,3 +12,4 @@ notebooks/*
 !notebooks/post_recipes.ts
 client/cloudflare
 client/anthropic
+fly_pg

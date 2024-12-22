@@ -20,4 +20,5 @@
 [] Build importer (must be serverside)
 [] Build shopping list
 [] SSR ?
-[] Switch to Electric + postgres OR zero-sync instead of triplit
+[] Switch to Electric + postgres instead of triplit
+[] Switch to zerosync + postgres instead of triplit
