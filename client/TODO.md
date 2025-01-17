@@ -8,12 +8,12 @@
 [X] Unsubcribe to all db queries on route change
 [X] Move tagoption query to init
 [X] Fix Recipe List grouped UI
-[] Change planner to subscription
+[X] Change planner to subscription
 [X] Clean up special characters in slug generation
 [] Add cooking notes and ratings to recipes, group by rating
 [] PWA
 [] Add bunch of recipes
-[] Build OCR scanner (serverside? BYO AI API key?)
+[] Build OCR scanner (BYO AI API key?)
     [] work out process to correct side-by-side
     [] use service token to insert to triplit db
 [] Build auth

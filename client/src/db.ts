@@ -86,6 +86,7 @@ export async function do_get_plan(startDate: number, endDate: number) {
 }
 
 export function do_subscribe_to_plan(dispatch: any, startDate: number, endDate: number) {
+    console.log("do_subscribe_to_plan", startDate, endDate,dispatch)
     const query = client.query('plan').where([['date','>=',startDate],['date','<=',endDate]]).build(); 
     const result = client.subscribe(query, dispatch,() => {})
     return result;

@@ -158,13 +158,23 @@ pub fn planner_update(
       let decoder = decode2.list(plan_day_decoder())
       let try_decode = decode2.run(jsdata, decoder)
       let try_effect = case try_decode {
+        Ok([]) -> effect.none()
         Ok(plan_days) -> {
-          use dispatch <- effect.from
-          plan_days
-          |> list.map(fn(x: PlanDay) { #(x.date, x) })
-          |> dict.from_list
-          |> DbRetrievedPlan(model.start_date)
-          |> dispatch
+          let sorted =
+            list.sort(plan_days, fn(a, b) {
+              int.compare(date.to_rata_die(a.date), date.to_rata_die(b.date))
+            })
+          case sorted {
+            [first, ..] -> {
+              use dispatch <- effect.from
+              sorted
+              |> list.map(fn(x: PlanDay) { #(x.date, x) })
+              |> dict.from_list
+              |> DbRetrievedPlan(first.date)
+              |> dispatch
+            }
+            [] -> effect.none()
+          }
         }
         Error(_) -> effect.none()
       }
@@ -196,13 +206,13 @@ fn do_get_plan(start_date: Int, end_date: Int) -> Promise(Dynamic)
 pub fn subscribe_to_plan(start_date: Date) -> Effect(PlannerMsg) {
   use dispatch <- effect.from
   do_subscribe_to_plan(
-    date.to_rata_die(start_date),
-    date.to_rata_die(date.add(start_date, 1, date.Weeks)),
     fn(data) {
       data
       |> DbSubscribedPlan
       |> dispatch
     },
+    date.to_rata_die(start_date),
+    date.to_rata_die(date.add(start_date, 1, date.Weeks)),
   )
   |> DbSubscriptionOpened(start_date, _)
   |> dispatch
@@ -211,9 +221,9 @@ pub fn subscribe_to_plan(start_date: Date) -> Effect(PlannerMsg) {
 
 @external(javascript, ".././db.ts", "do_subscribe_to_plan")
 fn do_subscribe_to_plan(
+  callback: fn(a) -> Nil,
   start_date: Int,
   end_date: Int,
-  callback: fn(a) -> Nil,
 ) -> fn() -> Nil
 
 pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {

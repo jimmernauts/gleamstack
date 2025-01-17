@@ -69,6 +69,7 @@ fn do_get_one_recipe_by_slug(slug: String) -> Promise(Dynamic)
 pub fn subscribe_to_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
   do_subscribe_to_one_recipe_by_slug(slug, fn(data) {
+    io.debug("inner subscribe callback")
     data
     |> DbSubscribedOneRecipe
     |> dispatch
