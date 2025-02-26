@@ -1,13 +1,8 @@
 // vite.config.{ts,js}
 import gleam from "vite-gleam";
-import tailwindcss from "tailwindcss"
+import tailwindcss from "@tailwindcss/vite"
 
 
 export default {
-  plugins: [gleam()],
-  css: {
-    postcss: {
-      plugins: [tailwindcss],
-    },
-  }
+  plugins: [gleam(),tailwindcss()],
 };
