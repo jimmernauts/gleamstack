@@ -38,4 +38,10 @@ export const schema = {
         planned_meals: S.Optional(S.String())
       }),
     },
+    settings: {
+      schema: S.Schema({
+        id: S.Id(),
+        api_key: S.Optional(S.String()),
+      })
+    }
 } satisfies ClientSchema;

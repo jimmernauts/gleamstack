@@ -278,7 +278,7 @@ pub fn view_planner(model: Model) {
       ),
     ])
 
-  fragment([
+  div([], [
     section(
       [
         class(
@@ -401,7 +401,7 @@ pub fn edit_planner(model: Model) {
       ),
     ])
 
-  fragment([
+  div([], [
     section(
       [
         class(

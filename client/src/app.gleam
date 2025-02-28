@@ -14,6 +14,7 @@ import lustre/element/html.{a, nav, section, span}
 import modem
 import pages/planner
 import pages/recipe
+import pages/settings
 import rada/date
 import session
 import tardis
@@ -62,6 +63,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         start_date: date.floor(date.today(), date.Monday),
       ),
       db_subscriptions: dict.from_list([]),
+      settings: settings.SettingsModel(api_key: None),
     ),
     effect.batch([
       modem.init(on_route_change),
@@ -84,6 +86,7 @@ pub type Model {
     recipes: session.RecipeList,
     planner: planner.Model,
     db_subscriptions: Dict(String, fn() -> Nil),
+    settings: settings.SettingsModel,
   )
 }
 
@@ -94,6 +97,7 @@ pub type Route {
   ViewRecipeList
   ViewPlanner(start_date: date.Date)
   EditPlanner(start_date: date.Date)
+  ViewSettings
 }
 
 pub type RouteParams {
@@ -106,6 +110,7 @@ pub type Msg {
   RecipeDetail(recipe.RecipeDetailMsg)
   RecipeList(session.RecipeListMsg)
   Planner(planner.PlannerMsg)
+  Settings(settings.SettingsMsg)
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -193,6 +198,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     OnRouteChange(EditPlanner(start_date)) -> #(
       Model(..model, current_route: EditPlanner(start_date)),
       effect.none(),
+    )
+    OnRouteChange(ViewSettings) -> #(
+      Model(..model, current_route: ViewSettings),
+      effect.map(settings.retrieve_settings(), Settings),
     )
     OnRouteChange(route) -> #(
       Model(..model, current_route: route, current_recipe: None),
@@ -298,6 +307,14 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         planner.planner_update(model.planner, planner_msg)
       #(Model(..model, planner: child_model), effect.map(child_effect, Planner))
     }
+    Settings(settings_msg) -> {
+      let #(settings_model, settings_effect) =
+        settings.settings_update(model.settings, settings_msg)
+      #(
+        Model(..model, settings: settings_model),
+        effect.map(settings_effect, Settings),
+      )
+    }
   }
   case model.current_route {
     EditRecipeDetail(SlugParam(slug: slug)) | ViewRecipeDetail(slug) -> {
@@ -382,6 +399,7 @@ fn on_route_change(uri: Uri) -> Msg {
     _, ["recipes"] -> OnRouteChange(ViewRecipeList)
     _, ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
     _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
+    _, ["settings"] -> OnRouteChange(ViewSettings)
     _, _ -> OnRouteChange(Home)
   }
 }
@@ -430,6 +448,8 @@ fn view(model: Model) -> Element(Msg) {
         )),
         Planner,
       )
+    ViewSettings ->
+      element.map(settings.view_settings(model.settings), Settings)
   }
   view_base(page)
 }
@@ -445,6 +465,7 @@ fn view_base(children) {
     md:grid-cols-[[start_full-start]_1fr_[main-start]_70ch_[main-end]_1fr_[full-end_end]]
     grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
     min-h-[90vh]
+    grid-rows-[[content]_9fr_[footer]_1fr]
     bg-ecru-white-50  text-ecru-white-950 font-transitional text-lg",
       ),
     ],
@@ -453,10 +474,18 @@ fn view_base(children) {
 }
 
 fn view_home() {
-  section([class("grid-cols-12 col-start-[main-start]")], [
+  section([class("grid grid-cols-12 col-start-[main-start]")], [
     page_title(
       "Mealstack",
       "text-9xl placeholder:underline-pink underline-pink col-span-full xxs:col-span-11",
+    ),
+    nav(
+      [
+        class(
+          "flex flex-col justify-start items-middle col-span-1 col-start-12 row-span-2 text-base md:text-lg mt-4",
+        ),
+      ],
+      [a([href("/settings"), class("text-center")], [text("⚙️")])],
     ),
     nav(
       [

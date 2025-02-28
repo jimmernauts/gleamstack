@@ -203,6 +203,9 @@
 @utility underline-yellow {
     text-decoration: underline solid 6px #fce68b;
 }
+@utility underline-grey {
+    text-decoration: underline solid 6px oklch(84.68% 0.002 197.12);
+}
 @utility underline-dark-blue {
     text-decoration: underline solid 6px #287CA1;
 }

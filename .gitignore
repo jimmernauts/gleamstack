@@ -13,3 +13,6 @@ notebooks/*
 client/cloudflare
 client/anthropic
 fly_pg
+
+# windsurf rules
+.windsurfrules

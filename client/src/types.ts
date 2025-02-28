@@ -52,3 +52,7 @@ export type MealWithStatus = {
 	title?: string;
 	complete?: boolean;
 };
+
+export type Settings = {
+	api_key: string;
+}
