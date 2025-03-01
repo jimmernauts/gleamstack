@@ -117,8 +117,9 @@ export async function do_retrieve_settings() {
     return result?.api_key;
 }
 
-export async function do_save_settings(settings: Settings) {
-    const result = await client.insert('settings', {id: 'james', api_key: settings.api_key})
+export async function do_save_settings(api_key: string) {
+    console.log("saving settings...",api_key)
+    const result = await client.insert('settings', {id: 'james', api_key: api_key})
     console.log(result)
     return result;
 }

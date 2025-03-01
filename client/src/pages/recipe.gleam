@@ -1,7 +1,6 @@
 import components/page_title.{page_title}
-import decode/zero as decode2
 import gleam/dict
-import gleam/dynamic.{dict, int, list, string}
+import gleam/dynamic/decode
 import gleam/int
 import gleam/io
 import gleam/json
@@ -25,7 +24,7 @@ import lustre/event.{on_check, on_click, on_input}
 import session.{
   type Ingredient, type MethodStep, type Recipe, type RecipeList, type Tag,
   type TagOption, Ingredient, MethodStep, Recipe, RecipeList, Tag, TagOption,
-  decode2_recipe,
+  decode_recipe,
 }
 
 //-MODEL---------------------------------------------
@@ -224,23 +223,20 @@ pub fn detail_update(
       case model {
         Some(a) -> #(
           Some(
-            Recipe(
-              ..a,
-              tags: {
-                case a.tags {
-                  Some(x) ->
-                    x
-                    |> utils.dict_update(i, fn(_tag) {
-                      Tag(name: new_tag_name, value: "")
-                    })
-                    |> Some
-                  _ ->
-                    Some(
-                      dict.from_list([#(0, Tag(name: new_tag_name, value: ""))]),
-                    )
-                }
-              },
-            ),
+            Recipe(..a, tags: {
+              case a.tags {
+                Some(x) ->
+                  x
+                  |> utils.dict_update(i, fn(_tag) {
+                    Tag(name: new_tag_name, value: "")
+                  })
+                  |> Some
+                _ ->
+                  Some(
+                    dict.from_list([#(0, Tag(name: new_tag_name, value: ""))]),
+                  )
+              }
+            }),
           ),
           effect.none(),
         )
@@ -251,17 +247,14 @@ pub fn detail_update(
       case model {
         Some(a) -> #(
           Some(
-            Recipe(
-              ..a,
-              tags: {
-                a.tags
-                |> option.map(utils.dict_update(
-                  _,
-                  i,
-                  fn(tag) { Tag(..tag, value: new_tag_value) },
-                ))
-              },
-            ),
+            Recipe(..a, tags: {
+              a.tags
+              |> option.map(
+                utils.dict_update(_, i, fn(tag) {
+                  Tag(..tag, value: new_tag_value)
+                }),
+              )
+            }),
           ),
           effect.none(),
         )
@@ -272,13 +265,10 @@ pub fn detail_update(
       case model {
         Some(a) -> #(
           Some(
-            Recipe(
-              ..a,
-              tags: case a.tags {
-                Some(b) -> Some(dict.insert(b, dict.size(b), Tag("", "")))
-                _ -> Some(dict.from_list([#(0, Tag("", ""))]))
-              },
-            ),
+            Recipe(..a, tags: case a.tags {
+              Some(b) -> Some(dict.insert(b, dict.size(b), Tag("", "")))
+              _ -> Some(dict.from_list([#(0, Tag("", ""))]))
+            }),
           ),
           effect.none(),
         )
@@ -289,14 +279,11 @@ pub fn detail_update(
       case model {
         Some(a) -> #(
           Some(
-            Recipe(
-              ..a,
-              tags: {
-                a.tags
-                |> option.map(dict.drop(_, [i]))
-                |> option.map(utils.dict_reindex)
-              },
-            ),
+            Recipe(..a, tags: {
+              a.tags
+              |> option.map(dict.drop(_, [i]))
+              |> option.map(utils.dict_reindex)
+            }),
           ),
           effect.none(),
         )
@@ -307,17 +294,14 @@ pub fn detail_update(
       case model {
         Some(a) -> #(
           Some(
-            Recipe(
-              ..a,
-              ingredients: {
-                a.ingredients
-                |> option.map(utils.dict_update(
-                  _,
-                  i,
-                  fn(ing) { Ingredient(..ing, name: Some(new_ingredient_name)) },
-                ))
-              },
-            ),
+            Recipe(..a, ingredients: {
+              a.ingredients
+              |> option.map(
+                utils.dict_update(_, i, fn(ing) {
+                  Ingredient(..ing, name: Some(new_ingredient_name))
+                }),
+              )
+            }),
           ),
           effect.none(),
         )
@@ -328,19 +312,14 @@ pub fn detail_update(
       case model {
         Some(a) -> #(
           Some(
-            Recipe(
-              ..a,
-              ingredients: {
-                a.ingredients
-                |> option.map(utils.dict_update(
-                  _,
-                  i,
-                  fn(ing) {
-                    Ingredient(..ing, ismain: Some(new_ingredient_ismain))
-                  },
-                ))
-              },
-            ),
+            Recipe(..a, ingredients: {
+              a.ingredients
+              |> option.map(
+                utils.dict_update(_, i, fn(ing) {
+                  Ingredient(..ing, ismain: Some(new_ingredient_ismain))
+                }),
+              )
+            }),
           ),
           effect.none(),
         )
@@ -351,19 +330,14 @@ pub fn detail_update(
       case model {
         Some(a) -> #(
           Some(
-            Recipe(
-              ..a,
-              ingredients: {
-                a.ingredients
-                |> option.map(utils.dict_update(
-                  _,
-                  i,
-                  fn(ing) {
-                    Ingredient(..ing, quantity: Some(new_ingredient_qty))
-                  },
-                ))
-              },
-            ),
+            Recipe(..a, ingredients: {
+              a.ingredients
+              |> option.map(
+                utils.dict_update(_, i, fn(ing) {
+                  Ingredient(..ing, quantity: Some(new_ingredient_qty))
+                }),
+              )
+            }),
           ),
           effect.none(),
         )
@@ -374,19 +348,14 @@ pub fn detail_update(
       case model {
         Some(a) -> #(
           Some(
-            Recipe(
-              ..a,
-              ingredients: {
-                a.ingredients
-                |> option.map(utils.dict_update(
-                  _,
-                  i,
-                  fn(ing) {
-                    Ingredient(..ing, units: Some(new_ingredient_units))
-                  },
-                ))
-              },
-            ),
+            Recipe(..a, ingredients: {
+              a.ingredients
+              |> option.map(
+                utils.dict_update(_, i, fn(ing) {
+                  Ingredient(..ing, units: Some(new_ingredient_units))
+                }),
+              )
+            }),
           ),
           effect.none(),
         )
@@ -397,21 +366,16 @@ pub fn detail_update(
       case model {
         Some(a) -> #(
           Some(
-            Recipe(
-              ..a,
-              ingredients: case a.ingredients {
-                Some(b) ->
-                  Some(dict.insert(
-                    b,
-                    dict.size(b),
-                    Ingredient(None, None, None, None),
-                  ))
-                _ ->
-                  Some(
-                    dict.from_list([#(0, Ingredient(None, None, None, None))]),
-                  )
-              },
-            ),
+            Recipe(..a, ingredients: case a.ingredients {
+              Some(b) ->
+                Some(dict.insert(
+                  b,
+                  dict.size(b),
+                  Ingredient(None, None, None, None),
+                ))
+              _ ->
+                Some(dict.from_list([#(0, Ingredient(None, None, None, None))]))
+            }),
           ),
           effect.none(),
         )
@@ -438,13 +402,10 @@ pub fn detail_update(
       case model {
         Some(a) -> #(
           Some(
-            Recipe(
-              ..a,
-              method_steps: case a.method_steps {
-                Some(b) -> Some(dict.insert(b, dict.size(b), MethodStep("")))
-                _ -> Some(dict.from_list([#(0, MethodStep(""))]))
-              },
-            ),
+            Recipe(..a, method_steps: case a.method_steps {
+              Some(b) -> Some(dict.insert(b, dict.size(b), MethodStep("")))
+              _ -> Some(dict.from_list([#(0, MethodStep(""))]))
+            }),
           ),
           effect.none(),
         )
@@ -471,17 +432,14 @@ pub fn detail_update(
       case model {
         Some(a) -> #(
           Some(
-            Recipe(
-              ..a,
-              method_steps: {
-                a.method_steps
-                |> option.map(utils.dict_update(
-                  _,
-                  i,
-                  fn(_step) { MethodStep(step_text: new_method_step) },
-                ))
-              },
-            ),
+            Recipe(..a, method_steps: {
+              a.method_steps
+              |> option.map(
+                utils.dict_update(_, i, fn(_step) {
+                  MethodStep(step_text: new_method_step)
+                }),
+              )
+            }),
           ),
           effect.none(),
         )
@@ -507,8 +465,8 @@ pub fn list_update(
     // we actually handle DbSubscriptionOpened in the top layer of the model
     session.DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
     session.DbSubscribedOneRecipe(jsdata) -> {
-      let decoder = decode2_recipe()
-      let try_decode = decode2.run(jsdata, decode2.at([0], decoder))
+      let decoder = decode_recipe()
+      let try_decode = decode.run(jsdata, decode.at([0], decoder))
       let try_effect = case try_decode {
         Ok(recipe) -> {
           use dispatch <- effect.from
@@ -519,8 +477,8 @@ pub fn list_update(
       #(model, try_effect)
     }
     session.DbSubscribedRecipes(jsdata) -> {
-      let decoder = decode2.list(decode2_recipe())
-      let try_decode = decode2.run(jsdata, decoder)
+      let decoder = decode.list(decode_recipe())
+      let try_decode = decode.run(jsdata, decoder)
 
       let try_effect = case try_decode {
         Ok(recipes) -> {

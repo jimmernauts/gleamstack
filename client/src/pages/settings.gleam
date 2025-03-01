@@ -1,6 +1,7 @@
 import components/page_title.{page_title}
 import decode/zero as decode
 import gleam/dynamic.{type Dynamic}
+import gleam/io
 import gleam/javascript/promise.{type Promise}
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -30,19 +31,17 @@ pub fn settings_update(
 ) -> #(SettingsModel, Effect(SettingsMsg)) {
   case msg {
     UserSavedSettings -> {
+      io.debug("UserSavedSettings")
+      io.debug(model)
       case model.api_key {
-        Some(api_key) -> save_settings(api_key)
-        None -> save_settings("placeholder_api_key")
+        Some(api_key) -> do_save_settings(api_key)
+        None -> do_save_settings("")
       }
       #(model, effect.none())
     }
     UserRetrievedSettings(api_key) -> #(SettingsModel(api_key), effect.none())
     UserUpdatedApikey(api_key) -> #(SettingsModel(Some(api_key)), effect.none())
   }
-}
-
-pub fn save_settings(api_key: String) -> Nil {
-  do_save_settings(api_key)
 }
 
 @external(javascript, ".././db.ts", "do_save_settings")

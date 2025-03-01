@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "type": "module",
   "workspaces":["packages/*"],
+  "scripts": {
+    "dev": "vite dev"
+  },
   "dependencies": {
     "@chouqueth/gleam": "^1.6.2",
     "@triplit/client": "^0.6.12",

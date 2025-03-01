@@ -1,7 +1,5 @@
 import gleam/dict.{type Dict}
-import gleam/dynamic
 import gleam/int
-import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
@@ -153,31 +151,6 @@ pub fn result_unnest(
   results
   |> result.map(fn(inner) { result.map_error(inner, transform_error) })
   |> result.flatten
-}
-
-pub fn json_decodeerror_to_decodeerror(
-  input: json.DecodeError,
-) -> dynamic.DecodeErrors {
-  case input {
-    json.UnexpectedEndOfInput -> [
-      dynamic.DecodeError(
-        expected: "end of input",
-        found: "something else",
-        path: [""],
-      ),
-    ]
-    json.UnexpectedByte(a, b) -> [
-      dynamic.DecodeError(expected: "unexpected byte", found: a, path: [
-        int.to_string(b),
-      ]),
-    ]
-    json.UnexpectedSequence(a, b) -> [
-      dynamic.DecodeError(expected: "unexpected sequence", found: a, path: [
-        int.to_string(b),
-      ]),
-    ]
-    json.UnexpectedFormat(a) -> a
-  }
 }
 
 /// Turn a string into a pretty slug.
