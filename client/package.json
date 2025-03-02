@@ -2,11 +2,12 @@
   "name": "mealstack_client",
   "version": "0.0.1",
   "type": "module",
-  "workspaces":["packages/*"],
+  "workspaces": ["packages/*"],
   "scripts": {
     "dev": "vite dev"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "@chouqueth/gleam": "^1.6.2",
     "@triplit/client": "^0.6.12",
     "change-case": "^5.4.4",

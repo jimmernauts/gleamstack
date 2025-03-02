@@ -15,6 +15,7 @@ import modem
 import pages/planner
 import pages/recipe
 import pages/settings
+import pages/upload
 import rada/date
 import session
 import tardis
@@ -64,6 +65,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
       ),
       db_subscriptions: dict.from_list([]),
       settings: settings.SettingsModel(api_key: None),
+      upload: upload.UploadModel(is_loading: False, file: None),
     ),
     effect.batch([
       modem.init(on_route_change),
@@ -87,6 +89,7 @@ pub type Model {
     planner: planner.Model,
     db_subscriptions: Dict(String, fn() -> Nil),
     settings: settings.SettingsModel,
+    upload: upload.UploadModel,
   )
 }
 
@@ -98,6 +101,7 @@ pub type Route {
   ViewPlanner(start_date: date.Date)
   EditPlanner(start_date: date.Date)
   ViewSettings
+  ViewUpload
 }
 
 pub type RouteParams {
@@ -111,6 +115,7 @@ pub type Msg {
   RecipeList(session.RecipeListMsg)
   Planner(planner.PlannerMsg)
   Settings(settings.SettingsMsg)
+  Upload(upload.UploadMsg)
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -315,6 +320,24 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(settings_effect, Settings),
       )
     }
+    Upload(upload.ResponseReceived(Ok(recipe))) -> {
+      #(
+        Model(..model, current_recipe: Some(recipe)),
+        effect.batch([
+          {
+            use dispatch <- effect.from
+            OnRouteChange(EditRecipeDetail(RecipeParam(recipe: recipe)))
+            |> dispatch
+          },
+          modem.push(string.append("/recipes/", recipe.slug), None, None),
+        ]),
+      )
+    }
+    Upload(upload_msg) -> {
+      let #(upload_model, upload_effect) =
+        upload.upload_update(model.upload, upload_msg)
+      #(Model(..model, upload: upload_model), effect.map(upload_effect, Upload))
+    }
   }
   case model.current_route {
     EditRecipeDetail(SlugParam(slug: slug)) | ViewRecipeDetail(slug) -> {
@@ -400,6 +423,7 @@ fn on_route_change(uri: Uri) -> Msg {
     _, ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
     _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
     _, ["settings"] -> OnRouteChange(ViewSettings)
+    _, ["upload"] -> OnRouteChange(ViewUpload)
     _, _ -> OnRouteChange(Home)
   }
 }
@@ -450,6 +474,7 @@ fn view(model: Model) -> Element(Msg) {
       )
     ViewSettings ->
       element.map(settings.view_settings(model.settings), Settings)
+    ViewUpload -> element.map(upload.view_upload(model.upload), Upload)
   }
   view_base(page)
 }
