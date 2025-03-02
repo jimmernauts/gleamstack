@@ -21,8 +21,8 @@ export async function do_read_file_from_event(event: Event) {
 
 }
 
-// Maximum file size (5MB)
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+// Maximum file size (4MB)
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
 function getFileSizeFromDataUrl(dataUrl: string): number {
     // Extract the base64 data portion from the Data URL
     const base64Data = dataUrl.split(',')[1];
@@ -115,7 +115,7 @@ export async function processImage(fileDataUrl: string): Promise<string> {
     const mimetype = fileDataUrl.substring(fileDataUrl.indexOf(":")+1, fileDataUrl.indexOf(";")) as "image/jpeg" | "image/png"
     // Check if the image is already under the maximum size
     if (sizeInBytes < MAX_FILE_SIZE) {
-    console.log('Image is already under 5MB, no processing needed');
+    console.log('Image is already under 4MB, no processing needed');
     return fileDataUrl;
     }
     

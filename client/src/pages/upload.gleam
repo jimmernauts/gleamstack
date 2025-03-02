@@ -8,7 +8,6 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{button, div, form, input, label, nav}
 import lustre/event.{on, on_submit}
-import pages/settings.{SettingsModel}
 import session.{type Recipe}
 
 //--TYPES-------------------------------------------------------------
