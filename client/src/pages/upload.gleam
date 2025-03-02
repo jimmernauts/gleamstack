@@ -1,11 +1,13 @@
 import components/page_title.{page_title}
+import gleam/dynamic
 import gleam/io
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import lustre/attribute.{accept, attribute, class, for, id, name, type_}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{button, div, form, input, label, nav}
-import lustre/event.{on_input, on_submit}
+import lustre/event.{on, on_submit}
 import pages/settings.{SettingsModel}
 import session.{type Recipe}
 
@@ -67,6 +69,20 @@ pub fn upload_update(
 @external(javascript, ".././upload.ts", "do_submit_file")
 fn do_submit_file(file: String) -> Result(Recipe, ParseImageToRecipeError)
 
+@external(javascript, ".././upload.ts", "do_read_file_from_event")
+fn do_read_file_from_event(event: dynamic.Dynamic) -> Result(String, String)
+
+fn handle_file_change(
+  event: dynamic.Dynamic,
+) -> Result(UploadMsg, dynamic.DecodeErrors) {
+  event
+  |> do_read_file_from_event()
+  |> result.map_error(fn(e) {
+    [dynamic.DecodeError(expected: "a file", found: e, path: [""])]
+  })
+  |> result.map(UserUploadedFile)
+}
+
 //--VIEW---------------------------------------------------------------
 
 pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
@@ -111,7 +127,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
           type_("file"),
           id("recipe-image"),
           accept(["image/*"]),
-          on_input(fn(value) { UserUploadedFile(value) }),
+          on("change", handle_file_change),
         ]),
         case model.file {
           Some(file_path) ->
