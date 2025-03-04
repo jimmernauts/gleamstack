@@ -5,6 +5,7 @@ client/.env
 client/build
 client/build/*
 /client/node_modules/*
+client/anthropic
 client/dist
 client/dist/*
 build

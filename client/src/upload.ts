@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+
 import { Jimp } from 'jimp';
 import { Ok, Error } from './gleam.mjs'
 
@@ -16,12 +17,21 @@ export async function do_read_file_from_event(event: Event, dispatch:any ): Prom
   
     const reader = new FileReader()
     
-    reader.onload = function(e) {
-      const contents = e?.target?.result
-      console.log("File read successfully")
-      dispatch(new Ok(contents))
-    }
-    
+    reader.onload = async function(e) {
+      const contents = e?.target?.result as string
+
+      try {
+        let processedDataUrl = contents;
+        if (file.size > MAX_FILE_SIZE) {
+          processedDataUrl = await processImageAsBase64(contents);
+        }
+        
+        dispatch(new Ok(processedDataUrl));
+      } catch (error) {
+        console.error("Error processing image:", error);
+        dispatch(new Error({ FileReadError: { message: "Failed to process image. File contents: "+contents } }));
+      }
+    };
     reader.onerror = function(e) {
       console.error("Error reading file:", e?.target?.error)
       dispatch(new Error({ FileReadError: { message: `Failed to read file: ${e?.target?.error}` } }))
@@ -33,19 +43,6 @@ export async function do_read_file_from_event(event: Event, dispatch:any ): Prom
 
 // Maximum file size (3 MB)
 const MAX_FILE_SIZE = 3 * 1024 * 1024;
-function getFileSizeFromDataUrl(dataUrl: string): number {
-    // Extract the base64 data portion from the Data URL
-    const base64Data = dataUrl.split(',')[1];
-    
-    // Calculate the size in bytes
-    // Base64 represents 6 bits per character, so 4 characters = 3 bytes
-    // We need to account for padding characters ('=') which don't contribute to the size
-    const paddingCount = (base64Data.match(/=/g) || []).length;
-    const sizeInBytes = Math.floor((base64Data.length - paddingCount) * 3 / 4);
-    
-    return sizeInBytes;
-  }
-
 
 const tools: Anthropic.Tool[] = [
     {
@@ -119,38 +116,42 @@ const tools: Anthropic.Tool[] = [
  * - Resizes the image if it's over 5MB
  * - Converts it to base64 for API submission
  */
-export async function processImage(fileDataUrl: string): Promise<string> {
-
-    const sizeInBytes = getFileSizeFromDataUrl(fileDataUrl);
-    const mimetype = fileDataUrl.substring(fileDataUrl.indexOf(":")+1, fileDataUrl.indexOf(";")) as "image/jpeg" | "image/png"
+async function processImageAsBase64(dataUrl: string): Promise<string> {
+    const image = await Jimp.read(dataUrl);
+    
     // Check if the image is already under the maximum size
+    const sizeInBytes = (dataUrl.length * 3) / 4; // Base64 uses 4 chars to represent 3 bytes
     if (sizeInBytes < MAX_FILE_SIZE) {
-    console.log('Image is already under 4MB, no processing needed');
-    return fileDataUrl;
+      console.log('Image is already under 3MB, no processing needed');
+      return dataUrl;
     }
     
-    console.log(`Original image size: ${(sizeInBytes / 1024 / 1024).toFixed(2)}MB`);
+    console.log(`Image size: ${(image.bitmap.data.length / 1024 / 1024).toFixed(2)}MB`);
     
     // Process the image with Jimp
-    const image = await Jimp.read(Buffer.from(fileDataUrl.split(',')[1], 'base64'));
     const startingWidth = image.width
     const startingHeight = image.height
-    const resizedBase64 = await image.resize({w: startingWidth*.75,h: startingHeight*.75}).getBase64(mimetype);
-    if (getFileSizeFromDataUrl(resizedBase64) < MAX_FILE_SIZE) {
-        return resizedBase64;
-    } else {
-        // If still too large, recursively process it again
-        // Be careful with recursion - you might want to add a maximum recursion depth
-        return processImage(resizedBase64);
-}}
+    const resizedImage = image.resize({ w: startingWidth * .75, h: startingHeight * .75 });
+  // Convert back to base64
+  const mimeType = dataUrl.substring(dataUrl.indexOf(":")+1, dataUrl.indexOf(";")) as "image/jpeg" | "image/png";
+  const processedBase64 = await resizedImage.getBase64(mimeType);
+  
+  // Check if we need to process again
+  const processedSizeInBytes = (processedBase64.length * 3) / 4; // Base64 uses 4 chars to represent 3 bytes
+  if (processedSizeInBytes < MAX_FILE_SIZE) {
+    return processedBase64;
+  } else {
+    // If still too large, recursively process it again
+    return processImageAsBase64(processedBase64);
+  }
+}
 
-export async function do_submit_file(file: string, api_key: string) {
-    console.log("Processing file...");
-        // Process the image (resize if needed and convert to base64)
-        const processedImage = await processImage(file);
-        
-        // Initialize Anthropic with the provided API key
-        const client = new Anthropic({ apiKey: api_key });
+export async function do_submit_file(file_data: string) {
+    console.log("Submitting file...");
+    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+    
+        // Initialize Anthropic with the provided API key   
+        const client = new Anthropic({ apiKey: apiKey, dangerouslyAllowBrowser: true })
         
         console.log("Sending to Anthropic API...");
         const response = await client.messages.create({
@@ -167,8 +168,8 @@ export async function do_submit_file(file: string, api_key: string) {
                             type: "image",
                             source: {
                                 type: "base64",
-                                media_type: processedImage.substring(processedImage.indexOf(":")+1, processedImage.indexOf(";")) as "image/gif" | "image/jpeg" | "image/png" | "image/webp",
-                                data: processedImage.split(',')[1]
+                                media_type: file_data.substring(file_data.indexOf(":")+1, file_data.indexOf(";")) as "image/gif" | "image/jpeg" | "image/png" | "image/webp",
+                                data: file_data.split(',')[1]
                             }
                         },
                         {

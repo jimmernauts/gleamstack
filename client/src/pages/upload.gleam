@@ -2,10 +2,8 @@ import components/page_title.{page_title}
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/io
-import gleam/javascript/promise.{type Promise}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/pair
 import gleam/result
 import lustre/attribute.{
   accept, attribute, class, for, href, id, name, src, type_,
@@ -14,7 +12,6 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{a, button, div, form, img, input, label, nav}
 import lustre/event.{on, on_submit}
-import plinth/browser/file.{type File}
 import session.{type Recipe}
 
 //--TYPES-------------------------------------------------------------
@@ -62,11 +59,8 @@ pub fn upload_update(
       ),
       {
         use dispatch <- effect.from
-        io.debug("do I ever fire")
         do_read_file_from_event(raw_file_change_event, fn(file_data) {
-          io.debug("inner read_file callback")
           file_data
-          |> io.debug
           |> result.map(BrowserReadFile)
           |> result.map_error(io.print_error)
           |> result.map(dispatch)
@@ -76,10 +70,10 @@ pub fn upload_update(
     )
     BrowserReadFile(file_data) -> #(
       UploadModel(
-        ..model,
         is_loading: False,
         file_name: model.file_name,
         file_data: Some(file_data),
+        raw_file_change_event: None,
       ),
       effect.none(),
     )
@@ -88,6 +82,7 @@ pub fn upload_update(
         None -> #(model, effect.none())
         Some(file_data) -> #(UploadModel(..model, is_loading: True), {
           let response = do_submit_file(file_data)
+          response |> io.debug
           use dispatch <- effect.from
           dispatch(ResponseReceived(response))
         })
@@ -95,7 +90,7 @@ pub fn upload_update(
     }
     ResponseReceived(Ok(_recipe)) -> {
       //actually handled in app.gleam
-      #(UploadModel(..model), effect.none())
+      #(model, effect.none())
     }
     ResponseReceived(Error(error)) -> {
       let error_message = case error {
@@ -104,7 +99,15 @@ pub fn upload_update(
         Other(msg) -> "Error: " <> msg
       }
       io.print_error(error_message)
-      #(UploadModel(..model, is_loading: False), effect.none())
+      #(
+        UploadModel(
+          is_loading: False,
+          raw_file_change_event: None,
+          file_data: None,
+          file_name: None,
+        ),
+        effect.none(),
+      )
     }
   }
 }
@@ -184,7 +187,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
           Some(file_data) ->
             div([class("mt-2 text-sm")], [
               text("Selected image: "),
-              img([src(file_data)]),
+              img([src(file_data), class("w-1/2")]),
             ])
           None -> element.none()
         },
