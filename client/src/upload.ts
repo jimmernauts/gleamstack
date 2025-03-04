@@ -1,28 +1,38 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Jimp } from 'jimp';
-import { Ok, Error } from '../build/dev/javascript/prelude.mjs'
+import { Ok, Error } from './gleam.mjs'
 
 // read a file from an event
-export async function do_read_file_from_event(event: Event) {
-    const target = event.target as HTMLInputElement
-    const file = target?.files?.[0] as File
-    
+export async function do_read_file_from_event(event: Event, dispatch:any ): Promise<void> {
+  console.log("do_read_file_from_event")
+  console.log(event)
+  const target = event.target as HTMLInputElement
+  const file = target?.files?.[0] as File
+  
+  if (!file) {
+    dispatch(new Error({ FileReadError: { message: "No file selected" } }))
+    return
+  }
+  
     const reader = new FileReader()
+    
     reader.onload = function(e) {
-        const contents = e?.target?.result
-        // process here
-        return new Ok(contents)
+      const contents = e?.target?.result
+      console.log("File read successfully")
+      dispatch(new Ok(contents))
     }
-
+    
     reader.onerror = function(e) {
-        return new Error("Failed to read file: "+e?.target?.error)
+      console.error("Error reading file:", e?.target?.error)
+      dispatch(new Error({ FileReadError: { message: `Failed to read file: ${e?.target?.error}` } }))
     }
+    
+    // Start reading the file
     reader.readAsDataURL(file)
-
 }
 
-// Maximum file size (4MB)
-const MAX_FILE_SIZE = 4 * 1024 * 1024;
+// Maximum file size (3 MB)
+const MAX_FILE_SIZE = 3 * 1024 * 1024;
 function getFileSizeFromDataUrl(dataUrl: string): number {
     // Extract the base64 data portion from the Data URL
     const base64Data = dataUrl.split(',')[1];
@@ -144,7 +154,7 @@ export async function do_submit_file(file: string, api_key: string) {
         
         console.log("Sending to Anthropic API...");
         const response = await client.messages.create({
-            model: "claude-3-7-sonnet-20250219",
+            model: "claude-3-5-haiku-20241022",
             max_tokens: 2000,
             temperature: 0,
             thinking: {type: "disabled"},
@@ -168,11 +178,15 @@ export async function do_submit_file(file: string, api_key: string) {
                     ]
                 }
             ],
-            tools: tools
+            tools: tools,
+            tool_choice: {
+                type: "tool",
+                name: "recipe_formatter"
+            }
         });
         
         console.log("Received response from Anthropic");
-        
+        console.log(JSON.stringify(response.content))
         // Parse the tool calls from the response
         const toolCalls = response.content.filter(item => 
             item.type === 'tool_use' && item.name === 'recipe_formatter'
@@ -180,7 +194,7 @@ export async function do_submit_file(file: string, api_key: string) {
         
         if (toolCalls.length > 0) {
             // @ts-ignore - Anthropic types might not fully match our usage
-            const recipeData = JSON.parse(toolCalls[0].input);
+            const recipeData = toolCalls[0].input
             
             // Convert to the format expected by the Gleam app
             const recipe = {

@@ -5,7 +5,6 @@
   "workspaces": ["packages/*"],
   "scripts": {
     "dev": "vite dev",
-    "test:manual": "bun run test/upload/manual_test.ts",
     "test:image": "vitest run test/upload/image_processing.test.ts"
   },
   "dependencies": {
@@ -13,7 +12,7 @@
     "@chouqueth/gleam": "^1.6.2",
     "@triplit/client": "^0.6.12",
     "change-case": "^5.4.4",
-    "esbuild-plugin-wasm": "^1.1.0",
+    "dotenv": "^16.4.7",
     "iso8601-duration": "^2.1.2",
     "jimp": "^1.6.0",
     "jsonld": "^8.3.2",

@@ -65,7 +65,12 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
       ),
       db_subscriptions: dict.from_list([]),
       settings: settings.SettingsModel(api_key: None),
-      upload: upload.UploadModel(is_loading: False, file: None),
+      upload: upload.UploadModel(
+        is_loading: False,
+        raw_file_change_event: None,
+        file_data: None,
+        file_name: None,
+      ),
     ),
     effect.batch([
       modem.init(on_route_change),
@@ -553,6 +558,18 @@ fn view_home() {
           [
             span([class("underline-blue")], [text("New")]),
             span([class("text-5xl")], [text("📝")]),
+          ],
+        ),
+        a(
+          [
+            class(
+              "flex items-baseline col-span-full sm:col-span-6 justify-between pr-4",
+            ),
+            href("/upload"),
+          ],
+          [
+            span([class("underline-yellow")], [text("Upload")]),
+            span([class("text-5xl")], [text("📤")]),
           ],
         ),
       ],

@@ -1,5 +1,6 @@
 *.env
 client/.env
+/client/.env
 client/build
 client/build/*
 /client/node_modules/*
@@ -12,6 +13,7 @@ notebooks/*
 !notebooks/post_recipes.ts
 client/cloudflare
 client/anthropic
+/client/anthropic
 fly_pg
 
 # windsurf rules
