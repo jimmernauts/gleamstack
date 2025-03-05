@@ -1,5 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk';
-
 import { Jimp } from 'jimp';
 import { Ok, Error } from './gleam.mjs'
 
@@ -116,7 +115,7 @@ const tools: Anthropic.Tool[] = [
  * - Resizes the image if it's over 5MB
  * - Converts it to base64 for API submission
  */
-async function processImageAsBase64(dataUrl: string): Promise<string> {
+export async function processImageAsBase64(dataUrl: string): Promise<string> {
     const image = await Jimp.read(dataUrl);
     
     // Check if the image is already under the maximum size
@@ -146,7 +145,7 @@ async function processImageAsBase64(dataUrl: string): Promise<string> {
   }
 }
 
-export async function do_submit_file(file_data: string) {
+export async function do_submit_file(file_data: string, dispatch: any): Promise<void> {
     console.log("Submitting file...");
     const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
     
@@ -185,7 +184,6 @@ export async function do_submit_file(file_data: string) {
                 name: "recipe_formatter"
             }
         });
-        
         console.log("Received response from Anthropic");
         console.log(JSON.stringify(response.content))
         // Parse the tool calls from the response
@@ -224,8 +222,8 @@ export async function do_submit_file(file_data: string) {
                 shortlisted: null
             };
             
-            return new Ok(recipe);
+            dispatch(new Ok(recipe));
         } else {
-            return new Error({ Other: "Failed to extract recipe data" });
+            dispatch(new Error({ Other: "Failed to extract recipe data" }));
         }
 }

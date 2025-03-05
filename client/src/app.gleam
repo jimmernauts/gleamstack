@@ -66,10 +66,10 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
       db_subscriptions: dict.from_list([]),
       settings: settings.SettingsModel(api_key: None),
       upload: upload.UploadModel(
-        is_loading: False,
-        raw_file_change_event: None,
-        file_data: None,
+        status: upload.NotStarted,
         file_name: None,
+        file_data: None,
+        raw_file_change_event: None,
       ),
     ),
     effect.batch([
@@ -213,6 +213,20 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(..model, current_route: ViewSettings),
       effect.map(settings.retrieve_settings(), Settings),
     )
+    OnRouteChange(ViewUpload) -> #(
+      Model(
+        ..model,
+        current_route: ViewUpload,
+        current_recipe: None,
+        upload: upload.UploadModel(
+          status: upload.NotStarted,
+          file_name: None,
+          file_data: None,
+          raw_file_change_event: None,
+        ),
+      ),
+      effect.none(),
+    )
     OnRouteChange(route) -> #(
       Model(..model, current_route: route, current_recipe: None),
       effect.none(),
@@ -327,15 +341,21 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
     Upload(upload.ResponseReceived(Ok(recipe))) -> {
       #(
-        Model(..model, current_recipe: Some(recipe)),
-        effect.batch([
-          {
-            use dispatch <- effect.from
-            OnRouteChange(EditRecipeDetail(RecipeParam(recipe: recipe)))
-            |> dispatch
-          },
-          modem.push(string.append("/recipes/", recipe.slug), None, None),
-        ]),
+        Model(
+          ..model,
+          current_recipe: Some(recipe),
+          upload: upload.UploadModel(
+            status: upload.Finished,
+            file_name: None,
+            file_data: None,
+            raw_file_change_event: None,
+          ),
+        ),
+        {
+          use dispatch <- effect.from
+          OnRouteChange(EditRecipeDetail(RecipeParam(recipe: recipe)))
+          |> dispatch
+        },
       )
     }
     Upload(upload_msg) -> {

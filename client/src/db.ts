@@ -1,6 +1,6 @@
 import { schema } from './schema.ts';
 import { TriplitClient } from "@triplit/client";
-import type { Recipe, PlanDay, Settings } from "./types.ts";
+import type { Recipe, PlanDay } from "./types.ts";
 
 
 export const client = new TriplitClient({

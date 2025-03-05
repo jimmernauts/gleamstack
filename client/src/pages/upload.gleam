@@ -29,13 +29,21 @@ pub type ParseImageToRecipeError {
   Other(message: String)
 }
 
-pub type FileReadError {
+type FileReadError {
   FileReadError(message: String)
+}
+
+pub type UploadStatus {
+  NotStarted
+  FileSelected
+  ImageProcessing
+  ImageSubmitting
+  Finished
 }
 
 pub type UploadModel {
   UploadModel(
-    is_loading: Bool,
+    status: UploadStatus,
     file_name: Option(String),
     file_data: Option(String),
     raw_file_change_event: Option(dynamic.Dynamic),
@@ -48,12 +56,11 @@ pub fn upload_update(
   model: UploadModel,
   msg: UploadMsg,
 ) -> #(UploadModel, Effect(UploadMsg)) {
-  io.debug(msg)
   case msg {
     UserSelectedFile(file_name, raw_file_change_event) -> #(
       UploadModel(
         ..model,
-        is_loading: False,
+        status: FileSelected,
         file_name: Some(file_name),
         raw_file_change_event: Some(raw_file_change_event),
       ),
@@ -70,21 +77,26 @@ pub fn upload_update(
     )
     BrowserReadFile(file_data) -> #(
       UploadModel(
-        is_loading: False,
+        status: ImageProcessing,
         file_name: model.file_name,
         file_data: Some(file_data),
         raw_file_change_event: None,
       ),
       effect.none(),
     )
+    // change this like the other one, so we pass in a callback function to dispatch the response from
     UserSubmittedFile -> {
       case model.file_data {
         None -> #(model, effect.none())
-        Some(file_data) -> #(UploadModel(..model, is_loading: True), {
-          let response = do_submit_file(file_data)
-          response |> io.debug
+        Some(file_data) -> #(UploadModel(..model, status: ImageSubmitting), {
           use dispatch <- effect.from
-          dispatch(ResponseReceived(response))
+          do_submit_file(file_data, fn(response) {
+            response
+            |> io.debug
+            |> ResponseReceived
+            |> dispatch
+            Nil
+          })
         })
       }
     }
@@ -101,7 +113,7 @@ pub fn upload_update(
       io.print_error(error_message)
       #(
         UploadModel(
-          is_loading: False,
+          status: Finished,
           raw_file_change_event: None,
           file_data: None,
           file_name: None,
@@ -134,7 +146,10 @@ fn do_read_file_from_event(
 ) -> Nil
 
 @external(javascript, ".././upload.ts", "do_submit_file")
-fn do_submit_file(file: String) -> Result(Recipe, ParseImageToRecipeError)
+fn do_submit_file(
+  file: String,
+  cb: fn(Result(Recipe, ParseImageToRecipeError)) -> Nil,
+) -> Nil
 
 //--VIEW---------------------------------------------------------------
 
@@ -183,6 +198,19 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
           accept(["image/*"]),
           on("change", handle_file_upload),
         ]),
+        case model.status {
+          NotStarted -> element.none()
+          FileSelected -> element.none()
+          ImageProcessing ->
+            div([class("mt-2 text-sm text-blue-500")], [
+              text("Processing image..."),
+            ])
+          ImageSubmitting ->
+            div([class("mt-2 text-sm text-blue-500")], [
+              text("Submitting image..."),
+            ])
+          Finished -> element.none()
+        },
         case model.file_data {
           Some(file_data) ->
             div([class("mt-2 text-sm")], [
@@ -190,13 +218,6 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
               img([src(file_data), class("w-1/2")]),
             ])
           None -> element.none()
-        },
-        case model.is_loading {
-          True ->
-            div([class("mt-2 text-sm text-blue-500")], [
-              text("Processing image..."),
-            ])
-          False -> element.none()
         },
       ]),
     ],
