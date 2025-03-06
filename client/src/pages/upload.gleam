@@ -29,10 +29,6 @@ pub type ParseImageToRecipeError {
   Other(message: String)
 }
 
-type FileReadError {
-  FileReadError(message: String)
-}
-
 pub type UploadStatus {
   NotStarted
   FileSelected
@@ -67,10 +63,11 @@ pub fn upload_update(
       {
         use dispatch <- effect.from
         do_read_file_from_event(raw_file_change_event, fn(file_data) {
-          file_data
-          |> result.map(BrowserReadFile)
-          |> result.map_error(io.print_error)
-          |> result.map(dispatch)
+          let _ =
+            file_data
+            |> result.map(BrowserReadFile)
+            |> result.map_error(io.print_error)
+            |> result.map(dispatch)
           Nil
         })
       },
