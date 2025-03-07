@@ -24,9 +24,10 @@ pub type UploadMsg {
 }
 
 pub type ParseImageToRecipeError {
+  DecoderError(List(decode.DecodeError))
   InvalidImage
   Unauthorized
-  Other(message: String)
+  Other(String)
 }
 
 pub type UploadStatus {
@@ -88,11 +89,26 @@ pub fn upload_update(
         Some(file_data) -> #(UploadModel(..model, status: ImageSubmitting), {
           use dispatch <- effect.from
           do_submit_file(file_data, fn(response) {
-            response
-            |> io.debug
-            |> ResponseReceived
-            |> dispatch
-            Nil
+            case response {
+              Ok(recipe_data) -> {
+                let decoded =
+                  recipe_data
+                  |> decode.run(session.decode_recipe(False))
+                case decoded {
+                  Ok(recipe) -> dispatch(ResponseReceived(Ok(recipe)))
+                  Error(errors) -> {
+                    io.debug(errors)
+                    dispatch(
+                      ResponseReceived(
+                        Error(Other("Response could not be decoded")),
+                      ),
+                    )
+                  }
+                }
+              }
+              Error(inner_error) ->
+                dispatch(ResponseReceived(Error(inner_error)))
+            }
           })
         })
       }
@@ -103,8 +119,9 @@ pub fn upload_update(
     }
     ResponseReceived(Error(error)) -> {
       let error_message = case error {
-        InvalidImage -> "Invalid image format"
-        Unauthorized -> "Unauthorized access"
+        DecoderError(_errors) -> "Could not decode the result into a recipe."
+        InvalidImage -> "Invalid image format."
+        Unauthorized -> "Unauthorized access."
         Other(msg) -> "Error: " <> msg
       }
       io.print_error(error_message)
@@ -145,7 +162,7 @@ fn do_read_file_from_event(
 @external(javascript, ".././upload.ts", "do_submit_file")
 fn do_submit_file(
   file: String,
-  cb: fn(Result(Recipe, ParseImageToRecipeError)) -> Nil,
+  cb: fn(Result(dynamic.Dynamic, ParseImageToRecipeError)) -> Nil,
 ) -> Nil
 
 //--VIEW---------------------------------------------------------------

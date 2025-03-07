@@ -465,8 +465,8 @@ pub fn list_update(
     // we actually handle DbSubscriptionOpened in the top layer of the model
     session.DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
     session.DbSubscribedOneRecipe(jsdata) -> {
-      let decoder = decode_recipe()
-      let try_decode = decode.run(jsdata, decode.at([0], decoder))
+      let decoder = decode_recipe(True)
+      let try_decode = decode.run(jsdata, decoder)
       let try_effect = case try_decode {
         Ok(recipe) -> {
           use dispatch <- effect.from
@@ -477,7 +477,7 @@ pub fn list_update(
       #(model, try_effect)
     }
     session.DbSubscribedRecipes(jsdata) -> {
-      let decoder = decode.list(decode_recipe())
+      let decoder = decode.list(decode_recipe(True))
       let try_decode = decode.run(jsdata, decoder)
 
       let try_effect = case try_decode {

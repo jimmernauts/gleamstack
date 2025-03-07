@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Jimp } from 'jimp';
-import { Ok, Error } from './gleam.mjs'
+import { Ok, Error } from './gleam.mjs';
 
 // read a file from an event
 export async function do_read_file_from_event(event: Event, dispatch:any ): Promise<void> {
@@ -184,8 +184,6 @@ export async function do_submit_file(file_data: string, dispatch: any): Promise<
                 name: "recipe_formatter"
             }
         });
-        console.log("Received response from Anthropic");
-        console.log(JSON.stringify(response.content))
         // Parse the tool calls from the response
         const toolCalls = response.content.filter(item => 
             item.type === 'tool_use' && item.name === 'recipe_formatter'
@@ -194,35 +192,7 @@ export async function do_submit_file(file_data: string, dispatch: any): Promise<
         if (toolCalls.length > 0) {
             // @ts-ignore - Anthropic types might not fully match our usage
             const recipeData = toolCalls[0].input
-            
-            // Convert to the format expected by the Gleam app
-            const recipe = {
-                id: null,
-                title: recipeData.title,
-                slug: recipeData.title.toLowerCase().replace(/\s+/g, '-'),
-                cook_time: recipeData.cook_time,
-                prep_time: recipeData.prep_time,
-                serves: recipeData.serves,
-                author: null,
-                source: null,
-                tags: null,
-                ingredients: recipeData.ingredients ? 
-                    Object.fromEntries(recipeData.ingredients.map((ing: any, i: number) => [
-                        i, {
-                            name: ing.name,
-                            quantity: ing.quantity || null,
-                            units: ing.units || null,
-                            is_main: ing.ismain === 'true'
-                        }
-                    ])) : null,
-                method_steps: recipeData.method_steps ? 
-                    Object.fromEntries(recipeData.method_steps.map((step: any, i: number) => [
-                        i, { text: step.step_text }
-                    ])) : null,
-                shortlisted: null
-            };
-            
-            dispatch(new Ok(recipe));
+            dispatch(new Ok(recipeData));
         } else {
             dispatch(new Error({ Other: "Failed to extract recipe data" }));
         }
