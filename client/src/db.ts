@@ -99,7 +99,7 @@ export function do_subscribe_to_recipe_summaries(dispatch: any) {
 }
 
 export function do_subscribe_to_one_recipe_by_slug(slug: string, dispatch: any) {
-    const query = client.query('recipes').where([['slug','=',slug]]).limit(1).build();
+    const query = client.query('recipes').select(['id','title','slug','cook_time','prep_time','serves','author','source','tags','ingredients','method_steps','shortlisted']).where([['slug','=',slug]]).limit(1).build();
     const result = client.subscribe(query, dispatch, () => {})
     return result
 }

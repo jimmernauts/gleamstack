@@ -24,7 +24,7 @@ import lustre/event.{on_check, on_click, on_input}
 import session.{
   type Ingredient, type MethodStep, type Recipe, type RecipeList, type Tag,
   type TagOption, Ingredient, MethodStep, Recipe, RecipeList, Tag, TagOption,
-  decode_recipe,
+  decode_recipe_with_inner_json,
 }
 
 //-MODEL---------------------------------------------
@@ -111,7 +111,6 @@ pub fn detail_update(
   model: RecipeDetail,
   msg: RecipeDetailMsg,
 ) -> #(RecipeDetail, Effect(RecipeDetailMsg)) {
-  io.debug(msg)
   case msg {
     UserUpdatedRecipeTitle(newtitle) -> {
       case model {
@@ -462,22 +461,25 @@ pub fn list_update(
   msg: session.RecipeListMsg,
 ) -> #(RecipeList, Effect(session.RecipeListMsg)) {
   case msg {
-    // we actually handle DbSubscriptionOpened in the top layer of the model
+    // we actually handle DbSubscriptionOpened in the top layer of the model in app.gleam
     session.DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
     session.DbSubscribedOneRecipe(jsdata) -> {
-      let decoder = decode_recipe(True)
+      let decoder = decode.at([0], decode_recipe_with_inner_json())
       let try_decode = decode.run(jsdata, decoder)
       let try_effect = case try_decode {
         Ok(recipe) -> {
           use dispatch <- effect.from
           session.DbRetrievedOneRecipe(recipe) |> dispatch
         }
-        Error(_) -> effect.none()
+        Error(e) -> {
+          io.debug(e)
+          effect.none()
+        }
       }
       #(model, try_effect)
     }
     session.DbSubscribedRecipes(jsdata) -> {
-      let decoder = decode.list(decode_recipe(True))
+      let decoder = decode.list(decode_recipe_with_inner_json())
       let try_decode = decode.run(jsdata, decoder)
 
       let try_effect = case try_decode {
@@ -1269,7 +1271,6 @@ fn tag_input(
   }
 
   let tagnames = list.map(available_tags, fn(x) { x.name })
-  io.debug(tagnames)
   let tag = option.unwrap(input, Tag("", ""))
   fieldset(
     [

@@ -31,8 +31,6 @@ pub fn settings_update(
 ) -> #(SettingsModel, Effect(SettingsMsg)) {
   case msg {
     UserSavedSettings -> {
-      io.debug("UserSavedSettings")
-      io.debug(model)
       case model.api_key {
         Some(api_key) -> do_save_settings(api_key)
         None -> do_save_settings("")

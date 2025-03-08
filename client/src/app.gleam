@@ -341,7 +341,6 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       )
     }
     Upload(upload.ResponseReceived(Ok(recipe))) -> {
-      io.debug(recipe)
       #(
         Model(
           ..model,

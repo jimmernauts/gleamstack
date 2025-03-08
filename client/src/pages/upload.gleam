@@ -93,7 +93,7 @@ pub fn upload_update(
               Ok(recipe_data) -> {
                 let decoded =
                   recipe_data
-                  |> decode.run(session.decode_recipe(False))
+                  |> decode.run(session.decode_recipe_no_json())
                 case decoded {
                   Ok(recipe) -> dispatch(ResponseReceived(Ok(recipe)))
                   Error(errors) -> {
