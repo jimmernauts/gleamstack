@@ -23,7 +23,7 @@ import tardis
 // MAIN ------------------------------------------------------------------------
 
 // WITHOUT DEBUGGER
-// 
+//
 // pub fn main() {
 //   lustre.register(typeahead.app(), "type-ahead")
 //   let app = lustre.application(init, update, view)
@@ -527,7 +527,7 @@ fn view_home() {
   section([class("grid grid-cols-12 col-start-[main-start]")], [
     page_title(
       "Mealstack",
-      "text-9xl placeholder:underline-pink underline-pink col-span-full xxs:col-span-11",
+      "text-9xl placeholder:underline-pink underline-pink col-span-11",
     ),
     nav(
       [
@@ -544,55 +544,25 @@ fn view_home() {
         ),
       ],
       [
-        a(
-          [
-            class(
-              "flex items-baseline col-span-full sm:col-span-6 justify-between pr-4",
-            ),
-            href("/planner"),
-          ],
-          [
-            span([class("underline-orange")], [text("Plan")]),
-            span([class("text-5xl")], [text("📅")]),
-          ],
-        ),
-        a(
-          [
-            class(
-              "flex items-baseline col-span-full sm:col-span-6 justify-between pr-4",
-            ),
-            href("/recipes"),
-          ],
-          [
-            span([class("underline-green")], [text("List  ")]),
-            span([class("text-5xl")], [text("📑")]),
-          ],
-        ),
-        a(
-          [
-            class(
-              "flex items-baseline col-span-full sm:col-span-6 justify-between pr-4",
-            ),
-            href("/recipes/new"),
-          ],
-          [
-            span([class("underline-blue")], [text("New")]),
-            span([class("text-5xl")], [text("📝")]),
-          ],
-        ),
-        a(
-          [
-            class(
-              "flex items-baseline col-span-full sm:col-span-6 justify-between pr-4",
-            ),
-            href("/upload"),
-          ],
-          [
-            span([class("underline-yellow")], [text("Upload")]),
-            span([class("text-5xl")], [text("📤")]),
-          ],
-        ),
-      ],
+        #("📅", "Plan", "underline-orange"),
+        #("📑", "List", "underline-green"),
+        #("📝", "New", "underline-blue"),
+        #("📤", "Upload", "underline-yellow"),
+      ]
+        |> list.map(fn(t) {
+          a(
+            [
+              class(
+                "col-span-full subgrid-cols sm:col-span-6 sm:justify-around sm:flex sm:subgrid-cols-none items-baseline pr-4",
+              ),
+              href("/" <> string.lowercase(t.1)),
+            ],
+            [
+              span([class("text-5xl col-start-2")], [text(t.0)]),
+              span([class("col-start-4 " <> t.2)], [text(t.1)]),
+            ],
+          )
+        }),
     ),
   ])
 }
