@@ -842,7 +842,10 @@ fn plan_day_decoder() -> decode.Decoder(PlanDay) {
     "date",
     decode.int |> decode.map(fn(a) { date.from_rata_die(a) }),
   )
-  use planned_meals <- decode.field("planned_meals", planned_meals_decoder())
+  use planned_meals <- decode.field(
+    "planned_meals",
+    session.decode_json_string(planned_meals_decoder(), []),
+  )
   decode.success(PlanDay(date: date, planned_meals: planned_meals))
 }
 
