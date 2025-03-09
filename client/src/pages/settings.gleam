@@ -1,7 +1,6 @@
 import components/page_title.{page_title}
 import decode/zero as decode
 import gleam/dynamic.{type Dynamic}
-import gleam/io
 import gleam/javascript/promise.{type Promise}
 import gleam/option.{type Option, None, Some}
 import gleam/result

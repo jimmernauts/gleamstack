@@ -1,7 +1,6 @@
 import components/page_title.{page_title}
 import components/typeahead
 import gleam/dict.{type Dict}
-import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result

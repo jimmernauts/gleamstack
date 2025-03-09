@@ -3,7 +3,6 @@ import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/int
-import gleam/io
 import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list

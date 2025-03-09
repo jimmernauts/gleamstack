@@ -1,5 +1,6 @@
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Decoder, type Dynamic}
+import gleam/dynamic.{type Decoder}
+import gleam/dynamic/decode.{type Dynamic}
 import gleam/int
 import gleam/json
 import gleam/list
@@ -135,16 +136,13 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         _, False, _ -> #(model, effect.none())
         "ArrowDown", True, True -> {
           #(
-            Model(
-              ..model,
-              hovered_item: case
-                model.hovered_item,
-                list.length(model.found_items)
-              {
-                None, _ -> Some(0)
-                Some(a), b -> Some(int.min(a + 1, b))
-              },
-            ),
+            Model(..model, hovered_item: case
+              model.hovered_item,
+              list.length(model.found_items)
+            {
+              None, _ -> Some(0)
+              Some(a), b -> Some(int.min(a + 1, b))
+            }),
             effect.none(),
           )
         }
@@ -153,13 +151,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         }
         "ArrowUp", True, True -> {
           #(
-            Model(
-              ..model,
-              hovered_item: case model.hovered_item {
-                None -> None
-                Some(a) -> Some(int.max(0, a - 1))
-              },
-            ),
+            Model(..model, hovered_item: case model.hovered_item {
+              None -> None
+              Some(a) -> Some(int.max(0, a - 1))
+            }),
             effect.none(),
           )
         }
@@ -203,12 +198,14 @@ fn on_attribute_change() -> Dict(String, Decoder(Msg)) {
   dict.from_list([
     #("recipe-titles", fn(attribute) {
       attribute
-      |> dynamic.list(dynamic.string)
+      |> decode.run(decode.list(decode.string))
+      |> utils.convert_decode_errors
       |> result.map(RetrievedSearchItems)
     }),
     #("search-term", fn(attribute) {
       attribute
-      |> dynamic.string
+      |> decode.run(decode.string)
+      |> utils.convert_decode_errors
       |> result.map(RetrievedInitialSearchTerm)
     }),
   ])
@@ -231,18 +228,32 @@ fn search_result(model: Model, result_value: String, index: Int) -> Element(Msg)
       on_click(UserSelectedOption(result_value)),
       on("mouseover", fn(evt) {
         evt
-        |> dynamic.field(
-          "target",
-          dynamic.field("dataset", dynamic.field("index", decode_stringed_int)),
-        )
+        |> decode.run(decode.at(
+          ["target", "dataset", "index"],
+          decode.string
+            |> decode.then(fn(s) {
+              case int.parse(s) {
+                Ok(i) -> decode.success(i)
+                Error(_) -> decode.failure(0, "Expected integer string")
+              }
+            }),
+        ))
+        |> utils.convert_decode_errors
         |> result.map(UserHoveredOption)
       }),
       on("mouseout", fn(evt) {
         evt
-        |> dynamic.field(
-          "target",
-          dynamic.field("dataset", dynamic.field("index", decode_stringed_int)),
-        )
+        |> decode.run(decode.at(
+          ["target", "dataset", "index"],
+          decode.string
+            |> decode.then(fn(s) {
+              case int.parse(s) {
+                Ok(i) -> decode.success(i)
+                Error(_) -> decode.failure(0, "Expected integer string")
+              }
+            }),
+        ))
+        |> utils.convert_decode_errors
         |> result.map(UserUnHoveredOption)
       }),
       on("mousedown", fn(evt) {
@@ -295,7 +306,8 @@ fn view(model: Model) -> Element(Msg) {
         on_input(UserTypedInSearchInput),
         on("change", fn(event) {
           event
-          |> dynamic.field("target", dynamic.field("value", dynamic.string))
+          |> decode.run(decode.at(["target", "value"], decode.string))
+          |> utils.convert_decode_errors
           |> result.map(UserSelectedValue)
         }),
         on_keydown(UserPressedKeyInSearchInput),
@@ -330,8 +342,11 @@ fn view(model: Model) -> Element(Msg) {
   ])
 }
 
+//----DECODERS & TYPES-------------------------------------------------------------------------
+
 pub fn decode_stringed_bool(d: Dynamic) -> Result(Bool, dynamic.DecodeErrors) {
-  dynamic.string(d)
+  decode.run(d, decode.string)
+  |> utils.convert_decode_errors
   |> result.map(fn(a) {
     case a {
       "True" -> True
@@ -342,17 +357,18 @@ pub fn decode_stringed_bool(d: Dynamic) -> Result(Bool, dynamic.DecodeErrors) {
   })
 }
 
-pub fn decode_stringed_int(d: Dynamic) -> Result(Int, dynamic.DecodeErrors) {
-  let decoder = dynamic.string
-  decoder(d)
+pub fn decode_stringed_int(d: Dynamic) -> Result(Int, List(decode.DecodeError)) {
+  decode.run(d, decode.string)
   |> result.map(int.parse)
-  |> result.then(result.map_error(_, fn(_x) {
-    [
-      dynamic.DecodeError(
-        expected: "a stringed int",
-        found: "something else",
-        path: [""],
-      ),
-    ]
-  }))
+  |> result.then(
+    result.map_error(_, fn(_x) {
+      [
+        decode.DecodeError(
+          expected: "a stringed int",
+          found: "something else",
+          path: [""],
+        ),
+      ]
+    }),
+  )
 }

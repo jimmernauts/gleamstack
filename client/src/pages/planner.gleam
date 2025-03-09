@@ -826,7 +826,8 @@ fn inner_input(
         typeahead.search_term(title),
         event.on("typeahead-change", fn(target) {
           target
-          |> dynamic.field("detail", dynamic.string)
+          |> decode.run(decode.at(["detail"], decode.string))
+          |> utils.convert_decode_errors
           |> result.map(fn(a) { UserUpdatedMealTitle(date, for, a) })
         }),
       ]),
