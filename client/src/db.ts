@@ -10,8 +10,6 @@ export const client = new TriplitClient({
     token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ4LXRyaXBsaXQtdG9rZW4tdHlwZSI6ImFub24iLCJ4LXRyaXBsaXQtcHJvamVjdC1pZCI6IjkxMmQ0NGUxLTQ4YTYtNDZiNy1iNmI5LTdiYzBmY2Q1OWE4MSIsImlhdCI6MTcyMTU2ODg2OX0.mLTejtnhczt5RxdYK1cnnNbeQ7vevO5z7oQD23MJA6AIfiyYS9S5F1il5PcCyLwJyObGomOJE9qIJbfwoHsBzs1QQEg3HOjgMBJAIRhbaWhOJn1BZZ8h2eaZWKpwBQuUpHi37-T0uTnABP7WUTZEFshHWEv5JlUYczehBvUFA8AulNjZDJJrJuEqHNgL3e0OaUZbstWArftiJpoR0htiZ7_HzFRHm5nivgsVO5zSBVeURM5Eygf67N6y6krLxK7jNHIjP0EbFu2DvC2nB9wrfjebChf-x6FRDFZpnMsrMuGn9-gWoyTapMjm-q4br1Sns7oIFbKKhJI1-9LzqifwYaflWrwLEroXvkoG9fJwJConmEPE9HWR20s_75wH7B7-g3ihgHP9I820qQ1WpWuVCF6xIIG3_RwDgt-T_b08HPMAQdo5H5fHxcxSeY-pSua1TUKFeDZjKNdtZhexWfHxAGJP9gKdS2sTY4pz43dRKvIahUGRsoQ5jOMv0jONsT2z8iMnXPsmOiyLZd36Ba6FKaltJBgpoM22GkdsMFd8OIYAa-ROjgKkF1ku2WX78V53AkdAEika26-zdNv3LAK1b40tebvt58imnmR2H2PPx62wAWgsXTTuMSVhm4dMDb1zeKGXOsQCHkNUw-DsgY-3bvj0-TMG8WPU3GPpvBIj_l8"
 });
 
-if (typeof window !== 'undefined') window.client = client;
-
 export async function do_get_recipes() {
     const query = client.query('recipes').build(); 
     const result = await client.fetch(query)
