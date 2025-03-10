@@ -509,13 +509,12 @@ fn view_base(children) {
     [
       class(
         "grid ml-2 mr-2 gap-2
-    2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_100ch_[main-end]_3fr_[full-end]_1fr_[end]]
-    xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90ch_[main-end]_3fr_[full-end]_1fr_[end]]
-    lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_80ch_[main-end]_3fr_[full-end]_1fr_[end]]
-    md:grid-cols-[[start_full-start]_1fr_[main-start]_70ch_[main-end]_1fr_[full-end_end]]
+    2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90%_[main-end]_3fr_[full-end]_1fr_[end]]
+    xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+    lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+    md:grid-cols-[[start_full-start]_1fr_[main-start]_95%_[main-end]_1fr_[full-end_end]]
     grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
-    min-h-[90vh]
-    grid-rows-[[content]_9fr_[footer]_1fr]
+    grid-rows-[[content]_95%_[footer]_1fr]
     bg-ecru-white-50  text-ecru-white-950 font-transitional text-lg",
       ),
     ],
@@ -524,7 +523,7 @@ fn view_base(children) {
 }
 
 fn view_home() {
-  section([class("grid grid-cols-12 col-start-[main-start]")], [
+  section([class("grid grid-cols-12 col-start-[main-start] gap-y-12")], [
     page_title(
       "Mealstack",
       "text-9xl placeholder:underline-pink underline-pink col-span-11",
@@ -532,7 +531,7 @@ fn view_home() {
     nav(
       [
         class(
-          "flex flex-col justify-start items-middle col-span-1 col-start-12 row-span-2 text-base md:text-lg mt-4",
+          "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
         ),
       ],
       [a([href("/settings"), class("text-center")], [text("⚙️")])],
@@ -544,22 +543,29 @@ fn view_home() {
         ),
       ],
       [
-        #("📅", "Plan", "underline-orange"),
-        #("📑", "List", "underline-green"),
-        #("📝", "New", "underline-blue"),
-        #("📤", "Upload", "underline-yellow"),
+        #("📅", "Plan", "planner", " underline-orange"),
+        #("📑", "List", "recipes", " underline-green"),
+        #("📝", "New", "recipes/new", " underline-blue"),
+        #("📤", "Upload", "upload", " underline-yellow"),
       ]
         |> list.map(fn(t) {
           a(
             [
               class(
-                "col-span-full subgrid-cols sm:col-span-6 sm:justify-around sm:flex sm:subgrid-cols-none items-baseline pr-4",
+                "col-span-full subgrid-cols sm:col-span-6 items-baseline pr-4",
               ),
-              href("/" <> string.lowercase(t.1)),
+              href("/" <> string.lowercase(t.2)),
             ],
             [
-              span([class("text-5xl col-start-2")], [text(t.0)]),
-              span([class("col-start-4 " <> t.2)], [text(t.1)]),
+              span([class("text-5xl col-start-2 sm:col-start-1")], [text(t.0)]),
+              span(
+                [
+                  class(
+                    "col-start-4 sm:col-start-3 lg:col-start-2 lg:ml-4" <> t.3,
+                  ),
+                ],
+                [text(t.1)],
+              ),
             ],
           )
         }),
