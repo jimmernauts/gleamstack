@@ -1128,20 +1128,18 @@ pub fn view_recipe_tag_groups(recipes: List(session.Recipe), tag: String) {
     })
   groups
   |> dict.map_values(fn(k, v) {
-    details([class("col-span-full subgrid-cols gap-y-1")], [
+    details([class("col-span-full")], [
       summary(
-        [
-          class(
-            "col-start-1 col-span-full flex gap-2  text-base cursor-pointer marker:content-none",
-          ),
-        ],
+        [class("flex gap-2 text-base cursor-pointer marker:content-none")],
         [
           text("📑"),
           span([class("")], [text(k)]),
           element.element("hr", [class("flex-grow mx-2 self-center")], []),
         ],
       ),
-      element.fragment(list.map(v, view_recipe_summary(_, "ml-2 text-lg"))),
+      div([class("subgrid-cols gap-y-1")], [
+        element.fragment(list.map(v, view_recipe_summary(_, "ml-2 text-lg"))),
+      ]),
     ])
   })
   |> dict.values
@@ -1157,20 +1155,18 @@ pub fn view_recipe_author_groups(recipes: List(session.Recipe)) {
     })
   groups
   |> dict.map_values(fn(k, v) {
-    details([class("col-span-full subgrid-cols gap-y-1")], [
+    details([class("col-span-full")], [
       summary(
-        [
-          class(
-            "col-start-1 col-span-full flex gap-2  text-base cursor-pointer marker:content-none",
-          ),
-        ],
+        [class("flex gap-2 text-base cursor-pointer marker:content-none")],
         [
           text("📑"),
           span([class("")], [text(k)]),
           element.element("hr", [class("flex-grow mx-2 self-center")], []),
         ],
       ),
-      element.fragment(list.map(v, view_recipe_summary(_, "ml-2 text-lg"))),
+      div([class("subgrid-cols gap-y-1")], [
+        element.fragment(list.map(v, view_recipe_summary(_, "ml-2 text-lg"))),
+      ]),
     ])
   })
   |> dict.values
