@@ -70,6 +70,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         file_name: None,
         file_data: None,
         raw_file_change_event: None,
+        url: None,
       ),
     ),
     effect.batch([
@@ -223,6 +224,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           file_name: None,
           file_data: None,
           raw_file_change_event: None,
+          url: None,
         ),
       ),
       effect.none(),
@@ -349,6 +351,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             file_name: None,
             file_data: None,
             raw_file_change_event: None,
+            url: None,
           ),
         ),
         {

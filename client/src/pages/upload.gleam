@@ -11,7 +11,7 @@ import lustre/attribute.{
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{a, button, div, form, img, input, label, nav}
-import lustre/event.{on, on_submit}
+import lustre/event.{on, on_click, on_input, on_submit}
 import session.{type Recipe}
 
 //--TYPES-------------------------------------------------------------
@@ -20,6 +20,9 @@ pub type UploadMsg {
   UserSelectedFile(file_name: String, raw_file_change_event: dynamic.Dynamic)
   BrowserReadFile(file_data: String)
   UserSubmittedFile
+  UserUpdatedUrl(url: String)
+  UserSubmittedUrl
+  JsonLdDataReceived(data: String)
   ResponseReceived(Result(Recipe, ParseImageToRecipeError))
 }
 
@@ -35,6 +38,8 @@ pub type UploadStatus {
   FileSelected
   ImageProcessing
   ImageSubmitting
+  UrlProcessing
+  UrlSubmitting
   Finished
 }
 
@@ -44,6 +49,7 @@ pub type UploadModel {
     file_name: Option(String),
     file_data: Option(String),
     raw_file_change_event: Option(dynamic.Dynamic),
+    url: Option(String),
   )
 }
 
@@ -79,10 +85,10 @@ pub fn upload_update(
         file_name: model.file_name,
         file_data: Some(file_data),
         raw_file_change_event: None,
+        url: None,
       ),
       effect.none(),
     )
-    // change this like the other one, so we pass in a callback function to dispatch the response from
     UserSubmittedFile -> {
       case model.file_data {
         None -> #(model, effect.none())
@@ -131,10 +137,53 @@ pub fn upload_update(
           raw_file_change_event: None,
           file_data: None,
           file_name: None,
+          url: None,
         ),
         effect.none(),
       )
     }
+    UserUpdatedUrl(url) -> #(
+      UploadModel(..model, url: Some(url)),
+      effect.none(),
+    )
+    UserSubmittedUrl -> #(UploadModel(..model, status: UrlProcessing), {
+      case model.url {
+        None -> effect.none()
+        Some(url) -> {
+          use dispatch <- effect.from
+          do_fetch_jsonld(url, fn(data) {
+            case data {
+              Ok(data) -> dispatch(JsonLdDataReceived(data))
+              Error(error) -> dispatch(ResponseReceived(Error(Other(error))))
+            }
+          })
+        }
+      }
+    })
+    JsonLdDataReceived(data) -> #(UploadModel(..model, status: UrlSubmitting), {
+      use dispatch <- effect.from
+      do_submit_jsonld(data, fn(response) {
+        case response {
+          Ok(recipe_data) -> {
+            let decoded =
+              recipe_data
+              |> decode.run(session.decode_recipe_no_json())
+            case decoded {
+              Ok(recipe) -> dispatch(ResponseReceived(Ok(recipe)))
+              Error(errors) -> {
+                io.debug(errors)
+                dispatch(
+                  ResponseReceived(
+                    Error(Other("Response could not be decoded")),
+                  ),
+                )
+              }
+            }
+          }
+          Error(inner_error) -> dispatch(ResponseReceived(Error(inner_error)))
+        }
+      })
+    })
   }
 }
 
@@ -165,13 +214,22 @@ fn do_submit_file(
   cb: fn(Result(dynamic.Dynamic, ParseImageToRecipeError)) -> Nil,
 ) -> Nil
 
+@external(javascript, ".././upload.ts", "do_fetch_jsonld")
+fn do_fetch_jsonld(url: String, cb: fn(Result(String, String)) -> Nil) -> Nil
+
+@external(javascript, ".././upload.ts", "do_submit_jsonld")
+fn do_submit_jsonld(
+  data: String,
+  cb: fn(Result(dynamic.Dynamic, ParseImageToRecipeError)) -> Nil,
+) -> Nil
+
 //--VIEW---------------------------------------------------------------
 
 pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
   form(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(3,fit-content(65px))] gap-y-2",
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(4,fit-content(65px))] gap-y-2",
       ),
       on_submit(UserSubmittedFile),
       attribute("enctype", "multipart/form-data"),
@@ -223,6 +281,8 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
             div([class("mt-2 text-sm text-blue-500")], [
               text("Submitting image..."),
             ])
+          UrlProcessing -> element.none()
+          UrlSubmitting -> element.none()
           Finished -> element.none()
         },
         case model.file_data {
@@ -233,6 +293,29 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
             ])
           None -> element.none()
         },
+      ]),
+      div([class("col-span-11 row-start-3")], [
+        label([class("block mb-2 text-base font-medium"), for("recipe-url")], [
+          text("Or Enter Recipe URL"),
+        ]),
+        div([class("flex gap-2")], [
+          input([
+            class("block w-full text-base rounded-lg bg-ecru-white-100 p-2"),
+            type_("url"),
+            id("recipe-url"),
+            on_input(UserUpdatedUrl),
+          ]),
+          button(
+            [
+              class(
+                "flex flex-row justify-center items-center gap-2 p-2 rounded-md text-base md:text-lg bg-underline-grey hover:bg-underline-hover",
+              ),
+              type_("button"),
+              on_click(UserSubmittedUrl),
+            ],
+            [text("📥")],
+          ),
+        ]),
       ]),
     ],
   )
