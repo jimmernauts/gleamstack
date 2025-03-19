@@ -13,7 +13,7 @@
 [] Add cooking notes and ratings to recipes, group by rating
 [] PWA
 [] Add bunch of recipes
-[] Build OCR scanner (BYO AI API key?)
+[X] Build OCR scanner (BYO AI API key?)
     [] work out process to correct side-by-side
     [] use service token to insert to triplit db
 [] Build auth

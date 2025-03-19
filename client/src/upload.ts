@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { Jimp } from "jimp";
 import { Ok, Error as GError } from "./gleam.mjs";
 import { do_retrieve_settings } from "./db.ts";
-import type { Recipe } from "./types.ts";
+import type { Recipe } from "../../common/types.ts";
 
 type dispatchFunction = (
 	result:
@@ -243,53 +243,6 @@ export async function do_submit_file(
 			new GError({ Other: { message: "Failed to extract recipe data" } }),
 		);
 	}
-}
-
-export async function do_fetch_jsonld(
-	url: string,
-	dispatch: dispatchFunction,
-): Promise<void> {
-	try {
-		// Fetch URL content
-		const response = await fetch(url);
-		const html = await response.text();
-
-		// Extract JSON-LD data
-		const jsonLd = extractJsonLd(html);
-		if (jsonLd) {
-			dispatch(new Ok(JSON.stringify(jsonLd)));
-		} else {
-			// If no JSON-LD, send the whole HTML
-			dispatch(new Ok(html));
-		}
-	} catch (error) {
-		dispatch(
-			new GError({
-				UrlError: {
-					message: `Failed to fetch URL: ${
-						error instanceof Error ? error.message : String(error)
-					}`,
-				},
-			}),
-		);
-	}
-}
-
-function extractJsonLd(html: string): Recipe | null {
-	const jsonLdRegex = /<script type="application\/ld\+json">(.*?)<\/script>/gs;
-	const matches = [...html.matchAll(jsonLdRegex)];
-
-	for (const match of matches) {
-		try {
-			const data = JSON.parse(match[1]);
-			if (data["@type"] === "Recipe") {
-				return data;
-			}
-		} catch (e) {
-			console.error("Failed to parse JSON-LD:", e);
-		}
-	}
-	return null;
 }
 
 export async function do_submit_jsonld(
