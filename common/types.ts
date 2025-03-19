@@ -13,7 +13,19 @@ export type Recipe = {
 	shortlisted?: boolean;
 };
 
-export type RecipeSummary = Pick<Recipe, "id" | "title" | "slug" | "cook_time" | "prep_time" | "serves" | "author" | "source" | "tags" | "shortlisted">;
+export type RecipeSummary = Pick<
+	Recipe,
+	| "id"
+	| "title"
+	| "slug"
+	| "cook_time"
+	| "prep_time"
+	| "serves"
+	| "author"
+	| "source"
+	| "tags"
+	| "shortlisted"
+>;
 
 export type Tag = {
 	name?: string;
@@ -43,7 +55,7 @@ export type PlanDay = {
 		lunch: MealWithStatus;
 		dinner: MealWithStatus;
 	};
-}
+};
 
 export type Meal = "lunch" | "dinner";
 
@@ -55,4 +67,4 @@ export type MealWithStatus = {
 
 export type Settings = {
 	api_key: string;
-}
+};
