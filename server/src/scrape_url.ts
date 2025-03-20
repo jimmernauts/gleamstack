@@ -1,6 +1,6 @@
 import { type Result, Ok, Error as GError } from "./gleam.mjs";
 import type { Ingredient, MethodStep, Recipe } from "../../common/types.ts";
-import api from "jsonld";
+import api, { type NodeObject } from "jsonld";
 import { kebabCase } from "change-case";
 import durationParse from "iso8601-duration";
 
@@ -19,10 +19,10 @@ export async function do_fetch_jsonld(
 	return new GError("URL Error: No recipe data found on the page");
 }
 
-async function extractJsonLd(html: string): Promise<Recipe | null> {
+export async function extractJsonLd(html: string): Promise<Recipe | null> {
 	let jsonLdContent = "";
 
-	const content = await new HTMLRewriter()
+	await new HTMLRewriter()
 		.on('script[type="application/ld+json"]', {
 			async text(text) {
 				if (text.text) {
@@ -33,47 +33,58 @@ async function extractJsonLd(html: string): Promise<Recipe | null> {
 		.transform(new Response(html))
 		.text();
 
-	const frameObject = {
-		"@context": "https://schema.org/",
-		"@type": "Recipe",
-		"@explicit": true,
-		cookTime: {},
-		prepTime: {},
-		recipeYield: {},
-		cookingMethod: {},
-		datePublished: {},
-		author: {},
-		description: {},
-		name: {},
-		title: {},
-		recipeIngredient: {},
-		recipeCategory: {},
-		recipeCuisine: {},
-		recipeInstructions: {},
-		url: { "@explicit": true, id: {} },
-	};
-	const { frame } = api;
-	const parsed = await frame(JSON.parse(jsonLdContent), frameObject);
-	console.log(parsed);
+	if (!jsonLdContent) {
+		return null;
+	}
+
+	let parsed: NodeObject | null = null;
+	try {
+		const frameObject = {
+			"@context": "https://schema.org/",
+			"@type": "Recipe",
+			"@explicit": true,
+			cookTime: {},
+			prepTime: {},
+			recipeYield: {},
+			cookingMethod: {},
+			datePublished: {},
+			author: {},
+			description: {},
+			name: {},
+			title: {},
+			recipeIngredient: {},
+			recipeCategory: {},
+			recipeCuisine: {},
+			recipeInstructions: {},
+			url: { "@explicit": true, id: {} },
+		};
+		const { frame } = api;
+		parsed = await frame(JSON.parse(jsonLdContent), frameObject);
+	} catch (error) {
+		console.error("Failed to parse JSON-LD:", error);
+		return null;
+	}
+
+	if (!parsed) {
+		return null;
+	}
 	const parsedIngredients = parsed?.recipeIngredient
 		? (parsed.recipeIngredient as Ingredient[])
 		: ([] as Ingredient[]);
 	const parsedMethodSteps = parsed?.recipeInstructions
 		? (parsed.recipeInstructions as MethodStep[])
 		: ([] as MethodStep[]);
-	const dateString = new Date().toISOString();
+	const dateString = new Date().toISOString().replace(":", "").replace("-", "");
 	const parsedTitle: string = (() => {
-		switch (true) {
-			case Object.hasOwn(parsed, "name"):
-				return parsed.name as string;
-			case Object.hasOwn(parsed, "title"):
-				return parsed.title as string;
-			default:
-				return `Imported Recipe-${dateString}`;
-		}
+		return (
+			(parsed?.name as string) ??
+			(parsed?.title as string) ??
+			`Imported Recipe-${dateString}`
+		);
 	})();
+	console.log(`${parsed.name} ${parsed.title}`);
 	const recipeForImport: Recipe = {
-		slug: kebabCase(parsedTitle),
+		slug: kebabCase(parsedTitle || ""),
 		title: parsedTitle,
 		cook_time: parsed?.cookTime
 			? durationParse.toSeconds(
@@ -85,7 +96,18 @@ async function extractJsonLd(html: string): Promise<Recipe | null> {
 					durationParse.parse(parsed?.prepTime as string),
 				) / 60
 			: 0,
-		serves: parsed?.recipeYield ? parsed.recipeYield[0] : 0,
+		serves: (() => {
+			if (Array.isArray(parsed?.recipeYield)) {
+				return Number(parsed.recipeYield[0]) || 0;
+			}
+			if (typeof parsed?.recipeYield === "number") {
+				return parsed.recipeYield;
+			}
+			if (typeof parsed?.recipeYield === "string") {
+				return Number(parsed.recipeYield) || 0;
+			}
+			return 0;
+		})(),
 		ingredients: JSON.stringify(parsedIngredients),
 		method_steps: JSON.stringify(parsedMethodSteps),
 	};
