@@ -341,7 +341,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(settings_effect, Settings),
       )
     }
-    Upload(upload.ResponseReceived(Ok(recipe))) -> {
+    Upload(upload.ParseRecipeResponseReceived(Ok(recipe))) -> {
       #(
         Model(
           ..model,

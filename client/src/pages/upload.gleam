@@ -2,6 +2,7 @@ import components/page_title.{page_title}
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/io
+import gleam/javascript/promise.{type Promise}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -21,15 +22,16 @@ pub type UploadMsg {
   BrowserReadFile(file_data: String)
   UserSubmittedFile
   UserUpdatedUrl(url: String)
-  UserSubmittedUrl
-  JsonLdDataReceived(data: String)
-  ResponseReceived(Result(Recipe, ParseImageToRecipeError))
+  UserSubmittedUrlToScrape
+  ScrapeUrlResponseReceived(Result(String, ParseToRecipeError))
+  ParseRecipeResponseReceived(Result(Recipe, ParseToRecipeError))
 }
 
-pub type ParseImageToRecipeError {
+pub type ParseToRecipeError {
   DecoderError(List(decode.DecodeError))
   InvalidImage
   Unauthorized
+  ScrapeUrlFailed(String)
   Other(String)
 }
 
@@ -101,11 +103,12 @@ pub fn upload_update(
                   recipe_data
                   |> decode.run(session.decode_recipe_no_json())
                 case decoded {
-                  Ok(recipe) -> dispatch(ResponseReceived(Ok(recipe)))
+                  Ok(recipe) ->
+                    dispatch(ParseRecipeResponseReceived(Ok(recipe)))
                   Error(errors) -> {
                     io.debug(errors)
                     dispatch(
-                      ResponseReceived(
+                      ParseRecipeResponseReceived(
                         Error(Other("Response could not be decoded")),
                       ),
                     )
@@ -113,21 +116,74 @@ pub fn upload_update(
                 }
               }
               Error(inner_error) ->
-                dispatch(ResponseReceived(Error(inner_error)))
+                dispatch(ParseRecipeResponseReceived(Error(inner_error)))
             }
           })
         })
       }
     }
-    ResponseReceived(Ok(_recipe)) -> {
-      //actually handled in app.gleam
+    UserUpdatedUrl(url) -> #(
+      UploadModel(..model, url: Some(url)),
+      effect.none(),
+    )
+    UserSubmittedUrlToScrape -> #(UploadModel(..model, status: UrlProcessing), {
+      case model.url {
+        None -> effect.none()
+        Some(url) -> {
+          use dispatch <- effect.from
+          do_scrape_url(url, fn(response) {
+            case response {
+              Ok(scraped_json) ->
+                dispatch(ScrapeUrlResponseReceived(Ok(scraped_json)))
+              Error(error) -> dispatch(ScrapeUrlResponseReceived(Error(error)))
+            }
+          })
+        }
+      }
+    })
+    ScrapeUrlResponseReceived(Ok(scraped_json)) -> {
+      #(UploadModel(..model, status: UrlSubmitting), {
+        io.debug("ScrapeUrlRepsonseReceived")
+        io.debug(scraped_json)
+        use dispatch <- effect.from
+        do_submit_scraped_json(scraped_json, fn(response) {
+          case response {
+            Ok(recipe_data) -> {
+              let decoded =
+                recipe_data
+                |> decode.run(session.decode_recipe_no_json())
+              case decoded {
+                Ok(recipe) -> dispatch(ParseRecipeResponseReceived(Ok(recipe)))
+                Error(errors) -> {
+                  io.debug(errors)
+                  dispatch(
+                    ParseRecipeResponseReceived(
+                      Error(Other("Response could not be decoded")),
+                    ),
+                  )
+                }
+              }
+            }
+            Error(inner_error) ->
+              dispatch(ParseRecipeResponseReceived(Error(inner_error)))
+          }
+        })
+      })
+    }
+    ScrapeUrlResponseReceived(Error(error)) -> {
       #(model, effect.none())
     }
-    ResponseReceived(Error(error)) -> {
+    ParseRecipeResponseReceived(Ok(_recipe)) -> {
+      //actually handled in mealstack_client.gleam
+      #(model, effect.none())
+    }
+    ParseRecipeResponseReceived(Error(error)) -> {
       let error_message = case error {
         DecoderError(_errors) -> "Could not decode the result into a recipe."
         InvalidImage -> "Invalid image format."
         Unauthorized -> "Unauthorized access."
+        ScrapeUrlFailed(msg) ->
+          "Failed to scrape the URL submitted. Error: " <> msg
         Other(msg) -> "Error: " <> msg
       }
       io.print_error(error_message)
@@ -142,48 +198,6 @@ pub fn upload_update(
         effect.none(),
       )
     }
-    UserUpdatedUrl(url) -> #(
-      UploadModel(..model, url: Some(url)),
-      effect.none(),
-    )
-    UserSubmittedUrl -> #(UploadModel(..model, status: UrlProcessing), {
-      case model.url {
-        None -> effect.none()
-        Some(url) -> {
-          use dispatch <- effect.from
-          do_fetch_jsonld(url, fn(data) {
-            case data {
-              Ok(data) -> dispatch(JsonLdDataReceived(data))
-              Error(error) -> dispatch(ResponseReceived(Error(Other(error))))
-            }
-          })
-        }
-      }
-    })
-    JsonLdDataReceived(data) -> #(UploadModel(..model, status: UrlSubmitting), {
-      use dispatch <- effect.from
-      do_submit_jsonld(data, fn(response) {
-        case response {
-          Ok(recipe_data) -> {
-            let decoded =
-              recipe_data
-              |> decode.run(session.decode_recipe_no_json())
-            case decoded {
-              Ok(recipe) -> dispatch(ResponseReceived(Ok(recipe)))
-              Error(errors) -> {
-                io.debug(errors)
-                dispatch(
-                  ResponseReceived(
-                    Error(Other("Response could not be decoded")),
-                  ),
-                )
-              }
-            }
-          }
-          Error(inner_error) -> dispatch(ResponseReceived(Error(inner_error)))
-        }
-      })
-    })
   }
 }
 
@@ -211,16 +225,19 @@ fn do_read_file_from_event(
 @external(javascript, ".././upload.ts", "do_submit_file")
 fn do_submit_file(
   file: String,
-  cb: fn(Result(dynamic.Dynamic, ParseImageToRecipeError)) -> Nil,
+  cb: fn(Result(dynamic.Dynamic, ParseToRecipeError)) -> Nil,
 ) -> Nil
 
-@external(javascript, ".././upload.ts", "do_fetch_jsonld")
-fn do_fetch_jsonld(url: String, cb: fn(Result(String, String)) -> Nil) -> Nil
+@external(javascript, ".././upload.ts", "do_submit_scraped_json")
+fn do_submit_scraped_json(
+  file: String,
+  cb: fn(Result(dynamic.Dynamic, ParseToRecipeError)) -> Nil,
+) -> Nil
 
-@external(javascript, ".././upload.ts", "do_submit_jsonld")
-fn do_submit_jsonld(
-  data: String,
-  cb: fn(Result(dynamic.Dynamic, ParseImageToRecipeError)) -> Nil,
+@external(javascript, ".././upload.ts", "do_scrape_url")
+fn do_scrape_url(
+  url: String,
+  cb: fn(Result(String, ParseToRecipeError)) -> Nil,
 ) -> Nil
 
 //--VIEW---------------------------------------------------------------
@@ -279,10 +296,16 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
             ])
           ImageSubmitting ->
             div([class("mt-2 text-sm text-blue-500")], [
-              text("Submitting image..."),
+              text("Parsing image with AI..."),
             ])
-          UrlProcessing -> element.none()
-          UrlSubmitting -> element.none()
+          UrlProcessing ->
+            div([class("mt-2 text-sm text-blue-500")], [
+              text("Scraping URL for Recipe content..."),
+            ])
+          UrlSubmitting ->
+            div([class("mt-2 text-sm text-blue-500")], [
+              text("Parsing scraped data with AI..."),
+            ])
           Finished -> element.none()
         },
         case model.file_data {
@@ -311,7 +334,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
                 "flex flex-row justify-center items-center gap-2 p-2 rounded-md text-base md:text-lg bg-underline-grey hover:bg-underline-hover",
               ),
               type_("button"),
-              on_click(UserSubmittedUrl),
+              on_click(UserSubmittedUrlToScrape),
             ],
             [text("📥")],
           ),

@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { Jimp } from "jimp";
-import { Ok, Error as GError } from "./gleam.mjs";
+import { Ok, Error as GError, type Result } from "./gleam.mjs";
 import { do_retrieve_settings } from "./db.ts";
 import type { Recipe } from "../../common/types.ts";
 
@@ -245,7 +245,7 @@ export async function do_submit_file(
 	}
 }
 
-export async function do_submit_jsonld(
+export async function do_submit_scraped_json(
 	data: string,
 	dispatch: dispatchFunction,
 ): Promise<void> {
@@ -298,6 +298,29 @@ export async function do_submit_jsonld(
 			new GError({
 				Other: {
 					message: `API error: ${
+						error instanceof Error ? error.message : String(error)
+					}`,
+				},
+			}),
+		);
+	}
+}
+
+export async function do_scrape_url(
+	url: string,
+	cb: dispatchFunction,
+): Promise<void> {
+	const response = await fetch(
+		`http://localhost:8000/api/scrape_url?target=${url}`,
+	);
+	const body = await response.text();
+	try {
+		cb(new Ok(body));
+	} catch (error) {
+		cb(
+			new GError({
+				Other: {
+					message: `Failed to scrape the URL ${url}. Error: ${
 						error instanceof Error ? error.message : String(error)
 					}`,
 				},

@@ -39,6 +39,7 @@ pub fn scrape_url_page(target: String) -> Promise(Response) {
         data
         |> json.to_string
         |> glen.json(status.ok)
+        |> glen.set_header("Access-Control-Allow-Origin", "*")
       }
       Error(error) -> {
         error
