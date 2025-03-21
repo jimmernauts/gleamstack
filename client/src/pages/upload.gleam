@@ -2,7 +2,6 @@ import components/page_title.{page_title}
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/io
-import gleam/javascript/promise.{type Promise}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -10,8 +9,10 @@ import lustre/attribute.{
   accept, attribute, class, for, href, id, name, src, type_,
 }
 import lustre/effect.{type Effect}
-import lustre/element.{type Element, text}
-import lustre/element/html.{a, button, div, form, img, input, label, nav}
+import lustre/element.{type Element, element, text}
+import lustre/element/html.{
+  a, button, div, fieldset, form, img, input, label, nav,
+}
 import lustre/event.{on, on_click, on_input, on_submit}
 import session.{type Recipe}
 
@@ -24,6 +25,7 @@ pub type UploadMsg {
   UserUpdatedUrl(url: String)
   UserSubmittedUrlToScrape
   ScrapeUrlResponseReceived(Result(String, ParseToRecipeError))
+  UserUpdatedText(text: String)
   ParseRecipeResponseReceived(Result(Recipe, ParseToRecipeError))
 }
 
@@ -37,8 +39,8 @@ pub type ParseToRecipeError {
 
 pub type UploadStatus {
   NotStarted
-  FileSelected
   ImageProcessing
+  ImageLoaded
   ImageSubmitting
   UrlProcessing
   UrlSubmitting
@@ -52,6 +54,7 @@ pub type UploadModel {
     file_data: Option(String),
     raw_file_change_event: Option(dynamic.Dynamic),
     url: Option(String),
+    text: Option(String),
   )
 }
 
@@ -65,7 +68,7 @@ pub fn upload_update(
     UserSelectedFile(file_name, raw_file_change_event) -> #(
       UploadModel(
         ..model,
-        status: FileSelected,
+        status: ImageProcessing,
         file_name: Some(file_name),
         raw_file_change_event: Some(raw_file_change_event),
       ),
@@ -83,11 +86,12 @@ pub fn upload_update(
     )
     BrowserReadFile(file_data) -> #(
       UploadModel(
-        status: ImageProcessing,
+        status: ImageLoaded,
         file_name: model.file_name,
         file_data: Some(file_data),
         raw_file_change_event: None,
         url: None,
+        text: None,
       ),
       effect.none(),
     )
@@ -171,8 +175,21 @@ pub fn upload_update(
       })
     }
     ScrapeUrlResponseReceived(Error(error)) -> {
+      let error_message = case error {
+        DecoderError(_errors) -> "Could not decode the result into a recipe."
+        InvalidImage -> "Invalid image format."
+        Unauthorized -> "Unauthorized access."
+        ScrapeUrlFailed(msg) ->
+          "Failed to scrape the URL submitted. Error: " <> msg
+        Other(msg) -> "Error: " <> msg
+      }
+      io.print_error(error_message)
       #(model, effect.none())
     }
+    UserUpdatedText(text) -> #(
+      UploadModel(..model, text: Some(text)),
+      effect.none(),
+    )
     ParseRecipeResponseReceived(Ok(_recipe)) -> {
       //actually handled in mealstack_client.gleam
       #(model, effect.none())
@@ -194,6 +211,7 @@ pub fn upload_update(
           file_data: None,
           file_name: None,
           url: None,
+          text: None,
         ),
         effect.none(),
       )
@@ -246,14 +264,14 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
   form(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(4,fit-content(65px))] gap-y-2",
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(4,fit-content(65px))] gap-2",
       ),
       on_submit(UserSubmittedFile),
       attribute("enctype", "multipart/form-data"),
       attribute("accept", "image/*"),
     ],
     [
-      page_title("Upload a new recipe", "underline-grey"),
+      page_title("Upload a new recipe", "underline-yellow"),
       nav(
         [
           class(
@@ -274,72 +292,122 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
           ),
         ],
       ),
-      div([class("col-span-11 row-start-2")], [
-        label([class("block mb-2 text-base font-medium"), for("recipe-image")], [
-          text("Upload Recipe Image"),
-        ]),
-        input([
-          class(
-            "block w-full text-base rounded-lg cursor-pointer bg-ecru-white-100",
-          ),
-          type_("file"),
-          id("recipe-image"),
-          accept(["image/*"]),
-          on("change", handle_file_upload),
-        ]),
-        case model.status {
-          NotStarted -> element.none()
-          FileSelected -> element.none()
-          ImageProcessing ->
-            div([class("mt-2 text-sm text-blue-500")], [
-              text("Processing image..."),
-            ])
-          ImageSubmitting ->
-            div([class("mt-2 text-sm text-blue-500")], [
-              text("Parsing image with AI..."),
-            ])
-          UrlProcessing ->
-            div([class("mt-2 text-sm text-blue-500")], [
-              text("Scraping URL for Recipe content..."),
-            ])
-          UrlSubmitting ->
-            div([class("mt-2 text-sm text-blue-500")], [
-              text("Parsing scraped data with AI..."),
-            ])
-          Finished -> element.none()
-        },
-        case model.file_data {
-          Some(file_data) ->
-            div([class("mt-2 text-sm")], [
-              text("Selected image: "),
-              img([src(file_data), class("w-1/2")]),
-            ])
-          None -> element.none()
-        },
-      ]),
-      div([class("col-span-11 row-start-3")], [
-        label([class("block mb-2 text-base font-medium"), for("recipe-url")], [
-          text("Or Enter Recipe URL"),
-        ]),
-        div([class("flex gap-2")], [
-          input([
-            class("block w-full text-base rounded-lg bg-ecru-white-100 p-2"),
-            type_("url"),
-            id("recipe-url"),
-            on_input(UserUpdatedUrl),
-          ]),
-          button(
+      case model.status {
+        NotStarted -> element.none()
+        ImageLoaded -> element.none()
+        ImageProcessing ->
+          div(
             [
               class(
-                "flex flex-row justify-center items-center gap-2 p-2 rounded-md text-base md:text-lg bg-underline-grey hover:bg-underline-hover",
+                "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
               ),
-              type_("button"),
-              on_click(UserSubmittedUrlToScrape),
             ],
-            [text("📥")],
+            [text("Processing image...")],
+          )
+        ImageSubmitting ->
+          div(
+            [
+              class(
+                "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+              ),
+            ],
+            [text("Parsing image with AI...")],
+          )
+        UrlProcessing ->
+          div(
+            [
+              class(
+                "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+              ),
+            ],
+            [text("Scraping URL for Recipe content...")],
+          )
+        UrlSubmitting ->
+          div(
+            [
+              class(
+                "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+              ),
+            ],
+            [text("Parsing scraped data with AI...")],
+          )
+        Finished -> element.none()
+      },
+      //col-span-full text-base my-1 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#fce68b] mr-1
+      html.fieldset(
+        [
+          class(
+            "md:col-span-4 flex flex-col gap-y-2 col-span-11 row-start-3 p-2 border-ecru-white-950 border-[1px] rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
           ),
-        ]),
-      ]),
+        ],
+        [
+          html.legend([class("mx-2 px-1 text-base")], [text("Image")]),
+          label(
+            [
+              class(
+                "inline-block self-start items-baseline cursor-pointer bg-ecru-white-100 border border-ecru-white-950 px-1",
+              ),
+              for("recipe-image"),
+            ],
+            [text("Upload an image")],
+          ),
+          input([
+            class("hidden"),
+            type_("file"),
+            id("recipe-image"),
+            accept(["image/*"]),
+            on("change", handle_file_upload),
+          ]),
+          case model.file_data {
+            Some(file_data) ->
+              div([class("")], [img([src(file_data), class("")])])
+            None -> element.none()
+          },
+        ],
+      ),
+      html.fieldset(
+        [
+          class(
+            "md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border-[1px] rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
+          ),
+        ],
+        [
+          html.legend([class("mx-2 px-1 text-base")], [text("Web")]),
+          div([class(" gap-x-2")], [
+            label([class("inline-block"), for("recipe-url")], [text("URL:")]),
+            input([
+              class(
+                "inline-block w-[16ch] xxs:w-[23ch] xs:w-[28ch] sm:w-[16ch] md:w-[23ch] lg:w-[28ch] text-base bg-ecru-white-100 ml-1 p-2",
+              ),
+              type_("url"),
+              id("recipe-url"),
+              on_input(UserUpdatedUrl),
+            ]),
+          ]),
+        ],
+      ),
+      html.fieldset(
+        [
+          class(
+            "md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border-[1px] rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
+          ),
+        ],
+        [
+          html.legend([class("mx-2 px-1 text-base")], [text("Text")]),
+          html.textarea(
+            [
+              name("recipe-text-to-import"),
+              id("recipe-text-to-import"),
+              class(
+                "mx-1 p-2 bg-ecru-white-100 w-full input-focus text-base resize-none [field-sizing:content]",
+              ),
+              attribute("rows", "3"),
+              on_input(UserUpdatedText),
+            ],
+            model.text |> option.unwrap(""),
+          ),
+        ],
+      ),
     ],
   )
 }

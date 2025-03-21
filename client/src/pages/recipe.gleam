@@ -808,7 +808,7 @@ pub fn edit_recipe_detail(
       fieldset(
         [
           class(
-            "col-span-full my-1 mb-6 pt-1 pb-2 px-2 mr-1 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
+            "col-span-full my-1 pb-6 pt-1 mb-2 px-2 mr-1 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
           ),
         ],
         [
@@ -836,7 +836,7 @@ pub fn edit_recipe_detail(
       fieldset(
         [
           class(
-            "col-span-full my-1 mb-6 pt-1 pb-2 px-2 ml-1 mr-1 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
+            "col-span-full my-1 pb-6 pt-1 mb-2 px-2 ml-1 mr-1 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
           ),
         ],
         [
@@ -1211,15 +1211,15 @@ fn view_ingredient(ingredient: Ingredient) {
     Some(True) -> " font-bold"
     _ -> ""
   }
-  div([class("flex justify-start col-span-6 items-baseline")], [
+  div([class("flex justify-start items-baseline")], [
     div([class("flex-grow-[2] text-left flex text-lg justify-start" <> bold)], [
-      option.unwrap(option.map(ingredient.name, text(_)), element.none()),
+      option.unwrap(option.map(ingredient.name, text), element.none()),
     ]),
     div([class("col-span-1 text-sm")], [
-      option.unwrap(option.map(ingredient.quantity, text(_)), element.none()),
+      option.unwrap(option.map(ingredient.quantity, text), element.none()),
     ]),
     div([class("col-span-1 text-sm")], [
-      option.unwrap(option.map(ingredient.units, text(_)), element.none()),
+      option.unwrap(option.map(ingredient.units, text), element.none()),
     ]),
   ])
 }
@@ -1374,7 +1374,7 @@ fn tag_input(
       },
       button(
         [
-          class("col-span-1 mb-1 text-ecru-white-950 text-xs"),
+          class("col-span-1 my-1 text-ecru-white-950 text-xs"),
           id("remove-tag-input"),
           type_("button"),
           on_click(UserRemovedTagAtIndex(index)),
@@ -1383,7 +1383,7 @@ fn tag_input(
       ),
       button(
         [
-          class("col-span-1 mb-1 text-ecru-white-950 text-xs"),
+          class("col-span-1 my-1 text-ecru-white-950 text-xs"),
           id("add-tag-input"),
           type_("button"),
           on_click(UserAddedTagAtIndex(index)),
@@ -1408,7 +1408,7 @@ fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
     UserUpdatedIngredientUnitsAtIndex(index, _)
   }
 
-  div([class("my-0.5 w-full flex justify-between items-baseline  text-base")], [
+  div([class("my-1 w-full flex justify-between items-baseline  text-base")], [
     input([
       attribute("aria-label", "Enter ingredient name"),
       name("ingredient-name-" <> int.to_string(index)),

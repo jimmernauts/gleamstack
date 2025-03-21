@@ -1,8 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { Jimp } from "jimp";
-import { Ok, Error as GError, type Result } from "./gleam.mjs";
+import { Ok, Error as GError } from "./gleam.mjs";
 import { do_retrieve_settings } from "./db.ts";
-import type { Recipe } from "../../common/types.ts";
 
 type dispatchFunction = (
 	result:
