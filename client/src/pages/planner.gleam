@@ -276,94 +276,86 @@ pub fn view_planner(model: Model) {
         find_in_week(date.add(start_of_week, 6, date.Days)),
       ),
     ])
-
-  div([], [
-    section(
-      [
-        class(
-          "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(65px)] gap-y-2",
-        ),
-      ],
-      [
-        page_title(
-          "Week of " <> utils.month_date_string(start_of_week),
-          "underline-orange",
-        ),
-        nav(
-          [
-            class(
-              "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
-            ),
-          ],
-          [
-            a([href("/"), class("text-center")], [text("🏠")]),
+  section(
+    [
+      class(
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(65px)] gap-y-2",
+      ),
+    ],
+    [
+      page_title(
+        "Week of " <> utils.month_date_string(start_of_week),
+        "underline-orange",
+      ),
+      nav(
+        [
+          class(
+            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
+          ),
+        ],
+        [
+          a([href("/"), class("text-center")], [text("🏠")]),
+          a(
+            [
+              href("/planner/edit?date=" <> date.to_iso_string(start_of_week)),
+              class("text-center"),
+            ],
+            [text("✏️")],
+          ),
+          div([class("flex flex-row justify-evenly px-1")], [
             a(
               [
-                href("/planner/edit?date=" <> date.to_iso_string(start_of_week)),
+                href(
+                  "/planner?date="
+                  <> date.to_iso_string(date.add(start_of_week, -1, date.Weeks)),
+                ),
                 class("text-center"),
               ],
-              [text("✏️")],
+              [text("⬅️")],
             ),
-            div([class("flex flex-row justify-evenly px-1")], [
-              a(
-                [
-                  href(
-                    "/planner?date="
-                    <> date.to_iso_string(date.add(
-                      start_of_week,
-                      -1,
-                      date.Weeks,
-                    )),
-                  ),
-                  class("text-center"),
-                ],
-                [text("⬅️")],
-              ),
-              a(
-                [
-                  href(
-                    "/planner?date="
-                    <> date.to_iso_string(date.add(start_of_week, 1, date.Weeks)),
-                  ),
-                  class("text-center"),
-                ],
-                [text("➡️")],
-              ),
-            ]),
-          ],
-        ),
-      ],
-    ),
-    section(
-      [
-        id("active-week"),
-        class(
-          "mb-2 text-sm p-1 min-h-[70vh]
+            a(
+              [
+                href(
+                  "/planner?date="
+                  <> date.to_iso_string(date.add(start_of_week, 1, date.Weeks)),
+                ),
+                class("text-center"),
+              ],
+              [text("➡️")],
+            ),
+          ]),
+        ],
+      ),
+      section(
+        [
+          id("active-week"),
+          class(
+            "mb-2 text-sm p-1 min-h-[70vh]
             overflow-x-hidden overflow-y-scroll md:overflow-x-scroll md:overflow-y-hidden snap-mandatory snap-always
             col-span-full row-start-2 grid gap-1 
             grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
             snap-y scroll-pt-[9%]
-            md:col-start-[full-start] md:col-end-[full-end]
             md:text-base md:grid-cols-[fit-content(10%)_repeat(7,_15vw)] md:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]
             md:snap-x md:scroll-pl-[9%] md:scroll-pt-0
             xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]",
-        ),
-      ],
-      [
-        planner_header_row(week),
-        fragment({
-          dict.values(week)
-          |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
-          |> list.index_map(fn(x, i) { planner_meal_card(x, i, Lunch) })
-        }),
-        fragment({
-          dict.values(week)
-          |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
-          |> list.index_map(fn(x, i) { planner_meal_card(x, i, Dinner) })
-        }),
-      ],
-    ),
-  ])
+          ),
+        ],
+        [
+          planner_header_row(week),
+          fragment({
+            dict.values(week)
+            |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
+            |> list.index_map(fn(x, i) { planner_meal_card(x, i, Lunch) })
+          }),
+          fragment({
+            dict.values(week)
+            |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
+            |> list.index_map(fn(x, i) { planner_meal_card(x, i, Dinner) })
+          }),
+        ],
+      ),
+    ],
+  )
 }
 
 pub fn edit_planner(model: Model) {
@@ -529,7 +521,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "subgrid-cols md:col-start-1 row-start-1 subgrid-rows col-span-full md:row-span-full md:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full",
+          "subgrid-cols md:col-start-1 row-start-1 subgrid-rows col-span-full md:row-span-full md:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full",
         ),
       ],
       [
@@ -739,37 +731,30 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
 
 fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
   let PlannedMealWithStatus(_f, t, c) = meal
-  div(
-    [
-      class(
-        "flex justify-center w-11/12 h-11/12 flex-col justify-between m-1 sm:m-2",
-      ),
-    ],
-    [
-      h2(
-        [
-          class("text-xl text-wrap"),
-          style([
-            #("text-decoration", {
-              use <- bool.guard(
-                when: option.unwrap(c, False),
-                return: "line-through",
-              )
-              "none"
-            }),
-          ]),
-        ],
-        [text(option.unwrap(t, ""))],
-      ),
-      div([class("flex justify-end place-self-start sm:mx-2")], [
-        input([
-          type_("checkbox"),
-          event.on_check(fn(a) { UserToggledMealComplete(date, meal.for, a) }),
-          checked(option.unwrap(meal.complete, False)),
+  div([class("flex justify-center w-11/12 h-11/12 flex-col m-1 sm:m-2")], [
+    h2(
+      [
+        class("text-xl text-wrap"),
+        style([
+          #("text-decoration", {
+            use <- bool.guard(
+              when: option.unwrap(c, False),
+              return: "line-through",
+            )
+            "none"
+          }),
         ]),
+      ],
+      [text(option.unwrap(t, ""))],
+    ),
+    div([class("flex justify-end place-self-start sm:mx-2")], [
+      input([
+        type_("checkbox"),
+        event.on_check(fn(a) { UserToggledMealComplete(date, meal.for, a) }),
+        checked(option.unwrap(meal.complete, False)),
       ]),
-    ],
-  )
+    ]),
+  ])
 }
 
 fn planner_meal_input(
@@ -814,25 +799,18 @@ fn inner_input(
   title: String,
   recipe_titles: List(String),
 ) -> Element(PlannerMsg) {
-  div(
-    [
-      class(
-        "flex justify-center w-11/12 h-11/12 flex-col justify-between m-1 sm:m-2",
-      ),
-    ],
-    [
-      typeahead([
-        typeahead.recipe_titles(recipe_titles),
-        typeahead.search_term(title),
-        event.on("typeahead-change", fn(target) {
-          target
-          |> decode.run(decode.at(["detail"], decode.string))
-          |> utils.convert_decode_errors
-          |> result.map(fn(a) { UserUpdatedMealTitle(date, for, a) })
-        }),
-      ]),
-    ],
-  )
+  div([class("flex justify-center w-11/12 h-11/12 flex-col m-1 sm:m-2")], [
+    typeahead([
+      typeahead.recipe_titles(recipe_titles),
+      typeahead.search_term(title),
+      event.on("typeahead-change", fn(target) {
+        target
+        |> decode.run(decode.at(["detail"], decode.string))
+        |> utils.convert_decode_errors
+        |> result.map(fn(a) { UserUpdatedMealTitle(date, for, a) })
+      }),
+    ]),
+  ])
 }
 
 //-ENCODERS-DECODERS----------------------------------------------

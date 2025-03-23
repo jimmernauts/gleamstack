@@ -244,7 +244,7 @@ export async function do_submit_file(
 	}
 }
 
-export async function do_submit_scraped_json(
+export async function do_submit_text(
 	data: string,
 	dispatch: dispatchFunction,
 ): Promise<void> {
@@ -261,7 +261,7 @@ export async function do_submit_scraped_json(
 			temperature: 0,
 			thinking: { type: "disabled" },
 			system:
-				"You are a helpful assistant that extracts recipe information from HTML or JSON-LD data. Extract all recipe details including title, ingredients, preparation steps, cooking time, and serving size.",
+				"You are a helpful assistant that extracts recipe information from HTML or JSON-LD data, or plaintext. Extract all recipe details including title, ingredients, preparation steps, cooking time, and serving size.",
 			messages: [
 				{
 					role: "user",

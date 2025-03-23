@@ -680,7 +680,7 @@ pub fn edit_recipe_detail(
         ],
         [
           fieldset([class("flex flex-wrap justify-between items-baseline")], [
-            label([class("justify-self-start  "), for("prep_time")], [
+            label([class("justify-self-start text-base "), for("prep_time")], [
               text("Prep:"),
             ]),
             div([class("justify-self-start")], [
@@ -721,7 +721,7 @@ pub fn edit_recipe_detail(
             ]),
           ]),
           fieldset([class("flex flex-wrap justify-between items-baseline")], [
-            label([class("justify-self-start"), for("cook_time")], [
+            label([class("justify-self-start text-base"), for("cook_time")], [
               text("Cook:"),
             ]),
             div([class("justify-self-start")], [
@@ -762,7 +762,7 @@ pub fn edit_recipe_detail(
             ]),
           ]),
           fieldset([class("flex flex-wrap justify-between items-baseline")], [
-            label([class("justify-self-start  "), for("serves")], [
+            label([class("justify-self-start text-base "), for("serves")], [
               text("Serves:"),
             ]),
             input([
@@ -781,7 +781,7 @@ pub fn edit_recipe_detail(
       fieldset(
         [
           class(
-            "sm:ml-1 col-span-full row-start-4 sm:row-start-3 content-start sm:col-start-6 sm:col-span-7 sm:mt-2 flex flex-wrap gap-1 items-baseline gap-3",
+            "sm:ml-1 col-span-full row-start-4 sm:row-start-3 content-start sm:col-start-6 sm:col-span-7 sm:mt-2 flex flex-wrap items-baseline gap-3",
           ),
         ],
         [
@@ -808,11 +808,11 @@ pub fn edit_recipe_detail(
       fieldset(
         [
           class(
-            "col-span-full my-1 pb-6 pt-1 mb-2 px-2 mr-1 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
+            "col-span-full mr-2 p-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
           ),
         ],
         [
-          legend([class("mx-2 px-1  ")], [text("Ingredients")]),
+          legend([class("mx-2 px-1 text-base ")], [text("Ingredients")]),
           case recipe.ingredients {
             Some(ings) -> {
               let children =
@@ -836,11 +836,11 @@ pub fn edit_recipe_detail(
       fieldset(
         [
           class(
-            "col-span-full my-1 pb-6 pt-1 mb-2 px-2 ml-1 mr-1 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
+            "col-span-full mr-2 p-2 gap-2 flex flex-col h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
           ),
         ],
         [
-          legend([class("mx-2 px-1  ")], [text("Method")]),
+          legend([class("mx-2 px-1 text-base ")], [text("Method")]),
           case recipe.method_steps {
             Some(steps) -> {
               let children =
@@ -938,8 +938,8 @@ pub fn view_recipe_detail(recipe: Recipe) {
         ],
         [
           fieldset([class("flex flex-wrap justify-start items-baseline")], [
-            label([for("prep_time"), class(" ")], [text("Prep:")]),
-            div([class("text-base ml-2")], [
+            label([for("prep_time"), class("text-base")], [text("Prep:")]),
+            div([class("text-lg ml-2")], [
               text(
                 case recipe.prep_time > 59 {
                   True ->
@@ -957,8 +957,8 @@ pub fn view_recipe_detail(recipe: Recipe) {
             ]),
           ]),
           fieldset([class("flex flex-wrap justify-start items-baseline")], [
-            label([for("cook_time"), class("")], [text("Cook:")]),
-            div([class("text-base ml-2")], [
+            label([for("cook_time"), class("text-base")], [text("Cook:")]),
+            div([class("text-lg ml-2")], [
               text(
                 case recipe.cook_time > 59 {
                   True ->
@@ -976,8 +976,8 @@ pub fn view_recipe_detail(recipe: Recipe) {
             ]),
           ]),
           fieldset([class("flex flex-wrap justify-start items-baseline")], [
-            label([for("cook_time"), class(" ")], [text("Serves:")]),
-            div([class("mr-2 sm:mr-4 ml-2 text-base")], [
+            label([for("cook_time"), class("text-base")], [text("Serves:")]),
+            div([class("mr-2 sm:mr-4 ml-2 text-lg")], [
               text(int.to_string(recipe.serves)),
             ]),
           ]),
@@ -986,7 +986,8 @@ pub fn view_recipe_detail(recipe: Recipe) {
       fieldset(
         [
           class(
-            "sm:ml-1 col-span-full row-start-4 sm:row-start-3 content-start sm:col-start-6 sm:col-span-7 sm:mt-2 flex flex-wrap gap-1 items-baseline gap-3",
+            "col-span-full row-start-4 content-start flex flex-wrap items-baseline gap-3
+            sm:ml-1 sm:row-start-3  sm:col-start-6 sm:col-span-7 sm:mt-2",
           ),
         ],
         [
@@ -1010,7 +1011,8 @@ pub fn view_recipe_detail(recipe: Recipe) {
       fieldset(
         [
           class(
-            "col-span-full text-base my-1 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#a3d2ab] mr-1",
+            "col-span-full text-base p-2 mr-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px]
+            sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#a3d2ab]",
           ),
         ],
         [
@@ -1038,7 +1040,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
       fieldset(
         [
           class(
-            "flex justify-start flex-wrap col-span-full my-1 pt-1 mr-1 sm:mr-2 ml-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#a3d2ab]",
+            "flex justify-start flex-wrap col-span-full p-2 mr-2 h-[fit-content]  border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#a3d2ab]",
           ),
         ],
         [
@@ -1046,7 +1048,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
           ol(
             [
               class(
-                "flex flex-wrap justify-start gap-1 w-full list-decimal marker:text-sm marker:font-mono text-base items-baseline col-span-full",
+                "flex flex-wrap justify-start gap-2 w-full list-decimal marker:text-sm marker:font-mono text-base items-baseline col-span-full",
               ),
             ],
             [
@@ -1093,7 +1095,7 @@ pub fn view_recipe_groupby(model: session.RecipeList) {
       button(
         [
           class(
-            "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+            "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 cursor-pointer text-xs",
           ),
           on_click(session.UserGroupedRecipeListByTag(a)),
         ],
@@ -1104,7 +1106,7 @@ pub fn view_recipe_groupby(model: session.RecipeList) {
       button(
         [
           class(
-            "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+            "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 cursor-pointer text-xs",
           ),
           on_click(session.UserGroupedRecipeListByAuthor),
         ],
@@ -1134,7 +1136,11 @@ pub fn view_recipe_tag_groups(recipes: List(session.Recipe), tag: String) {
         [
           text("📑"),
           span([class("")], [text(k)]),
-          element.element("hr", [class("flex-grow mx-2 self-center")], []),
+          element.element(
+            "hr",
+            [class("flex-grow mx-2 opacity-50 self-center")],
+            [],
+          ),
         ],
       ),
       div([class("subgrid-cols gap-y-1")], [
@@ -1161,7 +1167,11 @@ pub fn view_recipe_author_groups(recipes: List(session.Recipe)) {
         [
           text("📑"),
           span([class("")], [text(k)]),
-          element.element("hr", [class("flex-grow mx-2 self-center")], []),
+          element.element(
+            "hr",
+            [class("flex-grow mx-2 opacity-50 self-center")],
+            [],
+          ),
         ],
       ),
       div([class("subgrid-cols gap-y-1")], [
@@ -1179,7 +1189,7 @@ fn view_recipe_summary(recipe: Recipe, class_props: String) {
       class(class_props),
     ],
     [
-      element.element("hr", [class("w-[1ch] mr-2 self-center")], []),
+      element.element("hr", [class("w-[1ch] mr-2 opacity-50 self-center")], []),
       a([href(string.append("/recipes/", recipe.slug))], [
         span([], [text(recipe.title)]),
         span([class("text-sm")], [
@@ -1201,7 +1211,11 @@ fn view_recipe_summary(recipe: Recipe, class_props: String) {
           text("m"),
         ]),
       ]),
-      element.element("hr", [class("flex-grow mx-2 self-center")], []),
+      element.element(
+        "hr",
+        [class("flex-grow mx-2 opacity-50 self-center")],
+        [],
+      ),
     ],
   )
 }

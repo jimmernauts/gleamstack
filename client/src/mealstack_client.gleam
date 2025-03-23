@@ -454,7 +454,7 @@ fn on_route_change(uri: Uri) -> Msg {
     _, ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
     _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
     _, ["settings"] -> OnRouteChange(ViewSettings)
-    _, ["upload"] -> OnRouteChange(ViewUpload)
+    _, ["import"] -> OnRouteChange(ViewUpload)
     _, _ -> OnRouteChange(Home)
   }
 }
@@ -552,7 +552,7 @@ fn view_home() {
         #("📅", "Plan", "planner", " underline-orange"),
         #("📑", "List", "recipes", " underline-green"),
         #("📝", "New", "recipes/new", " underline-blue"),
-        #("📤", "Upload", "upload", " underline-yellow"),
+        #("📤", "Import", "import", " underline-yellow"),
       ]
         |> list.map(fn(t) {
           a(

@@ -11,9 +11,9 @@ import lustre/attribute.{
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, element, text}
 import lustre/element/html.{
-  a, button, div, fieldset, form, img, input, label, nav,
+  a, button, div, fieldset, form, img, input, label, nav, textarea,
 }
-import lustre/event.{on, on_click, on_input, on_submit}
+import lustre/event.{on, on_input, on_submit}
 import session.{type Recipe}
 
 //--TYPES-------------------------------------------------------------
@@ -26,6 +26,7 @@ pub type UploadMsg {
   UserSubmittedUrlToScrape
   ScrapeUrlResponseReceived(Result(String, ParseToRecipeError))
   UserUpdatedText(text: String)
+  UserSubmittedText
   ParseRecipeResponseReceived(Result(Recipe, ParseToRecipeError))
 }
 
@@ -44,6 +45,7 @@ pub type UploadStatus {
   ImageSubmitting
   UrlProcessing
   UrlSubmitting
+  TextSubmitting
   Finished
 }
 
@@ -150,7 +152,7 @@ pub fn upload_update(
         io.debug("ScrapeUrlRepsonseReceived")
         io.debug(scraped_json)
         use dispatch <- effect.from
-        do_submit_scraped_json(scraped_json, fn(response) {
+        do_submit_text(scraped_json, fn(response) {
           case response {
             Ok(recipe_data) -> {
               let decoded =
@@ -189,6 +191,38 @@ pub fn upload_update(
     UserUpdatedText(text) -> #(
       UploadModel(..model, text: Some(text)),
       effect.none(),
+    )
+    UserSubmittedText -> #(
+      UploadModel(..model, status: TextSubmitting),
+      case model.text {
+        Some(text) -> {
+          use dispatch <- effect.from
+          do_submit_text(text, fn(response) {
+            case response {
+              Ok(recipe_data) -> {
+                let decoded =
+                  recipe_data
+                  |> decode.run(session.decode_recipe_no_json())
+                case decoded {
+                  Ok(recipe) ->
+                    dispatch(ParseRecipeResponseReceived(Ok(recipe)))
+                  Error(errors) -> {
+                    io.debug(errors)
+                    dispatch(
+                      ParseRecipeResponseReceived(
+                        Error(Other("Response could not be decoded")),
+                      ),
+                    )
+                  }
+                }
+              }
+              Error(inner_error) ->
+                dispatch(ParseRecipeResponseReceived(Error(inner_error)))
+            }
+          })
+        }
+        None -> effect.none()
+      },
     )
     ParseRecipeResponseReceived(Ok(_recipe)) -> {
       //actually handled in mealstack_client.gleam
@@ -246,9 +280,9 @@ fn do_submit_file(
   cb: fn(Result(dynamic.Dynamic, ParseToRecipeError)) -> Nil,
 ) -> Nil
 
-@external(javascript, ".././upload.ts", "do_submit_scraped_json")
-fn do_submit_scraped_json(
-  file: String,
+@external(javascript, ".././upload.ts", "do_submit_text")
+fn do_submit_text(
+  text: String,
   cb: fn(Result(dynamic.Dynamic, ParseToRecipeError)) -> Nil,
 ) -> Nil
 
@@ -266,12 +300,15 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
       class(
         "grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(4,fit-content(65px))] gap-2",
       ),
-      on_submit(UserSubmittedFile),
-      attribute("enctype", "multipart/form-data"),
-      attribute("accept", "image/*"),
+      on_submit(case model {
+        UploadModel(file_data: Some(_file_data), ..) -> UserSubmittedFile
+        UploadModel(url: Some(_url), ..) -> UserSubmittedUrlToScrape
+        UploadModel(text: Some(_text), ..) -> UserSubmittedText
+        _ -> UserSubmittedFile
+      }),
     ],
     [
-      page_title("Upload a new recipe", "underline-yellow"),
+      page_title("Import a new recipe", "underline-yellow"),
       nav(
         [
           class(
@@ -283,7 +320,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
           button(
             [
               class(
-                "flex flex-row justify-center items-center gap-2 p-2 rounded-md text-base md:text-lg bg-underline-grey hover:bg-underline-hover",
+                "flex flex-row justify-center items-center gap-2 p-2 cursor-pointer text-base md:text-lg bg-underline-grey hover:bg-underline-hover",
               ),
               name("Upload"),
               type_("submit"),
@@ -330,6 +367,15 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
               ),
             ],
             [text("Parsing scraped data with AI...")],
+          )
+        TextSubmitting ->
+          div(
+            [
+              class(
+                "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+              ),
+            ],
+            [text("Parsing text with AI...")],
           )
         Finished -> element.none()
       },
@@ -386,7 +432,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
           ]),
         ],
       ),
-      html.fieldset(
+      fieldset(
         [
           class(
             "md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border-[1px] rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
@@ -394,7 +440,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
         ],
         [
           html.legend([class("mx-2 px-1 text-base")], [text("Text")]),
-          html.textarea(
+          textarea(
             [
               name("recipe-text-to-import"),
               id("recipe-text-to-import"),
