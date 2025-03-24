@@ -53,6 +53,8 @@ pub type RecipeDetailMsg {
   UserRemovedMethodStepAtIndex(Int)
   UserSavedUpdatedRecipe(Recipe)
   DbSavedUpdatedRecipe(Recipe)
+  UserDeletedRecipe(Recipe)
+  DbDeletedRecipe(String)
 }
 
 pub type RecipeDetail =
@@ -89,6 +91,9 @@ fn save_recipe(recipe: session.Recipe) -> Effect(RecipeDetailMsg) {
 
 @external(javascript, ".././db.ts", "do_save_recipe")
 fn do_save_recipe(recipe: JsRecipe) -> Nil
+
+@external(javascript, ".././db.ts", "do_delete_recipe")
+fn do_delete_recipe(id: String) -> Nil
 
 type JsRecipe {
   JsRecipe(
@@ -450,9 +455,20 @@ pub fn detail_update(
         save_recipe(Recipe(..recipe, slug: utils.slugify(recipe.title)))
       })
     }
-    DbSavedUpdatedRecipe(recipe) -> {
-      #(Some(recipe), effect.none())
-    }
+    //DbSavedUpdatedRecipe is handled in the layer above in mealstack_client.gleam
+    DbSavedUpdatedRecipe(recipe) -> #(Some(recipe), effect.none())
+    UserDeletedRecipe(recipe) -> #(None, {
+      use dispatch <- effect.from
+      case recipe.id {
+        None -> DbDeletedRecipe("") |> dispatch
+        Some(id) -> {
+          do_delete_recipe(id)
+          DbDeletedRecipe(id) |> dispatch
+        }
+      }
+    })
+    //DbDeletedRecipe is handled in the layer above in mealstack_client.gleam
+    DbDeletedRecipe(_id) -> #(None, effect.none())
   }
 }
 
@@ -593,7 +609,6 @@ pub fn edit_recipe_detail(
   recipe: Recipe,
   tag_options: List(TagOption),
 ) -> Element(RecipeDetailMsg) {
-  io.debug(tag_options)
   form(
     [
       class(
@@ -809,7 +824,7 @@ pub fn edit_recipe_detail(
       fieldset(
         [
           class(
-            "col-span-full mr-2 p-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
+            "col-span-full mr-2 p-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
           ),
         ],
         [
@@ -837,7 +852,7 @@ pub fn edit_recipe_detail(
       fieldset(
         [
           class(
-            "col-span-full mr-2 p-2 gap-2 flex flex-col h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
+            "col-span-full mr-2 p-2 gap-2 flex flex-col h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
           ),
         ],
         [
@@ -861,6 +876,16 @@ pub fn edit_recipe_detail(
             _ -> ingredient_input(0, None)
           },
         ],
+      ),
+      button(
+        [
+          type_("button"),
+          on_click(UserDeletedRecipe(recipe)),
+          class(
+            "col-start-12 inline-block self-start items-baseline cursor-pointer bg-ecru-white-100 border border-ecru-white-950 px-1 [box-shadow:1px_1px_0_oklch(45.8%_0.177_17.7)]",
+          ),
+        ],
+        [text("Delete")],
       ),
     ],
   )

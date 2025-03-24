@@ -73,24 +73,17 @@ export async function do_save_recipe(recipe: Recipe) {
 export async function do_save_plan(plan: PlanDay[]) {
 	await client.transact(async (tx) => {
 		for (const day of plan) {
-			console.log("do_save_plan day: ", {
-				id: day.date.toString(),
-				date: day.date,
-				planned_meals: day.planned_meals,
-			});
 			const result = await tx.insert("plan", {
 				id: day.date.toString(),
 				date: day.date,
 				planned_meals: JSON.stringify(day.planned_meals),
 			});
-			console.log("do_save_plan result: ", result);
 		}
 	});
 	return plan;
 }
 
 export async function do_get_plan(startDate: number, endDate: number) {
-	console.log(client);
 	const query = client
 		.query("plan")
 		.where([
@@ -99,7 +92,6 @@ export async function do_get_plan(startDate: number, endDate: number) {
 		])
 		.build();
 	const result = await client.fetch(query);
-	console.log("do_get_plan result: ", result);
 	return result;
 }
 
@@ -174,7 +166,6 @@ export async function do_get_one_recipe_by_slug(slug: string) {
 		.where([["slug", "=", slug]])
 		.build();
 	const result = await client.fetchOne(query);
-	console.log("do_get_one_recipe_by_slug result: ", result);
 	return result;
 }
 
@@ -191,5 +182,11 @@ export async function do_save_settings(api_key: string) {
 		api_key: api_key,
 	});
 	console.log(result);
+	return result;
+}
+
+export async function do_delete_recipe(id: string) {
+	console.log("deleting recipe: ", id);
+	const result = await client.delete("recipes", id);
 	return result;
 }

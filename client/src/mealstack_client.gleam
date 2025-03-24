@@ -278,16 +278,19 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           ..model,
           recipes: session.merge_recipe_into_model(new_recipe, model.recipes),
         ),
-        // TODO: Better handle navigating in response to the updated data
         effect.batch([
           {
             use dispatch <- effect.from
             OnRouteChange(ViewRecipeDetail(slug: new_recipe.slug)) |> dispatch
           },
-          modem.push(string.append("/recipes/", new_recipe.slug), None, None),
+          modem.push("/recipes/" <> new_recipe.slug, None, None),
         ]),
       )
     }
+    RecipeDetail(recipe.DbDeletedRecipe(_id)) -> #(
+      Model(..model, current_recipe: None),
+      modem.push("/recipes", None, None),
+    )
     RecipeDetail(detail_msg) -> {
       let #(child_model, child_effect) =
         recipe.detail_update(model.current_recipe, detail_msg)

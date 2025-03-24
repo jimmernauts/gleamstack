@@ -136,13 +136,16 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         _, False, _ -> #(model, effect.none())
         "ArrowDown", True, True -> {
           #(
-            Model(..model, hovered_item: case
-              model.hovered_item,
-              list.length(model.found_items)
-            {
-              None, _ -> Some(0)
-              Some(a), b -> Some(int.min(a + 1, b))
-            }),
+            Model(
+              ..model,
+              hovered_item: case
+                model.hovered_item,
+                list.length(model.found_items)
+              {
+                None, _ -> Some(0)
+                Some(a), b -> Some(int.min(a + 1, b))
+              },
+            ),
             effect.none(),
           )
         }
@@ -320,7 +323,7 @@ fn view(model: Model) -> Element(Msg) {
       [
         id("search-results-" <> model.elem_id),
         class(
-          "font-mono z-10 absolute bg-ecru-white-50 border border-ecru-white-950 text-xs max-h-full overflow-x-visible overflow-y-scroll w-[240px]",
+          "font-mono z-10 absolute bg-ecru-white-50 border border-ecru-white-950 text-xs max-h-full overflow-x-visible overflow-y-scroll",
         ),
         attribute("role", "listbox"),
         attribute.style(case model.is_open, list.length(model.found_items) {
