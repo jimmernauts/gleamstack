@@ -3,6 +3,7 @@ import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/int
+import gleam/io
 import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
@@ -409,7 +410,10 @@ fn decode_tag_option() -> decode.Decoder(TagOption) {
     decode.optional(decode.string),
   )
   use name <- decode.field("name", decode.string)
-  use options <- decode.field("options", decode.list(decode.string))
+  use options <- decode.field(
+    "options",
+    decode_json_string(decode.list(decode.string), []),
+  )
   decode.success(TagOption(id:, name:, options:))
 }
 

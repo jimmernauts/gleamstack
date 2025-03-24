@@ -593,6 +593,7 @@ pub fn edit_recipe_detail(
   recipe: Recipe,
   tag_options: List(TagOption),
 ) -> Element(RecipeDetailMsg) {
+  io.debug(tag_options)
   form(
     [
       class(
