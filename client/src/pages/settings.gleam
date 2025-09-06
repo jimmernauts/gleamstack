@@ -1,6 +1,6 @@
 import components/page_title.{page_title}
-import decode/zero as decode
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/javascript/promise.{type Promise}
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -61,7 +61,7 @@ fn do_retrieve_settings() -> Promise(Dynamic)
 pub fn view_settings(model: SettingsModel) -> Element(SettingsMsg) {
   form(
     [
-      event.on_submit(UserSavedSettings),
+      event.on_submit(fn(_x) { UserSavedSettings }),
       class(
         "grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(3,fit-content(65px))] gap-y-2",
       ),

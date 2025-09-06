@@ -12,12 +12,11 @@ import gleam/option.{type Option, None, Some}
 import gleam/pair
 import gleam/result
 import lib/utils
-import lustre/attribute.{attribute, checked, class, href, id, style, type_}
+import lustre/attribute.{attribute, checked, class, href, id, styles, type_}
 import lustre/effect.{type Effect}
-import lustre/element.{type Element, element, fragment, text}
-import lustre/element/html.{
-  a, button, div, form, h2, input, nav, option, section,
-}
+import lustre/element.{type Element, fragment, text}
+import lustre/element/html.{a, button, div, form, h2, input, nav, section}
+import lustre/element/keyed
 import lustre/event.{on_submit}
 import rada/date.{type Date}
 import session
@@ -469,7 +468,7 @@ pub fn edit_planner(model: Model) {
             md:snap-x md:scroll-pl-[9%] md:scroll-pt-0
             xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]",
         ),
-        on_submit(UserSavedPlan),
+        on_submit(fn(_x) { UserSavedPlan }),
       ],
       [
         planner_header_row(week),
@@ -552,7 +551,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
       [
         h2(
           [
-            style([
+            styles([
               #("--shortMon", "'Mon " <> monday <> "'"),
               #("--longMon", "'Monday " <> monday <> "'"),
             ]),
@@ -573,7 +572,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
       [
         h2(
           [
-            style([
+            styles([
               #("--shortTue", "'Tue " <> tuesday <> "'"),
               #("--longTue", "'Tuesday " <> tuesday <> "'"),
             ]),
@@ -594,7 +593,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
       [
         h2(
           [
-            style([
+            styles([
               #("--shortWed", "'Wed " <> wednesday <> "'"),
               #("--longWed", "'Wednesday " <> wednesday <> "'"),
             ]),
@@ -615,7 +614,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
       [
         h2(
           [
-            style([
+            styles([
               #("--shortThu", "'Thu " <> thursday <> "'"),
               #("--longThu", "'Thursday " <> thursday <> "'"),
             ]),
@@ -636,7 +635,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
       [
         h2(
           [
-            style([
+            styles([
               #("--shortFri", "'Fri " <> friday <> "'"),
               #("--longFri", "'Friday " <> friday <> "'"),
             ]),
@@ -657,7 +656,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
       [
         h2(
           [
-            style([
+            styles([
               #("--shortSat", "'Sat " <> saturday <> "'"),
               #("--longSat", "'Saturday " <> saturday <> "'"),
             ]),
@@ -678,7 +677,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
       [
         h2(
           [
-            style([
+            styles([
               #("--shortSun", "'Sun " <> sunday <> "'"),
               #("--longSun", "'Sunday " <> sunday <> "'"),
             ]),
@@ -698,7 +697,7 @@ fn planner_input_row(
   week: PlanWeek,
   recipe_list: List(String),
 ) -> Element(PlannerMsg) {
-  element.keyed(fragment, {
+  keyed.fragment({
     dict.values(week)
     |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
     |> list.index_map(fn(x, i) {
@@ -722,7 +721,7 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
     [class("flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)] 
-                snap-start scroll-p-[-40px] " <> row), style([
+                snap-start scroll-p-[-40px] " <> row), styles([
         #("--dayPlacement", int.to_string(i + 2)),
       ])],
     [card],
@@ -735,7 +734,7 @@ fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
     h2(
       [
         class("text-xl text-wrap"),
-        style([
+        styles([
           #("text-decoration", {
             use <- bool.guard(
               when: option.unwrap(c, False),
@@ -786,7 +785,7 @@ fn planner_meal_input(
     [class("flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)] 
-                snap-start scroll-p-[-40px] " <> row), style([
+                snap-start scroll-p-[-40px] " <> row), styles([
         #("--dayPlacement", int.to_string(i + 2)),
       ])],
     [card],
@@ -803,11 +802,9 @@ fn inner_input(
     typeahead([
       typeahead.recipe_titles(recipe_titles),
       typeahead.search_term(title),
-      event.on("typeahead-change", fn(target) {
-        target
-        |> decode.run(decode.at(["detail"], decode.string))
-        |> utils.convert_decode_errors
-        |> result.map(fn(a) { UserUpdatedMealTitle(date, for, a) })
+      event.on("typeahead-change", {
+        use res <- decode.subfield(["detail"], decode.string)
+        decode.success(UserUpdatedMealTitle(date, for, res))
       }),
     ]),
   ])

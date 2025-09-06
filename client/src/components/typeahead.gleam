@@ -1,5 +1,3 @@
-import gleam/dict.{type Dict}
-import gleam/dynamic.{type Decoder}
 import gleam/dynamic/decode.{type Dynamic}
 import gleam/int
 import gleam/json
@@ -10,14 +8,28 @@ import gleam/string
 import lib/utils
 import lustre.{type App}
 import lustre/attribute.{type Attribute, attribute, class, id, name, value}
+import lustre/component.{on_attribute_change}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, fragment, text}
-import lustre/element/html.{li, option, textarea, ul}
+import lustre/element/html.{li, textarea, ul}
 import lustre/event.{on, on_click, on_focus, on_input, on_keydown}
 import plinth/javascript/global
 
 pub fn app() -> App(Nil, Model, Msg) {
-  lustre.component(init, update, view, on_attribute_change())
+  lustre.component(init, update, view, [
+    on_attribute_change("recipe-titles", fn(attr_str) {
+      attr_str
+      |> json.parse(decode.list(decode.string))
+      |> result.map(RetrievedSearchItems)
+      |> result.map_error(fn(_x) { Nil })
+    }),
+    on_attribute_change("search-term", fn(attr_str) {
+      attr_str
+      |> json.parse(decode.string)
+      |> result.map(RetrievedInitialSearchTerm)
+      |> result.map_error(fn(_x) { Nil })
+    }),
+  ])
 }
 
 pub fn typeahead(attrs: List(Attribute(msg))) -> Element(msg) {
@@ -25,11 +37,11 @@ pub fn typeahead(attrs: List(Attribute(msg))) -> Element(msg) {
 }
 
 pub fn recipe_titles(all: List(String)) -> Attribute(msg) {
-  attribute.property("recipe-titles", all)
+  attribute.property("recipe-titles", json.array(all, json.string))
 }
 
 pub fn search_term(term: String) -> Attribute(msg) {
-  attribute.property("search-term", term)
+  attribute.property("search-term", json.string(term))
 }
 
 pub fn class_list(class_list: String) -> Attribute(msg) {
@@ -197,23 +209,6 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn on_attribute_change() -> Dict(String, Decoder(Msg)) {
-  dict.from_list([
-    #("recipe-titles", fn(attribute) {
-      attribute
-      |> decode.run(decode.list(decode.string))
-      |> utils.convert_decode_errors
-      |> result.map(RetrievedSearchItems)
-    }),
-    #("search-term", fn(attribute) {
-      attribute
-      |> decode.run(decode.string)
-      |> utils.convert_decode_errors
-      |> result.map(RetrievedInitialSearchTerm)
-    }),
-  ])
-}
-
 //-VIEW--------------------------------------------------------
 
 fn search_result(model: Model, result_value: String, index: Int) -> Element(Msg) {
@@ -229,9 +224,8 @@ fn search_result(model: Model, result_value: String, index: Int) -> Element(Msg)
       }),
       class("px-1"),
       on_click(UserSelectedOption(result_value)),
-      on("mouseover", fn(evt) {
-        evt
-        |> decode.run(decode.at(
+      on("mouseover", {
+        use index <- decode.subfield(
           ["target", "dataset", "index"],
           decode.string
             |> decode.then(fn(s) {
@@ -240,13 +234,11 @@ fn search_result(model: Model, result_value: String, index: Int) -> Element(Msg)
                 Error(_) -> decode.failure(0, "Expected integer string")
               }
             }),
-        ))
-        |> utils.convert_decode_errors
-        |> result.map(UserHoveredOption)
+        )
+        decode.success(UserHoveredOption(index))
       }),
-      on("mouseout", fn(evt) {
-        evt
-        |> decode.run(decode.at(
+      on("mouseout", {
+        use index <- decode.subfield(
           ["target", "dataset", "index"],
           decode.string
             |> decode.then(fn(s) {
@@ -255,13 +247,11 @@ fn search_result(model: Model, result_value: String, index: Int) -> Element(Msg)
                 Error(_) -> decode.failure(0, "Expected integer string")
               }
             }),
-        ))
-        |> utils.convert_decode_errors
-        |> result.map(UserUnHoveredOption)
+        )
+        decode.success(UserUnHoveredOption(index))
       }),
-      on("mousedown", fn(evt) {
-        event.prevent_default(evt)
-        Ok(UserMousedDownOption)
+      event.advanced("mousedown", {
+        decode.success(event.handler(UserMousedDownOption, True, False))
       }),
     ],
     [text(result_value)],
@@ -273,7 +263,7 @@ fn view(model: Model) -> Element(Msg) {
     textarea(
       [
         id("meal-input-" <> model.elem_id),
-        attribute.style([
+        attribute.styles([
           #("field-sizing", "content"),
           #("overflow-x", "hidden"),
           #("width", "100%"),
@@ -307,15 +297,13 @@ fn view(model: Model) -> Element(Msg) {
         attribute("role", "combobox"),
         name("meal-input"),
         on_input(UserTypedInSearchInput),
-        on("change", fn(event) {
-          event
-          |> decode.run(decode.at(["target", "value"], decode.string))
-          |> utils.convert_decode_errors
-          |> result.map(UserSelectedValue)
+        on("change", {
+          use val <- decode.subfield(["target", "value"], decode.string)
+          decode.success(UserSelectedValue(val))
         }),
         on_keydown(UserPressedKeyInSearchInput),
         on_focus(UserFocusedSearchInput),
-        on("blur", fn(_event) { Ok(UserBlurredSearchInput) }),
+        on("blur", decode.success(UserBlurredSearchInput)),
       ],
       "",
     ),
@@ -326,7 +314,7 @@ fn view(model: Model) -> Element(Msg) {
           "font-mono z-10 absolute bg-ecru-white-50 border border-ecru-white-950 text-xs max-h-full overflow-x-visible overflow-y-scroll",
         ),
         attribute("role", "listbox"),
-        attribute.style(case model.is_open, list.length(model.found_items) {
+        attribute.styles(case model.is_open, list.length(model.found_items) {
           True, 0 -> [#("display", "none")]
           True, _ -> [#("display", "block")]
           False, _ -> [#("display", "none")]
@@ -347,9 +335,10 @@ fn view(model: Model) -> Element(Msg) {
 
 //----DECODERS & TYPES-------------------------------------------------------------------------
 
-pub fn decode_stringed_bool(d: Dynamic) -> Result(Bool, dynamic.DecodeErrors) {
+pub fn decode_stringed_bool(
+  d: Dynamic,
+) -> Result(Bool, List(decode.DecodeError)) {
   decode.run(d, decode.string)
-  |> utils.convert_decode_errors
   |> result.map(fn(a) {
     case a {
       "True" -> True
@@ -363,7 +352,7 @@ pub fn decode_stringed_bool(d: Dynamic) -> Result(Bool, dynamic.DecodeErrors) {
 pub fn decode_stringed_int(d: Dynamic) -> Result(Int, List(decode.DecodeError)) {
   decode.run(d, decode.string)
   |> result.map(int.parse)
-  |> result.then(
+  |> result.try(
     result.map_error(_, fn(_x) {
       [
         decode.DecodeError(

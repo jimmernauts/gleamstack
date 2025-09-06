@@ -2,7 +2,6 @@ import components/page_title.{page_title}
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/int
-import gleam/io
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -12,7 +11,7 @@ import gleam/string
 import lib/utils
 import lustre/attribute.{
   attribute, checked, class, disabled, for, href, id, name, placeholder,
-  selected, style, type_, value,
+  selected, styles, type_, value,
 }
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
@@ -20,6 +19,7 @@ import lustre/element/html.{
   a, button, details, div, fieldset, form, input, label, legend, li, nav, ol,
   option, section, select, span, summary, textarea,
 }
+import lustre/element/keyed
 import lustre/event.{on_check, on_click, on_input}
 import session.{
   type Ingredient, type MethodStep, type Recipe, type RecipeList, type Tag,
@@ -488,7 +488,7 @@ pub fn list_update(
           session.DbRetrievedOneRecipe(recipe) |> dispatch
         }
         Error(e) -> {
-          io.debug(e)
+          echo e
           effect.none()
         }
       }
@@ -615,7 +615,7 @@ pub fn edit_recipe_detail(
         "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(100px)_fit-content(100px)_fit-content(100px)_1fr] gap-y-2",
       ),
       id("create_recipe_form"),
-      event.on_submit(UserSavedUpdatedRecipe(recipe)),
+      event.on_submit(fn(_x) { UserSavedUpdatedRecipe(recipe) }),
     ],
     [
       textarea(
@@ -815,7 +815,7 @@ pub fn edit_recipe_detail(
                     tag_input(tag_options, pair.first(a), Some(pair.second(a))),
                   )
                 })
-              element.keyed(html.div([class("contents")], _), children)
+              keyed.element("div", [class("contents")], children)
             }
             _, _ -> span([on_click(UserAddedTagAtIndex(0))], [text("🏷️")])
           },
@@ -843,7 +843,7 @@ pub fn edit_recipe_detail(
                     ingredient_input(pair.first(a), Some(pair.second(a))),
                   )
                 })
-              element.keyed(html.div([class("contents")], _), children)
+              keyed.element("div", [class("contents")], children)
             }
             _ -> ingredient_input(0, None)
           },
@@ -871,7 +871,7 @@ pub fn edit_recipe_detail(
                     method_step_input(pair.first(a), Some(pair.second(a))),
                   )
                 })
-              element.keyed(html.div([class("contents")], _), children)
+              keyed.element("div", [class("contents")], children)
             }
             _ -> ingredient_input(0, None)
           },
@@ -1028,7 +1028,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
                 |> list.map(fn(a) {
                   #(int.to_string(pair.first(a)), view_tag(pair.second(a)))
                 })
-              element.keyed(html.div([class("contents")], _), children)
+              keyed.element("div", [class("contents")], children)
             }
             _ -> element.none()
           },
@@ -1057,7 +1057,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
                     view_ingredient(pair.second(a)),
                   )
                 })
-              element.keyed(html.div([class("contents")], _), children)
+              keyed.element("div", [class("contents")], children)
             }
             _ -> element.none()
           },
@@ -1092,7 +1092,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
                         view_method_step(pair.second(a)),
                       )
                     })
-                  element.keyed(html.div([class("contents")], _), children)
+                  keyed.element("div", [class("contents")], children)
                 }
                 _ -> element.none()
               },
@@ -1316,7 +1316,7 @@ fn tag_input(
     [
       select(
         [
-          style([
+          styles([
             case string.length(tag.name) {
               num if num > 0 -> #("width", int.to_string(num + 1) <> "ch")
               _ -> #("width", "5ch")
@@ -1362,7 +1362,7 @@ fn tag_input(
       {
         select(
           [
-            style([
+            styles([
               case string.length(tag.value) {
                 num if num > 0 -> #("width", int.to_string(num + 1) <> "ch")
                 _ -> #("width", "5ch")

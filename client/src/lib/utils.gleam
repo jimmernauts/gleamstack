@@ -184,18 +184,17 @@ pub fn slugify(text: String) -> String {
   |> regexp.replace(each: invalid_chars, in: _, with: "")
   |> justin.kebab_case
 }
-
-pub fn convert_decode_errors(
-  r: Result(a, List(decode.DecodeError)),
-) -> Result(a, dynamic.DecodeErrors) {
-  r
-  |> result.map_error(fn(errs) {
-    list.map(errs, fn(err) {
-      dynamic.DecodeError(
-        expected: err.expected,
-        found: err.found,
-        path: err.path,
-      )
-    })
-  })
-}
+// pub fn convert_decode_errors(
+//   r: Result(a, List(decode.DecodeError)),
+// ) -> Result(a, dynamic.DecodeErrors) {
+//   r
+//   |> result.map_error(fn(errs) {
+//     list.map(errs, fn(err) {
+//       dynamic.DecodeError(
+//         expected: err.expected,
+//         found: err.found,
+//         path: err.path,
+//       )
+//     })
+//   })
+// }

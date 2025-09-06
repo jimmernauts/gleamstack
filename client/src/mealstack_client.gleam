@@ -18,29 +18,13 @@ import pages/settings
 import pages/upload
 import rada/date
 import session
-import tardis
 
 // MAIN ------------------------------------------------------------------------
 
-// WITHOUT DEBUGGER
-//
-// pub fn main() {
-//   lustre.register(typeahead.app(), "type-ahead")
-//   let app = lustre.application(init, update, view)
-//   let assert Ok(_) = lustre.start(app, "#app", Nil)
-// }
-
-// WITH DEBUGGER
-
 pub fn main() {
-  let assert Ok(main) = tardis.single("main")
-  let _ = lustre.register(typeahead.app(), "type-ahead")
-  let _ =
-    lustre.application(init, update, view)
-    |> tardis.wrap(with: main)
-    |> lustre.start("#app", Nil)
-    |> tardis.activate(with: main)
-  main
+  lustre.register(typeahead.app(), "type-ahead")
+  let app = lustre.application(init, update, view)
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
 }
 
 fn init(_flags) -> #(Model, Effect(Msg)) {
@@ -518,13 +502,13 @@ fn view_base(children) {
     [
       class(
         "grid ml-2 mr-2 gap-2
-    2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90%_[main-end]_3fr_[full-end]_1fr_[end]]
-    xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
-    lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
-    md:grid-cols-[[start_full-start]_1fr_[main-start]_95%_[main-end]_1fr_[full-end_end]]
-    grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
-    grid-rows-[[content]_95%_[footer]_1fr]
-    bg-ecru-white-50  text-ecru-white-950 font-transitional text-lg",
+      2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90%_[main-end]_3fr_[full-end]_1fr_[end]]
+      xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+      lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+      md:grid-cols-[[start_full-start]_1fr_[main-start]_95%_[main-end]_1fr_[full-end_end]]
+      grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
+      grid-rows-[[content]_95%_[footer]_1fr]
+      bg-ecru-white-50  text-ecru-white-950 font-transitional text-lg",
       ),
     ],
     [children],

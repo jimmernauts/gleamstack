@@ -112,7 +112,7 @@ pub fn upload_update(
                   Ok(recipe) ->
                     dispatch(ParseRecipeResponseReceived(Ok(recipe)))
                   Error(errors) -> {
-                    io.debug(errors)
+                    echo errors
                     dispatch(
                       ParseRecipeResponseReceived(
                         Error(Other("Response could not be decoded")),
@@ -149,8 +149,8 @@ pub fn upload_update(
     })
     ScrapeUrlResponseReceived(Ok(scraped_json)) -> {
       #(UploadModel(..model, status: UrlSubmitting), {
-        io.debug("ScrapeUrlRepsonseReceived")
-        io.debug(scraped_json)
+        echo "ScrapeUrlRepsonseReceived"
+        echo scraped_json
         use dispatch <- effect.from
         do_submit_text(scraped_json, fn(response) {
           case response {
@@ -161,7 +161,7 @@ pub fn upload_update(
               case decoded {
                 Ok(recipe) -> dispatch(ParseRecipeResponseReceived(Ok(recipe)))
                 Error(errors) -> {
-                  io.debug(errors)
+                  echo errors
                   dispatch(
                     ParseRecipeResponseReceived(
                       Error(Other("Response could not be decoded")),
@@ -185,7 +185,7 @@ pub fn upload_update(
           "Failed to scrape the URL submitted. Error: " <> msg
         Other(msg) -> "Error: " <> msg
       }
-      io.print_error(error_message)
+      echo error_message
       #(model, effect.none())
     }
     UserUpdatedText(text) -> #(
@@ -207,7 +207,7 @@ pub fn upload_update(
                   Ok(recipe) ->
                     dispatch(ParseRecipeResponseReceived(Ok(recipe)))
                   Error(errors) -> {
-                    io.debug(errors)
+                    echo errors
                     dispatch(
                       ParseRecipeResponseReceived(
                         Error(Other("Response could not be decoded")),
@@ -237,7 +237,7 @@ pub fn upload_update(
           "Failed to scrape the URL submitted. Error: " <> msg
         Other(msg) -> "Error: " <> msg
       }
-      io.print_error(error_message)
+      echo error_message
       #(
         UploadModel(
           status: Finished,
@@ -253,19 +253,13 @@ pub fn upload_update(
   }
 }
 
-fn handle_file_upload(
-  event: dynamic.Dynamic,
-) -> Result(UploadMsg, List(dynamic.DecodeError)) {
-  let decoder =
-    decode.at(
-      ["target", "files"],
-      decode.at([0], decode.at(["name"], decode.string)),
-    )
-  decode.run(event, decoder)
-  |> result.map(fn(file_name) { UserSelectedFile(file_name, event) })
-  |> result.map_error(
-    list.map(_, fn(e) { dynamic.DecodeError(e.expected, e.found, e.path) }),
+fn handle_file_upload() -> decode.Decoder(UploadMsg) {
+  use evt <- decode.field("event", decode.dynamic)
+  use res <- decode.subfield(
+    ["target", "files"],
+    decode.at([0], decode.at(["name"], decode.string)),
   )
+  decode.success(UserSelectedFile(res, evt))
 }
 
 @external(javascript, ".././upload.ts", "do_read_file_from_event")
@@ -300,11 +294,13 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
       class(
         "grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(4,fit-content(65px))] gap-2",
       ),
-      on_submit(case model {
-        UploadModel(file_data: Some(_file_data), ..) -> UserSubmittedFile
-        UploadModel(url: Some(_url), ..) -> UserSubmittedUrlToScrape
-        UploadModel(text: Some(_text), ..) -> UserSubmittedText
-        _ -> UserSubmittedFile
+      on_submit(fn(_x) {
+        case model {
+          UploadModel(file_data: Some(_file_data), ..) -> UserSubmittedFile
+          UploadModel(url: Some(_url), ..) -> UserSubmittedUrlToScrape
+          UploadModel(text: Some(_text), ..) -> UserSubmittedText
+          _ -> UserSubmittedFile
+        }
       }),
     ],
     [
@@ -402,7 +398,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
             type_("file"),
             id("recipe-image"),
             accept(["image/*"]),
-            on("change", handle_file_upload),
+            on("change", handle_file_upload()),
           ]),
           case model.file_data {
             Some(file_data) ->

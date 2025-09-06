@@ -73,7 +73,7 @@ export async function do_save_recipe(recipe: Recipe) {
 export async function do_save_plan(plan: PlanDay[]) {
 	await client.transact(async (tx) => {
 		for (const day of plan) {
-			const result = await tx.insert("plan", {
+			await tx.insert("plan", {
 				id: day.date.toString(),
 				date: day.date,
 				planned_meals: JSON.stringify(day.planned_meals),
