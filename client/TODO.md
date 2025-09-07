@@ -1,3 +1,5 @@
+[] SHOPPING LIST
+[] switch to Instant DB instead of triplit
 [] Add cooking notes and ratings to recipes, group by rating
 [] PWA
 [] Add bunch of recipes
@@ -8,5 +10,3 @@
 [] Build importer (must be serverside)
 [] Build shopping list
 [] SSR ?
-[] Switch to Electric + postgres instead of triplit
-[] Switch to zerosync + postgres instead of triplit

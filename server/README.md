@@ -1,24 +1,9 @@
 # mealstack_server
 
-[![Package Version](https://img.shields.io/hexpm/v/mealstack_server)](https://hex.pm/packages/mealstack_server)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/mealstack_server/)
+- can't remember where this is up to.
+- I can see it's a JS server project with Glen, I don't think it actually deploys anywhere?
+- It looks like its only responsibility is to scrape a recipe page and return the JSON-LD data.
 
-```sh
-gleam add mealstack_server@1
-```
-```gleam
-import mealstack_server
-
-pub fn main() {
-  // TODO: An example of the project in use
-}
-```
-
-Further documentation can be found at <https://hexdocs.pm/mealstack_server>.
-
-## Development
-
-```sh
-gleam run   # Run the project
-gleam test  # Run the tests
-```
+- TODO: do I need to deploy this?
+- TODO: can I move it to the frontend somehow?
+- TODO: can I deploy it to a serverless function?

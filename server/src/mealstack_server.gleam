@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
@@ -43,7 +42,7 @@ pub fn scrape_url_page(target: String) -> Promise(Response) {
       }
       Error(error) -> {
         error
-        |> io.debug
+        |> echo
         |> glen.text(status.internal_server_error)
       }
     }

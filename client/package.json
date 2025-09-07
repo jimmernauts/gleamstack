@@ -10,6 +10,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@chouqueth/gleam": "^1.9.1",
+    "@instantdb/core": "^0.21.13",
     "@triplit/client": "^0.6.15",
     "change-case": "^5.4.4",
     "dotenv": "^16.4.7",
