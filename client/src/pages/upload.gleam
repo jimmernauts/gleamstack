@@ -2,14 +2,13 @@ import components/page_title.{page_title}
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/io
-import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import lustre/attribute.{
   accept, attribute, class, for, href, id, name, src, type_,
 }
 import lustre/effect.{type Effect}
-import lustre/element.{type Element, element, text}
+import lustre/element.{type Element, text}
 import lustre/element/html.{
   a, button, div, fieldset, form, img, input, label, nav, textarea,
 }

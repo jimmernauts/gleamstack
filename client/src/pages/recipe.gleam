@@ -23,7 +23,7 @@ import lustre/element/keyed
 import lustre/event.{on_check, on_click, on_input}
 import session.{
   type Ingredient, type MethodStep, type Recipe, type RecipeList, type Tag,
-  type TagOption, Ingredient, MethodStep, Recipe, RecipeList, Tag, TagOption,
+  type TagOption, Ingredient, MethodStep, Recipe, RecipeList, Tag,
   decode_recipe_with_inner_json,
 }
 
@@ -89,10 +89,10 @@ fn save_recipe(recipe: session.Recipe) -> Effect(RecipeDetailMsg) {
   DbSavedUpdatedRecipe(recipe) |> dispatch
 }
 
-@external(javascript, ".././db.ts", "do_save_recipe")
+@external(javascript, ".././db2.ts", "do_save_recipe")
 fn do_save_recipe(recipe: JsRecipe) -> Nil
 
-@external(javascript, ".././db.ts", "do_delete_recipe")
+@external(javascript, ".././db2.ts", "do_delete_recipe")
 fn do_delete_recipe(id: String) -> Nil
 
 type JsRecipe {

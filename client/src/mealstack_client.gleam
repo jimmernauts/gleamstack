@@ -5,7 +5,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import gleam/uri.{type Uri, Uri}
+import gleam/uri.{type Uri}
 import lustre
 import lustre/attribute.{class, href}
 import lustre/effect.{type Effect}
@@ -22,7 +22,7 @@ import session
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  lustre.register(typeahead.app(), "type-ahead")
+  let _ = lustre.register(typeahead.app(), "type-ahead")
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, "#app", Nil)
 }

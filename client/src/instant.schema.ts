@@ -56,7 +56,7 @@ const _schema = i.schema({
       options: i.json().optional(),
     }),
     plan: i.entity({
-      date: i.number(),
+      date: i.number().indexed(),
       planned_meals: i.json().optional(),
     }),
     settings: i.entity({
