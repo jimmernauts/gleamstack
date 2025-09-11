@@ -46,6 +46,7 @@ export function do_subscribe_to_recipe_summaries(
 		},
 	};
 	const result = db.subscribeQuery(query, dispatch);
+	console.log(result)
 	return result;
 }
 
@@ -107,7 +108,8 @@ export async function do_save_recipe(recipe: Recipe) {
 	};
 	const id_to_use = recipe.id || id();
 	console.log("do_save_recipe upsert: ", obj);
-	const result = await db.tx.recipes[id_to_use].update({
+	const result = await db.transact(
+		db.tx.recipes[id_to_use].update({
 		slug: obj.slug,
 		title: obj.title,
 		cook_time: obj.cook_time,
@@ -119,12 +121,13 @@ export async function do_save_recipe(recipe: Recipe) {
 		ingredients: obj.ingredients,
 		method_steps: obj.method_steps,
 		shortlisted: obj.shortlisted,
-	});
+	})
+	);
 	return result;
 }
 
 export async function do_delete_recipe(id: string) {
-	const result = await db.tx.recipes[id].delete();
+	const result = await db.transact(db.tx.recipes[id].delete());
 	return result;
 }
 
@@ -173,10 +176,10 @@ export function do_subscribe_to_plan(
 
 export async function do_save_plan(plan: PlanDay[]): Promise<PlanDay[]> {
 	for (const day of plan) {
-		await db.tx.plan[day.date].update({
+		await db.transact(db.tx.plan[day.date].update({
 			date: day.date,
 			planned_meals: JSON.stringify(day.planned_meals),
-		});
+		}));
 	}
 	return plan;
 }
@@ -194,8 +197,11 @@ export async function do_retrieve_settings() {
 }
 
 export async function do_save_settings(api_key: string) {
-	const result = await db.tx.settings["james"].update({
+	console.log("saving settings...", api_key)
+	// TODO: make this dynamic
+	const result = await db.transact(db.tx.settings["59b9c881-bd5a-494d-97cc-7f7c50ccb362"].update({
 		api_key: api_key,
-	});
+	}));
+	console.log(result)
 	return result;
 }
