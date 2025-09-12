@@ -197,7 +197,7 @@ export async function do_retrieve_settings() {
 		},
 	};
 	const result = await db.queryOnce(query);
-	return result.data.settings;
+	return result.data.settings[0].api_key;
 }
 
 export async function do_save_settings(api_key: string) {

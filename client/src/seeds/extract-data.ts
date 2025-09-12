@@ -49,32 +49,49 @@ async function fmt_and_submit(recipe: ManualRecipe) {
 	console.log(JSON.stringify(res));
 }
 
-// extract_and_submit_data();
-function do_subscribe_to_recipe_summaries(
-	dispatch: (result: unknown) => void,
-): () => void {
-	const query = {
-		recipes: {
-			$: {
-				fields: [
-					"slug",
-					"title",
-					"cook_time",
-					"prep_time",
-					"serves",
-					"author",
-					"source",
-					"ingredients",
-					"method_steps",
-					"tags",
-					"shortlisted",
-				],
-			},
-		},
+async function do_save_recipe(recipe: Recipe) {
+	// upsert
+	//https://stackoverflow.com/questions/11704267/in-javascript-how-to-conditionally-add-a-member-to-an-object
+	const obj: Recipe = {
+		...(recipe.id !== "" ? { id: recipe.id } : {}),
+		slug: recipe.slug,
+		title: recipe.title,
+		cook_time: recipe.cook_time,
+		prep_time: recipe.prep_time,
+		serves: recipe.serves,
+		...(recipe.author !== "" ? { author: recipe.author } : {}),
+		...(recipe.source !== "" ? { source: recipe.source } : {}),
+		...(recipe.tags !== "null" && recipe.tags !== "{}"
+			? { tags: recipe.tags }
+			: {}),
+		...(recipe.ingredients !== "null" && recipe.ingredients !== "{}"
+			? { ingredients: recipe.ingredients }
+			: {}),
+		...(recipe.method_steps !== "null" && recipe.method_steps !== "{}"
+			? { method_steps: recipe.method_steps }
+			: {}),
+		...(recipe.shortlisted !== false
+			? { shortlisted: recipe.shortlisted }
+			: {}),
 	};
-	const result = admin_db.subscribeQuery(query, dispatch);
-	console.log(result);
+	const id_to_use = recipe.id || id();
+	console.log("do_save_recipe upsert: ", obj);
+	const result = await admin_db.transact(
+		admin_db.tx.recipes[id_to_use].update({
+			slug: obj.slug,
+			title: obj.title,
+			cook_time: obj.cook_time,
+			prep_time: obj.prep_time,
+			serves: obj.serves,
+			author: obj.author,
+			source: obj.source,
+			tags: obj.tags,
+			ingredients: obj.ingredients,
+			method_steps: obj.method_steps,
+			shortlisted: obj.shortlisted,
+		}),
+	);
 	return result;
 }
 
-do_subscribe_to_recipe_summaries((res) => console.log(res));
+extract_and_submit_data();

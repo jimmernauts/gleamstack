@@ -179,6 +179,8 @@ export async function processImageAsBase64(dataUrl: string): Promise<string> {
 	return processImageAsBase64(processedBase64);
 }
 
+//TODO: Use Vercel AI SDK to make call to AI model generic, so we can use Gemini (with work AI key) instead of Anthropic
+
 export async function do_submit_file(
 	file_data: string,
 	dispatch: dispatchFunction,
@@ -305,6 +307,7 @@ export async function do_submit_text(
 	}
 }
 
+//TODO: use env vars for location of server
 export async function do_scrape_url(
 	url: string,
 	cb: dispatchFunction,
