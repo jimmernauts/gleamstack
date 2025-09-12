@@ -495,12 +495,14 @@ pub fn list_update(
       #(model, try_effect)
     }
     session.DbSubscribedRecipes(jsdata) -> {
-      // TODO! Here the subscription from instant returns the results inside a { "data"	: [...]} subfield.
-      // Need to tweak the decoders to fix.
-      let decoder =
-        decode.field("data", decode.list(decode_recipe_with_inner_json()))
+      let decoder = {
+        use data <- decode.subfield(
+          ["data", "recipes"],
+          decode.list(decode_recipe_with_inner_json()),
+        )
+        decode.success(data)
+      }
       let try_decode = decode.run(jsdata, decoder)
-
       let try_effect = case try_decode {
         Ok(recipes) -> {
           use dispatch <- effect.from
@@ -508,6 +510,7 @@ pub fn list_update(
         }
         Error(_) -> effect.none()
       }
+
       #(model, try_effect)
     }
     session.DbRetrievedRecipes(recipes) -> #(

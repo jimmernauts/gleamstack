@@ -130,6 +130,7 @@ pub fn planner_update(
   model: Model,
   msg: PlannerMsg,
 ) -> #(Model, Effect(PlannerMsg)) {
+  echo msg
   case msg {
     UserUpdatedMealTitle(date, meal, value) -> {
       let result = update_meal_title_in_plan(model.plan_week, date, meal, value)
@@ -153,8 +154,15 @@ pub fn planner_update(
     // DbSubscriptionOpened is handled in the layer above in app.gleam
     DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
     DbSubscribedPlan(jsdata) -> {
-      let decoder = decode.list(plan_day_decoder())
+      let decoder = {
+        use data <- decode.subfield(
+          ["data", "plan"],
+          decode.list(plan_day_decoder()),
+        )
+        decode.success(data)
+      }
       let try_decode = decode.run(jsdata, decoder)
+      echo try_decode
       let try_effect = case try_decode {
         Ok([]) -> effect.none()
         Ok(plan_days) -> {
@@ -390,93 +398,85 @@ pub fn edit_planner(model: Model) {
         find_in_week(date.add(start_of_week, 6, date.Days)),
       ),
     ])
-
-  div([], [
-    section(
-      [
-        class(
-          "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(65px)] gap-y-2",
-        ),
-      ],
-      [
-        page_title(
-          "Week of " <> utils.month_date_string(start_of_week),
-          "underline-orange",
-        ),
-        nav(
-          [
-            class(
-              "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
+  section(
+    [
+      class(
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(65px)] gap-y-2",
+      ),
+    ],
+    [
+      page_title(
+        "Week of " <> utils.month_date_string(start_of_week),
+        "underline-orange",
+      ),
+      nav(
+        [
+          class(
+            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
+          ),
+        ],
+        [
+          a([href("/"), class("text-center")], [text("🏠")]),
+          div([class("flex flex-row justify-evenly px-1")], [
+            a(
+              [
+                href("/planner?date=" <> date.to_iso_string(start_of_week)),
+                class("text-center"),
+              ],
+              [text("❎")],
             ),
-          ],
-          [
-            a([href("/"), class("text-center")], [text("🏠")]),
-            div([class("flex flex-row justify-evenly px-1")], [
-              a(
-                [
-                  href("/planner?date=" <> date.to_iso_string(start_of_week)),
-                  class("text-center"),
-                ],
-                [text("❎")],
-              ),
-              button(
-                [type_("submit"), attribute("form", "active-week"), class("")],
-                [text("💾")],
-              ),
-            ]),
-            div([class("flex flex-row justify-evenly px-1")], [
-              a(
-                [
-                  href(
-                    "/planner/edit?date="
-                    <> date.to_iso_string(date.add(
-                      start_of_week,
-                      -1,
-                      date.Weeks,
-                    )),
-                  ),
-                  class("text-center"),
-                ],
-                [text("⬅️")],
-              ),
-              a(
-                [
-                  href(
-                    "/planner/edit?date="
-                    <> date.to_iso_string(date.add(start_of_week, 1, date.Weeks)),
-                  ),
-                  class("text-center"),
-                ],
-                [text("➡️")],
-              ),
-            ]),
-          ],
-        ),
-      ],
-    ),
-    form(
-      [
-        id("active-week"),
-        class(
-          "mb-2 text-sm p-1 min-h-[70vh]
-            overflow-x-hidden overflow-y-scroll md:overflow-x-scroll md:overflow-y-hidden snap-mandatory snap-always  
+            button(
+              [type_("submit"), attribute("form", "active-week"), class("")],
+              [text("💾")],
+            ),
+          ]),
+          div([class("flex flex-row justify-evenly px-1")], [
+            a(
+              [
+                href(
+                  "/planner/edit?date="
+                  <> date.to_iso_string(date.add(start_of_week, -1, date.Weeks)),
+                ),
+                class("text-center"),
+              ],
+              [text("⬅️")],
+            ),
+            a(
+              [
+                href(
+                  "/planner/edit?date="
+                  <> date.to_iso_string(date.add(start_of_week, 1, date.Weeks)),
+                ),
+                class("text-center"),
+              ],
+              [text("➡️")],
+            ),
+          ]),
+        ],
+      ),
+      form(
+        [
+          id("active-week"),
+          class(
+            "mb-2 text-sm p-1 min-h-[70vh]
+            overflow-x-hidden overflow-y-scroll md:overflow-x-scroll md:overflow-y-hidden snap-mandatory snap-always
             col-span-full row-start-2 grid gap-1 
             grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
             snap-y scroll-pt-[9%]
-            md:col-start-[full-start] md:col-end-[full-end]
             md:text-base md:grid-cols-[fit-content(10%)_repeat(7,_15vw)] md:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]
             md:snap-x md:scroll-pl-[9%] md:scroll-pt-0
             xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]",
-        ),
-        on_submit(fn(_x) { UserSavedPlan }),
-      ],
-      [
-        planner_header_row(week),
-        planner_input_row(Lunch, week, model.recipe_list),
-        planner_input_row(Dinner, week, model.recipe_list),
-      ],
-    ),
-  ])
+          ),
+          on_submit(fn(_x) { UserSavedPlan }),
+        ],
+        [
+          planner_header_row(week),
+          planner_input_row(Lunch, week, model.recipe_list),
+          planner_input_row(Dinner, week, model.recipe_list),
+        ],
+      ),
+    ],
+  )
 }
 
 //-COMPONENTS--------------------------------------------------
@@ -851,7 +851,7 @@ fn planned_meals_decoder() -> decode.Decoder(List(PlannedMealWithStatus)) {
       complete: complete,
     ))
   }
-  decode.list(of: record_decoder)
+  session.decode_json_string(decode.list(of: record_decoder), [])
 }
 
 fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {

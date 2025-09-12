@@ -37,11 +37,14 @@ pub fn typeahead(attrs: List(Attribute(msg))) -> Element(msg) {
 }
 
 pub fn recipe_titles(all: List(String)) -> Attribute(msg) {
-  attribute.property("recipe-titles", json.array(all, json.string))
+  attribute.attribute(
+    "recipe-titles",
+    json.to_string(json.array(all, json.string)),
+  )
 }
 
 pub fn search_term(term: String) -> Attribute(msg) {
-  attribute.property("search-term", json.string(term))
+  attribute.attribute("search-term", json.to_string(json.string(term)))
 }
 
 pub fn class_list(class_list: String) -> Attribute(msg) {

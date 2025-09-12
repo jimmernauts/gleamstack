@@ -37,8 +37,6 @@ export function do_subscribe_to_recipe_summaries(
 					"serves",
 					"author",
 					"source",
-					"ingredients",
-					"method_steps",
 					"tags",
 					"shortlisted",
 				],
@@ -46,7 +44,7 @@ export function do_subscribe_to_recipe_summaries(
 		},
 	};
 	const result = db.subscribeQuery(query, dispatch);
-	console.log(result)
+	console.log(result);
 	return result;
 }
 
@@ -110,18 +108,18 @@ export async function do_save_recipe(recipe: Recipe) {
 	console.log("do_save_recipe upsert: ", obj);
 	const result = await db.transact(
 		db.tx.recipes[id_to_use].update({
-		slug: obj.slug,
-		title: obj.title,
-		cook_time: obj.cook_time,
-		prep_time: obj.prep_time,
-		serves: obj.serves,
-		author: obj.author,
-		source: obj.source,
-		tags: obj.tags,
-		ingredients: obj.ingredients,
-		method_steps: obj.method_steps,
-		shortlisted: obj.shortlisted,
-	})
+			slug: obj.slug,
+			title: obj.title,
+			cook_time: obj.cook_time,
+			prep_time: obj.prep_time,
+			serves: obj.serves,
+			author: obj.author,
+			source: obj.source,
+			tags: obj.tags,
+			ingredients: obj.ingredients,
+			method_steps: obj.method_steps,
+			shortlisted: obj.shortlisted,
+		}),
 	);
 	return result;
 }
@@ -176,11 +174,17 @@ export function do_subscribe_to_plan(
 
 export async function do_save_plan(plan: PlanDay[]): Promise<PlanDay[]> {
 	for (const day of plan) {
-		await db.transact(db.tx.plan[day.date].update({
-			date: day.date,
-			planned_meals: JSON.stringify(day.planned_meals),
-		}));
+		const plan_day_to_update = await do_get_plan(day.date, day.date);
+		const id_to_update =
+			plan_day_to_update.length > 0 ? plan_day_to_update[0].id : id();
+		await db.transact(
+			db.tx.plan[id_to_update].update({
+				date: day.date,
+				planned_meals: JSON.stringify(day.planned_meals),
+			}),
+		);
 	}
+
 	return plan;
 }
 
@@ -197,11 +201,13 @@ export async function do_retrieve_settings() {
 }
 
 export async function do_save_settings(api_key: string) {
-	console.log("saving settings...", api_key)
+	console.log("saving settings...", api_key);
 	// TODO: make this dynamic
-	const result = await db.transact(db.tx.settings["59b9c881-bd5a-494d-97cc-7f7c50ccb362"].update({
-		api_key: api_key,
-	}));
-	console.log(result)
+	const result = await db.transact(
+		db.tx.settings["59b9c881-bd5a-494d-97cc-7f7c50ccb362"].update({
+			api_key: api_key,
+		}),
+	);
+	console.log(result);
 	return result;
 }

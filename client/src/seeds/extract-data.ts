@@ -1,18 +1,18 @@
 import { TriplitClient } from "@triplit/client";
 import { schema as triplit_schema } from "../schema.ts";
-import { do_save_recipe } from "../db2.ts";
 import type {
 	Recipe,
 	PlanDay,
 	Ingredient,
 	MethodStep,
 } from "../../../common/types.ts";
-import { init, id } from "@instantdb/core";
+import { init, id } from "@instantdb/admin";
 import schema from "../instant.schema.ts";
 
-const db = init({
+const admin_db = init({
 	appId: "eeaf3b82-5b5d-40c4-a29a-b68988377c3c",
 	schema,
+	adminToken: process.env.INSTANT_ADMIN_TOKEN!,
 });
 
 const triplit_client = new TriplitClient({
@@ -49,4 +49,32 @@ async function fmt_and_submit(recipe: ManualRecipe) {
 	console.log(JSON.stringify(res));
 }
 
-extract_and_submit_data();
+// extract_and_submit_data();
+function do_subscribe_to_recipe_summaries(
+	dispatch: (result: unknown) => void,
+): () => void {
+	const query = {
+		recipes: {
+			$: {
+				fields: [
+					"slug",
+					"title",
+					"cook_time",
+					"prep_time",
+					"serves",
+					"author",
+					"source",
+					"ingredients",
+					"method_steps",
+					"tags",
+					"shortlisted",
+				],
+			},
+		},
+	};
+	const result = admin_db.subscribeQuery(query, dispatch);
+	console.log(result);
+	return result;
+}
+
+do_subscribe_to_recipe_summaries((res) => console.log(res));

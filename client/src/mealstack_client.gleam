@@ -187,6 +187,8 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           Planner,
         ),
         case list.length(model.recipes.recipes) {
+          // TODO: does this really need to get the whole list?
+          // maybe it should just get the summaries (or use the existing subscribe_to_summaries)
           0 -> effect.map(session.get_recipes(), RecipeList)
           _ -> effect.none()
         },
