@@ -12,14 +12,15 @@ export async function do_fetch_jsonld(
 	const html = await response.text();
 	// Extract JSON-LD data
 	const jsonLd = await extractJsonLd(html);
-	console.log(jsonLd);
 	if (jsonLd) {
 		return new Ok(jsonLd);
 	}
 	return new GError("URL Error: No recipe data found on the page");
 }
 
-export async function extractJsonLd(html: string): Promise<Recipe | null> {
+export async function extractJsonLd(
+	html: string,
+): Promise<Recipe | NodeObject | null> {
 	let jsonLdContent = "";
 
 	await new HTMLRewriter()
@@ -60,6 +61,7 @@ export async function extractJsonLd(html: string): Promise<Recipe | null> {
 		};
 		const { frame } = api;
 		parsed = await frame(JSON.parse(jsonLdContent), frameObject);
+		console.log("parsed: ", parsed);
 	} catch (error) {
 		console.error("Failed to parse JSON-LD:", error);
 		return null;
@@ -111,5 +113,14 @@ export async function extractJsonLd(html: string): Promise<Recipe | null> {
 		ingredients: JSON.stringify(parsedIngredients),
 		method_steps: JSON.stringify(parsedMethodSteps),
 	};
+	if (
+		recipeForImport.ingredients === "[]" &&
+		recipeForImport.method_steps === "[]"
+	) {
+		console.log(
+			"There was JSON-LD, and we parsed it, but we couldn't get a recipe with ingrdients and method. Returning the raw parsed JSON-LD",
+		);
+		return parsed;
+	}
 	return recipeForImport;
 }

@@ -51,6 +51,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
       settings: settings.SettingsModel(api_key: None),
       upload: upload.UploadModel(
         status: upload.NotStarted,
+        api_key: None,
         file_name: None,
         file_data: None,
         raw_file_change_event: None,
@@ -112,7 +113,6 @@ pub type Msg {
 // UPDATE ----------------------------------------------------------------------
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  echo msg
   let step1 = case msg {
     OnRouteChange(ViewRecipeList) -> #(
       Model(..model, current_route: ViewRecipeList),
@@ -209,6 +209,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         current_recipe: None,
         upload: upload.UploadModel(
           status: upload.NotStarted,
+          api_key: model.settings.api_key,
           file_name: None,
           file_data: None,
           raw_file_change_event: None,
@@ -340,6 +341,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           current_recipe: Some(recipe),
           upload: upload.UploadModel(
             status: upload.Finished,
+            api_key: model.upload.api_key,
             file_name: None,
             file_data: None,
             raw_file_change_event: None,

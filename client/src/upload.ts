@@ -1,7 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { Jimp } from "jimp";
 import { Ok, Error as GError } from "./gleam.mjs";
-import { do_retrieve_settings } from "./db2.ts";
+import { do_retrieve_settings } from "./db.ts";
+import { generateObject } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { z } from "zod/v4";
 
 type dispatchFunction = (
 	result:
@@ -248,52 +251,24 @@ export async function do_submit_file(
 
 export async function do_submit_text(
 	data: string,
+	api_key: string,
 	dispatch: dispatchFunction,
 ): Promise<void> {
-	const apiKey = await do_retrieve_settings();
-	const client = new Anthropic({
-		apiKey: apiKey,
-		dangerouslyAllowBrowser: true,
+	console.log("got passed in this api_key: ", api_key);
+	const openai_client = createOpenAI({
+		apiKey: api_key,
 	});
-
 	try {
-		const response = await client.messages.create({
-			model: "claude-3-5-haiku-20241022",
-			max_tokens: 2000,
-			temperature: 0,
-			thinking: { type: "disabled" },
+		const res = await generateObject({
+			model: openai_client("gpt-4.1"),
+			schema: importedRecipeSchema,
 			system:
 				"You are a helpful assistant that extracts recipe information from HTML or JSON-LD data, or plaintext. Extract all recipe details including title, ingredients, preparation steps, cooking time, and serving size.",
-			messages: [
-				{
-					role: "user",
-					content: [
-						{
-							type: "text",
-							text: `Extract the recipe from this data and format it using the recipe_formatter tool: ${data}`,
-						},
-					],
-				},
-			],
-			tools: tools, // Use the same tools array from upload.ts
-			tool_choice: {
-				type: "tool",
-				name: "recipe_formatter",
-			},
+			prompt: `Extract the recipe from this data and format it using the schema provided: ${data}`,
 		});
-
-		const toolCalls = response.content.filter(
-			(item) => item.type === "tool_use" && item.name === "recipe_formatter",
-		);
-
-		if (toolCalls.length > 0) {
-			// @ts-ignore - Anthropic types might not fully match our usage
-			dispatch(new Ok(toolCalls[0].input));
-		} else {
-			dispatch(
-				new GError({ Other: { message: "Failed to extract recipe data" } }),
-			);
-		}
+		console.log("resp from AI: ", res.object);
+		//@ts-ignore
+		dispatch(new Ok(res.object));
 	} catch (error) {
 		dispatch(
 			new GError({
@@ -330,3 +305,56 @@ export async function do_scrape_url(
 		);
 	}
 }
+
+export const recipeSchema = z.object({
+	id: z.string().optional(),
+	slug: z.string(),
+	title: z.string().describe("The recipe title"),
+	cook_time: z
+		.number()
+		.describe("How long it takes to cook the recipe, in minutes"),
+	prep_time: z
+		.number()
+		.describe("How long it takes to prepare the recipe, in minutes"),
+	serves: z.number().describe("How many servings the recipe makes"),
+	author: z.string().optional().describe("The recipe author"),
+	source: z.string().optional().describe("The recipe source"),
+	ingredients: z
+		.array(
+			z.object({
+				name: z.string().describe("The ingredient name"),
+				quantity: z
+					.string()
+					.describe("The quantity of this ingredient specified by the recipe"),
+				units: z
+					.string()
+					.describe("The units used for the quantity of this ingredient"),
+				ismain: z
+					.string()
+					.describe(
+						"Denotes whether this is a main ingredient of the recipe. Must be either 'true' or 'false'.",
+					),
+			}),
+		)
+		.optional()
+		.describe("The ingredient list for the recipe"),
+	method_steps: z
+		.array(
+			z.object({
+				step_text: z
+					.string()
+					.describe("The text describing this step in the recipe method"),
+			}),
+		)
+		.optional()
+		.describe("The steps required to prepare and cook the recipe"),
+	tags: z.array(z.string()).optional(),
+	shortlisted: z.boolean().optional(),
+});
+
+export const importedRecipeSchema = recipeSchema.omit({
+	id: true,
+	slug: true,
+	shortlisted: true,
+	tags: true,
+});

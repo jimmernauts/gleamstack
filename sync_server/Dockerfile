@@ -1,1 +1,0 @@
-FROM aspencloud/triplit-server:latest

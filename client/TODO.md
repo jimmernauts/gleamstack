@@ -1,6 +1,9 @@
 [] SHOPPING LIST
 [X] switch to Instant DB instead of triplit
-[] reseed all the data from triplit
+[X] reseed all the data from triplit
+[] BUG: tag labels repeated on recipe list page
+[] BUG: loading recipe edit from importer only allows save, editing the fields doesn't work
+[] add optional field to recipe schema for source URL to link back to
 [] copy recipes from browser bookmarks
 [] Add cooking notes and ratings to recipes, group by rating
 [] PWA
@@ -8,6 +11,4 @@
 [X] Build OCR scanner (BYO AI API key?)
 [] work out process to correct side-by-side
 [] Build auth
-[] Build importer (must be serverside)
-[] Build shopping list
-[] SSR ?
+[] Decide if stay SPA only or move to SSR / other. Maybe just classic SPA + Backend API - make scraping API endpoint more permanent. Or go other way and make scraping endpoint into a serverless function. Maybe the scraping endpoint could still be done browser-side in WASM somehow

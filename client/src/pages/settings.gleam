@@ -42,7 +42,7 @@ pub fn settings_update(
   }
 }
 
-@external(javascript, ".././db2.ts", "do_save_settings")
+@external(javascript, ".././db.ts", "do_save_settings")
 fn do_save_settings(api_key: String) -> Nil
 
 pub fn retrieve_settings() -> Effect(SettingsMsg) {
@@ -54,7 +54,7 @@ pub fn retrieve_settings() -> Effect(SettingsMsg) {
   Nil
 }
 
-@external(javascript, ".././db2.ts", "do_retrieve_settings")
+@external(javascript, ".././db.ts", "do_retrieve_settings")
 fn do_retrieve_settings() -> Promise(Dynamic)
 
 //-VIEW---------------------------------------------------------------

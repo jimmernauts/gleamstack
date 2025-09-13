@@ -89,10 +89,10 @@ fn save_recipe(recipe: session.Recipe) -> Effect(RecipeDetailMsg) {
   DbSavedUpdatedRecipe(recipe) |> dispatch
 }
 
-@external(javascript, ".././db2.ts", "do_save_recipe")
+@external(javascript, ".././db.ts", "do_save_recipe")
 fn do_save_recipe(recipe: JsRecipe) -> Nil
 
-@external(javascript, ".././db2.ts", "do_delete_recipe")
+@external(javascript, ".././db.ts", "do_delete_recipe")
 fn do_delete_recipe(id: String) -> Nil
 
 type JsRecipe {
@@ -480,7 +480,14 @@ pub fn list_update(
     // we actually handle DbSubscriptionOpened in the top layer of the model in app.gleam
     session.DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
     session.DbSubscribedOneRecipe(jsdata) -> {
-      let decoder = decode.at([0], decode_recipe_with_inner_json())
+      echo jsdata
+      let decoder = {
+        use data <- decode.subfield(
+          ["data", "recipes", "0"],
+          decode_recipe_with_inner_json(),
+        )
+        decode.success(data)
+      }
       let try_decode = decode.run(jsdata, decoder)
       let try_effect = case try_decode {
         Ok(recipe) -> {
