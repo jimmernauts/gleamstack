@@ -37,6 +37,7 @@ pub fn settings_update(
       }
       #(model, effect.none())
     }
+    //UserRetrievedSettings(api_key) actually handled at top level in mealstack_client.gleam
     UserRetrievedSettings(api_key) -> #(SettingsModel(api_key), effect.none())
     UserUpdatedApikey(api_key) -> #(SettingsModel(Some(api_key)), effect.none())
   }

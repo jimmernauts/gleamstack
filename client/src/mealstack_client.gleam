@@ -202,23 +202,44 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(..model, current_route: ViewSettings),
       effect.map(settings.retrieve_settings(), Settings),
     )
-    OnRouteChange(ViewUpload) -> #(
-      Model(
-        ..model,
-        current_route: ViewUpload,
-        current_recipe: None,
-        upload: upload.UploadModel(
-          status: upload.NotStarted,
-          api_key: model.settings.api_key,
-          file_name: None,
-          file_data: None,
-          raw_file_change_event: None,
-          url: None,
-          text: None,
-        ),
-      ),
-      effect.none(),
-    )
+    OnRouteChange(ViewUpload) -> {
+      case model.settings.api_key {
+        Some(api_key) -> #(
+          Model(
+            ..model,
+            current_route: ViewUpload,
+            current_recipe: None,
+            upload: upload.UploadModel(
+              status: upload.NotStarted,
+              api_key: Some(api_key),
+              file_name: None,
+              file_data: None,
+              raw_file_change_event: None,
+              url: None,
+              text: None,
+            ),
+          ),
+          effect.none(),
+        )
+        None -> #(
+          Model(
+            ..model,
+            current_route: ViewUpload,
+            current_recipe: None,
+            upload: upload.UploadModel(
+              status: upload.NotStarted,
+              api_key: None,
+              file_name: None,
+              file_data: None,
+              raw_file_change_event: None,
+              url: None,
+              text: None,
+            ),
+          ),
+          effect.map(settings.retrieve_settings(), Settings),
+        )
+      }
+    }
     OnRouteChange(route) -> #(
       Model(..model, current_route: route, current_recipe: None),
       effect.none(),
@@ -326,6 +347,14 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         planner.planner_update(model.planner, planner_msg)
       #(Model(..model, planner: child_model), effect.map(child_effect, Planner))
     }
+    Settings(settings.UserRetrievedSettings(api_key)) -> #(
+      Model(
+        ..model,
+        settings: settings.SettingsModel(api_key: api_key),
+        upload: upload.UploadModel(..model.upload, api_key: api_key),
+      ),
+      effect.none(),
+    )
     Settings(settings_msg) -> {
       let #(settings_model, settings_effect) =
         settings.settings_update(model.settings, settings_msg)
@@ -338,7 +367,6 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(
         Model(
           ..model,
-          current_recipe: Some(recipe),
           upload: upload.UploadModel(
             status: upload.Finished,
             api_key: model.upload.api_key,
@@ -472,11 +500,15 @@ fn view(model: Model) -> Element(Msg) {
         RecipeDetail,
       )
     }
-    EditRecipeDetail(RecipeParam(recipe: recipe)) ->
+    EditRecipeDetail(RecipeParam(recipe: _recipe)) -> {
       element.map(
-        recipe.edit_recipe_detail(recipe, model.recipes.tag_options),
+        recipe.lookup_and_edit_recipe(
+          model.current_recipe,
+          model.recipes.tag_options,
+        ),
         RecipeDetail,
       )
+    }
     ViewPlanner(start_date) ->
       element.map(
         planner.view_planner(planner.Model(

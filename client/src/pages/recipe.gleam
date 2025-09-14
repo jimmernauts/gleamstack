@@ -116,10 +116,13 @@ pub fn detail_update(
   model: RecipeDetail,
   msg: RecipeDetailMsg,
 ) -> #(RecipeDetail, Effect(RecipeDetailMsg)) {
+  echo msg
   case msg {
     UserUpdatedRecipeTitle(newtitle) -> {
       case model {
-        Some(a) -> #(Some(Recipe(..a, title: newtitle)), effect.none())
+        Some(a) -> {
+          #(Some(Recipe(..a, title: newtitle)), effect.none())
+        }
         _ -> #(model, effect.none())
       }
     }
@@ -1129,6 +1132,7 @@ pub fn view_recipe_groupby(model: session.RecipeList) {
       }
     })
     |> list.flatten
+    |> list.unique
   list.append(
     list.map(tags, fn(a) {
       button(
