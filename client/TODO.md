@@ -3,7 +3,7 @@
 [X] reseed all the data from triplit
 [X] BUG: tag labels repeated on recipe list page
 [X] BUG: loading recipe edit from importer only allows save, editing the fields doesn't work
-[] BUG: + and - buttons in edit recipe view don't show pointer on hover
+[X] BUG: + and - buttons in edit recipe view don't show pointer on hover
 [] add optional field to recipe schema for source URL to link back to
 [] copy recipes from browser bookmarks
 [] Add cooking notes and ratings to recipes, group by rating
