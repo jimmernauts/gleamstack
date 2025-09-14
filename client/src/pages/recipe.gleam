@@ -116,7 +116,6 @@ pub fn detail_update(
   model: RecipeDetail,
   msg: RecipeDetailMsg,
 ) -> #(RecipeDetail, Effect(RecipeDetailMsg)) {
-  echo msg
   case msg {
     UserUpdatedRecipeTitle(newtitle) -> {
       case model {
@@ -483,7 +482,6 @@ pub fn list_update(
     // we actually handle DbSubscriptionOpened in the top layer of the model in app.gleam
     session.DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
     session.DbSubscribedOneRecipe(jsdata) -> {
-      echo jsdata
       let decoder = {
         use data <- decode.subfield(
           ["data", "recipes", "0"],
@@ -833,7 +831,10 @@ pub fn edit_recipe_detail(
                 })
               keyed.element("div", [class("contents")], children)
             }
-            _, _ -> span([on_click(UserAddedTagAtIndex(0))], [text("🏷️")])
+            _, _ ->
+              span([class("cursor-pointer"), on_click(UserAddedTagAtIndex(0))], [
+                text("🏷️"),
+              ])
           },
         ],
       ),
@@ -1431,7 +1432,7 @@ fn tag_input(
       },
       button(
         [
-          class("col-span-1 my-1 text-ecru-white-950 text-xs"),
+          class("col-span-1 my-1 text-ecru-white-950 text-xs cursor-pointer"),
           id("remove-tag-input"),
           type_("button"),
           on_click(UserRemovedTagAtIndex(index)),
@@ -1440,7 +1441,7 @@ fn tag_input(
       ),
       button(
         [
-          class("col-span-1 my-1 text-ecru-white-950 text-xs"),
+          class("col-span-1 my-1 text-ecru-white-950 text-xs cursor-pointer"),
           id("add-tag-input"),
           type_("button"),
           on_click(UserAddedTagAtIndex(index)),
@@ -1526,7 +1527,7 @@ fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
         ),
         button(
           [
-            class("text-ecru-white-950"),
+            class("text-ecru-white-950 cursor-pointer"),
             type_("button"),
             id("remove-ingredient-input"),
             on_click(UserRemovedIngredientAtIndex(index)),
@@ -1535,7 +1536,7 @@ fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
         ),
         button(
           [
-            class("text-ecru-white-950"),
+            class("text-ecru-white-950 cursor-pointer"),
             type_("button"),
             id("add-ingredient-input"),
             on_click(UserAddedIngredientAtIndex(index)),
@@ -1572,7 +1573,7 @@ fn method_step_input(index: Int, method_step: Option(MethodStep)) {
     ),
     button(
       [
-        class("text-ecru-white-950 text-xs"),
+        class("text-ecru-white-950 text-xs cursor-pointer"),
         type_("button"),
         id("remove-ingredient-input"),
         on_click(UserRemovedMethodStepAtIndex(index)),
@@ -1581,7 +1582,7 @@ fn method_step_input(index: Int, method_step: Option(MethodStep)) {
     ),
     button(
       [
-        class("text-ecru-white-950 text-xs"),
+        class("text-ecru-white-950 text-xs cursor-pointer"),
         type_("button"),
         id("add-ingredient-input"),
         on_click(UserAddedMethodStepAtIndex(index)),

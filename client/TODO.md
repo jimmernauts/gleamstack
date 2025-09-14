@@ -1,8 +1,8 @@
 [] SHOPPING LIST
 [X] switch to Instant DB instead of triplit
 [X] reseed all the data from triplit
-[] BUG: tag labels repeated on recipe list page
-[] BUG: loading recipe edit from importer only allows save, editing the fields doesn't work
+[X] BUG: tag labels repeated on recipe list page
+[X] BUG: loading recipe edit from importer only allows save, editing the fields doesn't work
 [] BUG: + and - buttons in edit recipe view don't show pointer on hover
 [] add optional field to recipe schema for source URL to link back to
 [] copy recipes from browser bookmarks
