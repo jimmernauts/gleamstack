@@ -208,6 +208,9 @@
 @utility underline-dark-blue {
     text-decoration: underline solid 6px #287CA1;
 }
+@utility underline-purple {
+    text-decoration: underline solid 6px #743f87;
+}
 @utility shadow-orange {
     box-shadow: 1px 1px 0 #ff776a;
 }

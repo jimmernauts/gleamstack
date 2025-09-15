@@ -28,7 +28,6 @@ pub fn settings_update(
   model: SettingsModel,
   msg: SettingsMsg,
 ) -> #(SettingsModel, Effect(SettingsMsg)) {
-  echo msg
   case msg {
     UserSavedSettings -> {
       case model.api_key {

@@ -350,7 +350,7 @@ fn decode_ingredients_array() -> decode.Decoder(Dict(Int, Ingredient)) {
   |> decode.map(dict.from_list)
 }
 
-fn ingredient_decoder() -> decode.Decoder(Ingredient) {
+pub fn ingredient_decoder() -> decode.Decoder(Ingredient) {
   use name <- decode.optional_field(
     "name",
     option.None,

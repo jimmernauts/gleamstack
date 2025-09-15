@@ -15,6 +15,7 @@ import modem
 import pages/planner
 import pages/recipe
 import pages/settings
+import pages/shopping_list
 import pages/upload
 import rada/date
 import session
@@ -48,6 +49,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         start_date: date.floor(date.today(), date.Monday),
       ),
       db_subscriptions: dict.from_list([]),
+      shopping_list: shopping_list.ShoppingListModel(items: []),
       settings: settings.SettingsModel(api_key: None),
       upload: upload.UploadModel(
         status: upload.NotStarted,
@@ -82,6 +84,7 @@ pub type Model {
     db_subscriptions: Dict(String, fn() -> Nil),
     settings: settings.SettingsModel,
     upload: upload.UploadModel,
+    shopping_list: shopping_list.ShoppingListModel,
   )
 }
 
@@ -92,6 +95,7 @@ pub type Route {
   ViewRecipeList
   ViewPlanner(start_date: date.Date)
   EditPlanner(start_date: date.Date)
+  ViewShoppingList
   ViewSettings
   ViewUpload
 }
@@ -108,11 +112,13 @@ pub type Msg {
   Planner(planner.PlannerMsg)
   Settings(settings.SettingsMsg)
   Upload(upload.UploadMsg)
+  ShoppingList(shopping_list.ShoppingListMsg)
 }
 
 // UPDATE ----------------------------------------------------------------------
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
+  // this is the main part of the update function
   let step1 = case msg {
     OnRouteChange(ViewRecipeList) -> #(
       Model(..model, current_route: ViewRecipeList),
@@ -240,6 +246,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         )
       }
     }
+    OnRouteChange(ViewShoppingList) -> #(
+      Model(..model, current_route: ViewShoppingList),
+      effect.map(shopping_list.retrieve_shopping_list(), ShoppingList),
+    )
     OnRouteChange(route) -> #(
       Model(..model, current_route: route, current_recipe: None),
       effect.none(),
@@ -363,6 +373,17 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(settings_effect, Settings),
       )
     }
+    ShoppingList(shopping_list_msg) -> {
+      let #(child_model, child_effect) =
+        shopping_list.shopping_list_update(
+          model.shopping_list,
+          shopping_list_msg,
+        )
+      #(
+        Model(..model, shopping_list: child_model),
+        effect.map(child_effect, ShoppingList),
+      )
+    }
     Upload(upload.ParseRecipeResponseReceived(Ok(recipe))) -> {
       #(
         Model(
@@ -390,6 +411,9 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(Model(..model, upload: upload_model), effect.map(upload_effect, Upload))
     }
   }
+  // this 'second part' of the update case statement handles dropping the query
+  // subscriptions if we are navigating away from a page that uses one, so we
+  // don't hold onto a subscription forever
   case model.current_route {
     EditRecipeDetail(SlugParam(slug: slug)) | ViewRecipeDetail(slug) -> {
       case msg, dict.get(model.db_subscriptions, slug) {
@@ -529,6 +553,11 @@ fn view(model: Model) -> Element(Msg) {
       )
     ViewSettings ->
       element.map(settings.view_settings(model.settings), Settings)
+    ViewShoppingList ->
+      element.map(
+        shopping_list.view_shopping_list(model.shopping_list),
+        ShoppingList,
+      )
     ViewUpload -> element.map(upload.view_upload(model.upload), Upload)
   }
   view_base(page)
@@ -574,7 +603,8 @@ fn view_home() {
       ],
       [
         #("📅", "Plan", "planner", " underline-orange"),
-        #("📑", "List", "recipes", " underline-green"),
+        #("📑", "List", "shopping-list", " underline-green"),
+        #("📖", "Book", "recipes", " underline-purple"),
         #("📝", "New", "recipes/new", " underline-blue"),
         #("📤", "Import", "import", " underline-yellow"),
       ]
