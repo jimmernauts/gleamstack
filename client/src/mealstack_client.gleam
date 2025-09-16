@@ -49,7 +49,10 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         start_date: date.floor(date.today(), date.Monday),
       ),
       db_subscriptions: dict.from_list([]),
-      shopping_list: shopping_list.ShoppingListModel(items: []),
+      shopping_list: shopping_list.ShoppingListModel(
+        all_lists: [],
+        current: None,
+      ),
       settings: settings.SettingsModel(api_key: None),
       upload: upload.UploadModel(
         status: upload.NotStarted,
@@ -154,7 +157,9 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           source: None,
           tags: Some(dict.from_list([#(0, session.Tag("", ""))])),
           ingredients: Some(
-            dict.from_list([#(0, session.Ingredient(None, None, None, None))]),
+            dict.from_list([
+              #(0, session.Ingredient(None, None, None, None, None)),
+            ]),
           ),
           method_steps: Some(dict.from_list([#(0, session.MethodStep(""))])),
           shortlisted: None,
@@ -497,6 +502,7 @@ fn on_route_change(uri: Uri) -> Msg {
     _, ["recipes"] -> OnRouteChange(ViewRecipeList)
     _, ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
     _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
+    _, ["shopping-list"] -> OnRouteChange(ViewShoppingList)
     _, ["settings"] -> OnRouteChange(ViewSettings)
     _, ["import"] -> OnRouteChange(ViewUpload)
     _, _ -> OnRouteChange(Home)

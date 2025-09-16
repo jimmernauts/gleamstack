@@ -1,15 +1,14 @@
 {
     "files": {
       // All tools, including the linter, ignore following files
-      "ignore": ["priv/**"]
     },
     "linter": {
       // Only the linter ignores the following files
-      "ignore": ["test/**"],
       "rules": {
         "complexity":{
           "useLiteralKeys": "off"
-        }
+        },
+
     }
   }
 }

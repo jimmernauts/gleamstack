@@ -39,10 +39,15 @@ export type TagOption = {
 };
 
 export type Ingredient = {
-	name?: string;
+	name: string;
 	isMain?: string;
 	quantity?: string;
 	units?: string;
+	category?: IngredientCategory;
+};
+
+export type IngredientCategory = {
+	name: string;
 };
 
 export type MethodStep = {

@@ -155,7 +155,12 @@ pub type Ingredient {
     ismain: Option(Bool),
     quantity: Option(String),
     units: Option(String),
+    category: Option(IngredientCategory),
   )
+}
+
+pub type IngredientCategory {
+  IngredientCategory(name: String)
 }
 
 //-ENCODERS-DECODERS----------------------------------------------
@@ -168,6 +173,13 @@ pub fn json_encode_ingredient(ingredient: Ingredient) -> Json {
     #(
       "ismain",
       json.string(bool.to_string(option.unwrap(ingredient.ismain, False))),
+    ),
+    #(
+      "category",
+      json_encode_ingredient_category(option.unwrap(
+        ingredient.category,
+        IngredientCategory(name: ""),
+      )),
     ),
   ])
 }
@@ -208,6 +220,14 @@ pub fn json_encode_tag_list(dict: Dict(Int, Tag)) -> Json {
     #(int.to_string(pair.0), json_encode_tag(pair.1))
   })
   |> json.object
+}
+
+pub fn json_encode_ingredient_category(
+  ingredient_category: IngredientCategory,
+) -> Json {
+  json.object([
+    #("name", json.string(ingredient_category.name)),
+  ])
 }
 
 // fn json_encode_tag_option_list(tag_options: List(String)) -> Json {
@@ -371,11 +391,17 @@ pub fn ingredient_decoder() -> decode.Decoder(Ingredient) {
     option.None,
     decode.optional(decode.string),
   )
+  use category <- decode.optional_field(
+    "category",
+    option.None,
+    decode.optional(decode_ingredient_category()),
+  )
   decode.success(Ingredient(
     name: name,
     ismain: ismain,
     quantity: quantity,
     units: units,
+    category: category,
   ))
 }
 
@@ -414,6 +440,11 @@ fn decode_tag_option() -> decode.Decoder(TagOption) {
     decode_json_string(decode.list(decode.string), []),
   )
   decode.success(TagOption(id:, name:, options:))
+}
+
+fn decode_ingredient_category() -> decode.Decoder(IngredientCategory) {
+  use name <- decode.field("name", decode.string)
+  decode.success(IngredientCategory(name:))
 }
 
 fn decode_stringed_int() -> decode.Decoder(Int) {

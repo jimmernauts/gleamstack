@@ -377,10 +377,14 @@ pub fn detail_update(
                 Some(dict.insert(
                   b,
                   dict.size(b),
-                  Ingredient(None, None, None, None),
+                  Ingredient(None, None, None, None, None),
                 ))
               _ ->
-                Some(dict.from_list([#(0, Ingredient(None, None, None, None))]))
+                Some(
+                  dict.from_list([
+                    #(0, Ingredient(None, None, None, None, None)),
+                  ]),
+                )
             }),
           ),
           effect.none(),

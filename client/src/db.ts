@@ -1,5 +1,5 @@
-import type { Recipe, PlanDay } from "../../common/types.ts";
-import { init, id } from "@instantdb/core";
+import { id, init } from "@instantdb/core";
+import type { PlanDay, Recipe } from "../../common/types.ts";
 import schema from "./instant.schema.ts";
 
 const db = init({
@@ -30,15 +30,15 @@ export function do_subscribe_to_recipe_summaries(
 		recipes: {
 			$: {
 				fields: [
-					"slug",
-					"title",
-					"cook_time",
-					"prep_time",
-					"serves",
-					"author",
-					"source",
-					"tags",
-					"shortlisted",
+					"slug" as const,
+					"title" as const,
+					"cook_time" as const,
+					"prep_time" as const,
+					"serves" as const,
+					"author" as const,
+					"source" as const,
+					"tags" as const,
+					"shortlisted" as const,
 				],
 			},
 		},
@@ -189,6 +189,8 @@ export async function do_save_plan(plan: PlanDay[]): Promise<PlanDay[]> {
 	return plan;
 }
 
+// SETTINGS
+
 export async function do_retrieve_settings() {
 	const query = {
 		settings: {
@@ -211,4 +213,16 @@ export async function do_save_settings(api_key: string) {
 	);
 	console.log(result);
 	return result;
+}
+
+// SHOPPING LIST
+
+export async function do_retrieve_shopping_list() {
+	const query = {
+		shopping_lists: {
+			$: {},
+		},
+	};
+	const result = await db.queryOnce(query);
+	return result.data.shopping_lists;
 }
