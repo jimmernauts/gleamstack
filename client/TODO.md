@@ -13,3 +13,5 @@
 [] work out process to correct side-by-side
 [] Build auth
 [] Decide if stay SPA only or move to SSR / other. Maybe just classic SPA + Backend API - make scraping API endpoint more permanent. Or go other way and make scraping endpoint into a serverless function. Maybe the scraping endpoint could still be done browser-side in WASM somehow
+[] BUG: strange plan behaviour around 29/9/2025. Outside of that date seems fine.
+[] write proper readme

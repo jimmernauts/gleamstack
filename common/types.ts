@@ -1,75 +1,82 @@
 export type Recipe = {
-	id?: string;
-	title: string;
-	slug: string;
-	cook_time: number;
-	prep_time: number;
-	serves: number;
-	author?: string;
-	source?: string;
-	ingredients?: string;
-	method_steps?: string;
-	tags?: string;
-	shortlisted?: boolean;
+    id?: string;
+    title: string;
+    slug: string;
+    cook_time: number;
+    prep_time: number;
+    serves: number;
+    author?: string;
+    source?: string;
+    ingredients?: string;
+    method_steps?: string;
+    tags?: string;
+    shortlisted?: boolean;
 };
 
 export type RecipeSummary = Pick<
-	Recipe,
-	| "id"
-	| "title"
-	| "slug"
-	| "cook_time"
-	| "prep_time"
-	| "serves"
-	| "author"
-	| "source"
-	| "tags"
-	| "shortlisted"
+    Recipe,
+    | "id"
+    | "title"
+    | "slug"
+    | "cook_time"
+    | "prep_time"
+    | "serves"
+    | "author"
+    | "source"
+    | "tags"
+    | "shortlisted"
 >;
 
 export type Tag = {
-	name?: string;
-	value?: string;
+    name?: string;
+    value?: string;
 };
 
 export type TagOption = {
-	id?: string;
-	name: string;
-	options: string[];
+    id?: string;
+    name: string;
+    options: string[];
 };
 
 export type Ingredient = {
-	name: string;
-	isMain?: string;
-	quantity?: string;
-	units?: string;
-	category?: IngredientCategory;
+    name: string;
+    isMain?: string;
+    quantity?: string;
+    units?: string;
+    category?: IngredientCategory;
 };
 
 export type IngredientCategory = {
-	name: string;
+    name: string;
 };
 
 export type MethodStep = {
-	step_text?: string;
+    step_text?: string;
 };
 
 export type PlanDay = {
-	date: number;
-	planned_meals: {
-		lunch: MealWithStatus;
-		dinner: MealWithStatus;
-	};
+    date: number;
+    planned_meals: {
+        lunch: MealWithStatus;
+        dinner: MealWithStatus;
+    };
 };
 
 export type Meal = "lunch" | "dinner";
 
 export type MealWithStatus = {
-	for: Meal;
-	title?: string;
-	complete?: boolean;
+    for: Meal;
+    title?: string;
+    complete?: boolean;
 };
 
 export type Settings = {
-	api_key: string;
+    api_key: string;
+};
+
+export type ShoppingList = {
+    id?: string;
+    date: number;
+    status: "Active" | "Completed" | "Archived";
+    items: string;
 };

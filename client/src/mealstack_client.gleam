@@ -253,7 +253,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
     OnRouteChange(ViewShoppingList) -> #(
       Model(..model, current_route: ViewShoppingList),
-      effect.map(shopping_list.retrieve_shopping_list(), ShoppingList),
+      effect.map(shopping_list.retrieve_shopping_lists(), ShoppingList),
     )
     OnRouteChange(route) -> #(
       Model(..model, current_route: route, current_recipe: None),

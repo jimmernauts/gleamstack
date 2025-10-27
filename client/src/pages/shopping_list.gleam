@@ -87,12 +87,12 @@ pub fn shopping_list_update(
 @external(javascript, ".././db.ts", "do_save_shopping_list")
 fn do_save_shopping_list(list: ShoppingList) -> Nil
 
-@external(javascript, ".././db.ts", "do_retrieve_shopping_list")
-fn do_retrieve_shopping_list() -> Promise(Dynamic)
+@external(javascript, ".././db.ts", "do_retrieve_shopping_lists")
+fn do_retrieve_shopping_lists() -> Promise(Dynamic)
 
-pub fn retrieve_shopping_list() -> Effect(ShoppingListMsg) {
+pub fn retrieve_shopping_lists() -> Effect(ShoppingListMsg) {
   use dispatch <- effect.from
-  do_retrieve_shopping_list()
+  do_retrieve_shopping_lists()
   |> promise.map(decode.run(_, decode.list(shopping_list_decoder())))
   |> promise.map(result.map(_, UserRetrievedShoppingLists))
   |> promise.tap(result.map(_, dispatch))
