@@ -40,11 +40,13 @@ export function do_subscribe_to_recipe_summaries(
                     "tags" as const,
                     "shortlisted" as const,
                 ],
+                order: {
+                    serverCreatedAt: "desc" as const,
+                },
             },
         },
     };
     const result = db.subscribeQuery(query, dispatch);
-    console.log(result);
     return result;
 }
 

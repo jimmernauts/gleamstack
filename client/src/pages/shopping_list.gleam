@@ -1,10 +1,13 @@
+import components/page_title.{page_title}
 import gleam/dynamic/decode.{type Decoder, type Dynamic}
 import gleam/javascript/promise.{type Promise}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import lustre/attribute.{class, href}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
+import lustre/element/html.{a, div, nav, section, text}
 import rada/date
 import session
 
@@ -129,5 +132,29 @@ pub fn shopping_list_status_decoder() -> Decoder(Status) {
 //-VIEW---------------------------------------------------------------
 
 pub fn view_shopping_list(model: ShoppingListModel) -> Element(ShoppingListMsg) {
-  todo
+  section(
+    [
+      class(
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(12,_fit-content(100px))] gap-y-2",
+      ),
+    ],
+    [
+      page_title("Shopping List", "underline-green"),
+      nav(
+        [
+          class(
+            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
+          ),
+        ],
+        [
+          a([href("/"), class("text-center")], [text("🏠")]),
+          a([href("/planner"), class("text-center")], [text("📅")]),
+        ],
+      ),
+      div(
+        [class("col-span-full flex flex-wrap items-center justify-start gap-3")],
+        [text("content goes here")],
+      ),
+    ],
+  )
 }

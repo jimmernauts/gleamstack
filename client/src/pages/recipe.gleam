@@ -574,7 +574,7 @@ pub fn view_recipe_list(model: session.RecipeList) {
       ),
     ],
     [
-      page_title("Recipe List", "underline-green"),
+      page_title("Recipe Book", "underline-purple"),
       nav(
         [
           class(
