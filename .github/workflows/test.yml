@@ -17,6 +17,7 @@ jobs:
                   gleam-version: "1.13.0"
                   rebar3-version: "3"
                   # elixir-version: "1.15.4"
+            - uses: oven-sh/setup-bun@v2
             - run: gleam deps download
               working-directory: client
             - run: gleam test
