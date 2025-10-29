@@ -139,7 +139,7 @@ pub fn view_shopping_list(model: ShoppingListModel) -> Element(ShoppingListMsg) 
       ),
     ],
     [
-      page_title("Shopping List", "underline-green"),
+      page_title("Shopping List", "underline-purple"),
       nav(
         [
           class(

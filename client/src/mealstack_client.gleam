@@ -603,14 +603,12 @@ fn view_home() {
     ),
     nav(
       [
-        class(
-          "subgrid-cols my-6 gap-y-12 col-span-full text-6xl mx-2 font-mono",
-        ),
+        class("subgrid-cols gap-y-12 col-span-full text-6xl mx-2 font-mono"),
       ],
       [
         #("📅", "Plan", "planner", " underline-orange"),
-        #("📑", "List", "shopping-list", " underline-green"),
-        #("📖", "Book", "recipes", " underline-purple"),
+        #("📑", "List", "shopping-list", " underline-purple"),
+        #("📖", "Book", "recipes", " underline-green"),
         #("📝", "New", "recipes/new", " underline-blue"),
         #("📤", "Import", "import", " underline-yellow"),
       ]

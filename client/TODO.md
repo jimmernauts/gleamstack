@@ -8,11 +8,12 @@
 [] ~add optional field to recipe schema for source URL to link back to~ - OR make the existing source field display as a link if it is a URL
 [] BUG: text wrapping on title field in view recipe details (sometimes)
 [] BUG: text wrapping on title in edit recipe details (always)
-[] BUG: 'serves' field misaligned in edit recipe details
+[x] BUG: 'serves' field misaligned in edit recipe details
 [] BUG: delete button misaligned at mobile size in edit recipe details
 [] BUG: background color doesn't fill whole screen (esp. on mobile)
 [] BUG: strange plan behaviour around 29/9/2025. Outside of that date seems fine.
-[] improve layout of recipe list view. consider putting the HR after the recipe title at mobile size. also don't like the grouping headings being smaller than the recipe title. try using mono font at larger size instead.
+[] BUG: save recipe slow
+[x] improve layout of recipe list view. consider putting the HR after the recipe title at mobile size. also don't like the grouping headings being smaller than the recipe title. try using mono font at larger size instead.
 [] copy recipes from browser bookmarks
 [] Add bunch of recipes
 [] Add cooking notes and ratings to recipes, group by rating

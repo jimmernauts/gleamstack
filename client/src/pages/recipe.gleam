@@ -574,7 +574,7 @@ pub fn view_recipe_list(model: session.RecipeList) {
       ),
     ],
     [
-      page_title("Recipe Book", "underline-purple"),
+      page_title("Recipe Book", "underline-green"),
       nav(
         [
           class(
@@ -671,10 +671,7 @@ pub fn edit_recipe_detail(
         [class("flex gap-1 items-baseline col-span-11 row-start-2 row-span-1")],
         [
           div([class("justify-self-start")], [
-            label(
-              [class("justify-self-start font-mono text-sm"), for("author")],
-              [text("🧾")],
-            ),
+            label([class("font-mono text-sm"), for("author")], [text("🧾")]),
             input([
               id("author"),
               class(
@@ -688,10 +685,7 @@ pub fn edit_recipe_detail(
             ]),
           ]),
           div([class("justify-self-start")], [
-            label(
-              [class("justify-self-start font-mono text-sm"), for("source")],
-              [text("📗")],
-            ),
+            label([class("font-mono text-sm"), for("source")], [text("📗")]),
             input([
               id("source"),
               class(
@@ -714,100 +708,99 @@ pub fn edit_recipe_detail(
         ],
         [
           fieldset([class("flex flex-wrap justify-between items-baseline")], [
-            label([class("justify-self-start text-base "), for("prep_time")], [
+            label([class("text-base"), for("prep_time")], [
               text("Prep:"),
             ]),
-            div([class("justify-self-start")], [
-              div([class("after:content-['h'] after:text-base inline-block")], [
-                input([
-                  id("prep_time_hrs"),
-                  class(
-                    "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[2ch] text-right text-base",
-                  ),
-                  type_("number"),
-                  name("prep_time_hrs"),
-                  attribute("title", "prep time in hours"),
-                  value(
-                    int.floor_divide(recipe.prep_time, 60)
-                    |> result.unwrap(0)
-                    |> int.to_string
-                    |> string.replace("0", ""),
-                  ),
-                  on_input(UserUpdatedRecipePrepTimeHrs),
-                ]),
+
+            div([class("after:content-['h'] after:text-base inline-block")], [
+              input([
+                id("prep_time_hrs"),
+                class(
+                  "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[2ch] text-right text-base",
+                ),
+                type_("number"),
+                name("prep_time_hrs"),
+                attribute("title", "prep time in hours"),
+                value(
+                  int.floor_divide(recipe.prep_time, 60)
+                  |> result.unwrap(0)
+                  |> int.to_string
+                  |> string.replace("0", ""),
+                ),
+                on_input(UserUpdatedRecipePrepTimeHrs),
               ]),
-              div([class("after:content-['m'] after:text-base inline-block")], [
-                input([
-                  id("prep_time_mins"),
-                  class(
-                    "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[3ch] text-right text-base",
-                  ),
-                  type_("number"),
-                  name("prep_time_mins"),
-                  attribute("title", "prep time in minutes"),
-                  value(
-                    recipe.prep_time % 60
-                    |> int.to_string,
-                  ),
-                  on_input(UserUpdatedRecipePrepTimeMins),
-                ]),
+            ]),
+            div([class("after:content-['m'] after:text-base inline-block")], [
+              input([
+                id("prep_time_mins"),
+                class(
+                  "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[3ch] text-right text-base",
+                ),
+                type_("number"),
+                name("prep_time_mins"),
+                attribute("title", "prep time in minutes"),
+                value(
+                  recipe.prep_time % 60
+                  |> int.to_string,
+                ),
+                on_input(UserUpdatedRecipePrepTimeMins),
               ]),
             ]),
           ]),
           fieldset([class("flex flex-wrap justify-between items-baseline")], [
-            label([class("justify-self-start text-base"), for("cook_time")], [
+            label([class("text-base"), for("cook_time")], [
               text("Cook:"),
             ]),
-            div([class("justify-self-start")], [
-              div([class("after:content-['h'] after:text-base inline-block")], [
-                input([
-                  id("cook_time_hrs"),
-                  class(
-                    "bg-ecru-white-100 input-base input-focus pr-0.5 w-[2ch] text-right text-base",
-                  ),
-                  type_("number"),
-                  name("cook_time_hrs"),
-                  attribute("title", "cook time in hours"),
-                  value(
-                    int.floor_divide(recipe.cook_time, 60)
-                    |> result.unwrap(0)
-                    |> int.to_string
-                    |> string.replace("0", ""),
-                  ),
-                  on_input(UserUpdatedRecipeCookTimeHrs),
-                ]),
+            div([class("after:content-['h'] after:text-base inline-block")], [
+              input([
+                id("cook_time_hrs"),
+                class(
+                  "bg-ecru-white-100 input-base input-focus pr-0.5 w-[2ch] text-right text-base",
+                ),
+                type_("number"),
+                name("cook_time_hrs"),
+                attribute("title", "cook time in hours"),
+                value(
+                  int.floor_divide(recipe.cook_time, 60)
+                  |> result.unwrap(0)
+                  |> int.to_string
+                  |> string.replace("0", ""),
+                ),
+                on_input(UserUpdatedRecipeCookTimeHrs),
               ]),
-              div([class("after:content-['m'] after:text-base inline-block")], [
-                input([
-                  id("cook_time_mins"),
-                  class(
-                    "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base",
-                  ),
-                  type_("number"),
-                  name("cook_time_mins"),
-                  attribute("title", "cook time in minutes"),
-                  value(
-                    recipe.cook_time % 60
-                    |> int.to_string,
-                  ),
-                  on_input(UserUpdatedRecipeCookTimeMins),
-                ]),
+            ]),
+            div([class("after:content-['m'] after:text-base inline-block")], [
+              input([
+                id("cook_time_mins"),
+                class(
+                  "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base",
+                ),
+                type_("number"),
+                name("cook_time_mins"),
+                attribute("title", "cook time in minutes"),
+                value(
+                  recipe.cook_time % 60
+                  |> int.to_string,
+                ),
+                on_input(UserUpdatedRecipeCookTimeMins),
               ]),
             ]),
           ]),
           fieldset([class("flex flex-wrap justify-between items-baseline")], [
-            label([class("justify-self-start text-base "), for("serves")], [
+            label([class("text-base "), for("serves")], [
               text("Serves:"),
             ]),
-            input([
-              id("serves"),
-              class(
-                "pr-0.5 mr-2 sm:mr-4  justify-self-start col-span-3 input-base input-focus w-[3ch] text-right text-base bg-ecru-white-100",
-              ),
-              type_("number"),
-              name("serves"),
-              value(recipe.serves |> int.to_string),
-              on_input(UserUpdatedRecipeServes),
+            div([class("inline-block")], [
+              input([
+                id("serves"),
+                class(
+                  "pr-0.5 mr-2 sm:mr-4 col-span-3 input-base input-focus w-[3ch] text-right text-base bg-ecru-white-100",
+                ),
+                type_("number"),
+                name("serves"),
+                value(recipe.serves |> int.to_string),
+                on_input(UserUpdatedRecipeServes),
+              ]),
             ]),
           ]),
         ],
@@ -924,7 +917,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
       nav(
         [
           class(
-            "flex flex-col justify-start items-middle col-span-1 col-start-12 row-span-2 text-base md:text-lg mt-4",
+            "flex flex-col justify-start items-middle col-span-1 col-start-12 row-span-2 text-base md:text-lg mt-2",
           ),
         ],
         [
@@ -1173,30 +1166,37 @@ pub fn view_recipe_tag_groups(recipes: List(session.Recipe), tag: String) {
           |> list.map(fn(x) { x.value })
           |> list.first
           |> result.unwrap("")
-        _ -> ""
+        _ -> "none"
       }
     })
   groups
   |> dict.map_values(fn(k, v) {
-    details([class("col-span-full")], [
-      summary(
-        [class("flex gap-2 text-base cursor-pointer marker:content-none")],
-        [
-          text("📑"),
-          span([class("")], [text(k)]),
-          element.element(
-            "hr",
-            [class("flex-grow mx-2 opacity-50 self-center")],
-            [],
-          ),
-        ],
-      ),
-      div([class("subgrid-cols gap-y-1")], [
-        element.fragment(list.map(v, view_recipe_summary(_, "ml-2 text-lg"))),
-      ]),
-    ])
+    details(
+      [
+        class(
+          "col-span-full subgrid-cols gap-y-2 details-content:[display:grid] details-content:gap-y-2 details-content:[grid-column:1/-1] details-content:[grid-template-columns:subgrid]",
+        ),
+      ],
+      [
+        summary(
+          [
+            class(
+              "flex gap-2 col-span-full border-b border-b-gray-200 text-base cursor-pointer marker:content-none",
+            ),
+            case k {
+              "none" -> class("italic")
+              _ -> attribute.none()
+            },
+          ],
+          [text(k)],
+        ),
+        element.fragment(list.map(v, view_recipe_summary(_, "text-lg"))),
+      ],
+    )
   })
-  |> dict.values
+  |> dict.to_list
+  |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+  |> list.map(pair.second)
 }
 
 pub fn view_recipe_author_groups(recipes: List(session.Recipe)) {
@@ -1204,28 +1204,29 @@ pub fn view_recipe_author_groups(recipes: List(session.Recipe)) {
     list.group(recipes, fn(a) {
       case a.author {
         Some(a) -> a
-        _ -> ""
+        _ -> "none"
       }
     })
   groups
   |> dict.map_values(fn(k, v) {
-    details([class("col-span-full")], [
-      summary(
-        [class("flex gap-2 text-base cursor-pointer marker:content-none")],
-        [
-          text("📑"),
-          span([class("")], [text(k)]),
-          element.element(
-            "hr",
-            [class("flex-grow mx-2 opacity-50 self-center")],
-            [],
-          ),
-        ],
-      ),
-      div([class("subgrid-cols gap-y-1")], [
-        element.fragment(list.map(v, view_recipe_summary(_, "ml-2 text-lg"))),
-      ]),
-    ])
+    details(
+      [
+        class(
+          "col-span-full subgrid-cols gap-y-2 details-content:[display:grid] details-content:gap-y-2 details-content:[grid-column:1/-1] details-content:[grid-template-columns:subgrid]",
+        ),
+      ],
+      [
+        summary(
+          [
+            class(
+              "flex gap-2 col-span-full border-b border-b-gray-200 text-base cursor-pointer marker:content-none",
+            ),
+          ],
+          [text(k)],
+        ),
+        element.fragment(list.map(v, view_recipe_summary(_, "text-lg"))),
+      ],
+    )
   })
   |> dict.values
 }
@@ -1233,36 +1234,35 @@ pub fn view_recipe_author_groups(recipes: List(session.Recipe)) {
 fn view_recipe_summary(recipe: Recipe, class_props: String) {
   div(
     [
-      class("col-span-full text-xl flex flex-wrap items-baseline justify-start"),
+      class("col-span-full text-xl subgrid-cols border-b border-b-gray-200"),
       class(class_props),
     ],
     [
-      element.element("hr", [class("w-[1ch] mr-2 opacity-50 self-center")], []),
-      a([href(string.append("/recipes/", recipe.slug))], [
-        span([], [text(recipe.title)]),
-        span([class("text-sm")], [
-          text(" • "),
-          case recipe.prep_time + recipe.cook_time > 59 {
-            True ->
-              text(
-                int.floor_divide({ recipe.prep_time + recipe.cook_time }, 60)
+      a(
+        [
+          href(string.append("/recipes/", recipe.slug)),
+          class("subgrid-cols col-span-full grid-flow-row-dense"),
+        ],
+        [
+          span([class("col-span-10")], [text(recipe.title)]),
+          span([class("text-sm col-start-12")], [
+            text(case recipe.prep_time + recipe.cook_time {
+              n if n > 60 ->
+                int.floor_divide(n, 60)
                 |> result.unwrap(0)
-                |> int.to_string()
-                <> "h",
-              )
-            _ -> element.none()
-          },
-          text(
-            { recipe.prep_time + recipe.cook_time } % 60
-            |> int.to_string(),
-          ),
-          text("m"),
-        ]),
-      ]),
-      element.element(
-        "hr",
-        [class("flex-grow mx-2 opacity-50 self-center")],
-        [],
+                |> int.to_string
+                <> "h"
+                <> case n % 60 {
+                  0 -> ""
+                  rem if rem < 10 -> "0" <> int.to_string(rem)
+                  _ -> int.to_string(n % 60)
+                }
+              _ ->
+                { recipe.prep_time + recipe.cook_time } |> int.to_string()
+                <> "m"
+            }),
+          ]),
+        ],
       ),
     ],
   )
