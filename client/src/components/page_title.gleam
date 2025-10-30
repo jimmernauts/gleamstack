@@ -6,9 +6,10 @@ import lustre/element/html.{div, h1}
 pub fn page_title(title: String, styles: String) {
   div(
     [
-      class("mt-2 flex col-start-1 col-span-11"),
+      class("mt-2 flex col-start-1"),
       class(case string.length(title) {
         num if num > 38 -> "text-4xl"
+        num if num > 27 -> "text-5xl"
         num if num > 18 -> "text-5.5xl"
         num if num == 18 -> "text-6xl"
         _ -> "text-7xl"

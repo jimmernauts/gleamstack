@@ -1,21 +1,18 @@
 <!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="Mealstack" />
+        <title>Mealstack</title>
+        <link rel="stylesheet" href="/index.css" />
+        <script type="module">
+            import { main } from "./src/mealstack_client.gleam";
+            const dispatch = main({});
+        </script>
+    </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Mealstack">
-  <title>Mealstack</title>
-  <link rel="stylesheet" href="/index.css">
-  <script type="module">
-    import { main } from './src/mealstack_client.gleam'
-    const dispatch = main({});
-  </script>
-</head>
-
-<body>
-  <main id="app">
-  </main>
-</body>
-
+    <body>
+        <main id="app" class="bg-ecru-white-50"></main>
+    </body>
 </html>

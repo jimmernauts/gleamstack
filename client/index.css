@@ -2,9 +2,13 @@
 @config "./tailwind.config.js";
 
 @theme {
-    --font-transitional: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif;
-    --font-old-style : 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    --font-transitional:
+        Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
+    --font-old-style:
+        "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, serif;
+    --font-mono:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
 
     --breakpoint-xxs: 380px;
     --breakpoint-xs: 480px;
@@ -98,28 +102,34 @@
     display: grid;
     grid-template-columns: 1fr min(85ch, 100%) 1fr;
     & > * {
-        grid-column: 2
+        grid-column: 2;
     }
     & > * > * {
-        grid-column: 2
+        grid-column: 2;
     }
 }
 @utility under-highlight {
-    box-shadow: inset 0 -6px 0 #fce7f8
+    box-shadow: inset 0 -6px 0 #fce7f8;
 }
 @utility subgrid-cols {
     display: grid;
-    grid-template-columns: subgrid
+    grid-template-columns: subgrid;
 }
 @utility subgrid-rows {
     display: grid;
-    grid-template-rows: subgrid
+    grid-template-rows: subgrid;
 }
 @utility grid-rows-auto {
-    grid-auto-rows: minmax(100px, max-content)
+    grid-auto-rows: minmax(100px, max-content);
+}
+@utility grid-named-3x12 {
+    grid-template-areas:
+        "header header header header header header header header header header header header"
+        "content content content content content content content content content content content content "
+        "footer footer footer footer footer footer footer footer footer footer footer footer";
 }
 @utility input {
-    & [type="number"] { 
+    & [type="number"] {
         &::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
@@ -131,7 +141,8 @@
     }
     -moz-appearance: textfield;
     appearance: textfield;
-}@utility input-base {
+}
+@utility input-base {
     border-width: 0px;
     border-bottom-width: 0px;
     padding-top: 0px;
@@ -149,24 +160,32 @@
 }
 @utility input-focus {
     & :focus {
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-    --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
-    --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(0px + var(--tw-ring-offset-width)) var(--tw-ring-color);
-    box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
-    --tw-border-opacity: 1;
-    border-color: rgb(80 156 94 / var(--tw-border-opacity));
-    border-width: 0px;
-    border-bottom-width: 1px;
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+        --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0
+            var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+        --tw-ring-shadow: var(--tw-ring-inset) 0 0 0
+            calc(0px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+        box-shadow:
+            var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
+            var(--tw-shadow, 0 0 #0000);
+        --tw-border-opacity: 1;
+        border-color: rgb(80 156 94 / var(--tw-border-opacity));
+        border-width: 0px;
+        border-bottom-width: 1px;
     }
 }
 @utility textarea {
     & :focus {
         outline: 2px solid transparent;
         outline-offset: 2px;
-        --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
-        --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(0px + var(--tw-ring-offset-width)) var(--tw-ring-color);
-        box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+        --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0
+            var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+        --tw-ring-shadow: var(--tw-ring-inset) 0 0 0
+            calc(0px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+        box-shadow:
+            var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
+            var(--tw-shadow, 0 0 #0000);
         --tw-border-opacity: 1;
         border-color: rgb(80 156 94 / var(--tw-border-opacity));
         border-width: 0px;
@@ -175,10 +194,10 @@
 }
 @utility input-outline {
     & :focus {
-    --tw-border-opacity: 1;
-    border-color: rgb(80 156 94 / var(--tw-border-opacity));
-    border-width: 0px;
-    border-bottom-width: 1px;
+        --tw-border-opacity: 1;
+        border-color: rgb(80 156 94 / var(--tw-border-opacity));
+        border-width: 0px;
+        border-bottom-width: 1px;
     }
 }
 @utility under-gradient {
@@ -206,7 +225,7 @@
     text-decoration: underline solid 6px oklch(84.68% 0.002 197.12);
 }
 @utility underline-dark-blue {
-    text-decoration: underline solid 6px #287CA1;
+    text-decoration: underline solid 6px #287ca1;
 }
 @utility underline-purple {
     text-decoration: underline solid 6px #743f87;
@@ -244,11 +263,11 @@
         display: contents;
     }
     & > input + span::before {
-        content: '❕';
+        content: "❕";
         align-self: baseline;
     }
     & > input:checked + span::before {
-        content: '❗';
+        content: "❗";
         align-self: baseline;
     }
 }
