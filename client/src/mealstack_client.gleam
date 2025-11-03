@@ -608,8 +608,8 @@ fn view_home() {
         ],
         [
           #("📅", "Plan", "planner", " underline-orange"),
-          #("📋", "List", "shopping-list", " underline-purple"),
-          #("📖", "Book", "recipes", " underline-green"),
+          #("🛒", "Shop", "shopping-list", " underline-purple"),
+          #("📖", "List", "recipes", " underline-green"),
           #("📝", "New", "recipes/new", " underline-blue"),
           #("📤", "Import", "import", " underline-yellow"),
         ]

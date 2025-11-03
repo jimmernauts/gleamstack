@@ -21,5 +21,6 @@
 [] PWA
 [X] Build OCR scanner (BYO AI API key?)
 [] work out process to correct side-by-side
+[] extract nav, page layout to shared view functions
 [] Build auth
 [] Decide if stay SPA only or move to SSR / other. Maybe just classic SPA + Backend API - make scraping API endpoint more permanent. Or go other way and make scraping endpoint into a serverless function. Maybe the scraping endpoint could still be done browser-side in WASM somehow
