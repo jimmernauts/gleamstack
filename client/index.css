@@ -149,6 +149,7 @@
     padding-bottom: 0px;
     line-height: inherit;
     background-color: transparent;
+    field-sizing: content;
 }
 @utility textarea {
     border-width: 0px;
