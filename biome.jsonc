@@ -1,0 +1,18 @@
+{
+    "files": {
+        // All tools, including the linter, ignore following files
+    },
+    "css": {
+        "parser": {
+            "tailwindDirectives": true
+        }
+    },
+    "linter": {
+        // Only the linter ignores the following files
+        "rules": {
+            "complexity": {
+                "useLiteralKeys": "off"
+            }
+        }
+    }
+}
