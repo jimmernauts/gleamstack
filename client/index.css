@@ -108,6 +108,12 @@
         grid-column: 2;
     }
 }
+@utility h-env-screen {
+    height: 100vh; /* Fallback for older browsers */
+    height: calc(
+        100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+    );
+}
 @utility under-highlight {
     box-shadow: inset 0 -6px 0 #fce7f8;
 }

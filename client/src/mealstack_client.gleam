@@ -573,7 +573,7 @@ fn view_base(children) {
   html.main(
     [
       class(
-        "h-screen grid ml-2 mr-2 gap-2
+        "h-env-screen grid ml-2 mr-2 gap-2
       2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90%_[main-end]_3fr_[full-end]_1fr_[end]]
       xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
       lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
