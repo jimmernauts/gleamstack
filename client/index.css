@@ -109,9 +109,9 @@
     }
 }
 @utility h-env-screen {
-    height: 100vh; /* Fallback for older browsers */
+    height: 100dvh; /* Fallback for older browsers */
     height: calc(
-        100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+        100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
     );
 }
 @utility under-highlight {
