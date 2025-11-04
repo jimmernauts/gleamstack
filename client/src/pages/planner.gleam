@@ -285,7 +285,7 @@ pub fn view_planner(model: Model) {
   section(
     [
       class(
-        "grid grid-cols-12 h-screen col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
       ),
     ],
     [
@@ -297,7 +297,7 @@ pub fn view_planner(model: Model) {
         [
           id("active-week"),
           class(
-            "mb-2 text-sm p-1 min-h-[70vh]
+            "mb-2 text-sm p-1
             overflow-x-hidden overflow-y-scroll md:overflow-x-scroll md:overflow-y-hidden snap-mandatory snap-always
             col-span-full row-start-2 grid gap-1 
             grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
