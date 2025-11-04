@@ -1,3 +1,4 @@
+import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import components/typeahead.{typeahead}
 import gleam/bool
@@ -15,7 +16,7 @@ import lib/utils
 import lustre/attribute.{attribute, checked, class, href, id, styles, type_}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, fragment, text}
-import lustre/element/html.{a, button, div, form, h2, input, nav, section}
+import lustre/element/html.{a, button, div, form, h2, input, section}
 import lustre/element/keyed
 import lustre/event.{on_submit}
 import rada/date.{type Date}
@@ -321,43 +322,36 @@ pub fn view_planner(model: Model) {
           }),
         ],
       ),
-      nav(
-        [
-          class(
-            "flex flex-row flex-wrap col-span-full justify-between md:justify-start items-middle md:col-span-1 md:col-start-12 text-base md:text-lg mt-4",
-          ),
-        ],
-        [
-          a([href("/"), class("text-center")], [text("🏠")]),
-          a(
-            [
-              href("/planner/edit?date=" <> date.to_iso_string(start_of_week)),
-              class("text-center"),
-            ],
-            [text("✏️")],
-          ),
-          a(
-            [
-              href(
-                "/planner?date="
-                <> date.to_iso_string(date.add(start_of_week, -1, date.Weeks)),
-              ),
-              class("text-center"),
-            ],
-            [text("⬅️")],
-          ),
-          a(
-            [
-              href(
-                "/planner?date="
-                <> date.to_iso_string(date.add(start_of_week, 1, date.Weeks)),
-              ),
-              class("text-center"),
-            ],
-            [text("➡️")],
-          ),
-        ],
-      ),
+      nav_footer([
+        a([href("/"), class("text-center")], [text("🏠")]),
+        a(
+          [
+            href("/planner/edit?date=" <> date.to_iso_string(start_of_week)),
+            class("text-center"),
+          ],
+          [text("✏️")],
+        ),
+        a(
+          [
+            href(
+              "/planner?date="
+              <> date.to_iso_string(date.add(start_of_week, -1, date.Weeks)),
+            ),
+            class("text-center"),
+          ],
+          [text("⬅️")],
+        ),
+        a(
+          [
+            href(
+              "/planner?date="
+              <> date.to_iso_string(date.add(start_of_week, 1, date.Weeks)),
+            ),
+            class("text-center"),
+          ],
+          [text("➡️")],
+        ),
+      ]),
     ],
   )
 }
@@ -398,64 +392,19 @@ pub fn edit_planner(model: Model) {
   section(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[fit-content(65px)] gap-y-2",
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
       ),
     ],
     [
       page_title(
         "Week of " <> utils.month_date_string(start_of_week),
-        "underline-orange",
-      ),
-      nav(
-        [
-          class(
-            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
-          ),
-        ],
-        [
-          a([href("/"), class("text-center")], [text("🏠")]),
-          div([class("flex flex-row justify-evenly px-1")], [
-            a(
-              [
-                href("/planner?date=" <> date.to_iso_string(start_of_week)),
-                class("text-center"),
-              ],
-              [text("❎")],
-            ),
-            button(
-              [type_("submit"), attribute("form", "active-week"), class("")],
-              [text("💾")],
-            ),
-          ]),
-          div([class("flex flex-row justify-evenly px-1")], [
-            a(
-              [
-                href(
-                  "/planner/edit?date="
-                  <> date.to_iso_string(date.add(start_of_week, -1, date.Weeks)),
-                ),
-                class("text-center"),
-              ],
-              [text("⬅️")],
-            ),
-            a(
-              [
-                href(
-                  "/planner/edit?date="
-                  <> date.to_iso_string(date.add(start_of_week, 1, date.Weeks)),
-                ),
-                class("text-center"),
-              ],
-              [text("➡️")],
-            ),
-          ]),
-        ],
+        "underline-orange col-span-full md:col-span-11",
       ),
       form(
         [
           id("active-week"),
           class(
-            "mb-2 text-sm p-1 min-h-[70vh]
+            "mb-2 text-sm p-1 
             overflow-x-hidden overflow-y-scroll md:overflow-x-scroll md:overflow-y-hidden snap-mandatory snap-always
             col-span-full row-start-2 grid gap-1 
             grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
@@ -472,6 +421,39 @@ pub fn edit_planner(model: Model) {
           planner_input_row(Dinner, week, model.recipe_list),
         ],
       ),
+      nav_footer([
+        a([href("/"), class("text-center")], [text("🏠")]),
+        a(
+          [
+            href("/planner?date=" <> date.to_iso_string(start_of_week)),
+            class("text-center"),
+          ],
+          [text("❎")],
+        ),
+        button([type_("submit"), attribute("form", "active-week"), class("")], [
+          text("💾"),
+        ]),
+        a(
+          [
+            href(
+              "/planner/edit?date="
+              <> date.to_iso_string(date.add(start_of_week, -1, date.Weeks)),
+            ),
+            class("text-center"),
+          ],
+          [text("⬅️")],
+        ),
+        a(
+          [
+            href(
+              "/planner/edit?date="
+              <> date.to_iso_string(date.add(start_of_week, 1, date.Weeks)),
+            ),
+            class("text-center"),
+          ],
+          [text("➡️")],
+        ),
+      ]),
     ],
   )
 }

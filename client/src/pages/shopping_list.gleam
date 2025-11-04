@@ -1,3 +1,4 @@
+import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import gleam/dynamic/decode.{type Decoder, type Dynamic}
 import gleam/javascript/promise.{type Promise}
@@ -7,7 +8,7 @@ import gleam/result
 import lustre/attribute.{class, href}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/element/html.{a, div, nav, section, text}
+import lustre/element/html.{a, div, section, text}
 import rada/date
 import session
 
@@ -135,26 +136,24 @@ pub fn view_shopping_list(model: ShoppingListModel) -> Element(ShoppingListMsg) 
   section(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(12,_fit-content(100px))] gap-y-2",
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
       ),
     ],
     [
-      page_title("Shopping List", "underline-purple"),
-      nav(
-        [
-          class(
-            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
-          ),
-        ],
-        [
-          a([href("/"), class("text-center")], [text("🏠")]),
-          a([href("/planner"), class("text-center")], [text("📅")]),
-        ],
+      page_title(
+        "Shopping List",
+        "underline-purple col-span-full md:col-span-11",
       ),
       div(
-        [class("col-span-full flex flex-wrap items-center justify-start gap-3")],
+        [
+          class("col-span-full flex flex-wrap items-center justify-start gap-3"),
+        ],
         [text("content goes here")],
       ),
+      nav_footer([
+        a([href("/"), class("text-center")], [text("🏠")]),
+        a([href("/planner"), class("text-center")], [text("📅")]),
+      ]),
     ],
   )
 }

@@ -1,3 +1,4 @@
+import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -7,7 +8,7 @@ import gleam/result
 import lustre/attribute.{class, href, name, type_, value}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
-import lustre/element/html.{a, button, form, input, label, nav}
+import lustre/element/html.{a, button, form, input, label}
 import lustre/event.{on_input}
 
 //-TYPES--------------------------------------------------------------
@@ -68,18 +69,7 @@ pub fn view_settings(model: SettingsModel) -> Element(SettingsMsg) {
       ),
     ],
     [
-      page_title("Settings", "underline-grey"),
-      nav(
-        [
-          class(
-            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
-          ),
-        ],
-        [
-          a([href("/"), class("text-center")], [text("🏠")]),
-          button([type_("submit"), class("cursor-pointer")], [text("💾")]),
-        ],
-      ),
+      page_title("Settings", "underline-grey col-span-full md:col-span-11"),
       label([class("block mb-2")], [text("API Key")]),
       input([
         class(
@@ -89,6 +79,10 @@ pub fn view_settings(model: SettingsModel) -> Element(SettingsMsg) {
         name("api_key"),
         on_input(UserUpdatedApikey),
         value(option.unwrap(model.api_key, "")),
+      ]),
+      nav_footer([
+        a([href("/"), class("text-center")], [text("🏠")]),
+        button([type_("submit"), class("cursor-pointer")], [text("💾")]),
       ]),
     ],
   )

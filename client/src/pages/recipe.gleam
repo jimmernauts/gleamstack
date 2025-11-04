@@ -1,3 +1,4 @@
+import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import gleam/dict
 import gleam/dynamic/decode
@@ -17,8 +18,8 @@ import lustre/attribute.{
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{
-  a, button, details, div, fieldset, form, input, label, legend, li, nav, ol,
-  option, section, select, span, summary, textarea,
+  a, button, details, div, fieldset, form, input, label, legend, li, ol, option,
+  section, select, span, summary, textarea,
 }
 import lustre/element/keyed
 import lustre/event.{on_check, on_click, on_input}
@@ -571,7 +572,7 @@ pub fn view_recipe_list(model: session.RecipeList) {
   section(
     [
       class(
-        "grid grid-cols-12 h-screen col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
       ),
     ],
     [
@@ -608,17 +609,10 @@ pub fn view_recipe_list(model: session.RecipeList) {
           },
         ],
       ),
-      nav(
-        [
-          class(
-            "[grid-area:footer] flex flex-row flex-wrap gap-x-4 justify-between md:justify-start col-span-full md:row-start-1 md:row-span-1 md:col-span-1 md:col-start-12 md:text-lg items-middle text-base mt-2",
-          ),
-        ],
-        [
-          a([href("/"), class("text-center")], [text("🏠")]),
-          a([href("/planner"), class("text-center")], [text("📅")]),
-        ],
-      ),
+      nav_footer([
+        a([href("/"), class("text-center")], [text("🏠")]),
+        a([href("/planner"), class("text-center")], [text("📅")]),
+      ]),
     ],
   )
 }
@@ -647,7 +641,7 @@ pub fn edit_recipe_detail(
   form(
     [
       class(
-        "grid grid-cols-12 h-screen col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
       ),
       id("create_recipe_form"),
       event.on_submit(fn(_x) { UserSavedUpdatedRecipe(recipe) }),
@@ -903,28 +897,21 @@ pub fn edit_recipe_detail(
           ],
         ),
       ]),
-      nav(
-        [
-          class(
-            "[grid-area:footer] flex flex-row flex-wrap gap-x-4 justify-between md:justify-start col-span-full md:row-start-1 md:row-span-1 md:col-span-1 md:col-start-12 md:text-lg items-middle text-base mt-2",
-          ),
-        ],
-        [
-          a([href("/"), class("text-center")], [text("🏠")]),
-          a([href("/recipes/" <> recipe.slug), class("text-center")], [
-            text("❎"),
-          ]),
-          button(
-            [
-              type_("button"),
-              on_click(UserDeletedRecipe(recipe)),
-              class(""),
-            ],
-            [text("🗑️")],
-          ),
-          button([type_("submit"), class("")], [text("💾")]),
-        ],
-      ),
+      nav_footer([
+        a([href("/"), class("text-center")], [text("🏠")]),
+        a([href("/recipes/" <> recipe.slug), class("text-center")], [
+          text("❎"),
+        ]),
+        button(
+          [
+            type_("button"),
+            on_click(UserDeletedRecipe(recipe)),
+            class(""),
+          ],
+          [text("🗑️")],
+        ),
+        button([type_("submit"), class("")], [text("💾")]),
+      ]),
     ],
   )
 }
@@ -934,7 +921,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
     section(
       [
         class(
-          "grid grid-cols-12 h-screen col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+          "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
         ),
       ],
       [
@@ -1134,24 +1121,17 @@ pub fn view_recipe_detail(recipe: Recipe) {
             ],
           ),
         ]),
-        nav(
-          [
-            class(
-              "[grid-area:footer] flex flex-row flex-wrap gap-x-4 justify-between md:justify-start col-span-full md:row-start-1 md:row-span-1 md:col-span-1 md:col-start-12 md:text-lg items-middle text-base mt-2",
-            ),
-          ],
-          [
-            a([href("/"), class("text-center")], [text("🏠")]),
-            a([href("/recipes"), class("text-center")], [text("📖")]),
-            a(
-              [
-                href("/recipes/" <> recipe.slug <> "/edit"),
-                class("text-center"),
-              ],
-              [text("✏️")],
-            ),
-          ],
-        ),
+        nav_footer([
+          a([href("/"), class("text-center")], [text("🏠")]),
+          a([href("/recipes"), class("text-center")], [text("📖")]),
+          a(
+            [
+              href("/recipes/" <> recipe.slug <> "/edit"),
+              class("text-center"),
+            ],
+            [text("✏️")],
+          ),
+        ]),
       ],
     ),
   ])
