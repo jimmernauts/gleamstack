@@ -14,7 +14,7 @@
 [] BUG: strange plan behaviour around 29/9/2025. Outside of that date seems fine.
 [] BUG: save recipe slow
 [x] improve layout of recipe list view. consider putting the HR after the recipe title at mobile size. also don't like the grouping headings being smaller than the recipe title. try using mono font at larger size instead.
-[WIP] move page nav to bottom footer
+[WIP] move page nav to bottom footer. working for planner, can't understand why not on the other pages
 [] copy recipes from browser bookmarks
 [] Add bunch of recipes
 [] Add cooking notes and ratings to recipes, group by rating

@@ -665,238 +665,264 @@ pub fn edit_recipe_detail(
         ],
         recipe.title,
       ),
-      div([class("subgrid-cols gap-y-2 overflow-auto [grid-area:content]")], [
-        div([class("subgrid-cols col-span-full items-baseline")], [
-          div([class("col-start-1 col-span-6 md:col-span-5 flex gap-1  ")], [
-            label([class("font-mono text-sm"), for("author")], [
-              text("🧾"),
-            ]),
-            input([
-              id("author"),
-              class(
-                "input-base pr-0.5 max-w-[15ch] md:max-w-none text-left text-base bg-ecru-white-100",
-              ),
-              type_("text"),
-              name("author"),
-              attribute("title", "author"),
-              value(recipe.author |> option.unwrap("")),
-              on_input(UserUpdatedRecipeAuthor),
-            ]),
-          ]),
-          div([class("col-start-7 md:col-start-6 col-span-6 flex gap-1")], [
-            label([class(" font-mono text-sm"), for("source")], [text("📗")]),
-            input([
-              id("source"),
-              class(
-                "max-w-[15ch] md:max-w-[58ch] bg-ecru-white-100 input-base input-focus pr-0.5 text-left text-base",
-              ),
-              type_("text"),
-              name("source"),
-              attribute("title", "source"),
-              value(recipe.source |> option.unwrap("")),
-              on_input(UserUpdatedRecipeSource),
-            ]),
-          ]),
-        ]),
-        fieldset(
-          [
-            class(
-              "flex flex-row gap-2 col-span-full sm:col-span-5 sm:col-start-1",
-            ),
-          ],
-          [
-            fieldset([class("flex flex-wrap justify-between items-baseline")], [
-              label([class("text-base"), for("prep_time")], [
-                text("Prep:"),
+      div(
+        // TODO: need to add some row min-content sizing here, short recipes
+        // are spaced too far apart on large screen
+        [class("subgrid-cols gap-y-2 overflow-y-scroll [grid-area:content]")],
+        [
+          div([class("subgrid-cols col-span-full items-baseline")], [
+            div([class("col-start-1 col-span-6 md:col-span-5 flex gap-1  ")], [
+              label([class("font-mono text-sm"), for("author")], [
+                text("🧾"),
               ]),
+              input([
+                id("author"),
+                class(
+                  "input-base pr-0.5 max-w-[15ch] md:max-w-none text-left text-base bg-ecru-white-100",
+                ),
+                type_("text"),
+                name("author"),
+                attribute("title", "author"),
+                value(recipe.author |> option.unwrap("")),
+                on_input(UserUpdatedRecipeAuthor),
+              ]),
+            ]),
+            div([class("col-start-7 md:col-start-6 col-span-6 flex gap-1")], [
+              label([class(" font-mono text-sm"), for("source")], [text("📗")]),
+              input([
+                id("source"),
+                class(
+                  "max-w-[15ch] md:max-w-[58ch] bg-ecru-white-100 input-base input-focus pr-0.5 text-left text-base",
+                ),
+                type_("text"),
+                name("source"),
+                attribute("title", "source"),
+                value(recipe.source |> option.unwrap("")),
+                on_input(UserUpdatedRecipeSource),
+              ]),
+            ]),
+          ]),
+          fieldset(
+            [
+              class(
+                "flex flex-row gap-2 col-span-full sm:col-span-5 sm:col-start-1",
+              ),
+            ],
+            [
+              fieldset(
+                [class("flex flex-wrap justify-between items-baseline")],
+                [
+                  label([class("text-base"), for("prep_time")], [
+                    text("Prep:"),
+                  ]),
 
-              div([class("after:content-['h'] after:text-base inline-block")], [
-                input([
-                  id("prep_time_hrs"),
-                  class(
-                    "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[2ch] text-right text-base",
+                  div(
+                    [class("after:content-['h'] after:text-base inline-block")],
+                    [
+                      input([
+                        id("prep_time_hrs"),
+                        class(
+                          "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[2ch] text-right text-base",
+                        ),
+                        type_("number"),
+                        name("prep_time_hrs"),
+                        attribute("title", "prep time in hours"),
+                        value(
+                          int.floor_divide(recipe.prep_time, 60)
+                          |> result.unwrap(0)
+                          |> int.to_string
+                          |> string.replace("0", ""),
+                        ),
+                        on_input(UserUpdatedRecipePrepTimeHrs),
+                      ]),
+                    ],
                   ),
-                  type_("number"),
-                  name("prep_time_hrs"),
-                  attribute("title", "prep time in hours"),
-                  value(
-                    int.floor_divide(recipe.prep_time, 60)
-                    |> result.unwrap(0)
-                    |> int.to_string
-                    |> string.replace("0", ""),
+                  div(
+                    [class("after:content-['m'] after:text-base inline-block")],
+                    [
+                      input([
+                        id("prep_time_mins"),
+                        class(
+                          "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[3ch] text-right text-base",
+                        ),
+                        type_("number"),
+                        name("prep_time_mins"),
+                        attribute("title", "prep time in minutes"),
+                        value(
+                          recipe.prep_time % 60
+                          |> int.to_string,
+                        ),
+                        on_input(UserUpdatedRecipePrepTimeMins),
+                      ]),
+                    ],
                   ),
-                  on_input(UserUpdatedRecipePrepTimeHrs),
-                ]),
-              ]),
-              div([class("after:content-['m'] after:text-base inline-block")], [
-                input([
-                  id("prep_time_mins"),
-                  class(
-                    "bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[3ch] text-right text-base",
+                ],
+              ),
+              fieldset(
+                [class("flex flex-wrap justify-between items-baseline")],
+                [
+                  label([class("text-base"), for("cook_time")], [
+                    text("Cook:"),
+                  ]),
+                  div(
+                    [class("after:content-['h'] after:text-base inline-block")],
+                    [
+                      input([
+                        id("cook_time_hrs"),
+                        class(
+                          "bg-ecru-white-100 input-base input-focus pr-0.5 w-[2ch] text-right text-base",
+                        ),
+                        type_("number"),
+                        name("cook_time_hrs"),
+                        attribute("title", "cook time in hours"),
+                        value(
+                          int.floor_divide(recipe.cook_time, 60)
+                          |> result.unwrap(0)
+                          |> int.to_string
+                          |> string.replace("0", ""),
+                        ),
+                        on_input(UserUpdatedRecipeCookTimeHrs),
+                      ]),
+                    ],
                   ),
-                  type_("number"),
-                  name("prep_time_mins"),
-                  attribute("title", "prep time in minutes"),
-                  value(
-                    recipe.prep_time % 60
-                    |> int.to_string,
+                  div(
+                    [class("after:content-['m'] after:text-base inline-block")],
+                    [
+                      input([
+                        id("cook_time_mins"),
+                        class(
+                          "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base",
+                        ),
+                        type_("number"),
+                        name("cook_time_mins"),
+                        attribute("title", "cook time in minutes"),
+                        value(
+                          recipe.cook_time % 60
+                          |> int.to_string,
+                        ),
+                        on_input(UserUpdatedRecipeCookTimeMins),
+                      ]),
+                    ],
                   ),
-                  on_input(UserUpdatedRecipePrepTimeMins),
-                ]),
-              ]),
-            ]),
-            fieldset([class("flex flex-wrap justify-between items-baseline")], [
-              label([class("text-base"), for("cook_time")], [
-                text("Cook:"),
-              ]),
-              div([class("after:content-['h'] after:text-base inline-block")], [
-                input([
-                  id("cook_time_hrs"),
-                  class(
-                    "bg-ecru-white-100 input-base input-focus pr-0.5 w-[2ch] text-right text-base",
-                  ),
-                  type_("number"),
-                  name("cook_time_hrs"),
-                  attribute("title", "cook time in hours"),
-                  value(
-                    int.floor_divide(recipe.cook_time, 60)
-                    |> result.unwrap(0)
-                    |> int.to_string
-                    |> string.replace("0", ""),
-                  ),
-                  on_input(UserUpdatedRecipeCookTimeHrs),
-                ]),
-              ]),
-              div([class("after:content-['m'] after:text-base inline-block")], [
-                input([
-                  id("cook_time_mins"),
-                  class(
-                    "bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base",
-                  ),
-                  type_("number"),
-                  name("cook_time_mins"),
-                  attribute("title", "cook time in minutes"),
-                  value(
-                    recipe.cook_time % 60
-                    |> int.to_string,
-                  ),
-                  on_input(UserUpdatedRecipeCookTimeMins),
-                ]),
-              ]),
-            ]),
-            fieldset([class("flex flex-wrap justify-between items-baseline")], [
-              label([class("text-base "), for("serves")], [
-                text("Serves:"),
-              ]),
-              div([class("inline-block")], [
-                input([
-                  id("serves"),
-                  class(
-                    "pr-0.5 mr-2 sm:mr-4 col-span-3 input-base input-focus w-[3ch] text-right text-base bg-ecru-white-100",
-                  ),
-                  type_("number"),
-                  name("serves"),
-                  value(recipe.serves |> int.to_string),
-                  on_input(UserUpdatedRecipeServes),
-                ]),
-              ]),
-            ]),
-          ],
-        ),
-        fieldset(
-          [
-            class(
-              "sm:ml-1 col-span-full content-start sm:col-start-6 sm:col-span-7 sm:mt-2 flex flex-wrap items-baseline gap-3",
-            ),
-          ],
-          [
-            case recipe.tags, option.map(recipe.tags, dict.is_empty) {
-              Some(tags), Some(False) -> {
-                let children =
-                  tags
-                  |> dict.to_list
-                  |> list.sort(by: fn(a, b) {
-                    int.compare(pair.first(a), pair.first(b))
-                  })
-                  |> list.map(fn(a) {
-                    #(
-                      int.to_string(pair.first(a)),
-                      tag_input(
-                        tag_options,
-                        pair.first(a),
-                        Some(pair.second(a)),
+                ],
+              ),
+              fieldset(
+                [class("flex flex-wrap justify-between items-baseline")],
+                [
+                  label([class("text-base "), for("serves")], [
+                    text("Serves:"),
+                  ]),
+                  div([class("inline-block")], [
+                    input([
+                      id("serves"),
+                      class(
+                        "pr-0.5 mr-2 sm:mr-4 col-span-3 input-base input-focus w-[3ch] text-right text-base bg-ecru-white-100",
                       ),
-                    )
-                  })
-                keyed.element("div", [class("contents")], children)
-              }
-              _, _ ->
-                span(
-                  [class("cursor-pointer"), on_click(UserAddedTagAtIndex(0))],
-                  [
-                    text("🏷️"),
-                  ],
-                )
-            },
-          ],
-        ),
-        fieldset(
-          [
-            class(
-              "col-span-full mr-2 p-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
-            ),
-          ],
-          [
-            legend([class("mx-2 px-1 text-base ")], [text("Ingredients")]),
-            case recipe.ingredients {
-              Some(ings) -> {
-                let children =
-                  ings
-                  |> dict.to_list
-                  |> list.sort(by: fn(a, b) {
-                    int.compare(pair.first(a), pair.first(b))
-                  })
-                  |> list.map(fn(a) {
-                    #(
-                      int.to_string(pair.first(a)),
-                      ingredient_input(pair.first(a), Some(pair.second(a))),
-                    )
-                  })
-                keyed.element("div", [class("contents")], children)
-              }
-              _ -> ingredient_input(0, None)
-            },
-          ],
-        ),
-        fieldset(
-          [
-            class(
-              "col-span-full mr-2 p-2 gap-2 flex flex-col h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
-            ),
-          ],
-          [
-            legend([class("mx-2 px-1 text-base ")], [text("Method")]),
-            case recipe.method_steps {
-              Some(steps) -> {
-                let children =
-                  steps
-                  |> dict.to_list
-                  |> list.sort(by: fn(a, b) {
-                    int.compare(pair.first(a), pair.first(b))
-                  })
-                  |> list.map(fn(a) {
-                    #(
-                      int.to_string(pair.first(a)),
-                      method_step_input(pair.first(a), Some(pair.second(a))),
-                    )
-                  })
-                keyed.element("div", [class("contents")], children)
-              }
-              _ -> ingredient_input(0, None)
-            },
-          ],
-        ),
-      ]),
+                      type_("number"),
+                      name("serves"),
+                      value(recipe.serves |> int.to_string),
+                      on_input(UserUpdatedRecipeServes),
+                    ]),
+                  ]),
+                ],
+              ),
+            ],
+          ),
+          fieldset(
+            [
+              class(
+                "sm:ml-1 col-span-full content-start sm:col-start-6 sm:col-span-7 sm:mt-2 flex flex-wrap items-baseline gap-3",
+              ),
+            ],
+            [
+              case recipe.tags, option.map(recipe.tags, dict.is_empty) {
+                Some(tags), Some(False) -> {
+                  let children =
+                    tags
+                    |> dict.to_list
+                    |> list.sort(by: fn(a, b) {
+                      int.compare(pair.first(a), pair.first(b))
+                    })
+                    |> list.map(fn(a) {
+                      #(
+                        int.to_string(pair.first(a)),
+                        tag_input(
+                          tag_options,
+                          pair.first(a),
+                          Some(pair.second(a)),
+                        ),
+                      )
+                    })
+                  keyed.element("div", [class("contents")], children)
+                }
+                _, _ ->
+                  span(
+                    [class("cursor-pointer"), on_click(UserAddedTagAtIndex(0))],
+                    [
+                      text("🏷️"),
+                    ],
+                  )
+              },
+            ],
+          ),
+          fieldset(
+            [
+              class(
+                "col-span-full mr-2 p-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
+              ),
+            ],
+            [
+              legend([class("mx-2 px-1 text-base ")], [text("Ingredients")]),
+              case recipe.ingredients {
+                Some(ings) -> {
+                  let children =
+                    ings
+                    |> dict.to_list
+                    |> list.sort(by: fn(a, b) {
+                      int.compare(pair.first(a), pair.first(b))
+                    })
+                    |> list.map(fn(a) {
+                      #(
+                        int.to_string(pair.first(a)),
+                        ingredient_input(pair.first(a), Some(pair.second(a))),
+                      )
+                    })
+                  keyed.element("div", [class("contents")], children)
+                }
+                _ -> ingredient_input(0, None)
+              },
+            ],
+          ),
+          fieldset(
+            [
+              class(
+                "col-span-full mr-2 p-2 gap-2 flex flex-col h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
+              ),
+            ],
+            [
+              legend([class("mx-2 px-1 text-base ")], [text("Method")]),
+              case recipe.method_steps {
+                Some(steps) -> {
+                  let children =
+                    steps
+                    |> dict.to_list
+                    |> list.sort(by: fn(a, b) {
+                      int.compare(pair.first(a), pair.first(b))
+                    })
+                    |> list.map(fn(a) {
+                      #(
+                        int.to_string(pair.first(a)),
+                        method_step_input(pair.first(a), Some(pair.second(a))),
+                      )
+                    })
+                  keyed.element("div", [class("contents")], children)
+                }
+                _ -> ingredient_input(0, None)
+              },
+            ],
+          ),
+        ],
+      ),
       nav_footer([
         a([href("/"), class("text-center")], [text("🏠")]),
         a([href("/recipes/" <> recipe.slug), class("text-center")], [
@@ -929,198 +955,219 @@ pub fn view_recipe_detail(recipe: Recipe) {
           recipe.title,
           "underline-green [grid-area:header] col-span-full md:col-span-[11]",
         ),
-        div([class("subgrid-cols gap-y-2 overflow-auto [grid-area:content]")], [
-          case recipe.author, recipe.source {
-            None, None -> element.none()
-            _, _ ->
-              fieldset(
-                [
-                  class("flex gap-1 items-baseline col-span-full sm:col-span-5"),
-                ],
-                list.flatten([
-                  case recipe.author {
-                    Some(a) -> [
-                      html.span([class("text-sm")], [text("🧾")]),
-                      html.span(
-                        [
-                          class("text-base"),
-                          {
-                            case string.length(a) > 19 {
-                              True ->
-                                class(
-                                  "w-["
-                                  <> int.to_string(string.length(a))
-                                  <> "]",
-                                )
-                              _ -> class("w-[19ch]")
-                            }
-                          },
-                        ],
-                        [text(a)],
+        div(
+          [class("subgrid-cols gap-y-2 overflow-y-scroll [grid-area:content]")],
+          [
+            case recipe.author, recipe.source {
+              None, None -> element.none()
+              _, _ ->
+                fieldset(
+                  [
+                    class(
+                      "flex gap-1 items-baseline col-span-full sm:col-span-5",
+                    ),
+                  ],
+                  list.flatten([
+                    case recipe.author {
+                      Some(a) -> [
+                        html.span([class("text-sm")], [text("🧾")]),
+                        html.span(
+                          [
+                            class("text-base"),
+                            {
+                              case string.length(a) > 19 {
+                                True ->
+                                  class(
+                                    "w-["
+                                    <> int.to_string(string.length(a))
+                                    <> "]",
+                                  )
+                                _ -> class("w-[19ch]")
+                              }
+                            },
+                          ],
+                          [text(a)],
+                        ),
+                      ]
+                      _ -> []
+                    },
+                    case recipe.source {
+                      Some(source) -> [
+                        html.span([class("text-sm")], [text("📗")]),
+                        case uri.parse(source) {
+                          Ok(uri) ->
+                            html.a([class("text-base"), href(source)], [
+                              text(option.unwrap(uri.host, uri.path)),
+                            ])
+                          Error(_) ->
+                            html.span([class("text-base")], [text(source)])
+                        },
+                      ]
+                      _ -> []
+                    },
+                  ]),
+                )
+            },
+            fieldset(
+              [
+                class(
+                  "flex flex-row gap-2 col-span-full sm:col-span-5 sm:col-start-1",
+                ),
+              ],
+              [
+                fieldset(
+                  [class("flex flex-wrap justify-start items-baseline")],
+                  [
+                    label([for("prep_time"), class("text-base")], [
+                      text("Prep:"),
+                    ]),
+                    div([class("text-lg ml-2")], [
+                      text(
+                        case recipe.prep_time > 59 {
+                          True ->
+                            int.floor_divide(recipe.prep_time, 60)
+                            |> result.unwrap(0)
+                            |> int.to_string
+                            |> string.replace("0", "")
+                            <> "h "
+                          _ -> ""
+                        }
+                        <> recipe.prep_time % 60
+                        |> int.to_string
+                        <> "m",
                       ),
-                    ]
-                    _ -> []
-                  },
-                  case recipe.source {
-                    Some(source) -> [
-                      html.span([class("text-sm")], [text("📗")]),
-                      case uri.parse(source) {
-                        Ok(uri) ->
-                          html.a([class("text-base"), href(source)], [
-                            text(option.unwrap(uri.host, uri.path)),
-                          ])
-                        Error(_) ->
-                          html.span([class("text-base")], [text(source)])
-                      },
-                    ]
-                    _ -> []
-                  },
-                ]),
-              )
-          },
-          fieldset(
-            [
-              class(
-                "flex flex-row gap-2 col-span-full sm:col-span-5 sm:col-start-1",
-              ),
-            ],
-            [
-              fieldset([class("flex flex-wrap justify-start items-baseline")], [
-                label([for("prep_time"), class("text-base")], [text("Prep:")]),
-                div([class("text-lg ml-2")], [
-                  text(
-                    case recipe.prep_time > 59 {
-                      True ->
-                        int.floor_divide(recipe.prep_time, 60)
-                        |> result.unwrap(0)
+                    ]),
+                  ],
+                ),
+                fieldset(
+                  [class("flex flex-wrap justify-start items-baseline")],
+                  [
+                    label([for("cook_time"), class("text-base")], [
+                      text("Cook:"),
+                    ]),
+                    div([class("text-lg ml-2")], [
+                      text(
+                        case recipe.cook_time > 59 {
+                          True ->
+                            int.floor_divide(recipe.cook_time, 60)
+                            |> result.unwrap(0)
+                            |> int.to_string
+                            |> string.replace("0", "")
+                            <> "h "
+                          _ -> ""
+                        }
+                        <> recipe.cook_time % 60
                         |> int.to_string
-                        |> string.replace("0", "")
-                        <> "h "
-                      _ -> ""
-                    }
-                    <> recipe.prep_time % 60
-                    |> int.to_string
-                    <> "m",
-                  ),
-                ]),
-              ]),
-              fieldset([class("flex flex-wrap justify-start items-baseline")], [
-                label([for("cook_time"), class("text-base")], [text("Cook:")]),
-                div([class("text-lg ml-2")], [
-                  text(
-                    case recipe.cook_time > 59 {
-                      True ->
-                        int.floor_divide(recipe.cook_time, 60)
-                        |> result.unwrap(0)
-                        |> int.to_string
-                        |> string.replace("0", "")
-                        <> "h "
-                      _ -> ""
-                    }
-                    <> recipe.cook_time % 60
-                    |> int.to_string
-                    <> "m",
-                  ),
-                ]),
-              ]),
-              fieldset([class("flex flex-wrap justify-start items-baseline")], [
-                label([for("cook_time"), class("text-base")], [text("Serves:")]),
-                div([class("mr-2 sm:mr-4 ml-2 text-lg")], [
-                  text(int.to_string(recipe.serves)),
-                ]),
-              ]),
-            ],
-          ),
-          case recipe.tags {
-            Some(tags) -> {
-              let children =
-                tags
-                |> dict.to_list
-                |> list.sort(by: fn(a, b) {
-                  int.compare(pair.first(a), pair.first(b))
-                })
-                |> list.map(fn(a) {
-                  #(int.to_string(pair.first(a)), view_tag(pair.second(a)))
-                })
-              fieldset(
-                [
-                  class(
-                    "col-span-full content-start flex flex-wrap items-baseline gap-3
+                        <> "m",
+                      ),
+                    ]),
+                  ],
+                ),
+                fieldset(
+                  [class("flex flex-wrap justify-start items-baseline")],
+                  [
+                    label([for("cook_time"), class("text-base")], [
+                      text("Serves:"),
+                    ]),
+                    div([class("mr-2 sm:mr-4 ml-2 text-lg")], [
+                      text(int.to_string(recipe.serves)),
+                    ]),
+                  ],
+                ),
+              ],
+            ),
+            case recipe.tags {
+              Some(tags) -> {
+                let children =
+                  tags
+                  |> dict.to_list
+                  |> list.sort(by: fn(a, b) {
+                    int.compare(pair.first(a), pair.first(b))
+                  })
+                  |> list.map(fn(a) {
+                    #(int.to_string(pair.first(a)), view_tag(pair.second(a)))
+                  })
+                fieldset(
+                  [
+                    class(
+                      "col-span-full content-start flex flex-wrap items-baseline gap-3
                       sm:ml-1 sm:col-start-6 sm:col-span-7 sm:mt-2",
-                  ),
-                ],
-                [keyed.element("div", [class("contents")], children)],
-              )
-            }
-            _ -> element.none()
-          },
-          fieldset(
-            [
-              class(
-                "col-span-full text-base p-2 mr-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px]
+                    ),
+                  ],
+                  [keyed.element("div", [class("contents")], children)],
+                )
+              }
+              _ -> element.none()
+            },
+            fieldset(
+              [
+                class(
+                  "col-span-full text-base p-2 mr-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px]
                 sm:row-start-3 sm:col-span-5 [box-shadow:1px_1px_0_#a3d2ab]",
-              ),
-            ],
-            [
-              legend([class("mx-2 px-1 text-base")], [text("Ingredients")]),
-              case recipe.ingredients {
-                Some(ings) -> {
-                  let children =
-                    ings
-                    |> dict.to_list
-                    |> list.sort(by: fn(a, b) {
-                      int.compare(pair.first(a), pair.first(b))
-                    })
-                    |> list.map(fn(a) {
-                      #(
-                        int.to_string(pair.first(a)),
-                        view_ingredient(pair.second(a)),
-                      )
-                    })
-                  keyed.element("div", [class("contents")], children)
-                }
-                _ -> element.none()
-              },
-            ],
-          ),
-          fieldset(
-            [
-              class(
-                "flex justify-start flex-wrap col-span-full p-2 mr-2 h-[fit-content]  border-ecru-white-950 border-[1px] rounded-[1px]  sm:col-span-7 sm:row-start-3   [box-shadow:1px_1px_0_#a3d2ab]",
-              ),
-            ],
-            [
-              legend([class("mx-2 px-1 text-base")], [text("Method")]),
-              ol(
-                [
-                  class(
-                    "flex flex-wrap justify-start gap-2 w-full list-decimal marker:text-sm marker:font-mono text-base items-baseline col-span-full",
-                  ),
-                ],
-                [
-                  case recipe.method_steps {
-                    Some(steps) -> {
-                      let children =
-                        steps
-                        |> dict.to_list
-                        |> list.sort(by: fn(a, b) {
-                          int.compare(pair.first(a), pair.first(b))
-                        })
-                        |> list.map(fn(a) {
-                          #(
-                            int.to_string(pair.first(a)),
-                            view_method_step(pair.second(a)),
-                          )
-                        })
-                      keyed.element("div", [class("contents")], children)
-                    }
-                    _ -> element.none()
-                  },
-                ],
-              ),
-            ],
-          ),
-        ]),
+                ),
+              ],
+              [
+                legend([class("mx-2 px-1 text-base")], [text("Ingredients")]),
+                case recipe.ingredients {
+                  Some(ings) -> {
+                    let children =
+                      ings
+                      |> dict.to_list
+                      |> list.sort(by: fn(a, b) {
+                        int.compare(pair.first(a), pair.first(b))
+                      })
+                      |> list.map(fn(a) {
+                        #(
+                          int.to_string(pair.first(a)),
+                          view_ingredient(pair.second(a)),
+                        )
+                      })
+                    keyed.element("div", [class("contents")], children)
+                  }
+                  _ -> element.none()
+                },
+              ],
+            ),
+            fieldset(
+              [
+                class(
+                  "flex justify-start flex-wrap col-span-full p-2 mr-2 h-[fit-content]  border-ecru-white-950 border-[1px] rounded-[1px]  sm:col-span-7 sm:row-start-3   [box-shadow:1px_1px_0_#a3d2ab]",
+                ),
+              ],
+              [
+                legend([class("mx-2 px-1 text-base")], [text("Method")]),
+                ol(
+                  [
+                    class(
+                      "flex flex-wrap justify-start gap-2 w-full list-decimal marker:text-sm marker:font-mono text-base items-baseline col-span-full",
+                    ),
+                  ],
+                  [
+                    case recipe.method_steps {
+                      Some(steps) -> {
+                        let children =
+                          steps
+                          |> dict.to_list
+                          |> list.sort(by: fn(a, b) {
+                            int.compare(pair.first(a), pair.first(b))
+                          })
+                          |> list.map(fn(a) {
+                            #(
+                              int.to_string(pair.first(a)),
+                              view_method_step(pair.second(a)),
+                            )
+                          })
+                        keyed.element("div", [class("contents")], children)
+                      }
+                      _ -> element.none()
+                    },
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+
         nav_footer([
           a([href("/"), class("text-center")], [text("🏠")]),
           a([href("/recipes"), class("text-center")], [text("📖")]),
