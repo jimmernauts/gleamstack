@@ -572,7 +572,7 @@ pub fn view_recipe_list(model: session.RecipeList) {
   section(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+        "h-env-screen grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
       ),
     ],
     [
@@ -583,7 +583,7 @@ pub fn view_recipe_list(model: session.RecipeList) {
       div(
         [
           class(
-            "subgrid-cols overflow-y-scroll col-span-full grid-rows-[repeat(12,_fit-content(100px))] gap-y-2",
+            "subgrid-cols grid-rows-[repeat(12,minmax(min-content,35px))] overflow-y-scroll  col-span-full gap-y-2",
           ),
         ],
         [
@@ -641,7 +641,7 @@ pub fn edit_recipe_detail(
   form(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+        "h-env-screen items-start grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
       ),
       id("create_recipe_form"),
       event.on_submit(fn(_x) { UserSavedUpdatedRecipe(recipe) }),
@@ -947,7 +947,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
     section(
       [
         class(
-          "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+          "h-env-screen  grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
         ),
       ],
       [
@@ -956,7 +956,11 @@ pub fn view_recipe_detail(recipe: Recipe) {
           "underline-green [grid-area:header] col-span-full md:col-span-[11]",
         ),
         div(
-          [class("subgrid-cols gap-y-2 overflow-y-scroll [grid-area:content]")],
+          [
+            class(
+              "subgrid-cols grid-rows-[repeat(4,minmax(min-content,35px))] gap-y-2 overflow-y-scroll [grid-area:content]",
+            ),
+          ],
           [
             case recipe.author, recipe.source {
               None, None -> element.none()
@@ -997,7 +1001,10 @@ pub fn view_recipe_detail(recipe: Recipe) {
                         case uri.parse(source) {
                           Ok(uri) ->
                             html.a([class("text-base"), href(source)], [
-                              text(option.unwrap(uri.host, uri.path)),
+                              text(
+                                option.unwrap(uri.host, uri.path)
+                                |> string.replace("www.", ""),
+                              ),
                             ])
                           Error(_) ->
                             html.span([class("text-base")], [text(source)])
@@ -1631,7 +1638,7 @@ fn method_step_input(index: Int, method_step: Option(MethodStep)) {
         name("method-step-" <> index |> int.to_string),
         id("method-step-" <> index |> int.to_string),
         class(
-          "mx-3 bg-ecru-white-100 w-full input-focus text-base resize-none [field-sizing:content]",
+          "mx-3 max-w-[70dvw] bg-ecru-white-100 w-full input-focus text-base resize-none [field-sizing:content]",
         ),
         attribute("rows", "3"),
         on_input(update_methodstep_at_index(index)),

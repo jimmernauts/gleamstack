@@ -286,7 +286,7 @@ pub fn view_planner(model: Model) {
   section(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+        "grid grid-cols-12 h-env-screen col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
       ),
     ],
     [
