@@ -641,7 +641,7 @@ pub fn edit_recipe_detail(
   form(
     [
       class(
-        "h-env-screen items-start grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+        "h-env-screen grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
       ),
       id("create_recipe_form"),
       event.on_submit(fn(_x) { UserSavedUpdatedRecipe(recipe) }),
@@ -666,9 +666,11 @@ pub fn edit_recipe_detail(
         recipe.title,
       ),
       div(
-        // TODO: need to add some row min-content sizing here, short recipes
-        // are spaced too far apart on large screen
-        [class("subgrid-cols gap-y-2 overflow-y-scroll [grid-area:content]")],
+        [
+          class(
+            "subgrid-cols grid-rows-[repeat(4,minmax(min-content,35px))] gap-y-2 overflow-y-scroll [grid-area:content]",
+          ),
+        ],
         [
           div([class("subgrid-cols col-span-full items-baseline")], [
             div([class("col-start-1 col-span-6 md:col-span-5 flex gap-1  ")], [

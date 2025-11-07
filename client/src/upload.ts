@@ -212,7 +212,7 @@ export async function do_submit_file(
         max_tokens: 2000,
         temperature: 0,
         thinking: { type: "disabled" },
-        system: "You are a helpful assistant that extracts recipe information from images. Extract all recipe details including title, ingredients, preparation steps, cooking time, and serving size.",
+        system: "You are a helpful assistant that extracts recipe information from images. Extract all recipe details including title, ingredients, preparation steps, cooking time, and serving size. Try and discard unnecessary information from the recipe list, particularly minor ingredients like 'salt and pepper to taste'.",
         messages: [
             {
                 role: "user",

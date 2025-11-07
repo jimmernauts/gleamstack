@@ -1,9 +1,10 @@
 # mealstack_server
 
-- can't remember where this is up to.
-- I can see it's a JS server project with Glen, I don't think it actually deploys anywhere?
-- It looks like its only responsibility is to scrape a recipe page and return the JSON-LD data.
+## What is this?
 
-- TODO: do I need to deploy this?
+- This is the server component of the mealstack app.
+- It's a simple server that scrapes a recipe page given a URL and returns either the recipe data or the JSON-LD data.
+- It's written in Glen, a language that compiles to JS.
+- It's called by the frontend upload page, in upload.ts/do_scrape_url the server address is hardcode to localhost:8000
 - TODO: can I move it to the frontend somehow?
 - TODO: can I deploy it to a serverless function?

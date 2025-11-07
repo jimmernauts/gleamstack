@@ -3,6 +3,7 @@ TODO
 [] SHOPPING LIST
 [] write proper readme
 [] BUG: strange plan behaviour around 29/9/2025. Outside of that date seems fine.
+[] BUG: noticed double plan entry when editing an existing plan entry
 [] BUG: save recipe slow
 [] copy recipes from browser bookmarks
 [] Add bunch of recipes
