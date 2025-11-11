@@ -1,0 +1,7 @@
+---
+version: 1.4.1
+title: recipe_title_summary_minimal
+file: ./test/snapshot/component_snapshot_test.gleam
+test_name: string_snapshot_tests
+---
+Minimal Recipe (Serves 1)

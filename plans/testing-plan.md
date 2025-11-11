@@ -242,10 +242,7 @@ gleam test --file test/unit/recipe_creation_test.gleam
 
 ## Next Steps
 
-1. Review and approve this testing plan
-2. Add Birdie dependency to project
-3. Create test infrastructure and utilities
-4. Implement tests phase by phase
+1. Implement tests phase by phase
 
 ## Notes
 

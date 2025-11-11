@@ -1,0 +1,8 @@
+---
+version: 1.4.1
+title: recipe_ingredients_list
+file: ./test/snapshot/component_snapshot_test.gleam
+test_name: string_snapshot_tests
+---
+1. Test Ingredient 1 (1 cup)
+2. Test Ingredient 2 (2 tsp)

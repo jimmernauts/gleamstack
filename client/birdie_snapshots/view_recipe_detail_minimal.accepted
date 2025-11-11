@@ -1,0 +1,70 @@
+---
+version: 1.4.1
+title: view_recipe_detail_minimal
+file: ./test/snapshot/component_snapshot_test.gleam
+test_name: snapshot_tests
+---
+<section class="h-env-screen  grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2">
+  <div class="mt-2 flex col-start-1 text-7xl underline-green [grid-area:header] col-span-full md:col-span-[11]">
+    <h1 class="min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
+      Minimal Recipe
+    </h1>
+  </div>
+  <div class="subgrid-cols grid-rows-[repeat(4,minmax(min-content,35px))] gap-y-2 overflow-y-scroll [grid-area:content]">
+
+    <fieldset class="flex flex-row gap-2 col-span-full sm:col-span-5 sm:col-start-1">
+      <fieldset class="flex flex-wrap justify-start items-baseline">
+        <label class="text-base" for="prep_time">
+          Prep:
+        </label>
+        <div class="text-lg ml-2">
+          0m
+        </div>
+      </fieldset>
+      <fieldset class="flex flex-wrap justify-start items-baseline">
+        <label class="text-base" for="cook_time">
+          Cook:
+        </label>
+        <div class="text-lg ml-2">
+          0m
+        </div>
+      </fieldset>
+      <fieldset class="flex flex-wrap justify-start items-baseline">
+        <label class="text-base" for="cook_time">
+          Serves:
+        </label>
+        <div class="mr-2 sm:mr-4 ml-2 text-lg">
+          1
+        </div>
+      </fieldset>
+    </fieldset>
+
+    <fieldset class="col-span-full text-base p-2 mr-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px]
+                sm:row-start-3 sm:col-span-5 [box-shadow:1px_1px_0_#a3d2ab]">
+      <legend class="mx-2 px-1 text-base">
+        Ingredients
+      </legend>
+
+    </fieldset>
+    <fieldset class="flex justify-start flex-wrap col-span-full p-2 mr-2 h-[fit-content]  border-ecru-white-950 border-[1px] rounded-[1px]  sm:col-span-7 sm:row-start-3   [box-shadow:1px_1px_0_#a3d2ab]">
+      <legend class="mx-2 px-1 text-base">
+        Method
+      </legend>
+      <ol class="flex flex-wrap justify-start gap-2 w-full list-decimal marker:text-sm marker:font-mono text-base items-baseline col-span-full">
+
+      </ol>
+    </fieldset>
+  </div>
+  <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base  justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
+    <a class="text-center" href="/">
+      🏠
+    </a>
+    <a class="text-center" href="/recipes">
+      📖
+    </a>
+    <a class="text-center" href="/recipes/minimal-recipe/edit">
+      ✏️
+    </a>
+  </nav>
+</section>
+

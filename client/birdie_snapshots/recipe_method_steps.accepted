@@ -1,0 +1,8 @@
+---
+version: 1.4.1
+title: recipe_method_steps
+file: ./test/snapshot/component_snapshot_test.gleam
+test_name: string_snapshot_tests
+---
+1. First test step
+2. Second test step

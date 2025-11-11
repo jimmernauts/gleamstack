@@ -1,0 +1,7 @@
+---
+version: 1.4.1
+title: recipe_title_summary_complete
+file: ./test/snapshot/component_snapshot_test.gleam
+test_name: string_snapshot_tests
+---
+Test Recipe by Test Chef (Serves 4)

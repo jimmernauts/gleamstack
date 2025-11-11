@@ -1,6 +1,7 @@
 import lib/utils
 import startest.{describe, it}
 import startest/expect
+import snapshot/component_snapshot_test.{snapshot_tests, string_snapshot_tests}
 
 pub fn main() {
   startest.run(startest.default_config())
@@ -54,4 +55,12 @@ pub fn utils_tests() {
       }),
     ]),
   ])
+}
+
+pub fn snapshot_test() {
+  snapshot_tests()
+}
+
+pub fn string_snapshot_test() {
+  string_snapshot_tests()
 }
