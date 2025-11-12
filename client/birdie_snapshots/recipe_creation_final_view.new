@@ -1,0 +1,66 @@
+---
+version: 1.4.1
+title: recipe_creation_final_view
+---
+<main class="h-env-screen grid ml-2 mr-2 gap-2
+      2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90%_[main-end]_3fr_[full-end]_1fr_[end]]
+      xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+      lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+      md:grid-cols-[[start_full-start]_1fr_[main-start]_95%_[main-end]_1fr_[full-end_end]]
+      grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
+      text-ecru-white-950 font-transitional text-lg">
+  <section class="grid auto-rows-min grid-cols-12 col-start-[main-start] gap-y-12">
+    <div class="mt-2 flex col-start-1 text-7xl text-9xl placeholder:underline-pink underline-pink col-span-11">
+      <h1 class="min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
+        Mealstack
+      </h1>
+    </div>
+    <nav class="flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4">
+      <a class="text-center" href="/settings">
+        ⚙️
+      </a>
+    </nav>
+    <nav class="subgrid-cols gap-y-12 col-span-full text-6xl mx-2 font-mono">
+      <a class="col-span-full subgrid-cols sm:col-span-6 items-baseline pr-4" href="/planner">
+        <span class="text-5xl col-start-2 sm:col-start-1">
+          📅
+        </span>
+        <span class="col-start-4 sm:col-start-3 lg:col-start-2 lg:ml-4 underline-orange">
+          Plan
+        </span>
+      </a>
+      <a class="col-span-full subgrid-cols sm:col-span-6 items-baseline pr-4" href="/shopping-list">
+        <span class="text-5xl col-start-2 sm:col-start-1">
+          🛒
+        </span>
+        <span class="col-start-4 sm:col-start-3 lg:col-start-2 lg:ml-4 underline-purple">
+          Shop
+        </span>
+      </a>
+      <a class="col-span-full subgrid-cols sm:col-span-6 items-baseline pr-4" href="/recipes">
+        <span class="text-5xl col-start-2 sm:col-start-1">
+          📖
+        </span>
+        <span class="col-start-4 sm:col-start-3 lg:col-start-2 lg:ml-4 underline-green">
+          List
+        </span>
+      </a>
+      <a class="col-span-full subgrid-cols sm:col-span-6 items-baseline pr-4" href="/recipes/new">
+        <span class="text-5xl col-start-2 sm:col-start-1">
+          📝
+        </span>
+        <span class="col-start-4 sm:col-start-3 lg:col-start-2 lg:ml-4 underline-blue">
+          New
+        </span>
+      </a>
+      <a class="col-span-full subgrid-cols sm:col-span-6 items-baseline pr-4" href="/import">
+        <span class="text-5xl col-start-2 sm:col-start-1">
+          📤
+        </span>
+        <span class="col-start-4 sm:col-start-3 lg:col-start-2 lg:ml-4 underline-yellow">
+          Import
+        </span>
+      </a>
+    </nav>
+  </section>
+</main>

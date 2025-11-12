@@ -638,3 +638,16 @@ fn view_home() {
     ],
   )
 }
+
+// Export core functions for testing
+pub fn public_init(flags) -> #(Model, Effect(Msg)) {
+  init(flags)
+}
+
+pub fn public_update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
+  update(model, msg)
+}
+
+pub fn public_view(model: Model) -> Element(Msg) {
+  view(model)
+}
