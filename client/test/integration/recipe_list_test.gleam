@@ -1,14 +1,15 @@
 import app.{OnRouteChange, RecipeList, ViewRecipeList}
 import birdie
+import domains/recipe/recipe.{
+  DbRetrievedRecipes, GroupByAuthor, GroupByTag, UserGroupedRecipeListByAuthor,
+  UserGroupedRecipeListByTag,
+}
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
 import lustre/dev/simulate
 import lustre/element
-import shared/database.{
-  DbRetrievedRecipes, GroupByAuthor, GroupByTag, Recipe, Tag,
-  UserGroupedRecipeListByAuthor, UserGroupedRecipeListByTag,
-}
+import shared/types.{Recipe, Tag}
 import startest.{describe, it}
 import startest/expect
 

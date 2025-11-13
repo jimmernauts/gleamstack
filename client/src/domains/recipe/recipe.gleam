@@ -94,10 +94,10 @@ fn save_recipe(recipe: Recipe) -> Effect(RecipeDetailMsg) {
   DbSavedUpdatedRecipe(recipe) |> dispatch
 }
 
-@external(javascript, ".././db.ts", "do_save_recipe")
+@external(javascript, "../../db.ts", "do_save_recipe")
 fn do_save_recipe(recipe: JsRecipe) -> Nil
 
-@external(javascript, ".././db.ts", "do_delete_recipe")
+@external(javascript, "../../db.ts", "do_delete_recipe")
 fn do_delete_recipe(id: String) -> Nil
 
 type JsRecipe {
@@ -126,7 +126,7 @@ pub fn get_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
   Nil
 }
 
-@external(javascript, "../db.ts", "do_get_one_recipe_by_slug")
+@external(javascript, "../../db.ts", "do_get_one_recipe_by_slug")
 fn do_get_one_recipe_by_slug(slug: String) -> Promise(Dynamic)
 
 pub fn subscribe_to_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
@@ -141,7 +141,7 @@ pub fn subscribe_to_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
   Nil
 }
 
-@external(javascript, "../db.ts", "do_subscribe_to_one_recipe_by_slug")
+@external(javascript, "../../db.ts", "do_subscribe_to_one_recipe_by_slug")
 fn do_subscribe_to_one_recipe_by_slug(
   slug: String,
   callback: fn(a) -> Nil,
@@ -156,7 +156,7 @@ pub fn get_recipes() -> Effect(RecipeListMsg) {
   Nil
 }
 
-@external(javascript, "../db.ts", "do_get_recipes")
+@external(javascript, "../../db.ts", "do_get_recipes")
 fn do_get_recipes() -> Promise(Dynamic)
 
 pub fn get_tag_options() -> Effect(RecipeListMsg) {
@@ -168,7 +168,7 @@ pub fn get_tag_options() -> Effect(RecipeListMsg) {
   Nil
 }
 
-@external(javascript, "../db.ts", "do_get_tagoptions")
+@external(javascript, "../../db.ts", "do_get_tagoptions")
 fn do_get_tagoptions() -> Promise(Dynamic)
 
 pub fn subscribe_to_recipe_summaries() -> Effect(RecipeListMsg) {
@@ -183,7 +183,7 @@ pub fn subscribe_to_recipe_summaries() -> Effect(RecipeListMsg) {
   Nil
 }
 
-@external(javascript, "../db.ts", "do_subscribe_to_recipe_summaries")
+@external(javascript, "../../db.ts", "do_subscribe_to_recipe_summaries")
 fn do_subscribe_to_recipe_summaries(callback: fn(a) -> Nil) -> fn() -> Nil
 
 //-UPDATE------------------------------------------------------------

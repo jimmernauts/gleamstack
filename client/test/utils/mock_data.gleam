@@ -1,7 +1,9 @@
 import gleam/dict
-import gleam/list
 import gleam/option.{None, Some}
-import shared/database.{type Ingredient, type MethodStep, type Recipe, type Tag, Ingredient, IngredientCategory, MethodStep, Recipe, Tag}
+import shared/types.{
+  type Ingredient, type MethodStep, type Recipe, type Tag, Ingredient,
+  IngredientCategory, MethodStep, Recipe, Tag,
+}
 
 pub fn valid_recipe() -> Recipe {
   Recipe(
@@ -13,18 +15,42 @@ pub fn valid_recipe() -> Recipe {
     serves: 4,
     author: Some("Test Chef"),
     source: Some("https://example.com/recipe"),
-    ingredients: Some(dict.from_list([
-      #(1, Ingredient(name: Some("Test Ingredient 1"), ismain: Some(True), quantity: Some("1"), units: Some("cup"), category: Some(IngredientCategory("main")))),
-      #(2, Ingredient(name: Some("Test Ingredient 2"), ismain: Some(False), quantity: Some("2"), units: Some("tsp"), category: Some(IngredientCategory("spice")))),
-    ])),
-    method_steps: Some(dict.from_list([
-      #(1, MethodStep(step_text: "First test step")),
-      #(2, MethodStep(step_text: "Second test step")),
-    ])),
-    tags: Some(dict.from_list([
-      #(1, Tag(name: "test", value: "testing")),
-      #(2, Tag(name: "category", value: "demo")),
-    ])),
+    ingredients: Some(
+      dict.from_list([
+        #(
+          1,
+          Ingredient(
+            name: Some("Test Ingredient 1"),
+            ismain: Some(True),
+            quantity: Some("1"),
+            units: Some("cup"),
+            category: Some(IngredientCategory("main")),
+          ),
+        ),
+        #(
+          2,
+          Ingredient(
+            name: Some("Test Ingredient 2"),
+            ismain: Some(False),
+            quantity: Some("2"),
+            units: Some("tsp"),
+            category: Some(IngredientCategory("spice")),
+          ),
+        ),
+      ]),
+    ),
+    method_steps: Some(
+      dict.from_list([
+        #(1, MethodStep(step_text: "First test step")),
+        #(2, MethodStep(step_text: "Second test step")),
+      ]),
+    ),
+    tags: Some(
+      dict.from_list([
+        #(1, Tag(name: "test", value: "testing")),
+        #(2, Tag(name: "category", value: "demo")),
+      ]),
+    ),
     shortlisted: Some(False),
   )
 }
@@ -51,7 +77,13 @@ pub fn recipe_list() -> List(Recipe) {
 }
 
 pub fn valid_ingredient() -> Ingredient {
-  Ingredient(name: Some("Test Ingredient"), ismain: Some(True), quantity: Some("1"), units: Some("cup"), category: Some(IngredientCategory("main")))
+  Ingredient(
+    name: Some("Test Ingredient"),
+    ismain: Some(True),
+    quantity: Some("1"),
+    units: Some("cup"),
+    category: Some(IngredientCategory("main")),
+  )
 }
 
 pub fn valid_method_step() -> MethodStep {

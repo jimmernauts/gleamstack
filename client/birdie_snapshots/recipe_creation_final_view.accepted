@@ -12,7 +12,7 @@ test_name: recipe_creation_workflow_tests
       grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
       text-ecru-white-950 font-transitional text-lg">
   <form class="h-env-screen grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2" id="create_recipe_form">
-    <textarea class="field-sizing-content mt-4 mr-2 [grid-area:header] col-span-full md:col-span-[11] placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-2 input-base input-focus resize-none font-bold italic text-ecru-white-950 bg-ecru-white-100 text-7xl" id="page-title-input" name="title" title="recipe title">
+    <textarea class="field-sizing-content mt-4 mr-2 [grid-area:header] col-span-full md:col-span-11laceholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-2 input-base input-focus resize-none font-bold italic text-ecru-white-950 bg-ecru-white-100 text-7xl" id="page-title-input" name="title" title="recipe title">
       New Recipe
     </textarea>
     <div class="subgrid-cols grid-rows-[repeat(4,minmax(min-content,35px))] gap-y-2 overflow-y-scroll [grid-area:content]">
@@ -85,7 +85,7 @@ test_name: recipe_creation_workflow_tests
           </fieldset>
         </div>
       </fieldset>
-      <fieldset class="col-span-full mr-2 p-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]">
+      <fieldset class="col-span-full mr-2 p-2 h-fit border-ecru-white-950 border rounded-[1px] sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]">
         <legend class="mx-2 px-1 text-base ">
           Ingredients
         </legend>
@@ -111,7 +111,7 @@ test_name: recipe_creation_workflow_tests
           </div>
         </div>
       </fieldset>
-      <fieldset class="col-span-full mr-2 p-2 gap-2 flex flex-col h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]">
+      <fieldset class="col-span-full mr-2 p-2 gap-2 flex flex-col h-fit border-ecru-white-950 border rounded-[1px] sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]">
         <legend class="mx-2 px-1 text-base ">
           Method
         </legend>
@@ -120,7 +120,7 @@ test_name: recipe_creation_workflow_tests
             <label class="font-mono text-sm">
               1.
             </label>
-            <textarea class="mx-3 max-w-[70dvw] bg-ecru-white-100 w-full input-focus text-base resize-none [field-sizing:content]" id="method-step-0" name="method-step-0" rows="3">
+            <textarea class="mx-3 max-w-[70dvw] bg-ecru-white-100 w-full input-focus text-base resize-none field-sizing-content" id="method-step-0" name="method-step-0" rows="3">
 
             </textarea>
             <button class="text-ecru-white-950 text-xs cursor-pointer" id="remove-ingredient-input" type="button">

@@ -1,13 +1,11 @@
+import app.{EditRecipeDetail, OnRouteChange, SlugParam, Upload, ViewUpload}
 import birdie
+import domains/upload.{Other, ParseRecipeResponseReceived, UserUpdatedUrl}
 import gleam/dict
 import gleam/option.{None, Some}
 import lustre/dev/simulate
 import lustre/element
-import app.{
-  EditRecipeDetail, OnRouteChange, SlugParam, Upload, ViewUpload,
-}
-import domains/upload.{Other, ParseRecipeResponseReceived, UserUpdatedUrl}
-import shared/database.{Ingredient, MethodStep, Recipe, Tag}
+import shared/types.{Ingredient, MethodStep, Recipe, Tag}
 import startest.{describe, it}
 import startest/expect
 
@@ -144,9 +142,7 @@ pub fn url_import_integration_tests() {
         )
         |> simulate.message(
           OnRouteChange(
-            app.EditRecipeDetail(app.RecipeParam(
-              recipe: parsed_recipe,
-            )),
+            app.EditRecipeDetail(app.RecipeParam(recipe: parsed_recipe)),
           ),
         )
 

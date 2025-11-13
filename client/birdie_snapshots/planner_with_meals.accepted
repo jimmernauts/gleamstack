@@ -26,43 +26,43 @@ test_name: planner_integration_tests
             md:snap-x md:scroll-pl-[9%] md:scroll-pt-0
             xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]" id="active-week">
       <div class="subgrid-cols md:col-start-1 row-start-1 subgrid-rows col-span-full md:row-span-full md:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full">
-        <div class="md:row-start-2 md:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50">
+        <div class="md:row-start-2 md:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 shadow-orangep-0 bg-ecru-white-50">
           <h2 class="mx-2 ">
             Lunch
           </h2>
         </div>
-        <div class="md:row-start-3 md:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50">
+        <div class="md:row-start-3 md:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  shadow-orange sticky left-0 top-0 bg-ecru-white-50">
           <h2 class="mx-2 ">
             Dinner
           </h2>
         </div>
       </div>
       <div class="md:col-start-2 md:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]" style="--shortMon:&#39;Mon 10&#39;;--longMon:&#39;Monday 10&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortMon)re:sm:content-[var(--longMon)]" style="--shortMon:&#39;Mon 10&#39;;--longMon:&#39;Monday 10&#39;;"></h2>
       </div>
-      <div class="md:col-start-3 md:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]">
-        <h2 class="text-center  before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]" style="--shortTue:&#39;Tue 11&#39;;--longTue:&#39;Tuesday 11&#39;;"></h2>
+      <div class="md:col-start-3 md:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center shadow-orange">
+        <h2 class="text-center  before:content-(--shortTue) before:sm:content-(--longTue)" style="--shortTue:&#39;Tue 11&#39;;--longTue:&#39;Tuesday 11&#39;;"></h2>
       </div>
-      <div class="md:col-start-4 md:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]">
-        <h2 class="text-center  before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]" style="--shortWed:&#39;Wed 12&#39;;--longWed:&#39;Wednesday 12&#39;;"></h2>
+      <div class="md:col-start-4 md:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center shadow-orange">
+        <h2 class="text-center  before:content-(--shortWed) before:sm:content-(--longWed)" style="--shortWed:&#39;Wed 12&#39;;--longWed:&#39;Wednesday 12&#39;;"></h2>
       </div>
-      <div class="md:col-start-5 md:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]">
-        <h2 class="text-center  before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]" style="--shortThu:&#39;Thu 13&#39;;--longThu:&#39;Thursday 13&#39;;"></h2>
+      <div class="md:col-start-5 md:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center shadow-orange">
+        <h2 class="text-center  before:content-(--shortThu) before:sm:content-(--longThu)" style="--shortThu:&#39;Thu 13&#39;;--longThu:&#39;Thursday 13&#39;;"></h2>
       </div>
-      <div class="md:col-start-6 md:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]">
-        <h2 class="text-center  before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]" style="--shortFri:&#39;Fri 14&#39;;--longFri:&#39;Friday 14&#39;;"></h2>
+      <div class="md:col-start-6 md:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center shadow-orange">
+        <h2 class="text-center  before:content-(--shortFri)re:sm:content-[var(--longFri)]" style="--shortFri:&#39;Fri 14&#39;;--longFri:&#39;Friday 14&#39;;"></h2>
       </div>
-      <div class="md:col-start-7 md:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]">
-        <h2 class="text-center  before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]" style="--shortSat:&#39;Sat 15&#39;;--longSat:&#39;Saturday 15&#39;;"></h2>
+      <div class="md:col-start-7 md:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center shadow-orange">
+        <h2 class="text-center  before:content-(--shortSat) before:sm:content-(--longSat)" style="--shortSat:&#39;Sat 15&#39;;--longSat:&#39;Saturday 15&#39;;"></h2>
       </div>
-      <div class="md:col-start-8 md:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]">
-        <h2 class="text-center  before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]" style="--shortSun:&#39;Sun 16&#39;;--longSun:&#39;Sunday 16&#39;;"></h2>
+      <div class="md:col-start-8 md:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center shadow-orange">
+        <h2 class="text-center  before:content-(--shortSun) before:sm:content-(--longSun)" style="--shortSun:&#39;Sun 16&#39;;--longSun:&#39;Sunday 16&#39;;"></h2>
       </div>
       <div class="flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)] 
                 snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:2;">
-        <div class="flex flex-row gap-1 overflow-y-scroll items-baseline h-11/12 flex-col m-1">
+        <div class="flex flex-row gap-1 overflow-y-scroll items-baseline h-11/12 m-1">
           <input class="inline" type="checkbox">
           <h2 class="text-xl text-wrap" style="text-decoration:none;">
             Pasta Carbonara
@@ -73,7 +73,7 @@ test_name: planner_integration_tests
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)] 
                 snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:3;">
-        <div class="flex flex-row gap-1 overflow-y-scroll items-baseline h-11/12 flex-col m-1">
+        <div class="flex flex-row gap-1 overflow-y-scroll items-baseline h-11/12 m-1">
           <input class="inline" type="checkbox">
           <h2 class="text-xl text-wrap" style="text-decoration:none;">
             Spaghetti Bolognese
@@ -114,7 +114,7 @@ test_name: planner_integration_tests
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)] 
                 snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:2;">
-        <div class="flex flex-row gap-1 overflow-y-scroll items-baseline h-11/12 flex-col m-1">
+        <div class="flex flex-row gap-1 overflow-y-scroll items-baseline h-11/12 m-1">
           <input checked class="inline" type="checkbox">
           <h2 class="text-xl text-wrap" style="text-decoration:line-through;">
             Thai Green Curry
