@@ -3,11 +3,11 @@ import gleam/dict
 import gleam/option.{None, Some}
 import lustre/dev/simulate
 import lustre/element
-import mealstack_client.{
+import app.{
   EditRecipeDetail, OnRouteChange, SlugParam, Upload, ViewUpload,
 }
-import pages/upload.{Other, ParseRecipeResponseReceived, UserUpdatedUrl}
-import session.{Ingredient, MethodStep, Recipe, Tag}
+import domains/upload.{Other, ParseRecipeResponseReceived, UserUpdatedUrl}
+import shared/database.{Ingredient, MethodStep, Recipe, Tag}
 import startest.{describe, it}
 import startest/expect
 
@@ -20,9 +20,9 @@ pub fn url_import_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -30,7 +30,7 @@ pub fn url_import_integration_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(current_route: route, ..) -> {
+        app.Model(current_route: route, ..) -> {
           route
           |> expect.to_equal(ViewUpload)
         }
@@ -43,9 +43,9 @@ pub fn url_import_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -53,7 +53,7 @@ pub fn url_import_integration_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(upload: upload, ..) -> {
+        app.Model(upload: upload, ..) -> {
           upload.url
           |> expect.to_equal(None)
         }
@@ -65,9 +65,9 @@ pub fn url_import_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -82,7 +82,7 @@ pub fn url_import_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(upload: upload, ..) -> {
+        app.Model(upload: upload, ..) -> {
           upload.url
           |> expect.to_equal(Some("https://example.com/recipe"))
         }
@@ -94,9 +94,9 @@ pub fn url_import_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -144,7 +144,7 @@ pub fn url_import_integration_tests() {
         )
         |> simulate.message(
           OnRouteChange(
-            mealstack_client.EditRecipeDetail(mealstack_client.RecipeParam(
+            app.EditRecipeDetail(app.RecipeParam(
               recipe: parsed_recipe,
             )),
           ),
@@ -153,7 +153,7 @@ pub fn url_import_integration_tests() {
       // Assert - Recipe should be in current_recipe
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(current_recipe: recipe, ..) -> {
+        app.Model(current_recipe: recipe, ..) -> {
           case recipe {
             Some(r) -> {
               r.title
@@ -170,9 +170,9 @@ pub fn url_import_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -189,7 +189,7 @@ pub fn url_import_integration_tests() {
       // Assert - Should still be on upload route
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(current_route: route, ..) -> {
+        app.Model(current_route: route, ..) -> {
           route
           |> expect.to_equal(ViewUpload)
         }
@@ -202,9 +202,9 @@ pub fn url_import_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -221,9 +221,9 @@ pub fn url_import_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))

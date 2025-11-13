@@ -20,7 +20,7 @@ import lustre/element/html.{a, button, div, form, h2, input, section}
 import lustre/element/keyed
 import lustre/event.{on_submit}
 import rada/date.{type Date}
-import session
+import shared/database
 
 //-TYPES-------------------------------------------------------------
 
@@ -804,7 +804,7 @@ fn plan_day_decoder() -> decode.Decoder(PlanDay) {
   )
   use planned_meals <- decode.field(
     "planned_meals",
-    session.decode_json_string(planned_meals_decoder(), []),
+    database.decode_json_string(planned_meals_decoder(), []),
   )
   decode.success(PlanDay(date: date, planned_meals: planned_meals))
 }
@@ -828,7 +828,7 @@ fn planned_meals_decoder() -> decode.Decoder(List(PlannedMealWithStatus)) {
     use complete <- decode.optional_field(
       "complete",
       option.None,
-      decode.optional(session.decode_stringed_bool()),
+      decode.optional(database.decode_stringed_bool()),
     )
     decode.success(PlannedMealWithStatus(
       for: for,
@@ -836,7 +836,7 @@ fn planned_meals_decoder() -> decode.Decoder(List(PlannedMealWithStatus)) {
       complete: complete,
     ))
   }
-  session.decode_json_string(decode.list(of: record_decoder), [])
+  database.decode_json_string(decode.list(of: record_decoder), [])
 }
 
 fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {

@@ -1,7 +1,7 @@
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
-import session.{type Ingredient, type MethodStep, type Recipe, type Tag, Ingredient, IngredientCategory, MethodStep, Recipe, Tag}
+import shared/database.{type Ingredient, type MethodStep, type Recipe, type Tag, Ingredient, IngredientCategory, MethodStep, Recipe, Tag}
 
 pub fn valid_recipe() -> Recipe {
   Recipe(

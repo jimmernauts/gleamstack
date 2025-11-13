@@ -13,7 +13,7 @@ import lustre/element/html.{
   a, button, div, fieldset, form, img, input, label, nav, textarea,
 }
 import lustre/event.{on, on_input, on_submit}
-import session.{type Recipe}
+import shared/database.{type Recipe}
 
 //--TYPES-------------------------------------------------------------
 
@@ -109,7 +109,7 @@ pub fn upload_update(
               Ok(recipe_data) -> {
                 let decoded =
                   recipe_data
-                  |> decode.run(session.decode_recipe_no_json())
+                  |> decode.run(database.decode_recipe_no_json())
                 case decoded {
                   Ok(recipe) ->
                     dispatch(ParseRecipeResponseReceived(Ok(recipe)))
@@ -159,7 +159,7 @@ pub fn upload_update(
                 Ok(recipe_data) -> {
                   let decoded =
                     recipe_data
-                    |> decode.run(session.decode_recipe_no_json())
+                    |> decode.run(database.decode_recipe_no_json())
                   case decoded {
                     Ok(recipe) ->
                       dispatch(ParseRecipeResponseReceived(Ok(recipe)))
@@ -214,7 +214,7 @@ pub fn upload_update(
               Ok(recipe_data) -> {
                 let decoded =
                   recipe_data
-                  |> decode.run(session.decode_recipe_no_json())
+                  |> decode.run(database.decode_recipe_no_json())
                 case decoded {
                   Ok(recipe) ->
                     dispatch(ParseRecipeResponseReceived(Ok(recipe)))

@@ -12,13 +12,13 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{a, nav, section, span}
 import modem
-import pages/planner
-import pages/recipe
-import pages/settings
-import pages/shopping_list
-import pages/upload
+import domains/planner
+import domains/recipe
+import domains/settings
+import domains/shopping_list
+import domains/upload
 import rada/date
-import session
+import shared/database
 
 // MAIN ------------------------------------------------------------------------
 
@@ -42,7 +42,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
     Model(
       current_route: result.unwrap(initial_route, Home),
       current_recipe: None,
-      recipes: session.RecipeList(recipes: [], tag_options: [], group_by: None),
+      recipes: database.RecipeList(recipes: [], tag_options: [], group_by: None),
       planner: planner.Model(
         plan_week: dict.new(),
         recipe_list: [],
@@ -70,8 +70,8 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         use dispatch <- effect.from
         OnRouteChange(result.unwrap(initial_route, Home)) |> dispatch
       },
-      effect.map(session.subscribe_to_recipe_summaries(), RecipeList),
-      effect.map(session.get_tag_options(), RecipeList),
+      effect.map(database.subscribe_to_recipe_summaries(), RecipeList),
+      effect.map(database.get_tag_options(), RecipeList),
     ]),
   )
 }
@@ -82,7 +82,7 @@ pub type Model {
   Model(
     current_route: Route,
     current_recipe: recipe.RecipeDetail,
-    recipes: session.RecipeList,
+    recipes: database.RecipeList,
     planner: planner.Model,
     db_subscriptions: Dict(String, fn() -> Nil),
     settings: settings.SettingsModel,
@@ -105,13 +105,13 @@ pub type Route {
 
 pub type RouteParams {
   SlugParam(slug: String)
-  RecipeParam(recipe: session.Recipe)
+  RecipeParam(recipe: database.Recipe)
 }
 
 pub type Msg {
   OnRouteChange(Route)
   RecipeDetail(recipe.RecipeDetailMsg)
-  RecipeList(session.RecipeListMsg)
+  RecipeList(database.RecipeListMsg)
   Planner(planner.PlannerMsg)
   Settings(settings.SettingsMsg)
   Upload(upload.UploadMsg)
@@ -131,7 +131,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let effect_to_run = case dict.get(model.db_subscriptions, slug) {
         Ok(_) -> effect.none()
         _ ->
-          effect.map(session.subscribe_to_one_recipe_by_slug(slug), RecipeList)
+          effect.map(database.subscribe_to_one_recipe_by_slug(slug), RecipeList)
       }
       #(
         Model(
@@ -146,7 +146,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(
         ..model,
         current_route: EditRecipeDetail(SlugParam(slug: "")),
-        current_recipe: Some(session.Recipe(
+        current_recipe: Some(database.Recipe(
           id: None,
           title: "New Recipe",
           slug: "",
@@ -155,13 +155,13 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           serves: 0,
           author: None,
           source: None,
-          tags: Some(dict.from_list([#(0, session.Tag("", ""))])),
+          tags: Some(dict.from_list([#(0, database.Tag("", ""))])),
           ingredients: Some(
             dict.from_list([
-              #(0, session.Ingredient(None, None, None, None, None)),
+              #(0, database.Ingredient(None, None, None, None, None)),
             ]),
           ),
-          method_steps: Some(dict.from_list([#(0, session.MethodStep(""))])),
+          method_steps: Some(dict.from_list([#(0, database.MethodStep(""))])),
           shortlisted: None,
         )),
       ),
@@ -171,7 +171,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let effect_to_run = case dict.get(model.db_subscriptions, slug) {
         Ok(_) -> effect.none()
         _ ->
-          effect.map(session.subscribe_to_one_recipe_by_slug(slug), RecipeList)
+          effect.map(database.subscribe_to_one_recipe_by_slug(slug), RecipeList)
       }
       #(
         Model(
@@ -200,7 +200,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         case list.length(model.recipes.recipes) {
           // TODO: does this really need to get the whole list?
           // maybe it should just get the summaries (or use the existing subscribe_to_summaries)
-          0 -> effect.map(session.get_recipes(), RecipeList)
+          0 -> effect.map(database.get_recipes(), RecipeList)
           _ -> effect.none()
         },
       ]),
@@ -259,17 +259,17 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(..model, current_route: route, current_recipe: None),
       effect.none(),
     )
-    RecipeList(session.DbRetrievedOneRecipe(recipe)) -> {
+    RecipeList(database.DbRetrievedOneRecipe(recipe)) -> {
       #(
         Model(
           ..model,
           current_recipe: Some(recipe),
-          recipes: session.merge_recipe_into_model(recipe, model.recipes),
+          recipes: database.merge_recipe_into_model(recipe, model.recipes),
         ),
         effect.none(),
       )
     }
-    RecipeList(session.DbSubscriptionOpened(key, callback)) -> #(
+    RecipeList(database.DbSubscriptionOpened(key, callback)) -> #(
       Model(
         ..model,
         db_subscriptions: dict.upsert(
@@ -300,7 +300,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(
         Model(
           ..model,
-          recipes: session.merge_recipe_into_model(new_recipe, model.recipes),
+          recipes: database.merge_recipe_into_model(new_recipe, model.recipes),
         ),
         effect.batch([
           {
@@ -470,7 +470,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(session.Recipe) {
+fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(database.Recipe) {
   option.from_result(list.find(model.recipes.recipes, fn(a) { a.slug == slug }))
 }
 

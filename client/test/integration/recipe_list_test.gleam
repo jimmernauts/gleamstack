@@ -4,8 +4,8 @@ import gleam/list
 import gleam/option.{None, Some}
 import lustre/dev/simulate
 import lustre/element
-import mealstack_client.{OnRouteChange, RecipeList, ViewRecipeList}
-import session.{
+import app.{OnRouteChange, RecipeList, ViewRecipeList}
+import shared/database.{
   DbRetrievedRecipes, GroupByAuthor, GroupByTag, Recipe, Tag,
   UserGroupedRecipeListByAuthor, UserGroupedRecipeListByTag,
 }
@@ -21,9 +21,9 @@ pub fn recipe_list_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -31,7 +31,7 @@ pub fn recipe_list_integration_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(current_route: route, ..) -> {
+        app.Model(current_route: route, ..) -> {
           route
           |> expect.to_equal(ViewRecipeList)
         }
@@ -44,9 +44,9 @@ pub fn recipe_list_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -54,7 +54,7 @@ pub fn recipe_list_integration_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(recipes: recipes, ..) -> {
+        app.Model(recipes: recipes, ..) -> {
           recipes.recipes
           |> expect.to_equal([])
         }
@@ -67,9 +67,9 @@ pub fn recipe_list_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -77,7 +77,7 @@ pub fn recipe_list_integration_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(recipes: recipes, ..) -> {
+        app.Model(recipes: recipes, ..) -> {
           recipes.group_by
           |> expect.to_equal(None)
         }
@@ -89,9 +89,9 @@ pub fn recipe_list_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -164,7 +164,7 @@ pub fn recipe_list_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(recipes: recipes, ..) -> {
+        app.Model(recipes: recipes, ..) -> {
           recipes.recipes
           |> list.length
           |> expect.to_equal(3)
@@ -177,9 +177,9 @@ pub fn recipe_list_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -234,7 +234,7 @@ pub fn recipe_list_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(recipes: recipes, ..) -> {
+        app.Model(recipes: recipes, ..) -> {
           recipes.group_by
           |> expect.to_equal(Some(GroupByTag("cuisine")))
         }
@@ -246,9 +246,9 @@ pub fn recipe_list_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -280,7 +280,7 @@ pub fn recipe_list_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(recipes: recipes, ..) -> {
+        app.Model(recipes: recipes, ..) -> {
           recipes.group_by
           |> expect.to_equal(None)
         }
@@ -292,9 +292,9 @@ pub fn recipe_list_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -339,7 +339,7 @@ pub fn recipe_list_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(recipes: recipes, ..) -> {
+        app.Model(recipes: recipes, ..) -> {
           recipes.group_by
           |> expect.to_equal(Some(GroupByAuthor))
         }
@@ -351,9 +351,9 @@ pub fn recipe_list_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -385,7 +385,7 @@ pub fn recipe_list_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(recipes: recipes, ..) -> {
+        app.Model(recipes: recipes, ..) -> {
           recipes.group_by
           |> expect.to_equal(None)
         }
@@ -397,9 +397,9 @@ pub fn recipe_list_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -451,9 +451,9 @@ pub fn recipe_list_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -506,9 +506,9 @@ pub fn recipe_list_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
