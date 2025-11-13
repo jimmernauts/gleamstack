@@ -1,8 +1,10 @@
 import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import gleam/dict
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/int
+import gleam/javascript/promise.{type Promise}
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -23,11 +25,12 @@ import lustre/element/html.{
 }
 import lustre/element/keyed
 import lustre/event.{on_check, on_click, on_input}
-import shared/database.{
-  type Ingredient, type MethodStep, type Recipe, type RecipeList, type Tag,
-  type TagOption, Ingredient, MethodStep, Recipe, RecipeList, Tag,
-  decode_recipe_with_inner_json,
+import shared/types.{
+  type Ingredient, type MethodStep, type Recipe, type Tag, type TagOption,
+  Ingredient, MethodStep, Recipe, Tag,
 }
+
+import shared/codecs.{decode_recipe_with_inner_json}
 
 //-MODEL---------------------------------------------
 
@@ -62,9 +65,9 @@ pub type RecipeDetailMsg {
 pub type RecipeDetail =
   Option(Recipe)
 
-//-UPDATE---------------------------------------------
+//-DATABSE---------------------------------------------
 
-fn save_recipe(recipe: database.Recipe) -> Effect(RecipeDetailMsg) {
+fn save_recipe(recipe: Recipe) -> Effect(RecipeDetailMsg) {
   let js_recipe =
     JsRecipe(
       id: option.unwrap(recipe.id, ""),
@@ -76,13 +79,13 @@ fn save_recipe(recipe: database.Recipe) -> Effect(RecipeDetailMsg) {
       author: option.unwrap(recipe.author, ""),
       source: option.unwrap(recipe.source, ""),
       tags: recipe.tags
-        |> json.nullable(database.json_encode_tag_list)
+        |> json.nullable(codecs.json_encode_tag_list)
         |> json.to_string,
       ingredients: recipe.ingredients
-        |> json.nullable(database.json_encode_ingredient_list)
+        |> json.nullable(codecs.json_encode_ingredient_list)
         |> json.to_string,
       method_steps: recipe.method_steps
-        |> json.nullable(database.json_encode_method_step_list)
+        |> json.nullable(codecs.json_encode_method_step_list)
         |> json.to_string,
       shortlisted: option.unwrap(recipe.shortlisted, False),
     )
@@ -113,6 +116,77 @@ type JsRecipe {
     shortlisted: Bool,
   )
 }
+
+pub fn get_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_get_one_recipe_by_slug(slug)
+  |> promise.map(decode.run(_, decode_recipe_with_inner_json()))
+  |> promise.map(result.map(_, DbRetrievedOneRecipe))
+  |> promise.tap(result.map(_, dispatch))
+  Nil
+}
+
+@external(javascript, "../db.ts", "do_get_one_recipe_by_slug")
+fn do_get_one_recipe_by_slug(slug: String) -> Promise(Dynamic)
+
+pub fn subscribe_to_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_subscribe_to_one_recipe_by_slug(slug, fn(data) {
+    data
+    |> DbSubscribedOneRecipe
+    |> dispatch
+  })
+  |> DbSubscriptionOpened(slug, _)
+  |> dispatch
+  Nil
+}
+
+@external(javascript, "../db.ts", "do_subscribe_to_one_recipe_by_slug")
+fn do_subscribe_to_one_recipe_by_slug(
+  slug: String,
+  callback: fn(a) -> Nil,
+) -> fn() -> Nil
+
+pub fn get_recipes() -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_get_recipes()
+  |> promise.map(decode.run(_, decode.list(decode_recipe_with_inner_json())))
+  |> promise.map(result.map(_, DbRetrievedRecipes))
+  |> promise.tap(result.map(_, dispatch))
+  Nil
+}
+
+@external(javascript, "../db.ts", "do_get_recipes")
+fn do_get_recipes() -> Promise(Dynamic)
+
+pub fn get_tag_options() -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_get_tagoptions()
+  |> promise.map(decode.run(_, decode.list(codecs.decode_tag_option())))
+  |> promise.map(result.map(_, DbRetrievedTagOptions))
+  |> promise.tap(result.map(_, dispatch))
+  Nil
+}
+
+@external(javascript, "../db.ts", "do_get_tagoptions")
+fn do_get_tagoptions() -> Promise(Dynamic)
+
+pub fn subscribe_to_recipe_summaries() -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_subscribe_to_recipe_summaries(fn(data) {
+    data
+    |> DbSubscribedRecipes
+    |> dispatch
+  })
+  |> DbSubscriptionOpened("recipes", _)
+  |> dispatch
+  Nil
+}
+
+@external(javascript, "../db.ts", "do_subscribe_to_recipe_summaries")
+fn do_subscribe_to_recipe_summaries(callback: fn(a) -> Nil) -> fn() -> Nil
+
+//-UPDATE------------------------------------------------------------
 
 pub fn detail_update(
   model: RecipeDetail,
@@ -480,14 +554,38 @@ pub fn detail_update(
   }
 }
 
+pub type RecipeListMsg {
+  DbSubscriptionOpened(String, fn() -> Nil)
+  DbSubscribedOneRecipe(Dynamic)
+  DbSubscribedRecipes(Dynamic)
+  DbRetrievedRecipes(List(Recipe))
+  DbRetrievedOneRecipe(Recipe)
+  DbRetrievedTagOptions(List(TagOption))
+  UserGroupedRecipeListByTag(String)
+  UserGroupedRecipeListByAuthor
+}
+
+pub type RecipeListGroupBy {
+  GroupByTag(String)
+  GroupByAuthor
+}
+
+pub type RecipeListModel {
+  RecipeListModel(
+    recipes: List(Recipe),
+    tag_options: List(TagOption),
+    group_by: Option(RecipeListGroupBy),
+  )
+}
+
 pub fn list_update(
-  model: database.RecipeList,
-  msg: database.RecipeListMsg,
-) -> #(RecipeList, Effect(database.RecipeListMsg)) {
+  model: RecipeListModel,
+  msg: RecipeListMsg,
+) -> #(RecipeListModel, Effect(RecipeListMsg)) {
   case msg {
     // we actually handle DbSubscriptionOpened in the top layer of the model in app.gleam
-    database.DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
-    database.DbSubscribedOneRecipe(jsdata) -> {
+    DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
+    DbSubscribedOneRecipe(jsdata) -> {
       let decoder = {
         use data <- decode.subfield(
           ["data", "recipes", "0"],
@@ -499,7 +597,7 @@ pub fn list_update(
       let try_effect = case try_decode {
         Ok(recipe) -> {
           use dispatch <- effect.from
-          database.DbRetrievedOneRecipe(recipe) |> dispatch
+          DbRetrievedOneRecipe(recipe) |> dispatch
         }
         Error(e) -> {
           echo e
@@ -508,7 +606,7 @@ pub fn list_update(
       }
       #(model, try_effect)
     }
-    database.DbSubscribedRecipes(jsdata) -> {
+    DbSubscribedRecipes(jsdata) -> {
       let decoder = {
         use data <- decode.subfield(
           ["data", "recipes"],
@@ -520,45 +618,45 @@ pub fn list_update(
       let try_effect = case try_decode {
         Ok(recipes) -> {
           use dispatch <- effect.from
-          database.DbRetrievedRecipes(recipes) |> dispatch
+          DbRetrievedRecipes(recipes) |> dispatch
         }
         Error(_) -> effect.none()
       }
 
       #(model, try_effect)
     }
-    database.DbRetrievedRecipes(recipes) -> #(
-      RecipeList(..model, recipes: recipes),
+    DbRetrievedRecipes(recipes) -> #(
+      RecipeListModel(..model, recipes: recipes),
       effect.none(),
     )
-    database.DbRetrievedOneRecipe(recipe) -> #(
-      database.merge_recipe_into_model(recipe, model),
+    DbRetrievedOneRecipe(recipe) -> #(
+      merge_recipe_into_model(recipe, model),
       effect.none(),
     )
-    database.DbRetrievedTagOptions(tag_options) -> #(
-      RecipeList(..model, tag_options: tag_options),
+    DbRetrievedTagOptions(tag_options) -> #(
+      RecipeListModel(..model, tag_options: tag_options),
       effect.none(),
     )
-    database.UserGroupedRecipeListByTag(tag) -> {
+    UserGroupedRecipeListByTag(tag) -> {
       case model.group_by {
-        Some(database.GroupByTag(a)) if a == tag -> #(
-          RecipeList(..model, group_by: None),
+        Some(GroupByTag(a)) if a == tag -> #(
+          RecipeListModel(..model, group_by: None),
           effect.none(),
         )
         _ -> #(
-          RecipeList(..model, group_by: Some(database.GroupByTag(tag))),
+          RecipeListModel(..model, group_by: Some(GroupByTag(tag))),
           effect.none(),
         )
       }
     }
-    database.UserGroupedRecipeListByAuthor -> {
+    UserGroupedRecipeListByAuthor -> {
       case model.group_by {
-        Some(database.GroupByAuthor) -> #(
-          RecipeList(..model, group_by: None),
+        Some(GroupByAuthor) -> #(
+          RecipeListModel(..model, group_by: None),
           effect.none(),
         )
         _ -> #(
-          RecipeList(..model, group_by: Some(database.GroupByAuthor)),
+          RecipeListModel(..model, group_by: Some(GroupByAuthor)),
           effect.none(),
         )
       }
@@ -566,9 +664,23 @@ pub fn list_update(
   }
 }
 
+pub fn merge_recipe_into_model(
+  recipe: Recipe,
+  model: RecipeListModel,
+) -> RecipeListModel {
+  RecipeListModel(
+    ..model,
+    recipes: model.recipes
+      |> list.map(fn(a) { #(a.id, a) })
+      |> dict.from_list
+      |> dict.merge(dict.from_list([#(recipe.id, recipe)]))
+      |> dict.values(),
+  )
+}
+
 //-VIEWS-------------------------------------------------------------
 
-pub fn view_recipe_list(model: database.RecipeList) {
+pub fn view_recipe_list(model: RecipeListModel) {
   section(
     [
       class(
@@ -597,9 +709,9 @@ pub fn view_recipe_list(model: database.RecipeList) {
           ),
           {
             case model.group_by {
-              Some(database.GroupByTag(tag)) ->
+              Some(GroupByTag(tag)) ->
                 element.fragment(view_recipe_tag_groups(model.recipes, tag))
-              Some(database.GroupByAuthor) ->
+              Some(GroupByAuthor) ->
                 element.fragment(view_recipe_author_groups(model.recipes))
               _ ->
                 element.fragment(
@@ -652,7 +764,7 @@ pub fn edit_recipe_detail(
           id("page-title-input"),
           name("title"),
           class(
-            "field-sizing-content mt-4 mr-2 [grid-area:header] col-span-full md:col-span-[11] placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-2 input-base input-focus resize-none font-bold italic text-ecru-white-950 bg-ecru-white-100",
+            "field-sizing-content mt-4 mr-2 [grid-area:header] col-span-full md:col-span-11laceholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-2 input-base input-focus resize-none font-bold italic text-ecru-white-950 bg-ecru-white-100",
           ),
           class(case string.length(recipe.title) {
             num if num > 30 -> "text-4xl md:text-5xl"
@@ -870,7 +982,7 @@ pub fn edit_recipe_detail(
           fieldset(
             [
               class(
-                "col-span-full mr-2 p-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
+                "col-span-full mr-2 p-2 h-fit border-ecru-white-950 border rounded-[1px] sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
               ),
             ],
             [
@@ -898,7 +1010,7 @@ pub fn edit_recipe_detail(
           fieldset(
             [
               class(
-                "col-span-full mr-2 p-2 gap-2 flex flex-col h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
+                "col-span-full mr-2 p-2 gap-2 flex flex-col h-fit border-ecru-white-950 border rounded-[1px] sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
               ),
             ],
             [
@@ -1140,7 +1252,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
             fieldset(
               [
                 class(
-                  "flex justify-start flex-wrap col-span-full p-2 mr-2 h-[fit-content]  border-ecru-white-950 border-[1px] rounded-[1px]  sm:col-span-7 sm:row-start-3   [box-shadow:1px_1px_0_#a3d2ab]",
+                  "flex justify-start flex-wrap col-span-full p-2 mr-2 h-fit  border-ecru-white-950 border rounded-[1px]  sm:col-span-7 sm:row-start-3   [box-shadow:1px_1px_0_#a3d2ab]",
                 ),
               ],
               [
@@ -1195,7 +1307,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
 
 //-COMPONENTS--------------------------------------------------
 
-pub fn view_recipe_groupby(model: database.RecipeList) {
+pub fn view_recipe_groupby(model: RecipeListModel) {
   let tags =
     model.recipes
     |> list.map(fn(x) {
@@ -1213,7 +1325,7 @@ pub fn view_recipe_groupby(model: database.RecipeList) {
           class(
             "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 cursor-pointer text-xs",
           ),
-          on_click(database.UserGroupedRecipeListByTag(a)),
+          on_click(UserGroupedRecipeListByTag(a)),
         ],
         [text(a)],
       )
@@ -1224,7 +1336,7 @@ pub fn view_recipe_groupby(model: database.RecipeList) {
           class(
             "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 cursor-pointer text-xs",
           ),
-          on_click(database.UserGroupedRecipeListByAuthor),
+          on_click(UserGroupedRecipeListByAuthor),
         ],
         [text("Author")],
       ),
@@ -1232,7 +1344,7 @@ pub fn view_recipe_groupby(model: database.RecipeList) {
   )
 }
 
-pub fn view_recipe_tag_groups(recipes: List(database.Recipe), tag: String) {
+pub fn view_recipe_tag_groups(recipes: List(Recipe), tag: String) {
   let groups =
     list.group(recipes, fn(a) {
       case a.tags {
@@ -1249,7 +1361,7 @@ pub fn view_recipe_tag_groups(recipes: List(database.Recipe), tag: String) {
     details(
       [
         class(
-          "col-span-full subgrid-cols gap-y-2 details-content:[display:grid] details-content:gap-y-2 details-content:[grid-column:1/-1] details-content:[grid-template-columns:subgrid]",
+          "col-span-full subgrid-cols gap-y-2 details-content:grid details-content:gap-y-2 details-content:col-span-full details-content:grid-cols-subgrid",
         ),
       ],
       [
@@ -1274,7 +1386,7 @@ pub fn view_recipe_tag_groups(recipes: List(database.Recipe), tag: String) {
   |> list.map(pair.second)
 }
 
-pub fn view_recipe_author_groups(recipes: List(database.Recipe)) {
+pub fn view_recipe_author_groups(recipes: List(Recipe)) {
   let groups =
     list.group(recipes, fn(a) {
       case a.author {
@@ -1287,7 +1399,7 @@ pub fn view_recipe_author_groups(recipes: List(database.Recipe)) {
     details(
       [
         class(
-          "col-span-full subgrid-cols gap-y-2 details-content:[display:grid] details-content:gap-y-2 details-content:[grid-column:1/-1] details-content:[grid-template-columns:subgrid]",
+          "col-span-full subgrid-cols gap-y-2 details-content:grid details-content:gap-y-2 details-content:col-span-full details-content:grid-cols-subgrid",
         ),
       ],
       [
@@ -1640,7 +1752,7 @@ fn method_step_input(index: Int, method_step: Option(MethodStep)) {
         name("method-step-" <> index |> int.to_string),
         id("method-step-" <> index |> int.to_string),
         class(
-          "mx-3 max-w-[70dvw] bg-ecru-white-100 w-full input-focus text-base resize-none [field-sizing:content]",
+          "mx-3 max-w-[70dvw] bg-ecru-white-100 w-full input-focus text-base resize-none field-sizing-content",
         ),
         attribute("rows", "3"),
         on_input(update_methodstep_at_index(index)),

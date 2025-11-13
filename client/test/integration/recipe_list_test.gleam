@@ -1,10 +1,10 @@
+import app.{OnRouteChange, RecipeList, ViewRecipeList}
 import birdie
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
 import lustre/dev/simulate
 import lustre/element
-import app.{OnRouteChange, RecipeList, ViewRecipeList}
 import shared/database.{
   DbRetrievedRecipes, GroupByAuthor, GroupByTag, Recipe, Tag,
   UserGroupedRecipeListByAuthor, UserGroupedRecipeListByTag,

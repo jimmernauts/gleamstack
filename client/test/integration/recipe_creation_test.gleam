@@ -1,14 +1,12 @@
+import app.{EditRecipeDetail, OnRouteChange, RecipeDetail, SlugParam}
 import birdie
+import domains/recipe/recipe.{DbSavedUpdatedRecipe}
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
 import lustre/dev/simulate
 import lustre/element
-import app.{
-  EditRecipeDetail, OnRouteChange, RecipeDetail, SlugParam,
-}
-import domains/recipe.{DbSavedUpdatedRecipe}
-import shared/database.{Ingredient, MethodStep, Recipe, Tag}
+import shared/types.{Ingredient, MethodStep, Recipe, Tag}
 import startest.{describe, it}
 import startest/expect
 
@@ -220,11 +218,11 @@ pub fn recipe_creation_workflow_tests() {
       // Act - Save recipe and simulate the route change effect
       let final_simulation =
         simulation
-        |> simulate.message(RecipeDetail(DbSavedUpdatedRecipe(updated_recipe)))
         |> simulate.message(
-          OnRouteChange(app.ViewRecipeDetail(
-            slug: "test-recipe-title",
-          )),
+          RecipeDetail(recipe.DbSavedUpdatedRecipe(updated_recipe)),
+        )
+        |> simulate.message(
+          OnRouteChange(app.ViewRecipeDetail(slug: "test-recipe-title")),
         )
 
       // Assert - Check route changed to view after save
@@ -232,9 +230,7 @@ pub fn recipe_creation_workflow_tests() {
       case final_model {
         app.Model(current_route: route, ..) -> {
           route
-          |> expect.to_equal(app.ViewRecipeDetail(
-            slug: "test-recipe-title",
-          ))
+          |> expect.to_equal(app.ViewRecipeDetail(slug: "test-recipe-title"))
         }
       }
     }),

@@ -20,7 +20,7 @@ import lustre/element/html.{a, button, div, form, h2, input, section}
 import lustre/element/keyed
 import lustre/event.{on_submit}
 import rada/date.{type Date}
-import shared/database
+import shared/codecs
 
 //-TYPES-------------------------------------------------------------
 
@@ -54,8 +54,8 @@ pub type PlannerMsg {
 pub type PlanWeek =
   Dict(Date, PlanDay)
 
-pub type Model {
-  Model(plan_week: PlanWeek, recipe_list: List(String), start_date: Date)
+pub type PlannerModel {
+  PlannerModel(plan_week: PlanWeek, recipe_list: List(String), start_date: Date)
 }
 
 pub type Meal {
@@ -128,24 +128,24 @@ fn toggle_meal_complete_in_plan(
 }
 
 pub fn planner_update(
-  model: Model,
+  model: PlannerModel,
   msg: PlannerMsg,
-) -> #(Model, Effect(PlannerMsg)) {
+) -> #(PlannerModel, Effect(PlannerMsg)) {
   case msg {
     UserUpdatedMealTitle(date, meal, value) -> {
       let result = update_meal_title_in_plan(model.plan_week, date, meal, value)
-      #(Model(..model, plan_week: result), effect.none())
+      #(PlannerModel(..model, plan_week: result), effect.none())
     }
     UserToggledMealComplete(date, meal, complete) -> {
       let result =
         toggle_meal_complete_in_plan(model.plan_week, date, meal, complete)
-      #(Model(..model, plan_week: result), save_plan(result))
+      #(PlannerModel(..model, plan_week: result), save_plan(result))
     }
     UserSavedPlan -> {
       #(model, save_plan(model.plan_week))
     }
     UserFetchedPlan(date) -> {
-      #(Model(..model, start_date: date), get_plan(date))
+      #(PlannerModel(..model, start_date: date), get_plan(date))
     }
     //DbRetrievedPlan is handled in the layer above in app.gleam
     DbRetrievedPlan(_plan_week, _start_date) -> {
@@ -249,7 +249,7 @@ fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 
 //-VIEWS-------------------------------------------------------------
 
-pub fn view_planner(model: Model) {
+pub fn view_planner(model: PlannerModel) {
   let start_of_week = date.floor(model.start_date, date.Monday)
   let find_in_week = fn(a) {
     result.unwrap(dict.get(model.plan_week, a), PlanDay(a, []))
@@ -355,7 +355,7 @@ pub fn view_planner(model: Model) {
   )
 }
 
-pub fn edit_planner(model: Model) {
+pub fn edit_planner(model: PlannerModel) {
   let start_of_week = date.floor(model.start_date, date.Monday)
   let find_in_week = fn(a) {
     result.unwrap(dict.get(model.plan_week, a), PlanDay(a, []))
@@ -505,7 +505,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
         div(
           [
             class(
-              "md:row-start-2 md:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50",
+              "md:row-start-2 md:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 shadow-orangep-0 bg-ecru-white-50",
             ),
           ],
           [h2([class("mx-2 ")], [text("Lunch")])],
@@ -513,7 +513,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
         div(
           [
             class(
-              "md:row-start-3 md:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  [box-shadow:1px_1px_0_#ff776a] sticky left-0 top-0 bg-ecru-white-50",
+              "md:row-start-3 md:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  shadow-orange sticky left-0 top-0 bg-ecru-white-50",
             ),
           ],
           [h2([class("mx-2 ")], [text("Dinner")])],
@@ -534,7 +534,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longMon", "'Monday " <> monday <> "'"),
             ]),
             class(
-              "text-center  before:content-[var(--shortMon)] before:sm:content-[var(--longMon)]",
+              "text-center  before:content-(--shortMon)re:sm:content-[var(--longMon)]",
             ),
           ],
           [],
@@ -544,7 +544,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "md:col-start-3 md:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-3 md:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center shadow-orange",
         ),
       ],
       [
@@ -555,7 +555,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longTue", "'Tuesday " <> tuesday <> "'"),
             ]),
             class(
-              "text-center  before:content-[var(--shortTue)] before:sm:content-[var(--longTue)]",
+              "text-center  before:content-(--shortTue) before:sm:content-(--longTue)",
             ),
           ],
           [],
@@ -565,7 +565,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "md:col-start-4 md:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-4 md:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center shadow-orange",
         ),
       ],
       [
@@ -576,7 +576,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longWed", "'Wednesday " <> wednesday <> "'"),
             ]),
             class(
-              "text-center  before:content-[var(--shortWed)] before:sm:content-[var(--longWed)]",
+              "text-center  before:content-(--shortWed) before:sm:content-(--longWed)",
             ),
           ],
           [],
@@ -586,7 +586,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "md:col-start-5 md:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-5 md:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center shadow-orange",
         ),
       ],
       [
@@ -597,7 +597,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longThu", "'Thursday " <> thursday <> "'"),
             ]),
             class(
-              "text-center  before:content-[var(--shortThu)] before:sm:content-[var(--longThu)]",
+              "text-center  before:content-(--shortThu) before:sm:content-(--longThu)",
             ),
           ],
           [],
@@ -607,7 +607,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "md:col-start-6 md:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-6 md:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center shadow-orange",
         ),
       ],
       [
@@ -618,7 +618,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longFri", "'Friday " <> friday <> "'"),
             ]),
             class(
-              "text-center  before:content-[var(--shortFri)] before:sm:content-[var(--longFri)]",
+              "text-center  before:content-(--shortFri)re:sm:content-[var(--longFri)]",
             ),
           ],
           [],
@@ -628,7 +628,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "md:col-start-7 md:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-7 md:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center shadow-orange",
         ),
       ],
       [
@@ -639,7 +639,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longSat", "'Saturday " <> saturday <> "'"),
             ]),
             class(
-              "text-center  before:content-[var(--shortSat)] before:sm:content-[var(--longSat)]",
+              "text-center  before:content-(--shortSat) before:sm:content-(--longSat)",
             ),
           ],
           [],
@@ -649,7 +649,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "md:col-start-8 md:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center [box-shadow:1px_1px_0_#ff776a]",
+          "md:col-start-8 md:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center shadow-orange",
         ),
       ],
       [
@@ -660,7 +660,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longSun", "'Sunday " <> sunday <> "'"),
             ]),
             class(
-              "text-center  before:content-[var(--shortSun)] before:sm:content-[var(--longSun)]",
+              "text-center  before:content-(--shortSun) before:sm:content-(--longSun)",
             ),
           ],
           [],
@@ -710,9 +710,7 @@ fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
   let PlannedMealWithStatus(_f, t, c) = meal
   div(
     [
-      class(
-        "flex flex-row gap-1 overflow-y-scroll items-baseline h-11/12 flex-col m-1",
-      ),
+      class("flex flex-row gap-1 overflow-y-scroll items-baseline h-11/12 m-1"),
     ],
     [
       input([
@@ -803,7 +801,7 @@ fn plan_day_decoder() -> decode.Decoder(PlanDay) {
   )
   use planned_meals <- decode.field(
     "planned_meals",
-    database.decode_json_string(planned_meals_decoder(), []),
+    codecs.decode_json_string(planned_meals_decoder(), []),
   )
   decode.success(PlanDay(date: date, planned_meals: planned_meals))
 }
@@ -827,7 +825,7 @@ fn planned_meals_decoder() -> decode.Decoder(List(PlannedMealWithStatus)) {
     use complete <- decode.optional_field(
       "complete",
       option.None,
-      decode.optional(database.decode_stringed_bool()),
+      decode.optional(codecs.decode_stringed_bool()),
     )
     decode.success(PlannedMealWithStatus(
       for: for,
@@ -835,7 +833,7 @@ fn planned_meals_decoder() -> decode.Decoder(List(PlannedMealWithStatus)) {
       complete: complete,
     ))
   }
-  database.decode_json_string(decode.list(of: record_decoder), [])
+  codecs.decode_json_string(decode.list(of: record_decoder), [])
 }
 
 fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {

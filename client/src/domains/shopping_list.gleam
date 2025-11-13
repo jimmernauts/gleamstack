@@ -10,7 +10,8 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html.{a, div, section, text}
 import rada/date
-import shared/database
+import shared/codecs
+import shared/types
 
 //-TYPES--------------------------------------------------------------
 
@@ -31,7 +32,7 @@ pub type ShoppingListModel {
 pub type ShoppingList {
   ShoppingList(
     id: Option(String),
-    items: List(database.Ingredient),
+    items: List(types.Ingredient),
     status: Status,
     date: date.Date,
   )
@@ -107,7 +108,7 @@ pub fn retrieve_shopping_lists() -> Effect(ShoppingListMsg) {
 
 pub fn shopping_list_decoder() -> Decoder(ShoppingList) {
   use id <- decode.field("id", decode.optional(decode.string))
-  use items <- decode.field("items", decode.list(database.ingredient_decoder()))
+  use items <- decode.field("items", decode.list(codecs.ingredient_decoder()))
   use status <- decode.field("status", shopping_list_status_decoder())
   use date <- decode.field("date", decode.int)
   decode.success(ShoppingList(
@@ -132,7 +133,7 @@ pub fn shopping_list_status_decoder() -> Decoder(Status) {
 
 //-VIEW---------------------------------------------------------------
 
-pub fn view_shopping_list(model: ShoppingListModel) -> Element(ShoppingListMsg) {
+pub fn view_shopping_list(_model: ShoppingListModel) -> Element(ShoppingListMsg) {
   section(
     [
       class(

@@ -13,7 +13,8 @@ import lustre/element/html.{
   a, button, div, fieldset, form, img, input, label, nav, textarea,
 }
 import lustre/event.{on, on_input, on_submit}
-import shared/database.{type Recipe}
+import shared/codecs
+import shared/types
 
 //--TYPES-------------------------------------------------------------
 
@@ -26,7 +27,7 @@ pub type UploadMsg {
   ScrapeUrlResponseReceived(Result(String, ParseToRecipeError))
   UserUpdatedText(text: String)
   UserSubmittedText
-  ParseRecipeResponseReceived(Result(Recipe, ParseToRecipeError))
+  ParseRecipeResponseReceived(Result(types.Recipe, ParseToRecipeError))
 }
 
 pub type ParseToRecipeError {
@@ -109,7 +110,7 @@ pub fn upload_update(
               Ok(recipe_data) -> {
                 let decoded =
                   recipe_data
-                  |> decode.run(database.decode_recipe_no_json())
+                  |> decode.run(codecs.decode_recipe_no_json())
                 case decoded {
                   Ok(recipe) ->
                     dispatch(ParseRecipeResponseReceived(Ok(recipe)))
@@ -159,7 +160,7 @@ pub fn upload_update(
                 Ok(recipe_data) -> {
                   let decoded =
                     recipe_data
-                    |> decode.run(database.decode_recipe_no_json())
+                    |> decode.run(codecs.decode_recipe_no_json())
                   case decoded {
                     Ok(recipe) ->
                       dispatch(ParseRecipeResponseReceived(Ok(recipe)))
@@ -214,7 +215,7 @@ pub fn upload_update(
               Ok(recipe_data) -> {
                 let decoded =
                   recipe_data
-                  |> decode.run(database.decode_recipe_no_json())
+                  |> decode.run(codecs.decode_recipe_no_json())
                 case decoded {
                   Ok(recipe) ->
                     dispatch(ParseRecipeResponseReceived(Ok(recipe)))
@@ -396,7 +397,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
       html.fieldset(
         [
           class(
-            "md:col-span-4 flex flex-col gap-y-2 col-span-11 row-start-3 p-2 border-ecru-white-950 border-[1px] rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
+            "md:col-span-4 flex flex-col gap-y-2 col-span-11 row-start-3 p-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
           ),
         ],
         [
@@ -427,7 +428,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
       html.fieldset(
         [
           class(
-            "md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border-[1px] rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
+            "md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
           ),
         ],
         [
@@ -448,7 +449,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
       fieldset(
         [
           class(
-            "md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border-[1px] rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
+            "md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
           ),
         ],
         [
@@ -458,7 +459,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
               name("recipe-text-to-import"),
               id("recipe-text-to-import"),
               class(
-                "mx-1 p-2 bg-ecru-white-100 w-full input-focus text-base resize-none [field-sizing:content]",
+                "mx-1 p-2 bg-ecru-white-100 w-full input-focus text-base resize-none field-sizing-content",
               ),
               attribute("rows", "3"),
               on_input(UserUpdatedText),
