@@ -1,0 +1,151 @@
+---
+version: 1.4.1
+title: recipe_creation_final_view
+file: ./test/integration/recipe_creation_test.gleam
+test_name: recipe_creation_workflow_tests
+---
+<main class="h-env-screen grid ml-2 mr-2 gap-2
+      2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90%_[main-end]_3fr_[full-end]_1fr_[end]]
+      xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+      lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+      md:grid-cols-[[start_full-start]_1fr_[main-start]_95%_[main-end]_1fr_[full-end_end]]
+      grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
+      text-ecru-white-950 font-transitional text-lg">
+  <form class="h-env-screen grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2" id="create_recipe_form">
+    <textarea class="field-sizing-content mt-4 mr-2 [grid-area:header] col-span-full md:col-span-[11] placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-2 input-base input-focus resize-none font-bold italic text-ecru-white-950 bg-ecru-white-100 text-7xl" id="page-title-input" name="title" title="recipe title">
+      New Recipe
+    </textarea>
+    <div class="subgrid-cols grid-rows-[repeat(4,minmax(min-content,35px))] gap-y-2 overflow-y-scroll [grid-area:content]">
+      <div class="subgrid-cols col-span-full items-baseline">
+        <div class="col-start-1 col-span-6 md:col-span-5 flex gap-1  ">
+          <label class="font-mono text-sm" for="author">
+            🧾
+          </label>
+          <input class="input-base pr-0.5 max-w-[15ch] md:max-w-none text-left text-base bg-ecru-white-100" id="author" name="author" title="author" type="text" value>
+        </div>
+        <div class="col-start-7 md:col-start-6 col-span-6 flex gap-1">
+          <label class=" font-mono text-sm" for="source">
+            📗
+          </label>
+          <input class="max-w-[15ch] md:max-w-[58ch] bg-ecru-white-100 input-base input-focus pr-0.5 text-left text-base" id="source" name="source" title="source" type="text" value>
+        </div>
+      </div>
+      <fieldset class="flex flex-row gap-2 col-span-full sm:col-span-5 sm:col-start-1">
+        <fieldset class="flex flex-wrap justify-between items-baseline">
+          <label class="text-base" for="prep_time">
+            Prep:
+          </label>
+          <div class="after:content-[&#39;h&#39;] after:text-base inline-block">
+            <input class="bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[2ch] text-right text-base" id="prep_time_hrs" name="prep_time_hrs" title="prep time in hours" type="number" value>
+          </div>
+          <div class="after:content-[&#39;m&#39;] after:text-base inline-block">
+            <input class="bg-ecru-white-100 input-base input-focus pr-0.5 mr-0.5 w-[3ch] text-right text-base" id="prep_time_mins" name="prep_time_mins" title="prep time in minutes" type="number" value="0">
+          </div>
+        </fieldset>
+        <fieldset class="flex flex-wrap justify-between items-baseline">
+          <label class="text-base" for="cook_time">
+            Cook:
+          </label>
+          <div class="after:content-[&#39;h&#39;] after:text-base inline-block">
+            <input class="bg-ecru-white-100 input-base input-focus pr-0.5 w-[2ch] text-right text-base" id="cook_time_hrs" name="cook_time_hrs" title="cook time in hours" type="number" value>
+          </div>
+          <div class="after:content-[&#39;m&#39;] after:text-base inline-block">
+            <input class="bg-ecru-white-100 input-base input-focus pr-0.5 w-[3ch] text-right text-base" id="cook_time_mins" name="cook_time_mins" title="cook time in minutes" type="number" value="0">
+          </div>
+        </fieldset>
+        <fieldset class="flex flex-wrap justify-between items-baseline">
+          <label class="text-base " for="serves">
+            Serves:
+          </label>
+          <div class="inline-block">
+            <input class="pr-0.5 mr-2 sm:mr-4 col-span-3 input-base input-focus w-[3ch] text-right text-base bg-ecru-white-100" id="serves" name="serves" type="number" value="0">
+          </div>
+        </fieldset>
+      </fieldset>
+      <fieldset class="sm:ml-1 col-span-full content-start sm:col-start-6 sm:col-span-7 sm:mt-2 flex flex-wrap items-baseline gap-3">
+        <div class="contents">
+          <fieldset data-lustre-key="0" class="flex col-span-6 sm:col-span-4 min-w-0" id="tag-input-0">
+            <select class="inline bg-ecru-white-100 col-span-4 row-span-1 pl-1 p-0 text-xs font-mono custom-select" id="tag-name-selector" name="tag-name-0" style="width:5ch;" value>
+              <option class="text-xs font-mono custom-select input-focus bg-ecru-white-100" disabled hidden selected value>
+
+              </option>
+            </select>
+            <select class="inline bg-ecru-white-50 col-span-4 row-span-1 pl-1 p-0 text-xs font-mono custom-select" style="width:5ch;" value>
+              <option class="text-xs font-mono custom-select input-focus bg-ecru-white-50" disabled hidden selected value>
+
+              </option>
+
+            </select>
+            <button class="col-span-1 my-1 text-ecru-white-950 text-xs cursor-pointer" id="remove-tag-input" type="button">
+              ➖
+            </button>
+            <button class="col-span-1 my-1 text-ecru-white-950 text-xs cursor-pointer" id="add-tag-input" type="button">
+              ➕
+            </button>
+          </fieldset>
+        </div>
+      </fieldset>
+      <fieldset class="col-span-full mr-2 p-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]">
+        <legend class="mx-2 px-1 text-base ">
+          Ingredients
+        </legend>
+        <div class="contents">
+          <div data-lustre-key="0" class="my-1 w-full flex justify-between items-baseline  text-base">
+            <input aria-label="Enter ingredient name" class="text-base input-base max-w-[20ch] md:max-w-[34ch] input-focus bg-ecru-white-100" name="ingredient-name-0" placeholder="Ingredient" type="text" value>
+            <div class="flex justify-end gap-1 items-baseline">
+              <input aria-label="Enter ingredient quanitity" class="pt-0.5 max-w-[3ch] text-sm input-focus bg-ecru-white-100" name="ingredient-qty-0" placeholder="Qty" type="text" value>
+              <input aria-label="Enter ingredient units" class="pt-0.5 max-w-[3ch] text-sm mr-0 input-focus bg-ecru-white-100" name="ingredient-units-0" placeholder="Units" type="text" value>
+              <div class="flex text-xs items-baseline">
+                <label aria-label="Toggle main ingredient" class="ingredient-toggle">
+                  <input name="`ingredient-main-0" type="checkbox">
+                  <span></span>
+                </label>
+                <button class="text-ecru-white-950 cursor-pointer" id="remove-ingredient-input" type="button">
+                  ➖
+                </button>
+                <button class="text-ecru-white-950 cursor-pointer" id="add-ingredient-input" type="button">
+                  ➕
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="col-span-full mr-2 p-2 gap-2 flex flex-col h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]">
+        <legend class="mx-2 px-1 text-base ">
+          Method
+        </legend>
+        <div class="contents">
+          <div data-lustre-key="0" class="flex w-full items-baseline col-span-full px-1 mb-1 text-base">
+            <label class="font-mono text-sm">
+              1.
+            </label>
+            <textarea class="mx-3 max-w-[70dvw] bg-ecru-white-100 w-full input-focus text-base resize-none [field-sizing:content]" id="method-step-0" name="method-step-0" rows="3">
+
+            </textarea>
+            <button class="text-ecru-white-950 text-xs cursor-pointer" id="remove-ingredient-input" type="button">
+              ➖
+            </button>
+            <button class="text-ecru-white-950 text-xs cursor-pointer" id="add-ingredient-input" type="button">
+              ➕
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base  justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
+      <a class="text-center" href="/">
+        🏠
+      </a>
+      <a class="text-center" href="/recipes/">
+        ❎
+      </a>
+      <button type="button">
+        🗑️
+      </button>
+      <button type="submit">
+        💾
+      </button>
+    </nav>
+  </form>
+</main>

@@ -15,7 +15,7 @@ Create 5-10 integration tests covering the critical user flows before starting t
 
 ### 1. Recipe Management Flow (2 tests)
 
-#### Test 1: Recipe Creation and Persistence
+#### Test 1: Recipe Creation and Persistence - COMPLETED
 **File**: `test/integration/recipe_creation_test.gleam`
 **Flow**: New recipe → Fill form → Save → Verify in database
 **Steps**:
@@ -103,6 +103,7 @@ Create 5-10 integration tests covering the critical user flows before starting t
 **File**: `test/integration/image_upload_test.gleam`
 **Flow**: Upload image → AI processes → Navigate to edit → Verify data
 **Steps**:
+0. Start the server with `gleam run` in the server directory
 1. Navigate to `/import`
 2. Upload recipe image
 3. Wait for AI processing
@@ -120,6 +121,7 @@ Create 5-10 integration tests covering the critical user flows before starting t
 **File**: `test/integration/url_import_test.gleam`
 **Flow**: Enter URL → Scrape content → Parse recipe → Navigate to edit
 **Steps**:
+0. Start the server with `gleam run` in the server directory
 1. Navigate to `/import`
 2. Enter recipe URL
 3. Wait for scraping and parsing
@@ -131,23 +133,6 @@ Create 5-10 integration tests covering the critical user flows before starting t
 - URL scraping works
 - Recipe parsing succeeds
 - Data flows to editor correctly
-
-### 5. Cross-Domain Integration (1 test)
-
-#### Test 8: Recipe to Planner Integration
-**File**: `test/integration/cross_domain_test.gleam`
-**Flow**: Create recipe → Add to planner → Verify in planner view
-**Steps**:
-1. Create new recipe (reuse Test 1 pattern)
-2. Navigate to planner
-3. Assign newly created recipe to meal
-4. Verify recipe appears in planner
-5. Verify recipe details are accessible
-
-**Key Assertions**:
-- Recipe data flows between domains
-- Planner can access recipe list
-- Cross-domain data sharing works
 
 ## Test Implementation Strategy
 

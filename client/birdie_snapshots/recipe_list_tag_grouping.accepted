@@ -1,0 +1,69 @@
+---
+version: 1.4.1
+title: recipe_list_tag_grouping
+file: ./test/integration/recipe_list_test.gleam
+test_name: recipe_list_integration_tests
+---
+<main class="h-env-screen grid ml-2 mr-2 gap-2
+      2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90%_[main-end]_3fr_[full-end]_1fr_[end]]
+      xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+      lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+      md:grid-cols-[[start_full-start]_1fr_[main-start]_95%_[main-end]_1fr_[full-end_end]]
+      grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
+      text-ecru-white-950 font-transitional text-lg">
+  <section class="h-env-screen grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2">
+    <div class="mt-2 flex col-start-1 text-7xl underline-green  col-span-full md:col-span-[11]">
+      <h1 class="min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
+        Recipe Book
+      </h1>
+    </div>
+    <div class="subgrid-cols grid-rows-[repeat(12,minmax(min-content,35px))] overflow-y-scroll  col-span-full gap-y-2">
+      <div class="col-span-full flex flex-wrap items-center justify-start gap-3">
+        <button class="font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 cursor-pointer text-xs">
+          cuisine
+        </button>
+        <button class="font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 cursor-pointer text-xs">
+          Author
+        </button>
+      </div>
+      <details class="col-span-full subgrid-cols gap-y-2 details-content:[display:grid] details-content:gap-y-2 details-content:[grid-column:1/-1] details-content:[grid-template-columns:subgrid]">
+        <summary class="flex gap-2 col-span-full border-b border-b-gray-200 text-base cursor-pointer marker:content-none ">
+          Italian
+        </summary>
+        <div class="col-span-full text-xl subgrid-cols border-b border-b-gray-200 text-lg">
+          <a class="subgrid-cols col-span-full grid-flow-row-dense" href="/recipes/pasta-carbonara">
+            <span class="col-span-10">
+              Pasta Carbonara
+            </span>
+            <span class="text-sm col-start-12">
+              30m
+            </span>
+          </a>
+        </div>
+      </details>
+      <details class="col-span-full subgrid-cols gap-y-2 details-content:[display:grid] details-content:gap-y-2 details-content:[grid-column:1/-1] details-content:[grid-template-columns:subgrid]">
+        <summary class="flex gap-2 col-span-full border-b border-b-gray-200 text-base cursor-pointer marker:content-none ">
+          Thai
+        </summary>
+        <div class="col-span-full text-xl subgrid-cols border-b border-b-gray-200 text-lg">
+          <a class="subgrid-cols col-span-full grid-flow-row-dense" href="/recipes/thai-green-curry">
+            <span class="col-span-10">
+              Thai Green Curry
+            </span>
+            <span class="text-sm col-start-12">
+              45m
+            </span>
+          </a>
+        </div>
+      </details>
+    </div>
+    <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base  justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
+      <a class="text-center" href="/">
+        🏠
+      </a>
+      <a class="text-center" href="/planner">
+        📅
+      </a>
+    </nav>
+  </section>
+</main>
