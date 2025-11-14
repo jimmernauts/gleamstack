@@ -1,6 +1,6 @@
 import app.{EditRecipeDetail, OnRouteChange, RecipeDetail, SlugParam}
 import birdie
-import domains/recipe/recipe.{DbSavedUpdatedRecipe}
+import domains/recipe_detail.{DbSavedUpdatedRecipe}
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
@@ -219,7 +219,7 @@ pub fn recipe_creation_workflow_tests() {
       let final_simulation =
         simulation
         |> simulate.message(
-          RecipeDetail(recipe.DbSavedUpdatedRecipe(updated_recipe)),
+          RecipeDetail(recipe_detail.DbSavedUpdatedRecipe(updated_recipe)),
         )
         |> simulate.message(
           OnRouteChange(app.ViewRecipeDetail(slug: "test-recipe-title")),

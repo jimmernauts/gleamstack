@@ -1,6 +1,6 @@
 import app.{OnRouteChange, RecipeList, ViewRecipeList}
 import birdie
-import domains/recipe/recipe.{
+import domains/recipe_list.{
   DbRetrievedRecipes, GroupByAuthor, GroupByTag, UserGroupedRecipeListByAuthor,
   UserGroupedRecipeListByTag,
 }

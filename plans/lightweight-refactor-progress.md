@@ -9,6 +9,7 @@
 ### Changes Made
 
 #### 1. Directory Restructure
+
 - ✅ Created `src/domains/` directory
 - ✅ Created `src/shared/` directory
 - ✅ Moved `src/pages/*` → `src/domains/*`
@@ -16,6 +17,7 @@
 - ✅ Renamed `src/mealstack_client.gleam` → `src/app.gleam`
 
 #### 2. Import Updates
+
 - ✅ Updated all `import pages/` → `import domains/`
 - ✅ Updated all `import session` → `import shared/database`
 - ✅ Updated all `import mealstack_client` → `import app`
@@ -69,6 +71,7 @@ All integration tests continue to pass with no regressions.
 ### Next Steps
 
 **Phase 2: Add Internal Structure**
+
 - Add section markers to all domain files
 - Improve navigation within large files
 - Add documentation
@@ -80,13 +83,14 @@ All integration tests continue to pass with no regressions.
 
 ## Phase 2: Extract Shared Types and Recipe Module - COMPLETE ✅
 
-**Date**: November 13, 2025  
+**Date**: November 13-14, 2025  
 **Duration**: ~45 minutes
-**Status**: 45/52 tests passing (7 snapshot updates needed)
+**Status**: All tests passing (52/52) ✅
 
 ### Changes Made
 
 #### 1. Extract Shared Types
+
 - ✅ Created `src/shared/types.gleam` with core data types
   - `Recipe`, `Tag`, `Ingredient`, `MethodStep`, `TagOption`, `IngredientCategory`
 - ✅ Created `src/shared/codecs.gleam` with encoding/decoding functions
@@ -94,11 +98,13 @@ All integration tests continue to pass with no regressions.
   - Centralized codec functions for reuse
 
 #### 2. Reorganize Recipe Module
+
 - ✅ Created `src/domains/recipe/` subdirectory
 - ✅ Moved `domains/recipe.gleam` → `domains/recipe/recipe.gleam`
 - ✅ Fixed all FFI paths (`../db.ts` → `../../db.ts`)
 
 #### 3. Update All Imports
+
 - ✅ Updated `app.gleam` to import from new locations
 - ✅ Updated all domain modules (`planner`, `upload`, `shopping_list`, `settings`)
 - ✅ Updated all test files to use new import paths
@@ -126,11 +132,11 @@ client/src/
 
 ```
 Test Files: 6
-     Tests: 45 passed | 7 failed (52)
-  Duration: 753ms
+     Tests: 52 passed (52)
+  Duration: 616ms
 ```
 
-**Note**: 7 snapshot tests need updating due to minor CSS class changes in HTML output. These are cosmetic changes only - all functional tests pass.
+All tests passing including snapshots.
 
 ### Benefits Achieved
 
@@ -141,14 +147,133 @@ Test Files: 6
 
 ---
 
+## Phase 3: Split Recipe Module into MVU Bundles - IN PROGRESS 🔄
+
+**Date**: November 14, 2025  
+**Status**: Planning
+
+### Goals
+
+Split the large `domains/recipe/recipe.gleam` (1786 lines) into two separate MVU bundles:
+
+1. **Recipe Detail** - For viewing/editing a single recipe
+2. **Recipe List** - For browsing/filtering multiple recipes
+
+This approach maintains the MVU pattern within each bundle while avoiding Gleam's re-export limitations.
+
+### Proposed Structure
+
+```
+client/src/domains/recipe/
+├── recipe_detail.gleam    # Complete MVU bundle for single recipe (Model-Update-View)
+│                          # - RecipeDetail type (model)
+│                          # - RecipeDetailMsg type (messages)
+│                          # - detail_update() function
+│                          # - view_recipe_detail(), edit_recipe_detail() functions
+│                          # - Database FFI: save_recipe(), delete_recipe()
+│
+├── recipe_list.gleam      # Complete MVU bundle for recipe list (Model-Update-View)
+│                          # - RecipeListModel type (model)
+│                          # - RecipeListMsg type (messages)
+│                          # - list_update() function
+│                          # - view_recipe_list() function
+│                          # - Database FFI: get_recipes(), subscribe_to_recipes()
+│
+└── recipe.gleam           # Thin wrapper for backward compatibility (optional)
+                           # Re-exports types and functions from both bundles
+```
+
+### Changes to Make
+
+#### 1. Create Recipe Detail Bundle
+
+- Create `domains/recipe/recipe_detail.gleam`
+- Include complete MVU pattern:
+  - **Model**: `RecipeDetail` type (Option(Recipe))
+  - **Messages**: `RecipeDetailMsg` with all user/db events
+  - **Update**: `detail_update()` function with all message handlers
+  - **View**: `view_recipe_detail()`, `edit_recipe_detail()`, `lookup_and_view_recipe()`, `lookup_and_edit_recipe()`
+  - **Database**: `save_recipe()`, `delete_recipe()` with FFI declarations
+  - **Helpers**: `JsRecipe` type, ingredient/tag/method step input components
+
+#### 2. Create Recipe List Bundle
+
+- Create `domains/recipe/recipe_list.gleam`
+- Include complete MVU pattern:
+  - **Model**: `RecipeListModel` type with recipes, tag_options, group_by
+  - **Messages**: `RecipeListMsg` with subscription/retrieval events
+  - **Update**: `list_update()` function, `merge_recipe_into_model()` helper
+  - **View**: `view_recipe_list()` and all grouping/filtering views
+  - **Database**: `get_recipes()`, `get_tag_options()`, `subscribe_to_recipe_summaries()`, `subscribe_to_one_recipe_by_slug()`, `get_one_recipe_by_slug()` with FFI
+  - **Helpers**: `RecipeListGroupBy` type, grouping view functions
+
+#### 3. Update Main Recipe Module (Optional)
+
+- Keep `recipe.gleam` as a thin compatibility layer
+- Import both bundles: `recipe_detail` and `recipe_list`
+- Re-export key types and functions for backward compatibility
+
+### Migration Steps
+
+1. **Create recipe_detail.gleam**
+
+   - Extract RecipeDetail, RecipeDetailMsg types
+   - Extract detail_update() function
+   - Extract view_recipe_detail(), edit_recipe_detail(), lookup functions
+   - Extract save_recipe(), delete_recipe() FFI
+   - Extract JsRecipe type and input helper components
+   - Verify it compiles independently
+
+2. **Create recipe_list.gleam**
+
+   - Extract RecipeListModel, RecipeListMsg, RecipeListGroupBy types
+   - Extract list_update(), merge_recipe_into_model() functions
+   - Extract view_recipe_list() and grouping view functions
+   - Extract get_recipes(), subscribe functions, get_tag_options() FFI
+   - Verify it compiles independently
+
+3. **Update app.gleam**
+
+   - Change imports from `domains/recipe/recipe` to:
+     - `domains/recipe/recipe_detail` for detail functionality
+     - `domains/recipe/recipe_list` for list functionality
+   - Update Model type to use new module references
+   - Update message handlers to use new module functions
+
+4. **Run tests**
+
+   - Verify all 52 tests still pass
+   - Fix any import issues in test files
+
+5. **Keep recipe.gleam as compatibility layer**
+
+### Expected Benefits
+
+1. **Clearer Separation**: Each bundle is self-contained with its own MVU cycle
+2. **Smaller Files**: ~900 lines each instead of 1786 lines
+3. **Independent Development**: Can work on list vs detail features separately
+4. **Better Mental Model**: Each file represents one complete feature
+5. **Gleam-Idiomatic**: Each module is complete, no complex re-exports needed
+6. **Easier Testing**: Can test each MVU bundle independently
+
+### Risk Assessment
+
+- **Medium Risk**: Requires updating imports in app.gleam and tests
+- **Clear Rollback**: Can revert to single file if issues arise
+- **Test Coverage**: All 52 tests will verify no regressions
+- **Benefit**: Much cleaner than trying to split into 4+ modules with re-exports
+
+---
+
 ## Commit Messages
 
 ### Commit 1
+
 ```
 refactor: reorganize codebase structure
 
 - Rename pages/ → domains/ for clearer intent
-- Rename session.gleam → shared/database.gleam  
+- Rename session.gleam → shared/database.gleam
 - Rename mealstack_client.gleam → app.gleam
 - Update all imports and qualified names
 - Fix FFI paths after file moves
@@ -157,6 +282,7 @@ All 52 tests passing. No functional changes.
 ```
 
 ### Commit 2 (Current)
+
 ```
 refactor: extract shared types and reorganize recipe module
 

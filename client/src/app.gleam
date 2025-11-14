@@ -1,7 +1,8 @@
 import components/page_title.{page_title}
 import components/typeahead
 import domains/planner
-import domains/recipe/recipe
+import domains/recipe_detail
+import domains/recipe_list
 import domains/settings
 import domains/shopping_list
 import domains/upload
@@ -42,7 +43,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
     Model(
       current_route: result.unwrap(initial_route, Home),
       current_recipe: None,
-      recipes: recipe.RecipeListModel(
+      recipes: recipe_list.RecipeListModel(
         recipes: [],
         tag_options: [],
         group_by: None,
@@ -74,8 +75,8 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         use dispatch <- effect.from
         OnRouteChange(result.unwrap(initial_route, Home)) |> dispatch
       },
-      effect.map(recipe.subscribe_to_recipe_summaries(), RecipeList),
-      effect.map(recipe.get_tag_options(), RecipeList),
+      effect.map(recipe_list.subscribe_to_recipe_summaries(), RecipeList),
+      effect.map(recipe_list.get_tag_options(), RecipeList),
     ]),
   )
 }
@@ -85,8 +86,8 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
 pub type Model {
   Model(
     current_route: Route,
-    current_recipe: recipe.RecipeDetail,
-    recipes: recipe.RecipeListModel,
+    current_recipe: recipe_detail.RecipeDetail,
+    recipes: recipe_list.RecipeListModel,
     planner: planner.PlannerModel,
     db_subscriptions: Dict(String, fn() -> Nil),
     settings: settings.SettingsModel,
@@ -114,12 +115,13 @@ pub type RouteParams {
 
 pub type Msg {
   OnRouteChange(Route)
-  RecipeDetail(recipe.RecipeDetailMsg)
-  RecipeList(recipe.RecipeListMsg)
+  RecipeDetail(recipe_detail.RecipeDetailMsg)
+  RecipeList(recipe_list.RecipeListMsg)
   Planner(planner.PlannerMsg)
   Settings(settings.SettingsMsg)
   Upload(upload.UploadMsg)
   ShoppingList(shopping_list.ShoppingListMsg)
+  DbSubscriptionOpened(String, fn() -> Nil)
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -135,7 +137,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let effect_to_run = case dict.get(model.db_subscriptions, slug) {
         Ok(_) -> effect.none()
         _ ->
-          effect.map(recipe.subscribe_to_one_recipe_by_slug(slug), RecipeList)
+          effect.map(
+            recipe_list.subscribe_to_one_recipe_by_slug(slug),
+            RecipeList,
+          )
       }
       #(
         Model(
@@ -175,7 +180,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let effect_to_run = case dict.get(model.db_subscriptions, slug) {
         Ok(_) -> effect.none()
         _ ->
-          effect.map(recipe.subscribe_to_one_recipe_by_slug(slug), RecipeList)
+          effect.map(
+            recipe_list.subscribe_to_one_recipe_by_slug(slug),
+            RecipeList,
+          )
       }
       #(
         Model(
@@ -204,7 +212,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         case list.length(model.recipes.recipes) {
           // TODO: does this really need to get the whole list?
           // maybe it should just get the summaries (or use the existing subscribe_to_summaries)
-          0 -> effect.map(recipe.get_recipes(), RecipeList)
+          0 -> effect.map(recipe_list.get_recipes(), RecipeList)
           _ -> effect.none()
         },
       ]),
@@ -263,17 +271,30 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(..model, current_route: route, current_recipe: None),
       effect.none(),
     )
-    RecipeList(recipe.DbRetrievedOneRecipe(recipe)) -> {
+    RecipeList(recipe_list.DbRetrievedOneRecipe(recipe)) -> {
       #(
         Model(
           ..model,
           current_recipe: Some(recipe),
-          recipes: recipe.merge_recipe_into_model(recipe, model.recipes),
+          recipes: recipe_list.merge_recipe_into_model(recipe, model.recipes),
         ),
         effect.none(),
       )
     }
-    RecipeList(recipe.DbSubscriptionOpened(key, callback)) -> #(
+    RecipeList(recipe_list.RecipeListSubscriptionOpened(key, callback)) -> {
+      #(
+        Model(
+          ..model,
+          db_subscriptions: dict.upsert(
+            in: model.db_subscriptions,
+            update: key,
+            with: fn(_) { callback },
+          ),
+        ),
+        effect.none(),
+      )
+    }
+    DbSubscriptionOpened(key, callback) -> #(
       Model(
         ..model,
         db_subscriptions: dict.upsert(
@@ -286,7 +307,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     )
     RecipeList(list_msg) -> {
       let #(child_model, child_effect) =
-        recipe.list_update(model.recipes, list_msg)
+        recipe_list.list_update(model.recipes, list_msg)
       #(
         Model(
           ..model,
@@ -300,11 +321,14 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(child_effect, RecipeList),
       )
     }
-    RecipeDetail(recipe.DbSavedUpdatedRecipe(new_recipe)) -> {
+    RecipeDetail(recipe_detail.DbSavedUpdatedRecipe(new_recipe)) -> {
       #(
         Model(
           ..model,
-          recipes: recipe.merge_recipe_into_model(new_recipe, model.recipes),
+          recipes: recipe_list.merge_recipe_into_model(
+            new_recipe,
+            model.recipes,
+          ),
         ),
         effect.batch([
           {
@@ -315,13 +339,13 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         ]),
       )
     }
-    RecipeDetail(recipe.DbDeletedRecipe(_id)) -> #(
+    RecipeDetail(recipe_detail.DbDeletedRecipe(_id)) -> #(
       Model(..model, current_recipe: None),
       modem.push("/recipes", None, None),
     )
     RecipeDetail(detail_msg) -> {
       let #(child_model, child_effect) =
-        recipe.detail_update(model.current_recipe, detail_msg)
+        recipe_detail.detail_update(model.current_recipe, detail_msg)
       #(
         Model(..model, current_recipe: child_model),
         effect.map(child_effect, RecipeDetail),
@@ -519,15 +543,15 @@ fn view(model: Model) -> Element(Msg) {
   let page = case model.current_route {
     Home -> view_home()
     ViewRecipeList ->
-      element.map(recipe.view_recipe_list(model.recipes), RecipeList)
+      element.map(recipe_list.view_recipe_list(model.recipes), RecipeList)
     ViewRecipeDetail(slug: _slug) ->
       element.map(
-        recipe.lookup_and_view_recipe(model.current_recipe),
+        recipe_detail.lookup_and_view_recipe(model.current_recipe),
         RecipeDetail,
       )
     EditRecipeDetail(SlugParam(slug: _slug)) -> {
       element.map(
-        recipe.lookup_and_edit_recipe(
+        recipe_detail.lookup_and_edit_recipe(
           model.current_recipe,
           model.recipes.tag_options,
         ),
@@ -536,7 +560,7 @@ fn view(model: Model) -> Element(Msg) {
     }
     EditRecipeDetail(RecipeParam(recipe: _recipe)) -> {
       element.map(
-        recipe.lookup_and_edit_recipe(
+        recipe_detail.lookup_and_edit_recipe(
           model.current_recipe,
           model.recipes.tag_options,
         ),
