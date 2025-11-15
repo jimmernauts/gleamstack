@@ -4,7 +4,7 @@ import gleam/dynamic/decode
 import gleam/int
 import gleam/json.{type Json}
 import gleam/list
-import gleam/option.{type Option}
+import gleam/option
 import gleam/result
 import gleam/string
 import lib/utils

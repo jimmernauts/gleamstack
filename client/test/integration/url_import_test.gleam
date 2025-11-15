@@ -1,4 +1,4 @@
-import app.{EditRecipeDetail, OnRouteChange, SlugParam, Upload, ViewUpload}
+import app.{OnRouteChange, Upload, ViewUpload}
 import birdie
 import domains/upload.{Other, ParseRecipeResponseReceived, UserUpdatedUrl}
 import gleam/dict

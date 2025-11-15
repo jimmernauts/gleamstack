@@ -13,7 +13,7 @@ import gleam/string
 import lustre/attribute.{class, href}
 import lustre/effect.{type Effect}
 import lustre/element.{text}
-import lustre/element/html.{a, button, details, div, li, section, span, summary}
+import lustre/element/html.{a, button, details, div, section, span, summary}
 import lustre/event.{on_click}
 import shared/codecs.{decode_recipe_with_inner_json}
 import shared/types.{type Recipe, type TagOption}
@@ -343,56 +343,6 @@ fn view_recipe_summary(recipe: Recipe, class_props: String) {
       ),
     ],
   )
-}
-
-fn view_ingredient(ingredient: types.Ingredient) {
-  let bold = case ingredient.ismain {
-    Some(True) -> " font-bold"
-    _ -> ""
-  }
-  div([class("flex justify-start items-baseline")], [
-    div([class("flex-grow-[2] text-left flex text-lg justify-start" <> bold)], [
-      option.unwrap(option.map(ingredient.name, text), element.none()),
-    ]),
-    div([class("col-span-1 text-sm")], [
-      option.unwrap(option.map(ingredient.quantity, text), element.none()),
-    ]),
-    div([class("col-span-1 text-sm")], [
-      option.unwrap(option.map(ingredient.units, text), element.none()),
-    ]),
-  ])
-}
-
-fn view_method_step(method_step: types.MethodStep) {
-  li(
-    [
-      class(
-        "w-full justify-self-start list-decimal text-lg text-left ml-8 pr-2",
-      ),
-    ],
-    [text(method_step.step_text)],
-  )
-}
-
-fn view_tag(tag: types.Tag) {
-  div([class("flex")], [
-    div(
-      [
-        class(
-          "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
-        ),
-      ],
-      [text(tag.name)],
-    ),
-    div(
-      [
-        class(
-          "font-mono bg-ecru-white-50 border border-l-0 border-ecru-white-950  px-1 text-xs",
-        ),
-      ],
-      [text(tag.value)],
-    ),
-  ])
 }
 
 //-DATABASE----------------------------------------------------------

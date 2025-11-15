@@ -2,7 +2,6 @@ import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import gleam/dict
 import gleam/int
-import gleam/javascript/promise.{type Promise}
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -18,8 +17,8 @@ import lustre/attribute.{
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{
-  a, button, details, div, fieldset, form, input, label, legend, li, ol, option,
-  section, select, span, summary, textarea,
+  a, button, div, fieldset, form, input, label, legend, li, ol, option, section,
+  select, span, textarea,
 }
 import lustre/element/keyed
 import lustre/event.{on_check, on_click, on_input}
