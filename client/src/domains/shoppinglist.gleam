@@ -29,12 +29,20 @@ pub type ShoppingListModel {
   )
 }
 
+pub type ShoppingListRecipeLink {
+  //todo: can LinkedRecipe just contain a RecipeId instead of the full Recipe?
+  LinkedRecipe(types.Recipe)
+  NamedRecipe(String)
+}
+
 pub type ShoppingList {
   ShoppingList(
     id: Option(String),
     items: List(types.Ingredient),
     status: Status,
     date: date.Date,
+    linked_recipes: List(ShoppingListRecipeLink),
+    linked_plan: Option(date.Date),
   )
 }
 
@@ -60,6 +68,8 @@ pub fn shopping_list_update(
             items: [],
             status: Active,
             date: date.today(),
+            linked_recipes: [],
+            linked_plan: None,
           )),
         ),
         effect.none(),
@@ -116,6 +126,8 @@ pub fn shopping_list_decoder() -> Decoder(ShoppingList) {
     items: items,
     status: status,
     date: date.from_rata_die(date),
+    linked_recipes: [],
+    linked_plan: None,
   ))
 }
 
@@ -133,7 +145,9 @@ pub fn shopping_list_status_decoder() -> Decoder(Status) {
 
 //-VIEW---------------------------------------------------------------
 
-pub fn view_shopping_list(_model: ShoppingListModel) -> Element(ShoppingListMsg) {
+pub fn view_all_shopping_lists(
+  _model: ShoppingListModel,
+) -> Element(ShoppingListMsg) {
   section(
     [
       class(

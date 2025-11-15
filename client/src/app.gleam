@@ -4,7 +4,7 @@ import domains/planner
 import domains/recipe_detail
 import domains/recipe_list
 import domains/settings
-import domains/shopping_list
+import domains/shoppinglist
 import domains/upload
 import gleam/dict.{type Dict}
 import gleam/list
@@ -54,10 +54,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         start_date: date.floor(date.today(), date.Monday),
       ),
       db_subscriptions: dict.from_list([]),
-      shopping_list: shopping_list.ShoppingListModel(
-        all_lists: [],
-        current: None,
-      ),
+      shoppinglist: shoppinglist.ShoppingListModel(all_lists: [], current: None),
       settings: settings.SettingsModel(api_key: None),
       upload: upload.UploadModel(
         status: upload.NotStarted,
@@ -92,7 +89,7 @@ pub type Model {
     db_subscriptions: Dict(String, fn() -> Nil),
     settings: settings.SettingsModel,
     upload: upload.UploadModel,
-    shopping_list: shopping_list.ShoppingListModel,
+    shoppinglist: shoppinglist.ShoppingListModel,
   )
 }
 
@@ -120,7 +117,7 @@ pub type Msg {
   Planner(planner.PlannerMsg)
   Settings(settings.SettingsMsg)
   Upload(upload.UploadMsg)
-  ShoppingList(shopping_list.ShoppingListMsg)
+  ShoppingList(shoppinglist.ShoppingListMsg)
   DbSubscriptionOpened(String, fn() -> Nil)
 }
 
@@ -265,7 +262,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
     OnRouteChange(ViewShoppingList) -> #(
       Model(..model, current_route: ViewShoppingList),
-      effect.map(shopping_list.retrieve_shopping_lists(), ShoppingList),
+      effect.map(shoppinglist.retrieve_shopping_lists(), ShoppingList),
     )
     OnRouteChange(route) -> #(
       Model(..model, current_route: route, current_recipe: None),
@@ -406,14 +403,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(settings_effect, Settings),
       )
     }
-    ShoppingList(shopping_list_msg) -> {
+    ShoppingList(shoppinglist_msg) -> {
       let #(child_model, child_effect) =
-        shopping_list.shopping_list_update(
-          model.shopping_list,
-          shopping_list_msg,
-        )
+        shoppinglist.shopping_list_update(model.shoppinglist, shoppinglist_msg)
       #(
-        Model(..model, shopping_list: child_model),
+        Model(..model, shoppinglist: child_model),
         effect.map(child_effect, ShoppingList),
       )
     }
@@ -589,7 +583,7 @@ fn view(model: Model) -> Element(Msg) {
       element.map(settings.view_settings(model.settings), Settings)
     ViewShoppingList ->
       element.map(
-        shopping_list.view_shopping_list(model.shopping_list),
+        shoppinglist.view_all_shopping_lists(model.shoppinglist),
         ShoppingList,
       )
     ViewUpload -> element.map(upload.view_upload(model.upload), Upload)

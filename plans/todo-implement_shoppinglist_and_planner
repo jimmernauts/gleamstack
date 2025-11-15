@@ -1,0 +1,8 @@
+1. Add list view of shopping lists with controls to edit status, create new list
+2. Add detail view of single shopping list with views of linked recipes and list of ingredient entries in the shopping list, overall date/status
+3. Add edit view of single shopping list with controls to add linked recipes (manual entry (String)) and controls to add/edit/remove ingredient entries in the shopping list
+4. Enhance edit view with ccontrols to add linked recipes from a lookup
+5. Add affordances to pick a recipe from the linked ones and add its ingredients to the shopping list
+6. Change planner so it can have either strings or RecipeIds inside of PlannedMealWithStatus
+7. Add affordances to link a plan to a shopping list. This auto-links any recipe Ids or Names from the plan to the shopping list.
+8. Add affordances to create a new shopping list from a plan. This should also auto-link as above
