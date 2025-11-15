@@ -1,8 +1,3 @@
-// Recipe List - Complete MVU Bundle
-//
-// This module contains the complete Model-View-Update cycle for browsing
-// and filtering a list of recipes.
-
 import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import gleam/dict
@@ -15,25 +10,22 @@ import gleam/option.{type Option, None, Some}
 import gleam/pair
 import gleam/result
 import gleam/string
-import gleam/uri
-import lustre/attribute.{attribute, class, href}
+import lustre/attribute.{class, href}
 import lustre/effect.{type Effect}
-import lustre/element.{type Element, text}
+import lustre/element.{text}
 import lustre/element/html.{a, button, details, div, li, section, span, summary}
 import lustre/event.{on_click}
 import shared/codecs.{decode_recipe_with_inner_json}
-import shared/types.{
-  type Ingredient, type MethodStep, type Recipe, type Tag, type TagOption,
-}
+import shared/types.{type Recipe, type TagOption}
 
 //-MODEL-------------------------------------------------------------
 
 pub type RecipeListMsg {
   RecipeListSubscriptionOpened(String, fn() -> Nil)
   DbSubscribedOneRecipe(Dynamic)
+  DbRetrievedOneRecipe(Recipe)
   DbSubscribedRecipes(Dynamic)
   DbRetrievedRecipes(List(Recipe))
-  DbRetrievedOneRecipe(Recipe)
   DbRetrievedTagOptions(List(TagOption))
   UserGroupedRecipeListByTag(String)
   UserGroupedRecipeListByAuthor
@@ -52,82 +44,14 @@ pub type RecipeListModel {
   )
 }
 
-//-DATABASE----------------------------------------------------------
-
-pub fn get_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_get_one_recipe_by_slug(slug)
-  |> promise.map(decode.run(_, decode_recipe_with_inner_json()))
-  |> promise.map(result.map(_, DbRetrievedOneRecipe))
-  |> promise.tap(result.map(_, dispatch))
-  Nil
-}
-
-@external(javascript, "../db.ts", "do_get_one_recipe_by_slug")
-fn do_get_one_recipe_by_slug(slug: String) -> Promise(Dynamic)
-
-pub fn subscribe_to_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_subscribe_to_one_recipe_by_slug(slug, fn(data) {
-    data
-    |> DbSubscribedOneRecipe
-    |> dispatch
-  })
-  |> RecipeListSubscriptionOpened(slug, _)
-  |> dispatch
-  Nil
-}
-
-@external(javascript, "../db.ts", "do_subscribe_to_one_recipe_by_slug")
-fn do_subscribe_to_one_recipe_by_slug(
-  slug: String,
-  callback: fn(a) -> Nil,
-) -> fn() -> Nil
-
-pub fn get_recipes() -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_get_recipes()
-  |> promise.map(decode.run(_, decode.list(decode_recipe_with_inner_json())))
-  |> promise.map(result.map(_, DbRetrievedRecipes))
-  |> promise.tap(result.map(_, dispatch))
-  Nil
-}
-
-@external(javascript, "../db.ts", "do_get_recipes")
-fn do_get_recipes() -> Promise(Dynamic)
-
-pub fn get_tag_options() -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_get_tagoptions()
-  |> promise.map(decode.run(_, decode.list(codecs.decode_tag_option())))
-  |> promise.map(result.map(_, DbRetrievedTagOptions))
-  |> promise.tap(result.map(_, dispatch))
-  Nil
-}
-
-@external(javascript, "../db.ts", "do_get_tagoptions")
-fn do_get_tagoptions() -> Promise(Dynamic)
-
-pub fn subscribe_to_recipe_summaries() -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_subscribe_to_recipe_summaries(fn(data) {
-    data
-    |> DbSubscribedRecipes
-    |> dispatch
-  })
-  |> RecipeListSubscriptionOpened("recipes", _)
-  |> dispatch
-  Nil
-}
-
-@external(javascript, "../db.ts", "do_subscribe_to_recipe_summaries")
-fn do_subscribe_to_recipe_summaries(callback: fn(a) -> Nil) -> fn() -> Nil
+//-UPDATE------------------------------------------------------------
 
 pub fn list_update(
   model: RecipeListModel,
   msg: RecipeListMsg,
 ) -> #(RecipeListModel, Effect(RecipeListMsg)) {
   case msg {
+    // SubscriptionOpened is handled in the layer above
     RecipeListSubscriptionOpened(_key, _callback) -> #(model, effect.none())
     DbSubscribedOneRecipe(jsdata) -> {
       let decoder = {
@@ -222,7 +146,7 @@ pub fn merge_recipe_into_model(
   )
 }
 
-//-VIEWS-------------------------------------------------------------
+//-VIEW--------------------------------------------------------------
 
 pub fn view_recipe_list(model: RecipeListModel) {
   section(
@@ -421,7 +345,7 @@ fn view_recipe_summary(recipe: Recipe, class_props: String) {
   )
 }
 
-fn view_ingredient(ingredient: Ingredient) {
+fn view_ingredient(ingredient: types.Ingredient) {
   let bold = case ingredient.ismain {
     Some(True) -> " font-bold"
     _ -> ""
@@ -439,7 +363,7 @@ fn view_ingredient(ingredient: Ingredient) {
   ])
 }
 
-fn view_method_step(method_step: MethodStep) {
+fn view_method_step(method_step: types.MethodStep) {
   li(
     [
       class(
@@ -450,7 +374,7 @@ fn view_method_step(method_step: MethodStep) {
   )
 }
 
-fn view_tag(tag: Tag) {
+fn view_tag(tag: types.Tag) {
   div([class("flex")], [
     div(
       [
@@ -470,3 +394,74 @@ fn view_tag(tag: Tag) {
     ),
   ])
 }
+
+//-DATABASE----------------------------------------------------------
+
+pub fn get_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_get_one_recipe_by_slug(slug)
+  |> promise.map(decode.run(_, decode_recipe_with_inner_json()))
+  |> promise.map(result.map(_, DbRetrievedOneRecipe))
+  |> promise.tap(result.map(_, dispatch))
+  Nil
+}
+
+@external(javascript, "../db.ts", "do_get_one_recipe_by_slug")
+fn do_get_one_recipe_by_slug(slug: String) -> Promise(Dynamic)
+
+pub fn subscribe_to_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_subscribe_to_one_recipe_by_slug(slug, fn(data) {
+    data
+    |> DbSubscribedOneRecipe
+    |> dispatch
+  })
+  |> RecipeListSubscriptionOpened(slug, _)
+  |> dispatch
+  Nil
+}
+
+@external(javascript, "../db.ts", "do_subscribe_to_one_recipe_by_slug")
+fn do_subscribe_to_one_recipe_by_slug(
+  slug: String,
+  callback: fn(a) -> Nil,
+) -> fn() -> Nil
+
+pub fn get_recipes() -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_get_recipes()
+  |> promise.map(decode.run(_, decode.list(decode_recipe_with_inner_json())))
+  |> promise.map(result.map(_, DbRetrievedRecipes))
+  |> promise.tap(result.map(_, dispatch))
+  Nil
+}
+
+@external(javascript, "../db.ts", "do_get_recipes")
+fn do_get_recipes() -> Promise(Dynamic)
+
+pub fn get_tag_options() -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_get_tagoptions()
+  |> promise.map(decode.run(_, decode.list(codecs.decode_tag_option())))
+  |> promise.map(result.map(_, DbRetrievedTagOptions))
+  |> promise.tap(result.map(_, dispatch))
+  Nil
+}
+
+@external(javascript, "../db.ts", "do_get_tagoptions")
+fn do_get_tagoptions() -> Promise(Dynamic)
+
+pub fn subscribe_to_recipe_summaries() -> Effect(RecipeListMsg) {
+  use dispatch <- effect.from
+  do_subscribe_to_recipe_summaries(fn(data) {
+    data
+    |> DbSubscribedRecipes
+    |> dispatch
+  })
+  |> RecipeListSubscriptionOpened("recipes", _)
+  |> dispatch
+  Nil
+}
+
+@external(javascript, "../db.ts", "do_subscribe_to_recipe_summaries")
+fn do_subscribe_to_recipe_summaries(callback: fn(a) -> Nil) -> fn() -> Nil

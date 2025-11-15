@@ -147,24 +147,24 @@ All tests passing including snapshots.
 
 ---
 
-## Phase 3: Split Recipe Module into MVU Bundles - IN PROGRESS 🔄
+## Phase 3: Split Recipe Module into MVU Bundles - ✅ COMPLETED
 
 **Date**: November 14, 2025  
-**Status**: Planning
+**Status**: Complete
 
 ### Goals
 
-Split the large `domains/recipe/recipe.gleam` (1786 lines) into two separate MVU bundles:
+Split the large `domains/recipe.gleam` (1786 lines) into two separate MVU bundles:
 
 1. **Recipe Detail** - For viewing/editing a single recipe
 2. **Recipe List** - For browsing/filtering multiple recipes
 
 This approach maintains the MVU pattern within each bundle while avoiding Gleam's re-export limitations.
 
-### Proposed Structure
+### Final Structure
 
 ```
-client/src/domains/recipe/
+client/src/domains/
 ├── recipe_detail.gleam    # Complete MVU bundle for single recipe (Model-Update-View)
 │                          # - RecipeDetail type (model)
 │                          # - RecipeDetailMsg type (messages)
@@ -179,16 +179,20 @@ client/src/domains/recipe/
 │                          # - view_recipe_list() function
 │                          # - Database FFI: get_recipes(), subscribe_to_recipes()
 │
-└── recipe.gleam           # Thin wrapper for backward compatibility (optional)
-                           # Re-exports types and functions from both bundles
+├── planner.gleam
+├── settings.gleam
+├── shopping_list.gleam
+└── upload.gleam
 ```
 
-### Changes to Make
+**Note**: Recipe modules are kept in `domains/` alongside other domain modules, not in a separate `recipe/` subdirectory.
 
-#### 1. Create Recipe Detail Bundle
+### Changes Made
 
-- Create `domains/recipe/recipe_detail.gleam`
-- Include complete MVU pattern:
+#### 1. Created Recipe Detail Bundle
+
+- ✅ Created `domains/recipe_detail.gleam`
+- ✅ Included complete MVU pattern:
   - **Model**: `RecipeDetail` type (Option(Recipe))
   - **Messages**: `RecipeDetailMsg` with all user/db events
   - **Update**: `detail_update()` function with all message handlers
@@ -196,10 +200,10 @@ client/src/domains/recipe/
   - **Database**: `save_recipe()`, `delete_recipe()` with FFI declarations
   - **Helpers**: `JsRecipe` type, ingredient/tag/method step input components
 
-#### 2. Create Recipe List Bundle
+#### 2. Created Recipe List Bundle
 
-- Create `domains/recipe/recipe_list.gleam`
-- Include complete MVU pattern:
+- ✅ Created `domains/recipe_list.gleam`
+- ✅ Included complete MVU pattern:
   - **Model**: `RecipeListModel` type with recipes, tag_options, group_by
   - **Messages**: `RecipeListMsg` with subscription/retrieval events
   - **Update**: `list_update()` function, `merge_recipe_into_model()` helper
@@ -207,45 +211,20 @@ client/src/domains/recipe/
   - **Database**: `get_recipes()`, `get_tag_options()`, `subscribe_to_recipe_summaries()`, `subscribe_to_one_recipe_by_slug()`, `get_one_recipe_by_slug()` with FFI
   - **Helpers**: `RecipeListGroupBy` type, grouping view functions
 
-#### 3. Update Main Recipe Module (Optional)
+#### 3. Updated App Module
 
-- Keep `recipe.gleam` as a thin compatibility layer
-- Import both bundles: `recipe_detail` and `recipe_list`
-- Re-export key types and functions for backward compatibility
+- ✅ Changed imports from `domains/recipe` to:
+  - `domains/recipe_detail` for detail functionality
+  - `domains/recipe_list` for list functionality
+- ✅ Updated Model type to use new module references
+- ✅ Updated message handlers to use new module functions
+- ✅ Fixed `DbSubscriptionOpened` message handling
 
-### Migration Steps
+#### 4. Updated Tests
 
-1. **Create recipe_detail.gleam**
-
-   - Extract RecipeDetail, RecipeDetailMsg types
-   - Extract detail_update() function
-   - Extract view_recipe_detail(), edit_recipe_detail(), lookup functions
-   - Extract save_recipe(), delete_recipe() FFI
-   - Extract JsRecipe type and input helper components
-   - Verify it compiles independently
-
-2. **Create recipe_list.gleam**
-
-   - Extract RecipeListModel, RecipeListMsg, RecipeListGroupBy types
-   - Extract list_update(), merge_recipe_into_model() functions
-   - Extract view_recipe_list() and grouping view functions
-   - Extract get_recipes(), subscribe functions, get_tag_options() FFI
-   - Verify it compiles independently
-
-3. **Update app.gleam**
-
-   - Change imports from `domains/recipe/recipe` to:
-     - `domains/recipe/recipe_detail` for detail functionality
-     - `domains/recipe/recipe_list` for list functionality
-   - Update Model type to use new module references
-   - Update message handlers to use new module functions
-
-4. **Run tests**
-
-   - Verify all 52 tests still pass
-   - Fix any import issues in test files
-
-5. **Keep recipe.gleam as compatibility layer**
+- ✅ Updated `test/integration/recipe_creation_test.gleam` imports
+- ✅ Updated `test/integration/recipe_list_test.gleam` imports
+- ✅ All 52 tests passing
 
 ### Expected Benefits
 
