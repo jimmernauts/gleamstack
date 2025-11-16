@@ -1,15 +1,16 @@
+import app.{OnRouteChange, Planner, ViewPlanner}
 import birdie
+import domains/planner.{
+  DbRetrievedPlan, Dinner, Lunch, PlanDay, PlannedMealWithStatus,
+  UserToggledMealComplete, UserUpdatedMealTitle,
+}
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
 import lustre/dev/simulate
 import lustre/element
-import app.{OnRouteChange, Planner, ViewPlanner}
-import domains/planner.{
-  DbRetrievedPlan, Dinner, Lunch, PlanDay, PlannedMealWithStatus,
-  UserToggledMealComplete, UserUpdatedMealTitle,
-}
 import rada/date
+import shared/types
 import startest.{describe, it}
 import startest/expect
 
@@ -89,12 +90,12 @@ pub fn planner_integration_tests() {
             PlanDay(date: monday, planned_meals: [
               PlannedMealWithStatus(
                 for: Lunch,
-                title: Some("Pasta Carbonara"),
+                recipe: Some(types.RecipeName("Pasta Carbonara")),
                 complete: None,
               ),
               PlannedMealWithStatus(
                 for: Dinner,
-                title: Some("Thai Green Curry"),
+                recipe: Some(types.RecipeName("Thai Green Curry")),
                 complete: None,
               ),
             ]),
@@ -104,7 +105,7 @@ pub fn planner_integration_tests() {
             PlanDay(date: tuesday, planned_meals: [
               PlannedMealWithStatus(
                 for: Lunch,
-                title: Some("Spaghetti Bolognese"),
+                recipe: Some(types.RecipeName("Spaghetti Bolognese")),
                 complete: None,
               ),
             ]),
@@ -158,7 +159,8 @@ pub fn planner_integration_tests() {
             Ok(plan_day) -> {
               plan_day.planned_meals
               |> list.any(fn(meal) {
-                meal.for == Lunch && meal.title == Some("Pasta Carbonara")
+                meal.for == Lunch
+                && meal.recipe == Some(types.RecipeName("Pasta Carbonara"))
               })
               |> expect.to_equal(True)
             }
@@ -242,7 +244,8 @@ pub fn planner_integration_tests() {
             Ok(plan_day) -> {
               plan_day.planned_meals
               |> list.any(fn(meal) {
-                meal.for == Lunch && meal.title == Some("Spaghetti Bolognese")
+                meal.for == Lunch
+                && meal.recipe == Some(types.RecipeName("Spaghetti Bolognese"))
               })
               |> expect.to_equal(True)
             }
@@ -303,7 +306,7 @@ pub fn planner_integration_tests() {
             PlanDay(date: monday, planned_meals: [
               PlannedMealWithStatus(
                 for: Lunch,
-                title: Some("Pasta Carbonara"),
+                recipe: Some(types.RecipeName("Pasta Carbonara")),
                 complete: Some(False),
               ),
             ]),
@@ -379,12 +382,12 @@ pub fn planner_integration_tests() {
             PlanDay(date: monday, planned_meals: [
               PlannedMealWithStatus(
                 for: Lunch,
-                title: Some("Pasta Carbonara"),
+                recipe: Some(types.RecipeName("Pasta Carbonara")),
                 complete: Some(False),
               ),
               PlannedMealWithStatus(
                 for: Dinner,
-                title: Some("Thai Green Curry"),
+                recipe: Some(types.RecipeName("Thai Green Curry")),
                 complete: Some(True),
               ),
             ]),
@@ -394,7 +397,7 @@ pub fn planner_integration_tests() {
             PlanDay(date: tuesday, planned_meals: [
               PlannedMealWithStatus(
                 for: Lunch,
-                title: Some("Spaghetti Bolognese"),
+                recipe: Some(types.RecipeName("Spaghetti Bolognese")),
                 complete: Some(False),
               ),
             ]),

@@ -43,3 +43,8 @@ pub type Ingredient {
 pub type IngredientCategory {
   IngredientCategory(name: String)
 }
+
+pub type PlannedRecipe {
+  RecipeId(String)
+  RecipeName(String)
+}

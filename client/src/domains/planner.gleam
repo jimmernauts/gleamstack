@@ -21,6 +21,7 @@ import lustre/element/keyed
 import lustre/event.{on_submit}
 import rada/date.{type Date}
 import shared/codecs
+import shared/types
 
 //-TYPES-------------------------------------------------------------
 
@@ -35,7 +36,7 @@ pub type JsPlanDay {
 pub type PlannedMealWithStatus {
   PlannedMealWithStatus(
     for: Meal,
-    title: Option(String),
+    recipe: Option(types.PlannedRecipe),
     complete: Option(Bool),
   )
 }
@@ -65,6 +66,15 @@ pub type Meal {
 
 //-UPDATE---------------------------------------------
 
+// Helper function to extract recipe name from PlannedRecipe
+fn recipe_name(recipe: Option(types.PlannedRecipe)) -> String {
+  case recipe {
+    Some(types.RecipeId(id)) -> id
+    Some(types.RecipeName(name)) -> name
+    None -> ""
+  }
+}
+
 fn update_meal_title_in_plan(
   current: PlanWeek,
   date: Date,
@@ -88,20 +98,32 @@ fn update_meal_title_in_plan(
                   [
                     PlannedMealWithStatus(
                       for: meal,
-                      title: Some(value),
+                      recipe: Some(types.RecipeName(value)),
                       complete: None,
                     ),
                   ],
                   b,
                 )
               #([a], b) ->
-                list.append([PlannedMealWithStatus(..a, title: Some(value))], b)
+                list.append(
+                  [
+                    PlannedMealWithStatus(
+                      ..a,
+                      recipe: Some(types.RecipeName(value)),
+                    ),
+                  ],
+                  b,
+                )
               #(_, _) -> []
             }
           }
         }
       None -> [
-        PlannedMealWithStatus(for: meal, title: Some(value), complete: None),
+        PlannedMealWithStatus(
+          for: meal,
+          recipe: Some(types.RecipeName(value)),
+          complete: None,
+        ),
       ]
     })
   })
@@ -707,7 +729,7 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
 }
 
 fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
-  let PlannedMealWithStatus(_f, t, c) = meal
+  let PlannedMealWithStatus(_f, r, c) = meal
   div(
     [
       class("flex flex-row gap-1 overflow-y-scroll items-baseline h-11/12 m-1"),
@@ -732,7 +754,7 @@ fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
             }),
           ]),
         ],
-        [text(option.unwrap(t, ""))],
+        [text(recipe_name(r))],
       ),
     ],
   )
@@ -759,7 +781,7 @@ fn planner_meal_input(
     )
     list.filter(pd.planned_meals, fn(a) { a.for == for })
     |> list.map(fn(a) {
-      inner_input(pd.date, for, option.unwrap(a.title, ""), recipe_titles)
+      inner_input(pd.date, for, recipe_name(a.recipe), recipe_titles)
     })
     |> element.fragment
   }
@@ -815,12 +837,16 @@ fn planned_meals_decoder() -> decode.Decoder(List(PlannedMealWithStatus)) {
       _ -> decode.failure(Lunch, "Meal")
     }
   }
+  let recipe_decoder = {
+    use recipe_str <- decode.then(decode.string)
+    decode.success(types.RecipeName(recipe_str))
+  }
   let record_decoder = {
     use for <- decode.field("for", enum_decoder)
-    use title <- decode.optional_field(
-      "title",
+    use recipe <- decode.optional_field(
+      "recipe",
       option.None,
-      decode.optional(decode.string),
+      decode.optional(recipe_decoder),
     )
     use complete <- decode.optional_field(
       "complete",
@@ -829,7 +855,7 @@ fn planned_meals_decoder() -> decode.Decoder(List(PlannedMealWithStatus)) {
     )
     decode.success(PlannedMealWithStatus(
       for: for,
-      title: title,
+      recipe: recipe,
       complete: complete,
     ))
   }
@@ -852,7 +878,7 @@ fn json_encode_planned_meals(input: List(PlannedMealWithStatus)) -> Json {
 
 fn json_encode_planned_meal_with_status(meal: PlannedMealWithStatus) -> Json {
   json.object([
-    #("title", json.string(option.unwrap(meal.title, ""))),
+    #("recipe", json.string(recipe_name(meal.recipe))),
     #(
       "for",
       json.string(case meal.for {

@@ -35,10 +35,23 @@ pub type ShoppingListRecipeLink {
   NamedRecipe(String)
 }
 
+pub type IngredientSource {
+  ManualEntry
+  FromRecipe(recipe_ref: ShoppingListRecipeLink)
+}
+
+pub type ShoppingListIngredient {
+  ShoppingListIngredient(
+    ingredient: types.Ingredient,
+    source: IngredientSource,
+    checked: Bool,
+  )
+}
+
 pub type ShoppingList {
   ShoppingList(
     id: Option(String),
-    items: List(types.Ingredient),
+    items: List(ShoppingListIngredient),
     status: Status,
     date: date.Date,
     linked_recipes: List(ShoppingListRecipeLink),
@@ -116,9 +129,33 @@ pub fn retrieve_shopping_lists() -> Effect(ShoppingListMsg) {
 
 //-DECODER------------------------------------------------------------
 
+pub fn shopping_list_ingredient_decoder() -> Decoder(ShoppingListIngredient) {
+  use ingredient <- decode.field("ingredient", codecs.ingredient_decoder())
+  use source_type <- decode.optional_field(
+    "source_type",
+    "manual",
+    decode.string,
+  )
+  use checked <- decode.optional_field("checked", False, decode.bool)
+  let source = case source_type {
+    "manual" -> ManualEntry
+    // For now, we'll default to ManualEntry for recipe sources
+    // Full implementation will need to decode recipe_ref
+    _ -> ManualEntry
+  }
+  decode.success(ShoppingListIngredient(
+    ingredient: ingredient,
+    source: source,
+    checked: checked,
+  ))
+}
+
 pub fn shopping_list_decoder() -> Decoder(ShoppingList) {
   use id <- decode.field("id", decode.optional(decode.string))
-  use items <- decode.field("items", decode.list(codecs.ingredient_decoder()))
+  use items <- decode.field(
+    "items",
+    decode.list(shopping_list_ingredient_decoder()),
+  )
   use status <- decode.field("status", shopping_list_status_decoder())
   use date <- decode.field("date", decode.int)
   decode.success(ShoppingList(

@@ -156,11 +156,13 @@ When changing from one type structure to another (e.g., `title: String` to `reci
 
 ### Option 2: Schema-Flexible Approach (Simpler)
 
+// Use this option
 Since InstantDB is schema-flexible and Gleam compiles to JavaScript:
 
 - Change your Gleam types immediately
 - Old data with `title` still exists in DB
 - Decoder handles both cases:
+
   ```gleam
   fn planned_meal_decoder() -> Decoder(PlannedMealWithStatus) {
     use for <- decode.field("for", meal_decoder())
@@ -180,6 +182,7 @@ Since InstantDB is schema-flexible and Gleam compiles to JavaScript:
     decode.success(PlannedMealWithStatus(for: for, recipe: recipe, complete: None))
   }
   ```
+
 - Old data gets overwritten as users edit their plans
 - No explicit migration needed
 
