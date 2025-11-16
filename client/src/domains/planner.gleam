@@ -219,6 +219,7 @@ pub fn get_plan(start_date: Date) -> Effect(PlannerMsg) {
     date.to_rata_die(start_date),
     date.to_rata_die(date.add(start_date, 1, date.Weeks)),
   )
+  |> echo
   |> promise.map(decode.run(_, decode.list(plan_day_decoder())))
   |> promise.map(result.map(_, list.map(_, fn(x: PlanDay) { #(x.date, x) })))
   |> promise.map(result.map(_, dict.from_list))
@@ -556,7 +557,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longMon", "'Monday " <> monday <> "'"),
             ]),
             class(
-              "text-center  before:content-(--shortMon)re:sm:content-[var(--longMon)]",
+              "text-center  before:content-(--shortMon) before:sm:content-(--longMon)",
             ),
           ],
           [],
@@ -640,7 +641,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
               #("--longFri", "'Friday " <> friday <> "'"),
             ]),
             class(
-              "text-center  before:content-(--shortFri)re:sm:content-[var(--longFri)]",
+              "text-center  before:content-(--shortFri) before:sm:content-(--longFri)",
             ),
           ],
           [],
@@ -823,7 +824,7 @@ fn plan_day_decoder() -> decode.Decoder(PlanDay) {
   )
   use planned_meals <- decode.field(
     "planned_meals",
-    codecs.decode_json_string(planned_meals_decoder(), []),
+    codecs.json_string_decoder(planned_meals_decoder(), []),
   )
   decode.success(PlanDay(date: date, planned_meals: planned_meals))
 }
@@ -837,29 +838,50 @@ fn planned_meals_decoder() -> decode.Decoder(List(PlannedMealWithStatus)) {
       _ -> decode.failure(Lunch, "Meal")
     }
   }
-  let recipe_decoder = {
+  let recipe_name_decoder = {
     use recipe_str <- decode.then(decode.string)
     decode.success(types.RecipeName(recipe_str))
   }
+  let recipe_id_decoder = {
+    use recipe_str <- decode.then(decode.string)
+    decode.success(types.RecipeId(recipe_str))
+  }
   let record_decoder = {
     use for <- decode.field("for", enum_decoder)
-    use recipe <- decode.optional_field(
-      "recipe",
+    use title <- decode.optional_field(
+      "title",
       option.None,
-      decode.optional(recipe_decoder),
+      decode.optional(recipe_name_decoder),
+    )
+    use recipe_id <- decode.optional_field(
+      "recipe_id",
+      option.None,
+      decode.optional(recipe_id_decoder),
+    )
+    use recipe_name <- decode.optional_field(
+      "recipe_name",
+      option.None,
+      decode.optional(recipe_name_decoder),
     )
     use complete <- decode.optional_field(
       "complete",
       option.None,
       decode.optional(codecs.decode_stringed_bool()),
     )
+    let maybe_recipe = case title, recipe_name, recipe_id {
+      Some(title), _, _ -> Some(title)
+      _, Some(recipe_name), _ -> Some(recipe_name)
+      _, _, Some(recipe_id) -> Some(recipe_id)
+      _, _, _ -> None
+    }
+    echo maybe_recipe
     decode.success(PlannedMealWithStatus(
       for: for,
-      recipe: recipe,
+      recipe: maybe_recipe,
       complete: complete,
     ))
   }
-  codecs.decode_json_string(decode.list(of: record_decoder), [])
+  codecs.json_string_decoder(decode.list(of: record_decoder), [])
 }
 
 fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {
@@ -877,18 +899,25 @@ fn json_encode_planned_meals(input: List(PlannedMealWithStatus)) -> Json {
 }
 
 fn json_encode_planned_meal_with_status(meal: PlannedMealWithStatus) -> Json {
-  json.object([
-    #("recipe", json.string(recipe_name(meal.recipe))),
-    #(
-      "for",
-      json.string(case meal.for {
-        Lunch -> "lunch"
-        Dinner -> "dinner"
-      }),
-    ),
-    #(
-      "complete",
-      json.string(bool.to_string(option.unwrap(meal.complete, False))),
-    ),
-  ])
+  case meal.recipe {
+    Some(recipe) ->
+      json.object([
+        case recipe {
+          types.RecipeName(name) -> #("recipe_name", json.string(name))
+          types.RecipeId(id) -> #("recipe_id", json.string(id))
+        },
+        #(
+          "for",
+          json.string(case meal.for {
+            Lunch -> "lunch"
+            Dinner -> "dinner"
+          }),
+        ),
+        #(
+          "complete",
+          json.string(bool.to_string(option.unwrap(meal.complete, False))),
+        ),
+      ])
+    None -> json.null()
+  }
 }

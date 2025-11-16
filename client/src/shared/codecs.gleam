@@ -107,17 +107,20 @@ pub fn decode_recipe_with_inner_json() -> decode.Decoder(Recipe) {
   use tags <- decode.optional_field(
     "tags",
     option.None,
-    decode.optional(decode_json_string(decode_tags(), dict.from_list([]))),
+    decode.optional(json_string_decoder(decode_tags(), dict.from_list([]))),
   )
   use ingredients <- decode.optional_field(
     "ingredients",
     option.None,
-    decode.optional(decode_json_string(decode_ingredients(), dict.from_list([]))),
+    decode.optional(json_string_decoder(
+      decode_ingredients(),
+      dict.from_list([]),
+    )),
   )
   use method_steps <- decode.optional_field(
     "method_steps",
     option.None,
-    decode.optional(decode_json_string(
+    decode.optional(json_string_decoder(
       decode_method_steps(),
       dict.from_list([]),
     )),
@@ -286,7 +289,7 @@ pub fn decode_tag_option() -> decode.Decoder(TagOption) {
   use name <- decode.field("name", decode.string)
   use options <- decode.field(
     "options",
-    decode_json_string(decode.list(decode.string), []),
+    json_string_decoder(decode.list(decode.string), []),
   )
   decode.success(TagOption(id:, name:, options:))
 }
@@ -312,7 +315,7 @@ pub fn decode_stringed_bool() -> decode.Decoder(Bool) {
   })
 }
 
-pub fn decode_json_string(
+pub fn json_string_decoder(
   inner_decoder: decode.Decoder(a),
   default: a,
 ) -> decode.Decoder(a) {
