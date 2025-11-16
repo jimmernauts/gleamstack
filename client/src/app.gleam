@@ -100,8 +100,8 @@ pub type Route {
   ViewRecipeList
   ViewPlanner(start_date: date.Date)
   EditPlanner(start_date: date.Date)
-  ViewShoppingList
-  ViewShoppingListDetail(date: date.Date)
+  ViewShoppingLists
+  ViewShoppingList(date: date.Date)
   EditShoppingList(date: date.Date)
   ViewSettings
   ViewUpload
@@ -262,8 +262,8 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         )
       }
     }
-    OnRouteChange(ViewShoppingList) -> #(
-      Model(..model, current_route: ViewShoppingList),
+    OnRouteChange(ViewShoppingLists) -> #(
+      Model(..model, current_route: ViewShoppingLists),
       effect.map(shoppinglist.retrieve_shopping_lists(), ShoppingList),
     )
     OnRouteChange(route) -> #(
@@ -526,7 +526,7 @@ fn on_route_change(uri: Uri) -> Msg {
     _, ["recipes"] -> OnRouteChange(ViewRecipeList)
     _, ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
     _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
-    _, ["shopping-list"] -> OnRouteChange(ViewShoppingList)
+    _, ["shopping-list"] -> OnRouteChange(ViewShoppingLists)
     _, ["shopping-list", date_str, "edit"] ->
       OnRouteChange(
         EditShoppingList(result.unwrap(
@@ -536,7 +536,7 @@ fn on_route_change(uri: Uri) -> Msg {
       )
     _, ["shopping-list", date_str] ->
       OnRouteChange(
-        ViewShoppingListDetail(result.unwrap(
+        ViewShoppingList(result.unwrap(
           date.from_iso_string(date_str),
           date.today(),
         )),
@@ -597,12 +597,12 @@ fn view(model: Model) -> Element(Msg) {
       )
     ViewSettings ->
       element.map(settings.view_settings(model.settings), Settings)
-    ViewShoppingList ->
+    ViewShoppingLists ->
       element.map(
         shoppinglist.view_all_shopping_lists(model.shoppinglist),
         ShoppingList,
       )
-    ViewShoppingListDetail(date: list_date) ->
+    ViewShoppingList(date: list_date) ->
       element.map(
         shoppinglist.view_shopping_list_detail(model.shoppinglist, list_date),
         ShoppingList,
