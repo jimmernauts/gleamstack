@@ -38,7 +38,7 @@ test_name: planner_integration_tests
         </div>
       </div>
       <div class="md:col-start-2 md:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortMon)re:sm:content-[var(--longMon)]" style="--shortMon:&#39;Mon 10&#39;;--longMon:&#39;Monday 10&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortMon) before:sm:content-(--longMon)" style="--shortMon:&#39;Mon 10&#39;;--longMon:&#39;Monday 10&#39;;"></h2>
       </div>
       <div class="md:col-start-3 md:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center shadow-orange">
         <h2 class="text-center  before:content-(--shortTue) before:sm:content-(--longTue)" style="--shortTue:&#39;Tue 11&#39;;--longTue:&#39;Tuesday 11&#39;;"></h2>
@@ -50,7 +50,7 @@ test_name: planner_integration_tests
         <h2 class="text-center  before:content-(--shortThu) before:sm:content-(--longThu)" style="--shortThu:&#39;Thu 13&#39;;--longThu:&#39;Thursday 13&#39;;"></h2>
       </div>
       <div class="md:col-start-6 md:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortFri)re:sm:content-[var(--longFri)]" style="--shortFri:&#39;Fri 14&#39;;--longFri:&#39;Friday 14&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortFri) before:sm:content-(--longFri)" style="--shortFri:&#39;Fri 14&#39;;--longFri:&#39;Friday 14&#39;;"></h2>
       </div>
       <div class="md:col-start-7 md:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center shadow-orange">
         <h2 class="text-center  before:content-(--shortSat) before:sm:content-(--longSat)" style="--shortSat:&#39;Sat 15&#39;;--longSat:&#39;Saturday 15&#39;;"></h2>

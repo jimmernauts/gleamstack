@@ -29,15 +29,9 @@ pub type ShoppingListModel {
   )
 }
 
-pub type ShoppingListRecipeLink {
-  //todo: can LinkedRecipe just contain a RecipeId instead of the full Recipe?
-  LinkedRecipe(types.Recipe)
-  NamedRecipe(String)
-}
-
 pub type IngredientSource {
   ManualEntry
-  FromRecipe(recipe_ref: ShoppingListRecipeLink)
+  FromRecipe(recipe_ref: types.PlannedRecipe)
 }
 
 pub type ShoppingListIngredient {
@@ -54,7 +48,7 @@ pub type ShoppingList {
     items: List(ShoppingListIngredient),
     status: Status,
     date: date.Date,
-    linked_recipes: List(ShoppingListRecipeLink),
+    linked_recipes: List(types.PlannedRecipe),
     linked_plan: Option(date.Date),
   )
 }
@@ -205,6 +199,78 @@ pub fn view_all_shopping_lists(
       nav_footer([
         a([href("/"), class("text-center")], [text("🏠")]),
         a([href("/planner"), class("text-center")], [text("📅")]),
+      ]),
+    ],
+  )
+}
+
+pub fn view_shopping_list_detail(
+  _model: ShoppingListModel,
+  list_date: date.Date,
+) -> Element(ShoppingListMsg) {
+  section(
+    [
+      class(
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+      ),
+    ],
+    [
+      page_title(
+        "Shopping List - " <> date.to_iso_string(list_date),
+        "underline-purple col-span-full md:col-span-11",
+      ),
+      div(
+        [
+          class("col-span-full flex flex-wrap items-center justify-start gap-3"),
+        ],
+        [text("Detail view - coming soon")],
+      ),
+      nav_footer([
+        a([href("/"), class("text-center")], [text("🏠")]),
+        a([href("/shopping-list"), class("text-center")], [text("📋")]),
+        a(
+          [
+            href("/shopping-list/" <> date.to_iso_string(list_date) <> "/edit"),
+            class("text-center"),
+          ],
+          [text("✏️")],
+        ),
+      ]),
+    ],
+  )
+}
+
+pub fn edit_shopping_list(
+  _model: ShoppingListModel,
+  list_date: date.Date,
+) -> Element(ShoppingListMsg) {
+  section(
+    [
+      class(
+        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+      ),
+    ],
+    [
+      page_title(
+        "Edit Shopping List - " <> date.to_iso_string(list_date),
+        "underline-purple col-span-full md:col-span-11",
+      ),
+      div(
+        [
+          class("col-span-full flex flex-wrap items-center justify-start gap-3"),
+        ],
+        [text("Edit view - coming soon")],
+      ),
+      nav_footer([
+        a([href("/"), class("text-center")], [text("🏠")]),
+        a([href("/shopping-list"), class("text-center")], [text("📋")]),
+        a(
+          [
+            href("/shopping-list/" <> date.to_iso_string(list_date)),
+            class("text-center"),
+          ],
+          [text("👁️")],
+        ),
       ]),
     ],
   )

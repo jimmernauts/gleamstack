@@ -2,7 +2,6 @@ TODO
 
 [] SHOPPING LIST
 [] write proper readme
-[] BUG: strange plan behaviour around 29/9/2025. Outside of that date seems fine.
 [] BUG: noticed double plan entry when editing an existing plan entry
 [] BUG: save recipe slow
 [] copy recipes from browser bookmarks
@@ -14,10 +13,7 @@ TODO
 [] Build auth
 [] Decide if stay SPA only or move to SSR / other. Maybe just classic SPA + Backend API - make scraping API endpoint more permanent. Or go other way and make scraping endpoint into a serverless function. Maybe the scraping endpoint could still be done browser-side in WASM somehow
 
-
 WIP
-
-
 
 DONE
 
@@ -32,7 +28,7 @@ DONE
 [x] BUG: 'serves' field misaligned in edit recipe details
 [x] BUG: delete button misaligned at mobile size in edit recipe details
 [x] BUG: background color doesn't fill whole screen (esp. on mobile)
-
+[x] BUG: strange plan behaviour around 29/9/2025. Outside of that date seems fine.
 [x] improve layout of recipe list view. consider putting the HR after the recipe title at mobile size. also don't like the grouping headings being smaller than the recipe title. try using mono font at larger size instead.
 [x] move page nav to bottom footer. working for planner, can't understand why not on the other pages
 

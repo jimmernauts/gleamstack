@@ -240,7 +240,7 @@ pub fn subscribe_to_plan(start_date: Date) -> Effect(PlannerMsg) {
       |> dispatch
     },
     date.to_rata_die(start_date),
-    date.to_rata_die(date.add(start_date, 1, date.Weeks)),
+    date.to_rata_die(date.add(start_date, 6, date.Days)),
   )
   |> DbSubscriptionOpened(start_date, _)
   |> dispatch

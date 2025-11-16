@@ -101,6 +101,8 @@ pub type Route {
   ViewPlanner(start_date: date.Date)
   EditPlanner(start_date: date.Date)
   ViewShoppingList
+  ViewShoppingListDetail(date: date.Date)
+  EditShoppingList(date: date.Date)
   ViewSettings
   ViewUpload
 }
@@ -525,6 +527,20 @@ fn on_route_change(uri: Uri) -> Msg {
     _, ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
     _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
     _, ["shopping-list"] -> OnRouteChange(ViewShoppingList)
+    _, ["shopping-list", date_str, "edit"] ->
+      OnRouteChange(
+        EditShoppingList(result.unwrap(
+          date.from_iso_string(date_str),
+          date.today(),
+        )),
+      )
+    _, ["shopping-list", date_str] ->
+      OnRouteChange(
+        ViewShoppingListDetail(result.unwrap(
+          date.from_iso_string(date_str),
+          date.today(),
+        )),
+      )
     _, ["settings"] -> OnRouteChange(ViewSettings)
     _, ["import"] -> OnRouteChange(ViewUpload)
     _, _ -> OnRouteChange(Home)
@@ -586,12 +602,22 @@ fn view(model: Model) -> Element(Msg) {
         shoppinglist.view_all_shopping_lists(model.shoppinglist),
         ShoppingList,
       )
+    ViewShoppingListDetail(date: list_date) ->
+      element.map(
+        shoppinglist.view_shopping_list_detail(model.shoppinglist, list_date),
+        ShoppingList,
+      )
+    EditShoppingList(date: list_date) ->
+      element.map(
+        shoppinglist.edit_shopping_list(model.shoppinglist, list_date),
+        ShoppingList,
+      )
     ViewUpload -> element.map(upload.view_upload(model.upload), Upload)
   }
   view_base(page)
 }
 
-fn view_base(children) {
+fn view_base(children: Element(Msg)) -> Element(Msg) {
   html.main(
     [
       class(
