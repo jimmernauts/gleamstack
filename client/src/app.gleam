@@ -102,7 +102,6 @@ pub type Route {
   EditPlanner(start_date: date.Date)
   ViewShoppingLists
   ViewShoppingList(date: date.Date)
-  EditShoppingList(date: date.Date)
   ViewSettings
   ViewUpload
 }
@@ -264,7 +263,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
     OnRouteChange(ViewShoppingLists) -> #(
       Model(..model, current_route: ViewShoppingLists),
-      effect.map(shoppinglist.retrieve_shopping_lists(), ShoppingList),
+      effect.map(shoppinglist.retrieve_shopping_list_summaries(), ShoppingList),
     )
     OnRouteChange(route) -> #(
       Model(..model, current_route: route, current_recipe: None),
@@ -527,13 +526,6 @@ fn on_route_change(uri: Uri) -> Msg {
     _, ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
     _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
     _, ["shopping-list"] -> OnRouteChange(ViewShoppingLists)
-    _, ["shopping-list", date_str, "edit"] ->
-      OnRouteChange(
-        EditShoppingList(result.unwrap(
-          date.from_iso_string(date_str),
-          date.today(),
-        )),
-      )
     _, ["shopping-list", date_str] ->
       OnRouteChange(
         ViewShoppingList(result.unwrap(
@@ -605,11 +597,6 @@ fn view(model: Model) -> Element(Msg) {
     ViewShoppingList(date: list_date) ->
       element.map(
         shoppinglist.view_shopping_list_detail(model.shoppinglist, list_date),
-        ShoppingList,
-      )
-    EditShoppingList(date: list_date) ->
-      element.map(
-        shoppinglist.edit_shopping_list(model.shoppinglist, list_date),
         ShoppingList,
       )
     ViewUpload -> element.map(upload.view_upload(model.upload), Upload)

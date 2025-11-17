@@ -225,10 +225,16 @@ export async function do_save_settings(api_key: string) {
 
 // SHOPPING LIST
 
-export async function do_retrieve_shopping_lists() {
+export async function do_retrieve_shopping_list_summaries() {
     const query = {
         shopping_lists: {
-            $: {},
+            $: {
+                fields: [
+                    "id" as const,
+                    "date" as const,
+                    "status" as const,
+                ],
+            },
         },
     };
     const result = await db.queryOnce(query);
@@ -266,5 +272,19 @@ export async function do_save_shopping_list(listTuple: any) {
         }),
     );
     console.log(result);
+    return result;
+}
+
+export async function do_subscribe_to_shopping_list_by_date(date: number, dispatch: (result: unknown) => void) {
+    const query = {
+        shopping_lists: {
+            $: {
+                where: {
+                    date: date,
+                },
+            },
+        },
+    };
+    const result = db.subscribeQuery(query, dispatch);
     return result;
 }

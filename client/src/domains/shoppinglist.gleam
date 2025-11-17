@@ -27,13 +27,14 @@ import shared/types
 //-TYPES--------------------------------------------------------------
 
 pub type ShoppingListMsg {
-  UserSavedCurrentList
   UserCreatedList(date.Date)
-  UserUpdatedCurrentList(ShoppingList)
-  UserRetrievedShoppingLists(List(ShoppingList))
-  UserToggledItemChecked(Int)
   UserAddedIngredient(types.Ingredient)
   UserRemovedIngredient(Int)
+  UserToggledItemChecked(Int)
+  ShoppingListSubscriptionOpened(date.Date, fn() -> Nil)
+  DbRetrievedListSummaries(List(ShoppingList))
+  DbSubscribedOneList(Dynamic)
+  DbRetrievedOneList(ShoppingList)
 }
 
 pub type ShoppingListModel {
@@ -80,6 +81,9 @@ pub fn shopping_list_update(
   msg: ShoppingListMsg,
 ) -> #(ShoppingListModel, Effect(ShoppingListMsg)) {
   case msg {
+    // SubscriptionOpened is handled in the layer above
+    // Not sure if this is really a great pattern....
+    ShoppingListSubscriptionOpened(_date, _callback) -> #(model, effect.none())
     UserCreatedList(list_date) -> {
       let new_list =
         ShoppingList(
@@ -98,50 +102,6 @@ pub fn shopping_list_update(
         ),
         effect.none(),
       )
-    }
-    UserSavedCurrentList -> {
-      case model.current {
-        Some(list) -> {
-          do_save_shopping_list(list)
-          #(model, effect.none())
-        }
-        None -> #(model, effect.none())
-      }
-    }
-    UserUpdatedCurrentList(list) -> #(
-      ShoppingListModel(..model, current: Some(list)),
-      effect.none(),
-    )
-    UserRetrievedShoppingLists(lists) -> #(
-      ShoppingListModel(
-        all_lists: lists,
-        current: lists
-          |> list.filter(fn(x) { x.status == Active })
-          |> list.first
-          |> option.from_result,
-      ),
-      effect.none(),
-    )
-    UserToggledItemChecked(index) -> {
-      case model.current {
-        Some(list) -> {
-          let updated_items =
-            list.items
-            |> list.index_map(fn(item, i) {
-              case i == index {
-                True -> ShoppingListIngredient(..item, checked: !item.checked)
-                False -> item
-              }
-            })
-          let updated_list = ShoppingList(..list, items: updated_items)
-          do_save_shopping_list(updated_list)
-          #(
-            ShoppingListModel(..model, current: Some(updated_list)),
-            effect.none(),
-          )
-        }
-        None -> #(model, effect.none())
-      }
     }
     UserAddedIngredient(ingredient) -> {
       case model.current {
@@ -185,6 +145,65 @@ pub fn shopping_list_update(
         None -> #(model, effect.none())
       }
     }
+    UserToggledItemChecked(index) -> {
+      case model.current {
+        Some(list) -> {
+          let updated_items =
+            list.items
+            |> list.index_map(fn(item, i) {
+              case i == index {
+                True -> ShoppingListIngredient(..item, checked: !item.checked)
+                False -> item
+              }
+            })
+          let updated_list = ShoppingList(..list, items: updated_items)
+          do_save_shopping_list(updated_list)
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
+    }
+    DbRetrievedListSummaries(lists) -> #(
+      ShoppingListModel(
+        all_lists: lists,
+        current: lists
+          |> list.filter(fn(x) { x.status == Active })
+          |> list.first
+          |> option.from_result,
+      ),
+      effect.none(),
+    )
+    DbSubscribedOneList(jsdata) -> {
+      let decoder = {
+        use data <- decode.subfield(
+          ["data", "shopping_lists", "0"],
+          shopping_list_decoder(),
+        )
+        decode.success(data)
+      }
+      let try_decode = decode.run(jsdata, decoder)
+      let try_effect = case try_decode {
+        Ok(list) -> {
+          use dispatch <- effect.from
+          DbRetrievedOneList(list) |> dispatch
+        }
+        Error(e) -> {
+          echo e
+          effect.none()
+        }
+      }
+      #(model, try_effect)
+    }
+    DbRetrievedOneList(list) -> #(
+      ShoppingListModel(
+        all_lists: [list, ..model.all_lists],
+        current: Some(list),
+      ),
+      effect.none(),
+    )
   }
 }
 
@@ -220,160 +239,41 @@ fn do_save_shopping_list(list: ShoppingList) -> Nil {
   do_save_shopping_list_external(list_obj)
 }
 
-@external(javascript, ".././db.ts", "do_retrieve_shopping_lists")
-fn do_retrieve_shopping_lists() -> Promise(Dynamic)
+@external(javascript, ".././db.ts", "do_retrieve_shopping_list_summaries")
+fn do_retrieve_shopping_list_summaries() -> Promise(Dynamic)
 
-pub fn retrieve_shopping_lists() -> Effect(ShoppingListMsg) {
+pub fn retrieve_shopping_list_summaries() -> Effect(ShoppingListMsg) {
   use dispatch <- effect.from
-  do_retrieve_shopping_lists()
-  |> promise.map(decode.run(_, decode.list(shopping_list_decoder())))
-  |> promise.map(result.map(_, UserRetrievedShoppingLists))
+  do_retrieve_shopping_list_summaries()
+  |> promise.map(decode.run(_, decode.list(shopping_list_summary_decoder())))
+  |> promise.map(result.map(_, DbRetrievedListSummaries))
   |> promise.tap(result.map(_, dispatch))
   Nil
 }
 
-//-DECODER------------------------------------------------------------
+@external(javascript, ".././db.ts", "do_subscribe_to_one_shoppinglist_by_date")
+fn do_subscribe_to_one_shoppinglist_by_date(
+  date: Int,
+  callback: fn(a) -> Nil,
+) -> fn() -> Nil
 
-pub fn shopping_list_ingredient_decoder() -> Decoder(ShoppingListIngredient) {
-  use ingredient <- decode.field("ingredient", codecs.ingredient_decoder())
-  use source_type <- decode.optional_field(
-    "source_type",
-    "manual",
-    decode.string,
-  )
-  use checked <- decode.optional_field("checked", False, decode.bool)
-  let source = case source_type {
-    "manual" -> ManualEntry
-    // For now, we'll default to ManualEntry for recipe sources
-    // Full implementation will need to decode recipe_ref
-    _ -> ManualEntry
-  }
-  decode.success(ShoppingListIngredient(
-    ingredient: ingredient,
-    source: source,
-    checked: checked,
-  ))
-}
-
-pub fn shopping_list_decoder() -> Decoder(ShoppingList) {
-  use id <- decode.field("id", decode.optional(decode.string))
-  use items <- decode.field(
-    "items",
-    codecs.json_string_decoder(
-      decode.list(shopping_list_ingredient_decoder()),
-      [],
-    ),
-  )
-  use status <- decode.field("status", shopping_list_status_decoder())
-  use date <- decode.field("date", decode.int)
-  use linked_recipes <- decode.optional_field(
-    "linked_recipes",
-    [],
-    codecs.json_string_decoder(decode.list(planned_recipe_decoder()), []),
-  )
-  use linked_plan <- decode.optional_field(
-    "linked_plan",
-    None,
-    decode.optional(decode.int),
-  )
-  decode.success(
-    ShoppingList(
-      id: id,
-      items: items,
-      status: status,
-      date: date.from_rata_die(date),
-      linked_recipes: linked_recipes,
-      linked_plan: case linked_plan {
-        Some(plan_date) -> Some(date.from_rata_die(plan_date))
-        None -> None
-      },
-    ),
-  )
-}
-
-fn planned_recipe_decoder() -> Decoder(types.PlannedRecipe) {
-  use recipe_name <- decode.optional_field("recipe_name", "", decode.string)
-  use recipe_id <- decode.optional_field("recipe_id", "", decode.string)
-  case recipe_name, recipe_id {
-    "", "" -> decode.failure(types.RecipeName(""), "PlannedRecipe")
-    "", id -> decode.success(types.RecipeId(id))
-    name, _ -> decode.success(types.RecipeName(name))
-  }
-}
-
-pub fn shopping_list_status_decoder() -> Decoder(Status) {
-  use decoded_string <- decode.then(decode.string)
-  case decoded_string {
-    // Return succeeding decoders for valid strings
-    "Active" -> decode.success(Active)
-    "Completed" -> decode.success(Completed)
-    "Archived" -> decode.success(Archived)
-    // Return a failing decoder for any other strings
-    _ -> decode.failure(Archived, "Status")
-  }
-}
-
-//-ENCODER------------------------------------------------------------
-
-fn encode_shopping_list_ingredient(item: ShoppingListIngredient) -> Json {
-  json.object([
-    #("ingredient", codecs.json_encode_ingredient(item.ingredient)),
-    #(
-      "source_type",
-      json.string(case item.source {
-        ManualEntry -> "manual"
-        FromRecipe(_) -> "recipe"
-      }),
-    ),
-    #("checked", json.bool(item.checked)),
-  ])
-}
-
-fn encode_planned_recipe(recipe: types.PlannedRecipe) -> Json {
-  case recipe {
-    types.RecipeName(name) -> json.object([#("recipe_name", json.string(name))])
-    types.RecipeId(id) -> json.object([#("recipe_id", json.string(id))])
-  }
-}
-
-pub fn encode_shopping_list(list: ShoppingList) -> Json {
-  json.object([
-    #("date", json.int(date.to_rata_die(list.date))),
-    #(
-      "status",
-      json.string(case list.status {
-        Active -> "Active"
-        Completed -> "Completed"
-        Archived -> "Archived"
-      }),
-    ),
-    #(
-      "items",
-      json.string(
-        list.items
-        |> list.map(encode_shopping_list_ingredient)
-        |> json.array(fn(x) { x })
-        |> json.to_string,
-      ),
-    ),
-    #(
-      "linked_recipes",
-      json.string(
-        list.linked_recipes
-        |> list.map(encode_planned_recipe)
-        |> json.array(fn(x) { x })
-        |> json.to_string,
-      ),
-    ),
-    #("linked_plan", case list.linked_plan {
-      Some(plan_date) -> json.int(date.to_rata_die(plan_date))
-      None -> json.null()
-    }),
-  ])
+pub fn subscribe_to_one_shoppinglist_by_date(
+  date: date.Date,
+) -> Effect(ShoppingListMsg) {
+  use dispatch <- effect.from
+  do_subscribe_to_one_shoppinglist_by_date(date.to_rata_die(date), fn(data) {
+    data
+    |> DbSubscribedOneList
+    |> dispatch
+  })
+  |> ShoppingListSubscriptionOpened(date, _)
+  |> dispatch
+  Nil
 }
 
 //-VIEW---------------------------------------------------------------
 
+// TODO: improve UI, hook up to Msg firing events
 pub fn view_all_shopping_lists(
   model: ShoppingListModel,
 ) -> Element(ShoppingListMsg) {
@@ -662,6 +562,8 @@ fn view_shopping_list_item(
   )
 }
 
+// TODO: remove specific edit view, make this an inline edit
+
 pub fn edit_shopping_list(
   _model: ShoppingListModel,
   list_date: date.Date,
@@ -696,4 +598,158 @@ pub fn edit_shopping_list(
       ]),
     ],
   )
+}
+
+//-DECODER------------------------------------------------------------
+
+pub fn shopping_list_ingredient_decoder() -> Decoder(ShoppingListIngredient) {
+  use ingredient <- decode.field("ingredient", codecs.ingredient_decoder())
+  use source_type <- decode.optional_field(
+    "source_type",
+    "manual",
+    decode.string,
+  )
+  use checked <- decode.optional_field("checked", False, decode.bool)
+  let source = case source_type {
+    "manual" -> ManualEntry
+    // For now, we'll default to ManualEntry for recipe sources
+    // Full implementation will need to decode recipe_ref
+    _ -> ManualEntry
+  }
+  decode.success(ShoppingListIngredient(
+    ingredient: ingredient,
+    source: source,
+    checked: checked,
+  ))
+}
+
+pub fn shopping_list_decoder() -> Decoder(ShoppingList) {
+  use id <- decode.field("id", decode.optional(decode.string))
+  use items <- decode.field(
+    "items",
+    codecs.json_string_decoder(
+      decode.list(shopping_list_ingredient_decoder()),
+      [],
+    ),
+  )
+  use status <- decode.field("status", shopping_list_status_decoder())
+  use date <- decode.field("date", decode.int)
+  use linked_recipes <- decode.optional_field(
+    "linked_recipes",
+    [],
+    codecs.json_string_decoder(decode.list(planned_recipe_decoder()), []),
+  )
+  use linked_plan <- decode.optional_field(
+    "linked_plan",
+    None,
+    decode.optional(decode.int),
+  )
+  decode.success(
+    ShoppingList(
+      id: id,
+      items: items,
+      status: status,
+      date: date.from_rata_die(date),
+      linked_recipes: linked_recipes,
+      linked_plan: case linked_plan {
+        Some(plan_date) -> Some(date.from_rata_die(plan_date))
+        None -> None
+      },
+    ),
+  )
+}
+
+fn shopping_list_summary_decoder() -> Decoder(ShoppingList) {
+  use id <- decode.field("id", decode.optional(decode.string))
+  use status <- decode.field("status", shopping_list_status_decoder())
+  use date <- decode.field("date", decode.int)
+  decode.success(ShoppingList(
+    id: id,
+    items: [],
+    status: status,
+    date: date.from_rata_die(date),
+    linked_recipes: [],
+    linked_plan: None,
+  ))
+}
+
+fn planned_recipe_decoder() -> Decoder(types.PlannedRecipe) {
+  use recipe_name <- decode.optional_field("recipe_name", "", decode.string)
+  use recipe_id <- decode.optional_field("recipe_id", "", decode.string)
+  case recipe_name, recipe_id {
+    "", "" -> decode.failure(types.RecipeName(""), "PlannedRecipe")
+    "", id -> decode.success(types.RecipeId(id))
+    name, _ -> decode.success(types.RecipeName(name))
+  }
+}
+
+pub fn shopping_list_status_decoder() -> Decoder(Status) {
+  use decoded_string <- decode.then(decode.string)
+  case decoded_string {
+    // Return succeeding decoders for valid strings
+    "Active" -> decode.success(Active)
+    "Completed" -> decode.success(Completed)
+    "Archived" -> decode.success(Archived)
+    // Return a failing decoder for any other strings
+    _ -> decode.failure(Archived, "Status")
+  }
+}
+
+//-ENCODER------------------------------------------------------------
+
+fn encode_shopping_list_ingredient(item: ShoppingListIngredient) -> Json {
+  json.object([
+    #("ingredient", codecs.json_encode_ingredient(item.ingredient)),
+    #(
+      "source_type",
+      json.string(case item.source {
+        ManualEntry -> "manual"
+        FromRecipe(_) -> "recipe"
+      }),
+    ),
+    #("checked", json.bool(item.checked)),
+  ])
+}
+
+fn encode_planned_recipe(recipe: types.PlannedRecipe) -> Json {
+  case recipe {
+    types.RecipeName(name) -> json.object([#("recipe_name", json.string(name))])
+    types.RecipeId(id) -> json.object([#("recipe_id", json.string(id))])
+  }
+}
+
+pub fn encode_shopping_list(list: ShoppingList) -> Json {
+  json.object([
+    #("date", json.int(date.to_rata_die(list.date))),
+    #(
+      "status",
+      json.string(case list.status {
+        Active -> "Active"
+        Completed -> "Completed"
+        Archived -> "Archived"
+      }),
+    ),
+    #(
+      "items",
+      json.string(
+        list.items
+        |> list.map(encode_shopping_list_ingredient)
+        |> json.array(fn(x) { x })
+        |> json.to_string,
+      ),
+    ),
+    #(
+      "linked_recipes",
+      json.string(
+        list.linked_recipes
+        |> list.map(encode_planned_recipe)
+        |> json.array(fn(x) { x })
+        |> json.to_string,
+      ),
+    ),
+    #("linked_plan", case list.linked_plan {
+      Some(plan_date) -> json.int(date.to_rata_die(plan_date))
+      None -> json.null()
+    }),
+  ])
 }
