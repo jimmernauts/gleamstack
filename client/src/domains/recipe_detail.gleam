@@ -1,7 +1,6 @@
 import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import gleam/dict
-import gleam/dynamic/decode
 import gleam/int
 import gleam/json
 import gleam/list
@@ -18,18 +17,18 @@ import lustre/attribute.{
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{
-  a, button, details, div, fieldset, form, input, label, legend, li, ol, option,
-  section, select, span, summary, textarea,
+  a, button, div, fieldset, form, input, label, legend, li, ol, option, section,
+  select, span, textarea,
 }
 import lustre/element/keyed
 import lustre/event.{on_check, on_click, on_input}
-import session.{
-  type Ingredient, type MethodStep, type Recipe, type RecipeList, type Tag,
-  type TagOption, Ingredient, MethodStep, Recipe, RecipeList, Tag,
-  decode_recipe_with_inner_json,
+import shared/codecs
+import shared/types.{
+  type Ingredient, type MethodStep, type Recipe, type Tag, type TagOption,
+  Ingredient, MethodStep, Recipe, Tag,
 }
 
-//-MODEL---------------------------------------------
+//-MODEL-------------------------------------------------------------
 
 pub type RecipeDetailMsg {
   UserUpdatedRecipeTitle(String)
@@ -62,40 +61,7 @@ pub type RecipeDetailMsg {
 pub type RecipeDetail =
   Option(Recipe)
 
-//-UPDATE---------------------------------------------
-
-fn save_recipe(recipe: session.Recipe) -> Effect(RecipeDetailMsg) {
-  let js_recipe =
-    JsRecipe(
-      id: option.unwrap(recipe.id, ""),
-      title: recipe.title,
-      slug: recipe.slug,
-      cook_time: recipe.cook_time,
-      prep_time: recipe.prep_time,
-      serves: recipe.serves,
-      author: option.unwrap(recipe.author, ""),
-      source: option.unwrap(recipe.source, ""),
-      tags: recipe.tags
-        |> json.nullable(session.json_encode_tag_list)
-        |> json.to_string,
-      ingredients: recipe.ingredients
-        |> json.nullable(session.json_encode_ingredient_list)
-        |> json.to_string,
-      method_steps: recipe.method_steps
-        |> json.nullable(session.json_encode_method_step_list)
-        |> json.to_string,
-      shortlisted: option.unwrap(recipe.shortlisted, False),
-    )
-  use dispatch <- effect.from
-  do_save_recipe(js_recipe)
-  DbSavedUpdatedRecipe(recipe) |> dispatch
-}
-
-@external(javascript, ".././db.ts", "do_save_recipe")
-fn do_save_recipe(recipe: JsRecipe) -> Nil
-
-@external(javascript, ".././db.ts", "do_delete_recipe")
-fn do_delete_recipe(id: String) -> Nil
+//-DATABASE----------------------------------------------------------
 
 type JsRecipe {
   JsRecipe(
@@ -113,6 +79,41 @@ type JsRecipe {
     shortlisted: Bool,
   )
 }
+
+fn save_recipe(recipe: Recipe) -> Effect(RecipeDetailMsg) {
+  let js_recipe =
+    JsRecipe(
+      id: option.unwrap(recipe.id, ""),
+      title: recipe.title,
+      slug: recipe.slug,
+      cook_time: recipe.cook_time,
+      prep_time: recipe.prep_time,
+      serves: recipe.serves,
+      author: option.unwrap(recipe.author, ""),
+      source: option.unwrap(recipe.source, ""),
+      tags: recipe.tags
+        |> json.nullable(codecs.json_encode_tag_list)
+        |> json.to_string,
+      ingredients: recipe.ingredients
+        |> json.nullable(codecs.json_encode_ingredient_list)
+        |> json.to_string,
+      method_steps: recipe.method_steps
+        |> json.nullable(codecs.json_encode_method_step_list)
+        |> json.to_string,
+      shortlisted: option.unwrap(recipe.shortlisted, False),
+    )
+  use dispatch <- effect.from
+  do_save_recipe(js_recipe)
+  DbSavedUpdatedRecipe(recipe) |> dispatch
+}
+
+@external(javascript, "../db.ts", "do_save_recipe")
+fn do_save_recipe(recipe: JsRecipe) -> Nil
+
+@external(javascript, "../db.ts", "do_delete_recipe")
+fn do_delete_recipe(id: String) -> Nil
+
+//-UPDATE------------------------------------------------------------
 
 pub fn detail_update(
   model: RecipeDetail,
@@ -480,143 +481,6 @@ pub fn detail_update(
   }
 }
 
-pub fn list_update(
-  model: session.RecipeList,
-  msg: session.RecipeListMsg,
-) -> #(RecipeList, Effect(session.RecipeListMsg)) {
-  case msg {
-    // we actually handle DbSubscriptionOpened in the top layer of the model in app.gleam
-    session.DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
-    session.DbSubscribedOneRecipe(jsdata) -> {
-      let decoder = {
-        use data <- decode.subfield(
-          ["data", "recipes", "0"],
-          decode_recipe_with_inner_json(),
-        )
-        decode.success(data)
-      }
-      let try_decode = decode.run(jsdata, decoder)
-      let try_effect = case try_decode {
-        Ok(recipe) -> {
-          use dispatch <- effect.from
-          session.DbRetrievedOneRecipe(recipe) |> dispatch
-        }
-        Error(e) -> {
-          echo e
-          effect.none()
-        }
-      }
-      #(model, try_effect)
-    }
-    session.DbSubscribedRecipes(jsdata) -> {
-      let decoder = {
-        use data <- decode.subfield(
-          ["data", "recipes"],
-          decode.list(decode_recipe_with_inner_json()),
-        )
-        decode.success(data)
-      }
-      let try_decode = decode.run(jsdata, decoder)
-      let try_effect = case try_decode {
-        Ok(recipes) -> {
-          use dispatch <- effect.from
-          session.DbRetrievedRecipes(recipes) |> dispatch
-        }
-        Error(_) -> effect.none()
-      }
-
-      #(model, try_effect)
-    }
-    session.DbRetrievedRecipes(recipes) -> #(
-      RecipeList(..model, recipes: recipes),
-      effect.none(),
-    )
-    session.DbRetrievedOneRecipe(recipe) -> #(
-      session.merge_recipe_into_model(recipe, model),
-      effect.none(),
-    )
-    session.DbRetrievedTagOptions(tag_options) -> #(
-      RecipeList(..model, tag_options: tag_options),
-      effect.none(),
-    )
-    session.UserGroupedRecipeListByTag(tag) -> {
-      case model.group_by {
-        Some(session.GroupByTag(a)) if a == tag -> #(
-          RecipeList(..model, group_by: None),
-          effect.none(),
-        )
-        _ -> #(
-          RecipeList(..model, group_by: Some(session.GroupByTag(tag))),
-          effect.none(),
-        )
-      }
-    }
-    session.UserGroupedRecipeListByAuthor -> {
-      case model.group_by {
-        Some(session.GroupByAuthor) -> #(
-          RecipeList(..model, group_by: None),
-          effect.none(),
-        )
-        _ -> #(
-          RecipeList(..model, group_by: Some(session.GroupByAuthor)),
-          effect.none(),
-        )
-      }
-    }
-  }
-}
-
-//-VIEWS-------------------------------------------------------------
-
-pub fn view_recipe_list(model: session.RecipeList) {
-  section(
-    [
-      class(
-        "h-env-screen grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
-      ),
-    ],
-    [
-      page_title(
-        "Recipe Book",
-        "underline-green  col-span-full md:col-span-[11]",
-      ),
-      div(
-        [
-          class(
-            "subgrid-cols grid-rows-[repeat(12,minmax(min-content,35px))] overflow-y-scroll  col-span-full gap-y-2",
-          ),
-        ],
-        [
-          div(
-            [
-              class(
-                "col-span-full flex flex-wrap items-center justify-start gap-3",
-              ),
-            ],
-            view_recipe_groupby(model),
-          ),
-          {
-            case model.group_by {
-              Some(session.GroupByTag(tag)) ->
-                element.fragment(view_recipe_tag_groups(model.recipes, tag))
-              Some(session.GroupByAuthor) ->
-                element.fragment(view_recipe_author_groups(model.recipes))
-              _ ->
-                element.fragment(
-                  list.map(model.recipes, view_recipe_summary(_, "")),
-                )
-            }
-          },
-        ],
-      ),
-      nav_footer([
-        a([href("/"), class("text-center")], [text("🏠")]),
-        a([href("/planner"), class("text-center")], [text("📅")]),
-      ]),
-    ],
-  )
-}
-
 pub fn lookup_and_view_recipe(maybe_recipe: RecipeDetail) {
   case maybe_recipe {
     Some(a) -> view_recipe_detail(a)
@@ -652,7 +516,7 @@ pub fn edit_recipe_detail(
           id("page-title-input"),
           name("title"),
           class(
-            "field-sizing-content mt-4 mr-2 [grid-area:header] col-span-full md:col-span-[11] placeholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-2 input-base input-focus resize-none font-bold italic text-ecru-white-950 bg-ecru-white-100",
+            "field-sizing-content mt-4 mr-2 [grid-area:header] col-span-full md:col-span-11laceholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-2 input-base input-focus resize-none font-bold italic text-ecru-white-950 bg-ecru-white-100",
           ),
           class(case string.length(recipe.title) {
             num if num > 30 -> "text-4xl md:text-5xl"
@@ -870,7 +734,7 @@ pub fn edit_recipe_detail(
           fieldset(
             [
               class(
-                "col-span-full mr-2 p-2 h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
+                "col-span-full mr-2 p-2 h-fit border-ecru-white-950 border rounded-[1px] sm:col-span-5 [box-shadow:1px_1px_0_#9edef1]",
               ),
             ],
             [
@@ -898,7 +762,7 @@ pub fn edit_recipe_detail(
           fieldset(
             [
               class(
-                "col-span-full mr-2 p-2 gap-2 flex flex-col h-[fit-content] border-ecru-white-950 border-[1px] rounded-[1px] sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
+                "col-span-full mr-2 p-2 gap-2 flex flex-col h-fit border-ecru-white-950 border rounded-[1px] sm:col-span-7 [box-shadow:1px_1px_0_#9edef1]",
               ),
             ],
             [
@@ -1140,7 +1004,7 @@ pub fn view_recipe_detail(recipe: Recipe) {
             fieldset(
               [
                 class(
-                  "flex justify-start flex-wrap col-span-full p-2 mr-2 h-[fit-content]  border-ecru-white-950 border-[1px] rounded-[1px]  sm:col-span-7 sm:row-start-3   [box-shadow:1px_1px_0_#a3d2ab]",
+                  "flex justify-start flex-wrap col-span-full p-2 mr-2 h-fit  border-ecru-white-950 border rounded-[1px]  sm:col-span-7 sm:row-start-3   [box-shadow:1px_1px_0_#a3d2ab]",
                 ),
               ],
               [
@@ -1191,156 +1055,6 @@ pub fn view_recipe_detail(recipe: Recipe) {
       ],
     ),
   ])
-}
-
-//-COMPONENTS--------------------------------------------------
-
-pub fn view_recipe_groupby(model: session.RecipeList) {
-  let tags =
-    model.recipes
-    |> list.map(fn(x) {
-      case x.tags {
-        Some(a) -> list.map(dict.values(a), fn(x) { x.name })
-        _ -> []
-      }
-    })
-    |> list.flatten
-    |> list.unique
-  list.append(
-    list.map(tags, fn(a) {
-      button(
-        [
-          class(
-            "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 cursor-pointer text-xs",
-          ),
-          on_click(session.UserGroupedRecipeListByTag(a)),
-        ],
-        [text(a)],
-      )
-    }),
-    [
-      button(
-        [
-          class(
-            "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 cursor-pointer text-xs",
-          ),
-          on_click(session.UserGroupedRecipeListByAuthor),
-        ],
-        [text("Author")],
-      ),
-    ],
-  )
-}
-
-pub fn view_recipe_tag_groups(recipes: List(session.Recipe), tag: String) {
-  let groups =
-    list.group(recipes, fn(a) {
-      case a.tags {
-        Some(a) ->
-          list.filter(dict.values(a), fn(b) { b.name == tag })
-          |> list.map(fn(x) { x.value })
-          |> list.first
-          |> result.unwrap("")
-        _ -> "none"
-      }
-    })
-  groups
-  |> dict.map_values(fn(k, v) {
-    details(
-      [
-        class(
-          "col-span-full subgrid-cols gap-y-2 details-content:[display:grid] details-content:gap-y-2 details-content:[grid-column:1/-1] details-content:[grid-template-columns:subgrid]",
-        ),
-      ],
-      [
-        summary(
-          [
-            class(
-              "flex gap-2 col-span-full border-b border-b-gray-200 text-base cursor-pointer marker:content-none",
-            ),
-            case k {
-              "none" -> class("italic")
-              _ -> attribute.none()
-            },
-          ],
-          [text(k)],
-        ),
-        element.fragment(list.map(v, view_recipe_summary(_, "text-lg"))),
-      ],
-    )
-  })
-  |> dict.to_list
-  |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
-  |> list.map(pair.second)
-}
-
-pub fn view_recipe_author_groups(recipes: List(session.Recipe)) {
-  let groups =
-    list.group(recipes, fn(a) {
-      case a.author {
-        Some(a) -> a
-        _ -> "none"
-      }
-    })
-  groups
-  |> dict.map_values(fn(k, v) {
-    details(
-      [
-        class(
-          "col-span-full subgrid-cols gap-y-2 details-content:[display:grid] details-content:gap-y-2 details-content:[grid-column:1/-1] details-content:[grid-template-columns:subgrid]",
-        ),
-      ],
-      [
-        summary(
-          [
-            class(
-              "flex gap-2 col-span-full border-b border-b-gray-200 text-base cursor-pointer marker:content-none",
-            ),
-          ],
-          [text(k)],
-        ),
-        element.fragment(list.map(v, view_recipe_summary(_, "text-lg"))),
-      ],
-    )
-  })
-  |> dict.values
-}
-
-fn view_recipe_summary(recipe: Recipe, class_props: String) {
-  div(
-    [
-      class("col-span-full text-xl subgrid-cols border-b border-b-gray-200"),
-      class(class_props),
-    ],
-    [
-      a(
-        [
-          href(string.append("/recipes/", recipe.slug)),
-          class("subgrid-cols col-span-full grid-flow-row-dense"),
-        ],
-        [
-          span([class("col-span-10")], [text(recipe.title)]),
-          span([class("text-sm col-start-12")], [
-            text(case recipe.prep_time + recipe.cook_time {
-              n if n > 60 ->
-                int.floor_divide(n, 60)
-                |> result.unwrap(0)
-                |> int.to_string
-                <> "h"
-                <> case n % 60 {
-                  0 -> ""
-                  rem if rem < 10 -> "0" <> int.to_string(rem)
-                  _ -> int.to_string(n % 60)
-                }
-              _ ->
-                { recipe.prep_time + recipe.cook_time } |> int.to_string()
-                <> "m"
-            }),
-          ]),
-        ],
-      ),
-    ],
-  )
 }
 
 fn view_ingredient(ingredient: Ingredient) {
@@ -1640,7 +1354,7 @@ fn method_step_input(index: Int, method_step: Option(MethodStep)) {
         name("method-step-" <> index |> int.to_string),
         id("method-step-" <> index |> int.to_string),
         class(
-          "mx-3 max-w-[70dvw] bg-ecru-white-100 w-full input-focus text-base resize-none [field-sizing:content]",
+          "mx-3 max-w-[70dvw] bg-ecru-white-100 w-full input-focus text-base resize-none field-sizing-content",
         ),
         attribute("rows", "3"),
         on_input(update_methodstep_at_index(index)),
@@ -1670,4 +1384,3 @@ fn method_step_input(index: Int, method_step: Option(MethodStep)) {
     ),
   ])
 }
-//-TYPES-------------------------------------------------------------

@@ -1,15 +1,16 @@
+import app.{OnRouteChange, Planner, ViewPlanner}
 import birdie
+import domains/planner.{
+  DbRetrievedPlan, Dinner, Lunch, PlanDay, PlannedMealWithStatus,
+  UserToggledMealComplete, UserUpdatedMealTitle,
+}
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
 import lustre/dev/simulate
 import lustre/element
-import mealstack_client.{OnRouteChange, Planner, ViewPlanner}
-import pages/planner.{
-  DbRetrievedPlan, Dinner, Lunch, PlanDay, PlannedMealWithStatus,
-  UserToggledMealComplete, UserUpdatedMealTitle,
-}
 import rada/date
+import shared/types
 import startest.{describe, it}
 import startest/expect
 
@@ -23,9 +24,9 @@ pub fn planner_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -33,7 +34,7 @@ pub fn planner_integration_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(current_route: route, ..) -> {
+        app.Model(current_route: route, ..) -> {
           route
           |> expect.to_equal(ViewPlanner(start_date))
         }
@@ -47,9 +48,9 @@ pub fn planner_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -57,7 +58,7 @@ pub fn planner_integration_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(planner: planner, ..) -> {
+        app.Model(planner: planner, ..) -> {
           planner.plan_week
           |> dict.size
           |> expect.to_equal(0)
@@ -71,9 +72,9 @@ pub fn planner_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -89,12 +90,12 @@ pub fn planner_integration_tests() {
             PlanDay(date: monday, planned_meals: [
               PlannedMealWithStatus(
                 for: Lunch,
-                title: Some("Pasta Carbonara"),
+                recipe: Some(types.RecipeName("Pasta Carbonara")),
                 complete: None,
               ),
               PlannedMealWithStatus(
                 for: Dinner,
-                title: Some("Thai Green Curry"),
+                recipe: Some(types.RecipeName("Thai Green Curry")),
                 complete: None,
               ),
             ]),
@@ -104,7 +105,7 @@ pub fn planner_integration_tests() {
             PlanDay(date: tuesday, planned_meals: [
               PlannedMealWithStatus(
                 for: Lunch,
-                title: Some("Spaghetti Bolognese"),
+                recipe: Some(types.RecipeName("Spaghetti Bolognese")),
                 complete: None,
               ),
             ]),
@@ -120,7 +121,7 @@ pub fn planner_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(planner: planner, ..) -> {
+        app.Model(planner: planner, ..) -> {
           planner.plan_week
           |> dict.size
           |> expect.to_equal(3)
@@ -134,9 +135,9 @@ pub fn planner_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -153,12 +154,13 @@ pub fn planner_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(planner: planner, ..) -> {
+        app.Model(planner: planner, ..) -> {
           case dict.get(planner.plan_week, monday) {
             Ok(plan_day) -> {
               plan_day.planned_meals
               |> list.any(fn(meal) {
-                meal.for == Lunch && meal.title == Some("Pasta Carbonara")
+                meal.for == Lunch
+                && meal.recipe == Some(types.RecipeName("Pasta Carbonara"))
               })
               |> expect.to_equal(True)
             }
@@ -174,9 +176,9 @@ pub fn planner_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -196,7 +198,7 @@ pub fn planner_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(planner: planner, ..) -> {
+        app.Model(planner: planner, ..) -> {
           case dict.get(planner.plan_week, monday) {
             Ok(plan_day) -> {
               plan_day.planned_meals
@@ -215,9 +217,9 @@ pub fn planner_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -237,12 +239,13 @@ pub fn planner_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(planner: planner, ..) -> {
+        app.Model(planner: planner, ..) -> {
           case dict.get(planner.plan_week, monday) {
             Ok(plan_day) -> {
               plan_day.planned_meals
               |> list.any(fn(meal) {
-                meal.for == Lunch && meal.title == Some("Spaghetti Bolognese")
+                meal.for == Lunch
+                && meal.recipe == Some(types.RecipeName("Spaghetti Bolognese"))
               })
               |> expect.to_equal(True)
             }
@@ -258,9 +261,9 @@ pub fn planner_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -278,7 +281,7 @@ pub fn planner_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(planner: planner, ..) -> {
+        app.Model(planner: planner, ..) -> {
           case dict.get(planner.plan_week, monday) {
             Ok(plan_day) -> {
               plan_day.planned_meals
@@ -303,7 +306,7 @@ pub fn planner_integration_tests() {
             PlanDay(date: monday, planned_meals: [
               PlannedMealWithStatus(
                 for: Lunch,
-                title: Some("Pasta Carbonara"),
+                recipe: Some(types.RecipeName("Pasta Carbonara")),
                 complete: Some(False),
               ),
             ]),
@@ -312,9 +315,9 @@ pub fn planner_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -330,7 +333,7 @@ pub fn planner_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(planner: planner, ..) -> {
+        app.Model(planner: planner, ..) -> {
           case dict.get(planner.plan_week, monday) {
             Ok(plan_day) -> {
               plan_day.planned_meals
@@ -352,9 +355,9 @@ pub fn planner_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -379,12 +382,12 @@ pub fn planner_integration_tests() {
             PlanDay(date: monday, planned_meals: [
               PlannedMealWithStatus(
                 for: Lunch,
-                title: Some("Pasta Carbonara"),
+                recipe: Some(types.RecipeName("Pasta Carbonara")),
                 complete: Some(False),
               ),
               PlannedMealWithStatus(
                 for: Dinner,
-                title: Some("Thai Green Curry"),
+                recipe: Some(types.RecipeName("Thai Green Curry")),
                 complete: Some(True),
               ),
             ]),
@@ -394,7 +397,7 @@ pub fn planner_integration_tests() {
             PlanDay(date: tuesday, planned_meals: [
               PlannedMealWithStatus(
                 for: Lunch,
-                title: Some("Spaghetti Bolognese"),
+                recipe: Some(types.RecipeName("Spaghetti Bolognese")),
                 complete: Some(False),
               ),
             ]),
@@ -404,9 +407,9 @@ pub fn planner_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))

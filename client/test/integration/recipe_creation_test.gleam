@@ -1,14 +1,12 @@
+import app.{EditRecipeDetail, OnRouteChange, RecipeDetail, SlugParam}
 import birdie
+import domains/recipe_detail.{DbSavedUpdatedRecipe}
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
 import lustre/dev/simulate
 import lustre/element
-import mealstack_client.{
-  EditRecipeDetail, OnRouteChange, RecipeDetail, SlugParam,
-}
-import pages/recipe.{DbSavedUpdatedRecipe}
-import session.{Ingredient, MethodStep, Recipe, Tag}
+import shared/types.{Ingredient, MethodStep, Recipe, Tag}
 import startest.{describe, it}
 import startest/expect
 
@@ -21,9 +19,9 @@ pub fn recipe_creation_workflow_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -31,7 +29,7 @@ pub fn recipe_creation_workflow_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(current_route: route, ..) -> {
+        app.Model(current_route: route, ..) -> {
           route
           |> expect.to_equal(EditRecipeDetail(SlugParam(slug: "")))
         }
@@ -44,9 +42,9 @@ pub fn recipe_creation_workflow_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -54,7 +52,7 @@ pub fn recipe_creation_workflow_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(current_recipe: recipe, ..) -> {
+        app.Model(current_recipe: recipe, ..) -> {
           case recipe {
             Some(current_recipe) -> {
               current_recipe.title
@@ -72,9 +70,9 @@ pub fn recipe_creation_workflow_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -82,7 +80,7 @@ pub fn recipe_creation_workflow_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(current_recipe: recipe, ..) -> {
+        app.Model(current_recipe: recipe, ..) -> {
           case recipe {
             Some(current_recipe) -> {
               current_recipe.slug
@@ -100,9 +98,9 @@ pub fn recipe_creation_workflow_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -110,7 +108,7 @@ pub fn recipe_creation_workflow_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(current_recipe: recipe, ..) -> {
+        app.Model(current_recipe: recipe, ..) -> {
           case recipe {
             Some(current_recipe) -> {
               current_recipe.serves
@@ -128,9 +126,9 @@ pub fn recipe_creation_workflow_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -146,9 +144,9 @@ pub fn recipe_creation_workflow_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -179,7 +177,7 @@ pub fn recipe_creation_workflow_tests() {
       // Assert - Check the recipe was saved to recipes list
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(recipes: recipes, ..) -> {
+        app.Model(recipes: recipes, ..) -> {
           recipes.recipes
           |> list.any(fn(r) { r.slug == "test-recipe-title" })
           |> expect.to_equal(True)
@@ -192,9 +190,9 @@ pub fn recipe_creation_workflow_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -220,21 +218,19 @@ pub fn recipe_creation_workflow_tests() {
       // Act - Save recipe and simulate the route change effect
       let final_simulation =
         simulation
-        |> simulate.message(RecipeDetail(DbSavedUpdatedRecipe(updated_recipe)))
         |> simulate.message(
-          OnRouteChange(mealstack_client.ViewRecipeDetail(
-            slug: "test-recipe-title",
-          )),
+          RecipeDetail(recipe_detail.DbSavedUpdatedRecipe(updated_recipe)),
+        )
+        |> simulate.message(
+          OnRouteChange(app.ViewRecipeDetail(slug: "test-recipe-title")),
         )
 
       // Assert - Check route changed to view after save
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(current_route: route, ..) -> {
+        app.Model(current_route: route, ..) -> {
           route
-          |> expect.to_equal(mealstack_client.ViewRecipeDetail(
-            slug: "test-recipe-title",
-          ))
+          |> expect.to_equal(app.ViewRecipeDetail(slug: "test-recipe-title"))
         }
       }
     }),
@@ -244,9 +240,9 @@ pub fn recipe_creation_workflow_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))

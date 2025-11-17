@@ -1,5 +1,11 @@
 import components/page_title.{page_title}
 import components/typeahead
+import domains/planner
+import domains/recipe_detail
+import domains/recipe_list
+import domains/settings
+import domains/shoppinglist
+import domains/upload
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -12,13 +18,8 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{a, nav, section, span}
 import modem
-import pages/planner
-import pages/recipe
-import pages/settings
-import pages/shopping_list
-import pages/upload
 import rada/date
-import session
+import shared/types.{type Recipe, Ingredient, MethodStep, Recipe, Tag}
 
 // MAIN ------------------------------------------------------------------------
 
@@ -42,17 +43,18 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
     Model(
       current_route: result.unwrap(initial_route, Home),
       current_recipe: None,
-      recipes: session.RecipeList(recipes: [], tag_options: [], group_by: None),
-      planner: planner.Model(
+      recipes: recipe_list.RecipeListModel(
+        recipes: [],
+        tag_options: [],
+        group_by: None,
+      ),
+      planner: planner.PlannerModel(
         plan_week: dict.new(),
         recipe_list: [],
         start_date: date.floor(date.today(), date.Monday),
       ),
       db_subscriptions: dict.from_list([]),
-      shopping_list: shopping_list.ShoppingListModel(
-        all_lists: [],
-        current: None,
-      ),
+      shoppinglist: shoppinglist.ShoppingListModel(all_lists: [], current: None),
       settings: settings.SettingsModel(api_key: None),
       upload: upload.UploadModel(
         status: upload.NotStarted,
@@ -70,8 +72,8 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         use dispatch <- effect.from
         OnRouteChange(result.unwrap(initial_route, Home)) |> dispatch
       },
-      effect.map(session.subscribe_to_recipe_summaries(), RecipeList),
-      effect.map(session.get_tag_options(), RecipeList),
+      effect.map(recipe_list.subscribe_to_recipe_summaries(), RecipeList),
+      effect.map(recipe_list.get_tag_options(), RecipeList),
     ]),
   )
 }
@@ -81,13 +83,13 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
 pub type Model {
   Model(
     current_route: Route,
-    current_recipe: recipe.RecipeDetail,
-    recipes: session.RecipeList,
-    planner: planner.Model,
+    current_recipe: recipe_detail.RecipeDetail,
+    recipes: recipe_list.RecipeListModel,
+    planner: planner.PlannerModel,
     db_subscriptions: Dict(String, fn() -> Nil),
     settings: settings.SettingsModel,
     upload: upload.UploadModel,
-    shopping_list: shopping_list.ShoppingListModel,
+    shoppinglist: shoppinglist.ShoppingListModel,
   )
 }
 
@@ -98,24 +100,27 @@ pub type Route {
   ViewRecipeList
   ViewPlanner(start_date: date.Date)
   EditPlanner(start_date: date.Date)
-  ViewShoppingList
+  ViewShoppingLists
+  ViewShoppingList(date: date.Date)
+  EditShoppingList(date: date.Date)
   ViewSettings
   ViewUpload
 }
 
 pub type RouteParams {
   SlugParam(slug: String)
-  RecipeParam(recipe: session.Recipe)
+  RecipeParam(recipe: Recipe)
 }
 
 pub type Msg {
   OnRouteChange(Route)
-  RecipeDetail(recipe.RecipeDetailMsg)
-  RecipeList(session.RecipeListMsg)
+  RecipeDetail(recipe_detail.RecipeDetailMsg)
+  RecipeList(recipe_list.RecipeListMsg)
   Planner(planner.PlannerMsg)
   Settings(settings.SettingsMsg)
   Upload(upload.UploadMsg)
-  ShoppingList(shopping_list.ShoppingListMsg)
+  ShoppingList(shoppinglist.ShoppingListMsg)
+  DbSubscriptionOpened(String, fn() -> Nil)
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -131,7 +136,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let effect_to_run = case dict.get(model.db_subscriptions, slug) {
         Ok(_) -> effect.none()
         _ ->
-          effect.map(session.subscribe_to_one_recipe_by_slug(slug), RecipeList)
+          effect.map(
+            recipe_list.subscribe_to_one_recipe_by_slug(slug),
+            RecipeList,
+          )
       }
       #(
         Model(
@@ -146,7 +154,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(
         ..model,
         current_route: EditRecipeDetail(SlugParam(slug: "")),
-        current_recipe: Some(session.Recipe(
+        current_recipe: Some(Recipe(
           id: None,
           title: "New Recipe",
           slug: "",
@@ -155,13 +163,13 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           serves: 0,
           author: None,
           source: None,
-          tags: Some(dict.from_list([#(0, session.Tag("", ""))])),
+          tags: Some(dict.from_list([#(0, Tag("", ""))])),
           ingredients: Some(
             dict.from_list([
-              #(0, session.Ingredient(None, None, None, None, None)),
+              #(0, Ingredient(None, None, None, None, None)),
             ]),
           ),
-          method_steps: Some(dict.from_list([#(0, session.MethodStep(""))])),
+          method_steps: Some(dict.from_list([#(0, MethodStep(""))])),
           shortlisted: None,
         )),
       ),
@@ -171,7 +179,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let effect_to_run = case dict.get(model.db_subscriptions, slug) {
         Ok(_) -> effect.none()
         _ ->
-          effect.map(session.subscribe_to_one_recipe_by_slug(slug), RecipeList)
+          effect.map(
+            recipe_list.subscribe_to_one_recipe_by_slug(slug),
+            RecipeList,
+          )
       }
       #(
         Model(
@@ -200,7 +211,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         case list.length(model.recipes.recipes) {
           // TODO: does this really need to get the whole list?
           // maybe it should just get the summaries (or use the existing subscribe_to_summaries)
-          0 -> effect.map(session.get_recipes(), RecipeList)
+          0 -> effect.map(recipe_list.get_recipes(), RecipeList)
           _ -> effect.none()
         },
       ]),
@@ -251,25 +262,38 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         )
       }
     }
-    OnRouteChange(ViewShoppingList) -> #(
-      Model(..model, current_route: ViewShoppingList),
-      effect.map(shopping_list.retrieve_shopping_lists(), ShoppingList),
+    OnRouteChange(ViewShoppingLists) -> #(
+      Model(..model, current_route: ViewShoppingLists),
+      effect.map(shoppinglist.retrieve_shopping_lists(), ShoppingList),
     )
     OnRouteChange(route) -> #(
       Model(..model, current_route: route, current_recipe: None),
       effect.none(),
     )
-    RecipeList(session.DbRetrievedOneRecipe(recipe)) -> {
+    RecipeList(recipe_list.DbRetrievedOneRecipe(recipe)) -> {
       #(
         Model(
           ..model,
           current_recipe: Some(recipe),
-          recipes: session.merge_recipe_into_model(recipe, model.recipes),
+          recipes: recipe_list.merge_recipe_into_model(recipe, model.recipes),
         ),
         effect.none(),
       )
     }
-    RecipeList(session.DbSubscriptionOpened(key, callback)) -> #(
+    RecipeList(recipe_list.RecipeListSubscriptionOpened(key, callback)) -> {
+      #(
+        Model(
+          ..model,
+          db_subscriptions: dict.upsert(
+            in: model.db_subscriptions,
+            update: key,
+            with: fn(_) { callback },
+          ),
+        ),
+        effect.none(),
+      )
+    }
+    DbSubscriptionOpened(key, callback) -> #(
       Model(
         ..model,
         db_subscriptions: dict.upsert(
@@ -282,12 +306,12 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     )
     RecipeList(list_msg) -> {
       let #(child_model, child_effect) =
-        recipe.list_update(model.recipes, list_msg)
+        recipe_list.list_update(model.recipes, list_msg)
       #(
         Model(
           ..model,
           recipes: child_model,
-          planner: planner.Model(
+          planner: planner.PlannerModel(
             plan_week: model.planner.plan_week,
             recipe_list: list.map(child_model.recipes, fn(a) { a.title }),
             start_date: model.planner.start_date,
@@ -296,11 +320,14 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(child_effect, RecipeList),
       )
     }
-    RecipeDetail(recipe.DbSavedUpdatedRecipe(new_recipe)) -> {
+    RecipeDetail(recipe_detail.DbSavedUpdatedRecipe(new_recipe)) -> {
       #(
         Model(
           ..model,
-          recipes: session.merge_recipe_into_model(new_recipe, model.recipes),
+          recipes: recipe_list.merge_recipe_into_model(
+            new_recipe,
+            model.recipes,
+          ),
         ),
         effect.batch([
           {
@@ -311,13 +338,13 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         ]),
       )
     }
-    RecipeDetail(recipe.DbDeletedRecipe(_id)) -> #(
+    RecipeDetail(recipe_detail.DbDeletedRecipe(_id)) -> #(
       Model(..model, current_recipe: None),
       modem.push("/recipes", None, None),
     )
     RecipeDetail(detail_msg) -> {
       let #(child_model, child_effect) =
-        recipe.detail_update(model.current_recipe, detail_msg)
+        recipe_detail.detail_update(model.current_recipe, detail_msg)
       #(
         Model(..model, current_recipe: child_model),
         effect.map(child_effect, RecipeDetail),
@@ -327,7 +354,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(
         Model(
           ..model,
-          planner: planner.Model(..model.planner, start_date: date),
+          planner: planner.PlannerModel(..model.planner, start_date: date),
         ),
         // TODO: Better handle navigating in response to the updated data
         {
@@ -341,7 +368,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         Model(
           ..model,
           current_route: ViewPlanner(start_date),
-          planner: planner.Model(..model.planner, plan_week: plan_week),
+          planner: planner.PlannerModel(..model.planner, plan_week: plan_week),
         ),
         effect.none(),
       )
@@ -378,14 +405,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(settings_effect, Settings),
       )
     }
-    ShoppingList(shopping_list_msg) -> {
+    ShoppingList(shoppinglist_msg) -> {
       let #(child_model, child_effect) =
-        shopping_list.shopping_list_update(
-          model.shopping_list,
-          shopping_list_msg,
-        )
+        shoppinglist.shopping_list_update(model.shoppinglist, shoppinglist_msg)
       #(
-        Model(..model, shopping_list: child_model),
+        Model(..model, shoppinglist: child_model),
         effect.map(child_effect, ShoppingList),
       )
     }
@@ -470,7 +494,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(session.Recipe) {
+fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(Recipe) {
   option.from_result(list.find(model.recipes.recipes, fn(a) { a.slug == slug }))
 }
 
@@ -502,7 +526,21 @@ fn on_route_change(uri: Uri) -> Msg {
     _, ["recipes"] -> OnRouteChange(ViewRecipeList)
     _, ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
     _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
-    _, ["shopping-list"] -> OnRouteChange(ViewShoppingList)
+    _, ["shopping-list"] -> OnRouteChange(ViewShoppingLists)
+    _, ["shopping-list", date_str, "edit"] ->
+      OnRouteChange(
+        EditShoppingList(result.unwrap(
+          date.from_iso_string(date_str),
+          date.today(),
+        )),
+      )
+    _, ["shopping-list", date_str] ->
+      OnRouteChange(
+        ViewShoppingList(result.unwrap(
+          date.from_iso_string(date_str),
+          date.today(),
+        )),
+      )
     _, ["settings"] -> OnRouteChange(ViewSettings)
     _, ["import"] -> OnRouteChange(ViewUpload)
     _, _ -> OnRouteChange(Home)
@@ -515,15 +553,15 @@ fn view(model: Model) -> Element(Msg) {
   let page = case model.current_route {
     Home -> view_home()
     ViewRecipeList ->
-      element.map(recipe.view_recipe_list(model.recipes), RecipeList)
+      element.map(recipe_list.view_recipe_list(model.recipes), RecipeList)
     ViewRecipeDetail(slug: _slug) ->
       element.map(
-        recipe.lookup_and_view_recipe(model.current_recipe),
+        recipe_detail.lookup_and_view_recipe(model.current_recipe),
         RecipeDetail,
       )
     EditRecipeDetail(SlugParam(slug: _slug)) -> {
       element.map(
-        recipe.lookup_and_edit_recipe(
+        recipe_detail.lookup_and_edit_recipe(
           model.current_recipe,
           model.recipes.tag_options,
         ),
@@ -532,7 +570,7 @@ fn view(model: Model) -> Element(Msg) {
     }
     EditRecipeDetail(RecipeParam(recipe: _recipe)) -> {
       element.map(
-        recipe.lookup_and_edit_recipe(
+        recipe_detail.lookup_and_edit_recipe(
           model.current_recipe,
           model.recipes.tag_options,
         ),
@@ -541,7 +579,7 @@ fn view(model: Model) -> Element(Msg) {
     }
     ViewPlanner(start_date) ->
       element.map(
-        planner.view_planner(planner.Model(
+        planner.view_planner(planner.PlannerModel(
           plan_week: model.planner.plan_week,
           recipe_list: list.map(model.recipes.recipes, fn(a) { a.title }),
           start_date: start_date,
@@ -550,7 +588,7 @@ fn view(model: Model) -> Element(Msg) {
       )
     EditPlanner(start_date) ->
       element.map(
-        planner.edit_planner(planner.Model(
+        planner.edit_planner(planner.PlannerModel(
           plan_week: model.planner.plan_week,
           recipe_list: list.map(model.recipes.recipes, fn(a) { a.title }),
           start_date: start_date,
@@ -559,9 +597,19 @@ fn view(model: Model) -> Element(Msg) {
       )
     ViewSettings ->
       element.map(settings.view_settings(model.settings), Settings)
-    ViewShoppingList ->
+    ViewShoppingLists ->
       element.map(
-        shopping_list.view_shopping_list(model.shopping_list),
+        shoppinglist.view_all_shopping_lists(model.shoppinglist),
+        ShoppingList,
+      )
+    ViewShoppingList(date: list_date) ->
+      element.map(
+        shoppinglist.view_shopping_list_detail(model.shoppinglist, list_date),
+        ShoppingList,
+      )
+    EditShoppingList(date: list_date) ->
+      element.map(
+        shoppinglist.edit_shopping_list(model.shoppinglist, list_date),
         ShoppingList,
       )
     ViewUpload -> element.map(upload.view_upload(model.upload), Upload)
@@ -569,7 +617,7 @@ fn view(model: Model) -> Element(Msg) {
   view_base(page)
 }
 
-fn view_base(children) {
+fn view_base(children: Element(Msg)) -> Element(Msg) {
   html.main(
     [
       class(

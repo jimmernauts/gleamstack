@@ -2,8 +2,8 @@ import birdie
 import gleam/option.{None, Some}
 import lustre/dev/simulate
 import lustre/element
-import mealstack_client.{OnRouteChange, Settings, ViewSettings}
-import pages/settings.{UserRetrievedSettings, UserUpdatedApikey}
+import app.{OnRouteChange, Settings, ViewSettings}
+import domains/settings.{UserRetrievedSettings, UserUpdatedApikey}
 import startest.{describe, it}
 import startest/expect
 
@@ -16,9 +16,9 @@ pub fn settings_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -26,7 +26,7 @@ pub fn settings_integration_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(current_route: route, ..) -> {
+        app.Model(current_route: route, ..) -> {
           route
           |> expect.to_equal(ViewSettings)
         }
@@ -39,9 +39,9 @@ pub fn settings_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -49,7 +49,7 @@ pub fn settings_integration_tests() {
       // Assert
       let model = simulate.model(simulation)
       case model {
-        mealstack_client.Model(settings: settings, ..) -> {
+        app.Model(settings: settings, ..) -> {
           settings.api_key
           |> expect.to_equal(None)
         }
@@ -61,9 +61,9 @@ pub fn settings_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -76,7 +76,7 @@ pub fn settings_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(settings: settings, ..) -> {
+        app.Model(settings: settings, ..) -> {
           settings.api_key
           |> expect.to_equal(Some("test-api-key-123"))
         }
@@ -88,9 +88,9 @@ pub fn settings_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -105,7 +105,7 @@ pub fn settings_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(settings: settings, ..) -> {
+        app.Model(settings: settings, ..) -> {
           settings.api_key
           |> expect.to_equal(Some("retrieved-api-key"))
         }
@@ -117,9 +117,9 @@ pub fn settings_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -132,7 +132,7 @@ pub fn settings_integration_tests() {
       // Assert - Check that upload model also has the API key
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(upload: upload, ..) -> {
+        app.Model(upload: upload, ..) -> {
           upload.api_key
           |> expect.to_equal(Some("test-key"))
         }
@@ -144,9 +144,9 @@ pub fn settings_integration_tests() {
 
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -159,7 +159,7 @@ pub fn settings_integration_tests() {
       // Assert
       let final_model = simulate.model(final_simulation)
       case final_model {
-        mealstack_client.Model(settings: settings, ..) -> {
+        app.Model(settings: settings, ..) -> {
           settings.api_key
           |> expect.to_equal(None)
         }
@@ -172,9 +172,9 @@ pub fn settings_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
@@ -191,9 +191,9 @@ pub fn settings_integration_tests() {
       // Act
       let simulation =
         simulate.application(
-          init: mealstack_client.public_init,
-          update: mealstack_client.public_update,
-          view: mealstack_client.public_view,
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
         )
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))

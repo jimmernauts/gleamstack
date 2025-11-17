@@ -32,6 +32,8 @@ const _schema = i.schema({
 			items: i.json().optional(),
 			status: i.string(),
 			date: i.number().indexed(),
+			linked_recipes: i.json().optional(),
+			linked_plan: i.number().optional(),
 		}),
 	},
 	links: {},

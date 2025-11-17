@@ -1,5 +1,5 @@
 import { init, id } from "@instantdb/admin";
-import schema from "../instant.schema.ts";
+import schema from "../src/instant.schema.ts";
 // ID for app: mealstack
 const APP_ID = "eeaf3b82-5b5d-40c4-a29a-b68988377c3c";
 const db = init({

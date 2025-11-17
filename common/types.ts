@@ -79,4 +79,6 @@ export type ShoppingList = {
     date: number;
     status: "Active" | "Completed" | "Archived";
     items: string;
+    linked_recipes?: string;
+    linked_plan?: number;
 };

@@ -1,169 +1,18 @@
 import gleam/bool
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/int
-import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
-import gleam/option.{type Option}
+import gleam/option
 import gleam/result
 import gleam/string
 import lib/utils
-import lustre/effect.{type Effect}
-
-pub type RecipeListMsg {
-  DbSubscriptionOpened(String, fn() -> Nil)
-  DbSubscribedOneRecipe(Dynamic)
-  DbSubscribedRecipes(Dynamic)
-  DbRetrievedRecipes(List(Recipe))
-  DbRetrievedOneRecipe(Recipe)
-  DbRetrievedTagOptions(List(TagOption))
-  UserGroupedRecipeListByTag(String)
-  UserGroupedRecipeListByAuthor
+import shared/types.{
+  type Ingredient, type IngredientCategory, type MethodStep, type Recipe,
+  type Tag, type TagOption, Ingredient, IngredientCategory, MethodStep, Recipe,
+  Tag, TagOption,
 }
-
-pub type RecipeListGroupBy {
-  GroupByTag(String)
-  GroupByAuthor
-}
-
-pub type RecipeList {
-  RecipeList(
-    recipes: List(Recipe),
-    tag_options: List(TagOption),
-    group_by: Option(RecipeListGroupBy),
-  )
-}
-
-//-UPDATE------------------------------------------------------------
-
-pub fn merge_recipe_into_model(recipe: Recipe, model: RecipeList) -> RecipeList {
-  RecipeList(
-    ..model,
-    recipes: model.recipes
-      |> list.map(fn(a) { #(a.id, a) })
-      |> dict.from_list
-      |> dict.merge(dict.from_list([#(recipe.id, recipe)]))
-      |> dict.values(),
-  )
-}
-
-pub fn get_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_get_one_recipe_by_slug(slug)
-  |> promise.map(decode.run(_, decode_recipe_with_inner_json()))
-  |> promise.map(result.map(_, DbRetrievedOneRecipe))
-  |> promise.tap(result.map(_, dispatch))
-  Nil
-}
-
-@external(javascript, "./db.ts", "do_get_one_recipe_by_slug")
-fn do_get_one_recipe_by_slug(slug: String) -> Promise(Dynamic)
-
-pub fn subscribe_to_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_subscribe_to_one_recipe_by_slug(slug, fn(data) {
-    data
-    |> DbSubscribedOneRecipe
-    |> dispatch
-  })
-  |> DbSubscriptionOpened(slug, _)
-  |> dispatch
-  Nil
-}
-
-@external(javascript, "./db.ts", "do_subscribe_to_one_recipe_by_slug")
-fn do_subscribe_to_one_recipe_by_slug(
-  slug: String,
-  callback: fn(a) -> Nil,
-) -> fn() -> Nil
-
-pub fn get_recipes() -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_get_recipes()
-  |> promise.map(decode.run(_, decode.list(decode_recipe_with_inner_json())))
-  |> promise.map(result.map(_, DbRetrievedRecipes))
-  |> promise.tap(result.map(_, dispatch))
-  Nil
-}
-
-@external(javascript, "./db.ts", "do_get_recipes")
-fn do_get_recipes() -> Promise(Dynamic)
-
-pub fn get_tag_options() -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_get_tagoptions()
-  |> promise.map(decode.run(_, decode.list(decode_tag_option())))
-  |> promise.map(result.map(_, DbRetrievedTagOptions))
-  |> promise.tap(result.map(_, dispatch))
-  Nil
-}
-
-@external(javascript, "./db.ts", "do_get_tagoptions")
-fn do_get_tagoptions() -> Promise(Dynamic)
-
-pub fn subscribe_to_recipe_summaries() -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_subscribe_to_recipe_summaries(fn(data) {
-    data
-    |> DbSubscribedRecipes
-    |> dispatch
-  })
-  |> DbSubscriptionOpened("recipes", _)
-  |> dispatch
-  Nil
-}
-
-@external(javascript, "./db.ts", "do_subscribe_to_recipe_summaries")
-fn do_subscribe_to_recipe_summaries(callback: fn(a) -> Nil) -> fn() -> Nil
-
-//-TYPES-------------------------------------------------------------
-
-pub type Recipe {
-  Recipe(
-    id: Option(String),
-    title: String,
-    slug: String,
-    cook_time: Int,
-    prep_time: Int,
-    serves: Int,
-    author: Option(String),
-    source: Option(String),
-    tags: Option(Dict(Int, Tag)),
-    ingredients: Option(Dict(Int, Ingredient)),
-    method_steps: Option(Dict(Int, MethodStep)),
-    shortlisted: Option(Bool),
-  )
-}
-
-pub type TagOption {
-  TagOption(id: Option(String), name: String, options: List(String))
-}
-
-pub type MethodStep {
-  MethodStep(step_text: String)
-}
-
-pub type Tag {
-  Tag(name: String, value: String)
-}
-
-pub type Ingredient {
-  Ingredient(
-    name: Option(String),
-    ismain: Option(Bool),
-    quantity: Option(String),
-    units: Option(String),
-    category: Option(IngredientCategory),
-  )
-}
-
-pub type IngredientCategory {
-  IngredientCategory(name: String)
-}
-
-//-ENCODERS-DECODERS----------------------------------------------
 
 pub fn json_encode_ingredient(ingredient: Ingredient) -> Json {
   json.object([
@@ -258,17 +107,20 @@ pub fn decode_recipe_with_inner_json() -> decode.Decoder(Recipe) {
   use tags <- decode.optional_field(
     "tags",
     option.None,
-    decode.optional(decode_json_string(decode_tags(), dict.from_list([]))),
+    decode.optional(json_string_decoder(decode_tags(), dict.from_list([]))),
   )
   use ingredients <- decode.optional_field(
     "ingredients",
     option.None,
-    decode.optional(decode_json_string(decode_ingredients(), dict.from_list([]))),
+    decode.optional(json_string_decoder(
+      decode_ingredients(),
+      dict.from_list([]),
+    )),
   )
   use method_steps <- decode.optional_field(
     "method_steps",
     option.None,
-    decode.optional(decode_json_string(
+    decode.optional(json_string_decoder(
       decode_method_steps(),
       dict.from_list([]),
     )),
@@ -428,7 +280,7 @@ fn decode_method_steps() -> decode.Decoder(Dict(Int, MethodStep)) {
   decode.dict(decode_stringed_int(), method_step_decoder)
 }
 
-fn decode_tag_option() -> decode.Decoder(TagOption) {
+pub fn decode_tag_option() -> decode.Decoder(TagOption) {
   use id <- decode.optional_field(
     "id",
     option.None,
@@ -437,7 +289,7 @@ fn decode_tag_option() -> decode.Decoder(TagOption) {
   use name <- decode.field("name", decode.string)
   use options <- decode.field(
     "options",
-    decode_json_string(decode.list(decode.string), []),
+    json_string_decoder(decode.list(decode.string), []),
   )
   decode.success(TagOption(id:, name:, options:))
 }
@@ -463,7 +315,7 @@ pub fn decode_stringed_bool() -> decode.Decoder(Bool) {
   })
 }
 
-pub fn decode_json_string(
+pub fn json_string_decoder(
   inner_decoder: decode.Decoder(a),
   default: a,
 ) -> decode.Decoder(a) {

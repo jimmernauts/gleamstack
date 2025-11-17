@@ -26,7 +26,7 @@ test_name: url_import_integration_tests
       </button>
     </nav>
 
-    <fieldset class="md:col-span-4 flex flex-col gap-y-2 col-span-11 row-start-3 p-2 border-ecru-white-950 border-[1px] rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
+    <fieldset class="md:col-span-4 flex flex-col gap-y-2 col-span-11 row-start-3 p-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
       <legend class="mx-2 px-1 text-base">
         Image
       </legend>
@@ -36,7 +36,7 @@ test_name: url_import_integration_tests
       <input accept="image/*" class="hidden" id="recipe-image" type="file">
 
     </fieldset>
-    <fieldset class="md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border-[1px] rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
+    <fieldset class="md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
       <legend class="mx-2 px-1 text-base">
         Web
       </legend>
@@ -47,11 +47,11 @@ test_name: url_import_integration_tests
         <input class="inline-block w-[16ch] xxs:w-[23ch] xs:w-[28ch] sm:w-[16ch] md:w-[23ch] lg:w-[28ch] text-base bg-ecru-white-100 ml-1 p-2" id="recipe-url" type="url">
       </div>
     </fieldset>
-    <fieldset class="md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border-[1px] rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
+    <fieldset class="md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
       <legend class="mx-2 px-1 text-base">
         Text
       </legend>
-      <textarea class="mx-1 p-2 bg-ecru-white-100 w-full input-focus text-base resize-none [field-sizing:content]" id="recipe-text-to-import" name="recipe-text-to-import" rows="3">
+      <textarea class="mx-1 p-2 bg-ecru-white-100 w-full input-focus text-base resize-none field-sizing-content" id="recipe-text-to-import" name="recipe-text-to-import" rows="3">
 
       </textarea>
     </fieldset>

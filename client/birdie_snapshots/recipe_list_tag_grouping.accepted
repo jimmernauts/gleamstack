@@ -26,7 +26,7 @@ test_name: recipe_list_integration_tests
           Author
         </button>
       </div>
-      <details class="col-span-full subgrid-cols gap-y-2 details-content:[display:grid] details-content:gap-y-2 details-content:[grid-column:1/-1] details-content:[grid-template-columns:subgrid]">
+      <details class="col-span-full subgrid-cols gap-y-2 details-content:grid details-content:gap-y-2 details-content:col-span-full details-content:grid-cols-subgrid">
         <summary class="flex gap-2 col-span-full border-b border-b-gray-200 text-base cursor-pointer marker:content-none ">
           Italian
         </summary>
@@ -41,7 +41,7 @@ test_name: recipe_list_integration_tests
           </a>
         </div>
       </details>
-      <details class="col-span-full subgrid-cols gap-y-2 details-content:[display:grid] details-content:gap-y-2 details-content:[grid-column:1/-1] details-content:[grid-template-columns:subgrid]">
+      <details class="col-span-full subgrid-cols gap-y-2 details-content:grid details-content:gap-y-2 details-content:col-span-full details-content:grid-cols-subgrid">
         <summary class="flex gap-2 col-span-full border-b border-b-gray-200 text-base cursor-pointer marker:content-none ">
           Thai
         </summary>
