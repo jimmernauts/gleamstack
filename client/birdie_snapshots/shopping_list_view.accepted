@@ -1,0 +1,48 @@
+---
+version: 1.4.1
+title: shopping_list_view
+file: ./test/integration/shopping_list_test.gleam
+test_name: shopping_list_workflow_tests
+---
+<main class="h-env-screen grid ml-2 mr-2 gap-2
+      2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90%_[main-end]_3fr_[full-end]_1fr_[end]]
+      xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+      lg:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_95%_[main-end]_3fr_[full-end]_1fr_[end]]
+      md:grid-cols-[[start_full-start]_1fr_[main-start]_95%_[main-end]_1fr_[full-end_end]]
+      grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
+      text-ecru-white-950 font-transitional text-lg">
+  <section class="grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2">
+    <div class="mt-2 flex col-start-1 text-7xl underline-purple col-span-full md:col-span-11">
+      <h1 class="min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
+        2025-11-20
+      </h1>
+    </div>
+    <div class="col-span-full flex flex-col gap-4 overflow-y-auto p-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          Status: 
+          <span class="px-2 py-1 bg-green-100 text-green-800 rounded">
+            Active
+          </span>
+        </div>
+      </div>
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2"></div>
+        <div class="flex gap-2">
+          <input class="flex-1 p-2 border border-ecru-white-950 bg-ecru-white-100 rounded" placeholder="Add item..." type="text" value>
+          <button class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+            Add
+          </button>
+        </div>
+      </div>
+    </div>
+    <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base  justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
+      <a class="text-center" href="/">
+        🏠
+      </a>
+      <a class="text-center" href="/shopping-list">
+        📋
+      </a>
+    </nav>
+  </section>
+</main>

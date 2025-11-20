@@ -57,7 +57,6 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
       shoppinglist: shoppinglist.ShoppingListModel(
         all_lists: [],
         current: None,
-        is_editing: False,
         new_item_name: "",
       ),
       settings: settings.SettingsModel(api_key: None),
@@ -266,6 +265,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         )
       }
     }
+    OnRouteChange(ViewShoppingLists) -> #(
+      Model(..model, current_route: ViewShoppingLists),
+      effect.map(shoppinglist.retrieve_shopping_list_summaries(), ShoppingList),
+    )
     OnRouteChange(ViewShoppingList(date: list_date)) -> #(
       Model(..model, current_route: ViewShoppingList(date: list_date)),
       effect.map(

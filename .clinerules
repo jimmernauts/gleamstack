@@ -99,6 +99,13 @@ Each domain module should follow this order:
 
 ## Testing
 
+### Running Tests
+- Run all tests: `gleam test --target javascript` (must be run in `client/` directory)
+- Run snapshot tests (Birdie): `gleam run -m birdie` (must be run in `client/` directory)
+  - Press `a` to accept a new snapshot
+  - Press `r` to reject a new snapshot
+  - Press `d` to toggle the diff view
+
 ### Test Organization
 - Unit tests in `client/test/unit/`
 - Snapshot tests use birdie in `client/birdie_snapshots/`

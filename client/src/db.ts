@@ -286,3 +286,8 @@ export function do_subscribe_to_one_shoppinglist_by_date(date: number, dispatch:
     const result = db.subscribeQuery(query, dispatch);
     return result;
 }
+
+export async function do_delete_shopping_list(id: string) {
+    const result = await db.transact(db.tx.shopping_lists[id].delete());
+    return result;
+}

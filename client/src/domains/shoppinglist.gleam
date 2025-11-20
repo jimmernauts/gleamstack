@@ -38,13 +38,13 @@ pub type ShoppingListMsg {
   UserToggledEditMode
   UserUpdatedNewItemName(String)
   UserSubmittedNewItem
+  UserDeletedList(ShoppingList)
 }
 
 pub type ShoppingListModel {
   ShoppingListModel(
     all_lists: List(ShoppingList),
     current: Option(ShoppingList),
-    is_editing: Bool,
     new_item_name: String,
   )
 }
@@ -89,10 +89,7 @@ pub fn shopping_list_update(
     // SubscriptionOpened is handled in the layer above
     // Not sure if this is really a great pattern....
     ShoppingListSubscriptionOpened(_date, _callback) -> #(model, effect.none())
-    UserToggledEditMode -> #(
-      ShoppingListModel(..model, is_editing: !model.is_editing),
-      effect.none(),
-    )
+    UserToggledEditMode -> #(model, effect.none())
     UserUpdatedNewItemName(name) -> #(
       ShoppingListModel(..model, new_item_name: name),
       effect.none(),
@@ -144,7 +141,6 @@ pub fn shopping_list_update(
         ShoppingListModel(
           all_lists: [new_list, ..model.all_lists],
           current: Some(new_list),
-          is_editing: False,
           new_item_name: "",
         ),
         effect.none(),
@@ -220,7 +216,6 @@ pub fn shopping_list_update(
           |> list.filter(fn(x) { x.status == Active })
           |> list.first
           |> option.from_result,
-        is_editing: False,
         new_item_name: "",
       ),
       effect.none(),
@@ -250,11 +245,19 @@ pub fn shopping_list_update(
       ShoppingListModel(
         all_lists: [list, ..model.all_lists],
         current: Some(list),
-        is_editing: False,
         new_item_name: "",
       ),
       effect.none(),
     )
+    UserDeletedList(list) -> {
+      let updated_lists =
+        list.filter(model.all_lists, fn(l) { l.id != list.id })
+      do_delete_shopping_list(option.unwrap(list.id, ""))
+      #(
+        ShoppingListModel(..model, all_lists: updated_lists, current: None),
+        effect.none(),
+      )
+    }
   }
 }
 
@@ -262,6 +265,9 @@ pub fn shopping_list_update(
 fn do_save_shopping_list_external(
   list_obj: #(Int, String, String, String, Int),
 ) -> Nil
+
+@external(javascript, ".././db.ts", "do_delete_shopping_list")
+fn do_delete_shopping_list(id: String) -> Nil
 
 fn do_save_shopping_list(list: ShoppingList) -> Nil {
   // Convert to a plain object with proper types for TypeScript
@@ -412,7 +418,7 @@ fn view_shopping_list_card(list: ShoppingList) -> Element(ShoppingListMsg) {
   div(
     [
       class(
-        "border border-ecru-white-950 rounded p-4 bg-ecru-white-50 shadow-sm",
+        "border border-ecru-white-950 rounded p-4 bg-ecru-white-50 shadow-sm relative",
       ),
     ],
     [
@@ -428,12 +434,12 @@ fn view_shopping_list_card(list: ShoppingList) -> Element(ShoppingListMsg) {
             ],
             [text("View")],
           ),
-          a(
+          button(
             [
-              href("/shopping-list/" <> date_str <> "/edit"),
-              class("text-sm text-blue-600 hover:underline"),
+              class("text-sm text-red-600 hover:underline"),
+              event.on_click(UserDeletedList(list)),
             ],
-            [text("Edit")],
+            [text("Delete")],
           ),
         ]),
       ]),
@@ -517,11 +523,11 @@ fn view_existing_list(
     ],
     [
       page_title(
-        "Shopping List - " <> date.to_iso_string(list_date),
+        date.to_iso_string(list_date),
         "underline-purple col-span-full md:col-span-11",
       ),
       div([class("col-span-full flex flex-col gap-4 overflow-y-auto p-4")], [
-        // Status badge and Edit Toggle
+        // Status badge
         div([class("flex items-center justify-between")], [
           div([class("flex items-center gap-2")], [
             text("Status: "),
@@ -542,24 +548,9 @@ fn view_existing_list(
               ],
             ),
           ]),
-          button(
-            [
-              class("text-blue-600 hover:underline"),
-              event.on_click(UserToggledEditMode),
-            ],
-            [
-              text(case model.is_editing {
-                True -> "Done"
-                False -> "Edit"
-              }),
-            ],
-          ),
         ]),
         // Items list
-        case model.is_editing {
-          True -> view_edit_list_items(model, list)
-          False -> view_read_only_list_items(list)
-        },
+        view_edit_list_items(model, list),
       ]),
       nav_footer([
         a([href("/"), class("text-center")], [text("🏠")]),
@@ -567,20 +558,6 @@ fn view_existing_list(
       ]),
     ],
   )
-}
-
-fn view_read_only_list_items(list: ShoppingList) -> Element(ShoppingListMsg) {
-  case list.items {
-    [] ->
-      div([class("text-gray-500 italic")], [
-        text("No items yet. Click Edit to add items."),
-      ])
-    items ->
-      div(
-        [class("flex flex-col gap-2")],
-        list.index_map(items, view_shopping_list_item),
-      )
-  }
 }
 
 fn view_edit_list_items(
@@ -598,7 +575,9 @@ fn view_edit_list_items(
         attribute.placeholder("Add item..."),
         attribute.value(model.new_item_name),
         event.on_input(UserUpdatedNewItemName),
-        class("flex-1 p-2 border border-gray-300 rounded"),
+        class(
+          "flex-1 p-2 border border-ecru-white-950 bg-ecru-white-100 rounded",
+        ),
       ]),
       button(
         [
@@ -614,37 +593,6 @@ fn view_edit_list_items(
 }
 
 fn view_edit_shopping_list_item(
-  item: ShoppingListIngredient,
-  index: Int,
-) -> Element(ShoppingListMsg) {
-  div(
-    [
-      class(
-        "flex items-center gap-3 p-3 border border-gray-200 rounded bg-white",
-      ),
-    ],
-    [
-      input([
-        attribute.type_("checkbox"),
-        attribute.checked(item.checked),
-        event.on_check(fn(_) { UserToggledItemChecked(index) }),
-        class("w-5 h-5"),
-      ]),
-      div([class("flex-1")], [
-        text(option.unwrap(item.ingredient.name, "Unknown")),
-      ]),
-      button(
-        [
-          class("text-red-600 hover:text-red-800"),
-          event.on_click(UserRemovedIngredient(index)),
-        ],
-        [text("🗑️")],
-      ),
-    ],
-  )
-}
-
-fn view_shopping_list_item(
   item: ShoppingListIngredient,
   index: Int,
 ) -> Element(ShoppingListMsg) {
@@ -685,6 +633,13 @@ fn view_shopping_list_item(
           ],
         ),
       ]),
+      button(
+        [
+          class("text-red-600 hover:text-red-800"),
+          event.on_click(UserRemovedIngredient(index)),
+        ],
+        [text("🗑️")],
+      ),
     ],
   )
 }
