@@ -1,0 +1,182 @@
+# Gleamstack Project Rules
+
+## Gleam & Lustre Patterns
+
+### Architecture
+- Follow the Elm/Lustre architecture: Model, Msg, update, view
+- Use `lustre.simple()` or `lustre.application()` - avoid `lustre.element()` for interactive features
+- All update functions return `#(Model, Effect(Msg))`
+- Effects are created with `effect.from`, `effect.map`, `effect.batch`, or `effect.none()`
+
+### Syntax & Style
+- Use `use` syntax for monadic operations (decode, effect.from, promise operations)
+- Prefer pattern matching with `case` over if/else
+- Use pipe operator `|>` for function chaining
+- Name messages in subject-verb-object style: `UserClickedButton`, `DbReturnedData`, `ApiFailedRequest`
+- Use descriptive variable names, avoid single letters except in lambdas
+
+### Type Safety
+- Always use `Option(T)` for nullable values, never rely on empty strings
+- Use `Result(Ok, Err)` for operations that can fail
+- Define custom types for domain concepts (don't use primitives for everything)
+- Use pattern matching exhaustively - let the compiler help you
+
+## Code Organization
+
+### File Structure
+- Domain logic goes in `client/src/domains/` (one file per domain: planner, shoppinglist, recipe_list, etc.)
+- Shared types in `client/src/shared/types.gleam`
+- Shared codecs (encoders/decoders) in `client/src/shared/codecs.gleam`
+- Reusable components in `client/src/components/`
+- Database functions in `client/src/db.ts` (TypeScript)
+- Main app orchestration in `client/src/app.gleam`
+
+### Domain Module Structure
+Each domain module should follow this order:
+1. Imports
+2. Types (Msg, Model, domain-specific types)
+3. Update functions
+4. Database/Effect functions (with @external declarations)
+5. View functions
+6. Components (helper view functions)
+7. Decoders
+8. Encoders
+
+## Database & Persistence
+
+### InstantDB
+- Use InstantDB for all persistence
+- Store complex nested data as JSON strings (use `json.to_string()`)
+- Use rata_die format (Int) for dates in database
+- Always handle subscription cleanup in app.gleam's update function
+- Database functions go in `db.ts`, exposed via `@external` declarations
+
+### Subscriptions
+- Open subscriptions in route change handlers
+- Store subscription cleanup functions in `Model.db_subscriptions: Dict(String, fn() -> Nil)`
+- Clean up subscriptions when navigating away from a route
+- Use date strings or slugs as subscription keys
+
+## Routing
+
+### Route Handling
+- Define all routes in `app.gleam` Route type
+- Parse routes in `on_route_change` function
+- Handle route changes in main update function
+- Use query parameters for optional data (e.g., `?date=2025-01-01`)
+- Prefer inline editing over separate edit routes when possible
+
+### URL Structure
+- `/recipes` - list view
+- `/recipes/new` - create new
+- `/recipes/:slug` - detail view
+- `/recipes/:slug/edit` - edit view
+- `/planner?date=YYYY-MM-DD` - planner with optional date
+- `/shopping-list` - list view
+- `/shopping-list/:date` - detail view for specific date
+
+## UI/UX Patterns
+
+### Views
+- Use semantic HTML elements (section, nav, article, etc.)
+- Use Tailwind CSS classes for styling
+- Use Lustre effects in view functions for effectful operations
+- Group related content with clear visual hierarchy
+- Use `page_title` component for consistent page headers
+- Use `nav_footer` component for bottom navigation
+
+### Forms & Editing
+- Prefer inline editing where possible
+- Use typeahead component for recipe/item lookups
+- Provide immediate visual feedback for user actions
+- Use checkboxes for toggleable state
+
+
+### State Management
+- Keep current item in model (e.g., `current_recipe`, `current` shopping list)
+- Store lists/collections separately (e.g., `all_lists`, `recipes`)
+- Use optimistic updates where appropriate
+
+## Testing
+
+### Test Organization
+- Unit tests in `client/test/unit/`
+- Snapshot tests use birdie in `client/birdie_snapshots/`
+- Follow existing test patterns from planner and recipe tests
+
+### What to Test
+- Write snapshot tests for all view functions
+- Write unit tests for complex update logic
+- Test decoders with various input shapes
+- Test edge cases (empty lists, missing data, etc.)
+
+## Documentation
+
+### Code Comments
+- Add doc comments (`///`) to all public functions
+- Explain "why" not "what" in comments
+- Document external function signatures clearly
+- Note any workarounds or TODOs with context
+
+### Planning
+- Keep implementation plans in `plans/` directory
+- Update plans as implementation progresses
+- Mark completed sections with ✅
+- Link to actual code in plans using file:// links
+- NEVER give me estimated completion times in plans
+
+## Gleam-Specific Guidelines
+
+### Common Patterns
+- Use `option.unwrap(value, default)` for safe unwrapping
+- Use `result.unwrap(value, default)` for results
+- Use `list.map`, `list.filter`, `list.fold` instead of loops
+- Use `dict.get`, `dict.upsert`, `dict.update` for dictionary operations
+- Use `bool.guard` for early returns in view functions
+
+### Avoid
+- Don't use `let assert` in production code (only in tests or main)
+- Don't ignore compiler warnings
+- Don't use `todo` or `panic` in production code
+- Don't mutate data (Gleam is immutable)
+
+## TypeScript Interop
+
+### External Functions
+- Define TypeScript functions in `.ts` files
+- Expose to Gleam with `@external(javascript, "path", "function_name")`
+- Keep external functions simple and focused
+- Handle JSON encoding/decoding at the boundary
+- Use Dynamic type for complex JS objects, decode immediately
+
+### Type Conversions
+- Gleam Date ↔ JS number (rata_die format)
+- Gleam Dict ↔ JS object (via JSON)
+- Gleam List ↔ JS array
+- Gleam Option(T) ↔ JS null/undefined (handle carefully)
+
+## Performance
+
+### Optimization
+- Use `keyed.fragment` for dynamic lists that change
+- Minimize effect batching (only when truly parallel)
+- Cache expensive computations in model when needed
+- Use subscriptions instead of polling
+
+### Don't Optimize Prematurely
+- Gleam/Lustre is fast by default
+- Profile before optimizing
+- Readability > micro-optimizations
+
+## Error Handling
+
+### User-Facing Errors
+- Show helpful error messages
+- Provide recovery actions when possible
+- Log errors to console for debugging
+- Don't crash the app on expected errors
+
+### Developer Errors
+- Use descriptive error messages in decoders
+- Log unexpected states to console
+- Use type system to prevent errors at compile time

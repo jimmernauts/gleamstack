@@ -562,44 +562,6 @@ fn view_shopping_list_item(
   )
 }
 
-// TODO: remove specific edit view, make this an inline edit
-
-pub fn edit_shopping_list(
-  _model: ShoppingListModel,
-  list_date: date.Date,
-) -> Element(ShoppingListMsg) {
-  section(
-    [
-      class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
-      ),
-    ],
-    [
-      page_title(
-        "Edit Shopping List - " <> date.to_iso_string(list_date),
-        "underline-purple col-span-full md:col-span-11",
-      ),
-      div(
-        [
-          class("col-span-full flex flex-wrap items-center justify-start gap-3"),
-        ],
-        [text("Edit view - coming soon")],
-      ),
-      nav_footer([
-        a([href("/"), class("text-center")], [text("🏠")]),
-        a([href("/shopping-list"), class("text-center")], [text("📋")]),
-        a(
-          [
-            href("/shopping-list/" <> date.to_iso_string(list_date)),
-            class("text-center"),
-          ],
-          [text("👁️")],
-        ),
-      ]),
-    ],
-  )
-}
-
 //-DECODER------------------------------------------------------------
 
 pub fn shopping_list_ingredient_decoder() -> Decoder(ShoppingListIngredient) {

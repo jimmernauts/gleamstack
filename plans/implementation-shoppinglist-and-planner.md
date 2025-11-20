@@ -1,13 +1,39 @@
 # Shopping List and Planner Integration - Implementation Plan
 
+> [!IMPORTANT]
+> **Last Updated**: 2025-11-18
+> 
+> **Current Status**: Types and basic structure are complete. Database layer is functional. Views are scaffolded but need enhancement. Integration features are not yet implemented.
+
 ## Overview
 
 This plan implements a comprehensive shopping list feature with deep integration into the meal planner, allowing users to manage shopping lists, link recipes, and sync with their meal plans.
 
-## Phase 1: Type System Updates
+### What's Already Done ✅
 
-### 1.1 Add PlannedRecipe Type (shared/types.gleam)
+1. **Type System** - All core types are defined and working
+2. **Database Layer** - Basic CRUD operations are functional
+3. **Routing** - Routes exist for list view and detail view
+4. **Basic Views** - Scaffolded views for list, detail, and edit (need enhancement)
+5. **Planner Migration** - Already uses `PlannedRecipe` type
 
+### What Needs to Be Done 🔨
+
+1. **Enhanced List View** - Add status toggle buttons, better UI
+2. **Enhanced Detail View** - Show linked recipes, better ingredient display
+3. **Edit View** - Full implementation of inline editing
+4. **Recipe Lookup** - Add typeahead for finding recipes
+5. **Ingredient Management** - Add ingredients from recipes, manual entry
+6. **Plan Integration** - Create list from plan, link existing list to plan
+7. **Sync Functionality** - Bidirectional sync between plan and shopping list
+
+## Phase 1: Type System Updates ✅ COMPLETE
+
+> All type system updates are complete and working in production.
+
+### 1.1 ✅ PlannedRecipe Type ([shared/types.gleam](file:///home/ubuntu/projects/gleamstack/client/src/shared/types.gleam#L46-L49))
+
+ Already implemented:
 ```gleam
 pub type PlannedRecipe {
   RecipeId(String)
@@ -15,38 +41,32 @@ pub type PlannedRecipe {
 }
 ```
 
-### 1.2 Update PlannedMealWithStatus (domains/planner.gleam)
+### 1.2 ✅ PlannedMealWithStatus ([domains/planner.gleam](file:///home/ubuntu/projects/gleamstack/client/src/domains/planner.gleam#L36-L42))
 
-Change from:
-
-```gleam
-pub type PlannedMealWithStatus {
-  PlannedMealWithStatus(
-    for: Meal,
-    title: Option(String),
-    complete: Option(Bool),
-  )
-}
-```
-
-To:
+Already using the updated type:
 
 ```gleam
 pub type PlannedMealWithStatus {
   PlannedMealWithStatus(
     for: Meal,
-    recipe: Option(PlannedRecipe),
+    recipe: Option(PlannedRecipe),  // ✅ Already using this
     complete: Option(Bool),
   )
 }
 ```
 
-### 1.3 Add IngredientSource Type (domains/shoppinglist.gleam)
+~~Old implementation~~ (already migrated):
+```gleam
+// title: Option(String),  // No longer used
+```
 
+### 1.3 ✅ IngredientSource and ShoppingListIngredient ([domains/shoppinglist.gleam](file:///home/ubuntu/projects/gleamstack/client/src/domains/shoppinglist.gleam#L47-L58))
+
+Already implemented:
 ```gleam
 pub type IngredientSource {
   ManualEntry
-  FromRecipe(recipe_ref: ShoppingListRecipeLink)
+  FromRecipe(recipe_ref: types.PlannedRecipe)  // Note: Using PlannedRecipe not ShoppingListRecipeLink
 }
 
 pub type ShoppingListIngredient {
@@ -58,18 +78,18 @@ pub type ShoppingListIngredient {
 }
 ```
 
-### 1.4 Update ShoppingList Type (domains/shoppinglist.gleam)
+### 1.4 ✅ ShoppingList Type ([domains/shoppinglist.gleam](file:///home/ubuntu/projects/gleamstack/client/src/domains/shoppinglist.gleam#L60-L68))
 
-Change from:
+Already using the updated type:
 
 ```gleam
 pub type ShoppingList {
   ShoppingList(
     id: Option(String),
-    items: List(types.Ingredient),
+    items: List(ShoppingListIngredient),  // ✅ Already updated
     status: Status,
     date: date.Date,
-    linked_recipes: List(ShoppingListRecipeLink),
+    linked_recipes: List(types.PlannedRecipe),  // ✅ Using PlannedRecipe
     linked_plan: Option(date.Date),
   )
 }
@@ -90,72 +110,68 @@ pub type ShoppingList {
 }
 ```
 
-## Phase 2: Database Schema
+## Phase 2: Database Schema ✅ COMPLETE
 
-### 2.1 InstantDB Schema (db.ts or schema definition)
+> Database schema is defined and all basic CRUD functions are implemented in [`db.ts`](file:///home/ubuntu/projects/gleamstack/client/src/db.ts#L226-L290).
 
+### 2.1 ✅ InstantDB Schema
+
+The schema is defined in [`instant.schema.ts`](file:///home/ubuntu/projects/gleamstack/client/src/instant.schema.ts). Shopping lists store items and linked_recipes as JSON strings.
+
+**Current structure:**
 ```typescript
-// Shopping List Schema
-{
-  shopping_lists: {
-    id: string,
-    date: number, // rata_die format
-    status: "Active" | "Completed" | "Archived",
-    linked_plan_date: number | null, // rata_die format
-  },
-  shopping_list_items: {
-    id: string,
-    shopping_list_id: string,
-    ingredient_name: string,
-    ingredient_quantity: string | null,
-    ingredient_units: string | null,
-    ingredient_category: string | null,
-    ingredient_ismain: boolean | null,
-    source_type: "manual" | "recipe",
-    source_recipe_id: string | null,
-    source_recipe_name: string | null,
-    checked: boolean,
-  },
-  shopping_list_recipes: {
-    id: string,
-    shopping_list_id: string,
-    recipe_id: string | null, // null if NamedRecipe
-    recipe_name: string,
-  }
+shopping_lists: {
+  id: string,
+  date: number,  // rata_die format
+  status: "Active" | "Completed" | "Archived",
+  items: string,  // JSON stringified List(ShoppingListIngredient)
+  linked_recipes: string,  // JSON stringified List(PlannedRecipe)
+  linked_plan: number | null,  // rata_die format
 }
 ```
 
-### 2.2 Database Functions (db.ts)
+> [!NOTE]
+> Unlike the original plan, we're storing items and recipes as JSON strings rather than separate tables. This is simpler for the current use case.
 
-- `do_save_shopping_list(list: ShoppingList)`
-- `do_retrieve_shopping_lists()`
-- `do_get_shopping_list_by_date(date: Int)`
-- `do_subscribe_to_shopping_list(callback, date: Int)`
-- `do_get_recipe_ingredients(recipe_id: String)`
-- `do_sync_plan_to_shopping_list(plan_date: Int, list_date: Int)`
+### 2.2 ✅ Database Functions ([db.ts](file:///home/ubuntu/projects/gleamstack/client/src/db.ts#L226-L290))
 
-## Phase 3: Routing Updates
+Implemented:
+- ✅ `do_save_shopping_list(listTuple)` - Upserts shopping list
+- ✅ `do_retrieve_shopping_list_summaries()` - Gets all lists with minimal fields
+- ✅ `do_get_shopping_list(date)` - Gets single list by date  
+- ✅ `do_subscribe_to_shopping_list_by_date(date, callback)` - Real-time subscription
 
-### 3.1 Add New Routes (app.gleam)
+Not needed (simpler approach):
+- ❌ ~~`do_get_recipe_ingredients(recipe_id)`~~ - Will be handled differently
+- ❌ ~~`do_sync_plan_to_shopping_list(plan_date, list_date)`~~ - Will be client-side logic
+
+## Phase 3: Routing Updates ✅ COMPLETE
+
+> Routing for shopping lists is already implemented in [`app.gleam`](file:///home/ubuntu/projects/gleamstack/client/src/app.gleam#L96-L107).
+
+### 3.1 ✅ Routes Defined
 
 ```gleam
 pub type Route {
   // ... existing routes
-  ViewShoppingList  // List all shopping lists
-  ViewShoppingListDetail(date: date.Date)  // View single list by date
-  EditShoppingList(date: date.Date)  // Edit single list by date
+  ViewShoppingLists  // ✅ List all shopping lists
+  ViewShoppingList(date: date.Date)  // ✅ View single list by date
+  // EditShoppingList route not defined yet - edit is handled inline
 }
 ```
 
-### 3.2 Update on_route_change Function
+### 3.2 ✅ Route Parsing ([app.gleam:528-535](file:///home/ubuntu/projects/gleamstack/client/src/app.gleam#L528-L535))
 
 ```gleam
-_, ["shopping-list"] -> OnRouteChange(ViewShoppingList)
+_, ["shopping-list"] -> OnRouteChange(ViewShoppingLists)
 _, ["shopping-list", date_str] ->
-  OnRouteChange(ViewShoppingListDetail(parse_date_or_today(date_str)))
-_, ["shopping-list", date_str, "edit"] ->
-  OnRouteChange(EditShoppingList(parse_date_or_today(date_str)))
-```
+  OnRouteChange(
+    ViewShoppingList(result.unwrap(
+      date.from_iso_string(date_str),
+      date.today(),
+    )),
+  )
+// Note: No separate edit route - editing will be inline on detail view
 
 ## Phase 4: Shopping List Views
 
@@ -378,72 +394,63 @@ pub type PlannerMsg {
 }
 ```
 
-## Phase 8: Implementation Order
+## Implementation Order (UPDATED)
 
-1. **Phase 1: Type Updates** (1-2 hours)
+### Current Status Summary
 
-   - Add PlannedRecipe type
-   - Update PlannedMealWithStatus
-   - Add ingredient source tracking types
-   - Update all type references
+**✅ Completed (0-2 hours remaining adjustments)**
+1. Phase 1: Type System - All types defined and working
+2. Phase 2: Database Schema - CRUD operations functional  
+3. Phase 3: Routing - Routes defined and parsing works
 
-2. **Phase 2: Database Schema** (2-3 hours)
+**🚧 In Progress - Needs Enhancement (8-12 hours)**
+4. Phase 4: Shopping List Views
+   - ✅ Basic list view exists
+   - 🚧 **Need**: Status toggle buttons (2 hours)
+   - 🚧 **Need**: Better UI styling (1 hour)
+   - 🚧 **Need**: Enhanced detail view with linked recipes display (2 hours)
+   - 🚧 **Need**: Full edit view implementation (3-4 hours)
 
-   - Define InstantDB schema
-   - Implement database functions
-   - Test database operations
+**❌ Not Started (10-14 hours)**
+5. Phase 5: Recipe Management Features
+   - Add typeahead for recipe lookup (3 hours)
+   - Add "Add ingredients from recipe" functionality (3-4 hours)
+   - Handle manual ingredient entries (2 hours)
 
-3. **Phase 3: Planner Migration** (3-4 hours)
+6. Phase 6: Plan-Shopping List Integration
+   - Add "Create from Plan" button to planner (1 hour)
+   - Implement create from plan flow (2 hours)
+   - Implement link existing list to plan (2 hours)
+   - Implement bidirectional sync logic (2-3 hours)
 
-   - Update planner to use PlannedRecipe
-   - Update encoders/decoders
-   - Update all view and update functions
-   - Test planner still works
+### Recommended Implementation Order
 
-4. **Phase 4: Routing** (1 hour)
+**Sprint 1: Enhanced Views (8-12 hours)**
+1. Improve list view with status toggles and better UI → [`shoppinglist.gleam: view_all_shopping_lists`](file:///home/ubuntu/projects/gleamstack/client/src/domains/shoppinglist.gleam#L277-L337)
+2. Enhance detail view to show grouped ingredients → [`shoppinglist.gleam: view_shopping_list_detail`](file:///home/ubuntu/projects/gleamstack/client/src/domains/shoppinglist.gleam#L401-L518)
+3. Implement full edit view with forms → [`shoppinglist.gleam: edit_shopping_list`](file:///home/ubuntu/projects/gleamstack/client/src/domains/shoppinglist.gleam#L567-L601)
 
-   - Add new routes
-   - Update route parsing
-   - Update navigation
+**Sprint 2: Recipe Features (8-10 hours)**
+4. Add recipe typeahead lookup (reuse existing typeahead component)
+5. Implement "add ingredients from recipe" functionality
+6. Add manual ingredient entry forms
+7. Test ingredient management flows
 
-5. **Phase 5: Shopping List List View** (2-3 hours)
+**Sprint 3: Plan Integration (5-7 hours)**  
+8. Add "Create Shopping List from Plan" button to planner view
+9. Implement create from plan flow
+10. Implement link existing list to plan
 
-   - Implement view_all_shopping_lists
-   - Add status toggle functionality
-   - Add create new list button
-   - Test list display
+**Sprint 4: Sync & Polish (2-3 hours)**
+11. Implement bidirectional sync
+12. Add UI feedback for sync actions
+13. Test complete workflows
+14. Fix any edge cases
 
-6. **Phase 6: Shopping List Detail View** (2-3 hours)
+**Total Estimated Remaining Time: 23-32 hours**
 
-   - Implement view_shopping_list_detail
-   - Display linked recipes and ingredients
-   - Add ingredient checkboxes
-   - Test detail view
-
-7. **Phase 7: Shopping List Edit View** (4-5 hours)
-
-   - Implement edit_shopping_list
-   - Add manual recipe entry
-   - Add recipe lookup with typeahead
-   - Add ingredient management
-   - Add "add ingredients from recipe" functionality
-   - Test edit operations
-
-8. **Phase 8: Plan-Shopping List Integration** (3-4 hours)
-
-   - Add "Create from Plan" button to planner
-   - Implement create from plan flow
-   - Implement link existing list to plan
-   - Implement bidirectional sync
-   - Test integration
-
-9. **Phase 9: Testing** (2-3 hours)
-   - Write unit tests for update functions
-   - Write snapshot tests for views
-   - Test sync functionality
-   - Test edge cases
-
-**Total Estimated Time: 20-28 hours**
+> [!NOTE]
+> Original estimate was 20-28 hours. With types, database, and routing complete, we've saved ~5-7 hours, leaving 15-21 hours baseline + ~8 hours for discovered complexity.
 
 ## Phase 9: Testing Strategy
 

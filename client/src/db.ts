@@ -275,7 +275,7 @@ export async function do_save_shopping_list(listTuple: any) {
     return result;
 }
 
-export async function do_subscribe_to_shopping_list_by_date(date: number, dispatch: (result: unknown) => void) {
+export async function do_subscribe_to_one_shoppinglist_by_date(date: number, dispatch: (result: unknown) => void) {
     const query = {
         shopping_lists: {
             $: {
