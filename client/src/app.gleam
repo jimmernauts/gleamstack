@@ -54,7 +54,12 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         start_date: date.floor(date.today(), date.Monday),
       ),
       db_subscriptions: dict.from_list([]),
-      shoppinglist: shoppinglist.ShoppingListModel(all_lists: [], current: None),
+      shoppinglist: shoppinglist.ShoppingListModel(
+        all_lists: [],
+        current: None,
+        is_editing: False,
+        new_item_name: "",
+      ),
       settings: settings.SettingsModel(api_key: None),
       upload: upload.UploadModel(
         status: upload.NotStarted,
@@ -261,9 +266,12 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         )
       }
     }
-    OnRouteChange(ViewShoppingLists) -> #(
-      Model(..model, current_route: ViewShoppingLists),
-      effect.map(shoppinglist.retrieve_shopping_list_summaries(), ShoppingList),
+    OnRouteChange(ViewShoppingList(date: list_date)) -> #(
+      Model(..model, current_route: ViewShoppingList(date: list_date)),
+      effect.map(
+        shoppinglist.subscribe_to_one_shoppinglist_by_date(list_date),
+        ShoppingList,
+      ),
     )
     OnRouteChange(route) -> #(
       Model(..model, current_route: route, current_recipe: None),
@@ -404,6 +412,17 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(settings_effect, Settings),
       )
     }
+    ShoppingList(shoppinglist.ShoppingListSubscriptionOpened(date, callback)) -> #(
+      Model(
+        ..model,
+        db_subscriptions: dict.upsert(
+          in: model.db_subscriptions,
+          update: date.to_iso_string(date),
+          with: fn(_) { callback },
+        ),
+      ),
+      effect.none(),
+    )
     ShoppingList(shoppinglist_msg) -> {
       let #(child_model, child_effect) =
         shoppinglist.shopping_list_update(model.shoppinglist, shoppinglist_msg)
@@ -482,6 +501,28 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           {
             let _ =
               dict.get(model.db_subscriptions, date.to_iso_string(start_date))
+              |> result.map(fn(a) { a() })
+            step1.1
+          },
+        )
+        _, _ -> #(step1.0, step1.1)
+      }
+    }
+    ViewShoppingList(date) -> {
+      case msg, dict.get(model.db_subscriptions, date.to_iso_string(date)) {
+        OnRouteChange(ViewShoppingList(_date)), _ -> #(step1.0, step1.1)
+        OnRouteChange(_), Ok(_) -> #(
+          Model(
+            ..step1.0,
+            db_subscriptions: dict.drop(model.db_subscriptions, [
+              date.to_iso_string(date),
+            ]),
+          ),
+          {
+            // retrieve the subscription callback from the model
+            // and call it to unsubscribe
+            let _ =
+              dict.get(model.db_subscriptions, date.to_iso_string(date))
               |> result.map(fn(a) { a() })
             step1.1
           },

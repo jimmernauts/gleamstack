@@ -35,12 +35,17 @@ pub type ShoppingListMsg {
   DbRetrievedListSummaries(List(ShoppingList))
   DbSubscribedOneList(Dynamic)
   DbRetrievedOneList(ShoppingList)
+  UserToggledEditMode
+  UserUpdatedNewItemName(String)
+  UserSubmittedNewItem
 }
 
 pub type ShoppingListModel {
   ShoppingListModel(
     all_lists: List(ShoppingList),
     current: Option(ShoppingList),
+    is_editing: Bool,
+    new_item_name: String,
   )
 }
 
@@ -84,6 +89,46 @@ pub fn shopping_list_update(
     // SubscriptionOpened is handled in the layer above
     // Not sure if this is really a great pattern....
     ShoppingListSubscriptionOpened(_date, _callback) -> #(model, effect.none())
+    UserToggledEditMode -> #(
+      ShoppingListModel(..model, is_editing: !model.is_editing),
+      effect.none(),
+    )
+    UserUpdatedNewItemName(name) -> #(
+      ShoppingListModel(..model, new_item_name: name),
+      effect.none(),
+    )
+    UserSubmittedNewItem -> {
+      case model.current, model.new_item_name {
+        Some(list), name if name != "" -> {
+          let new_ingredient =
+            types.Ingredient(
+              name: Some(name),
+              quantity: None,
+              units: None,
+              category: None,
+              ismain: None,
+            )
+          let new_item =
+            ShoppingListIngredient(
+              ingredient: new_ingredient,
+              source: ManualEntry,
+              checked: False,
+            )
+          let updated_list =
+            ShoppingList(..list, items: [new_item, ..list.items])
+          do_save_shopping_list(updated_list)
+          #(
+            ShoppingListModel(
+              ..model,
+              current: Some(updated_list),
+              new_item_name: "",
+            ),
+            effect.none(),
+          )
+        }
+        _, _ -> #(model, effect.none())
+      }
+    }
     UserCreatedList(list_date) -> {
       let new_list =
         ShoppingList(
@@ -99,6 +144,8 @@ pub fn shopping_list_update(
         ShoppingListModel(
           all_lists: [new_list, ..model.all_lists],
           current: Some(new_list),
+          is_editing: False,
+          new_item_name: "",
         ),
         effect.none(),
       )
@@ -173,6 +220,8 @@ pub fn shopping_list_update(
           |> list.filter(fn(x) { x.status == Active })
           |> list.first
           |> option.from_result,
+        is_editing: False,
+        new_item_name: "",
       ),
       effect.none(),
     )
@@ -201,6 +250,8 @@ pub fn shopping_list_update(
       ShoppingListModel(
         all_lists: [list, ..model.all_lists],
         current: Some(list),
+        is_editing: False,
+        new_item_name: "",
       ),
       effect.none(),
     )
@@ -408,7 +459,7 @@ pub fn view_shopping_list_detail(
     |> list.find(fn(l) { l.date == list_date })
 
   case maybe_list {
-    Ok(list) -> view_existing_list(list, list_date)
+    Ok(list) -> view_existing_list(model, list, list_date)
     Error(_) -> view_create_list_prompt(list_date)
   }
 }
@@ -454,6 +505,7 @@ fn view_create_list_prompt(list_date: date.Date) -> Element(ShoppingListMsg) {
 }
 
 fn view_existing_list(
+  model: ShoppingListModel,
   list: ShoppingList,
   list_date: date.Date,
 ) -> Element(ShoppingListMsg) {
@@ -469,50 +521,125 @@ fn view_existing_list(
         "underline-purple col-span-full md:col-span-11",
       ),
       div([class("col-span-full flex flex-col gap-4 overflow-y-auto p-4")], [
-        // Status badge
-        div([class("flex items-center gap-2")], [
-          text("Status: "),
-          span(
+        // Status badge and Edit Toggle
+        div([class("flex items-center justify-between")], [
+          div([class("flex items-center gap-2")], [
+            text("Status: "),
+            span(
+              [
+                class(case list.status {
+                  Active -> "px-2 py-1 bg-green-100 text-green-800 rounded"
+                  Completed -> "px-2 py-1 bg-blue-100 text-blue-800 rounded"
+                  Archived -> "px-2 py-1 bg-gray-100 text-gray-800 rounded"
+                }),
+              ],
+              [
+                text(case list.status {
+                  Active -> "Active"
+                  Completed -> "Completed"
+                  Archived -> "Archived"
+                }),
+              ],
+            ),
+          ]),
+          button(
             [
-              class(case list.status {
-                Active -> "px-2 py-1 bg-green-100 text-green-800 rounded"
-                Completed -> "px-2 py-1 bg-blue-100 text-blue-800 rounded"
-                Archived -> "px-2 py-1 bg-gray-100 text-gray-800 rounded"
-              }),
+              class("text-blue-600 hover:underline"),
+              event.on_click(UserToggledEditMode),
             ],
             [
-              text(case list.status {
-                Active -> "Active"
-                Completed -> "Completed"
-                Archived -> "Archived"
+              text(case model.is_editing {
+                True -> "Done"
+                False -> "Edit"
               }),
             ],
           ),
         ]),
         // Items list
-        case list.items {
-          [] ->
-            div([class("text-gray-500 italic")], [
-              text("No items yet. Click Edit to add items."),
-            ])
-          items ->
-            div(
-              [class("flex flex-col gap-2")],
-              list.index_map(items, view_shopping_list_item),
-            )
+        case model.is_editing {
+          True -> view_edit_list_items(model, list)
+          False -> view_read_only_list_items(list)
         },
       ]),
       nav_footer([
         a([href("/"), class("text-center")], [text("🏠")]),
         a([href("/shopping-list"), class("text-center")], [text("📋")]),
-        a(
-          [
-            href("/shopping-list/" <> date.to_iso_string(list_date) <> "/edit"),
-            class("text-center"),
-          ],
-          [text("✏️")],
-        ),
       ]),
+    ],
+  )
+}
+
+fn view_read_only_list_items(list: ShoppingList) -> Element(ShoppingListMsg) {
+  case list.items {
+    [] ->
+      div([class("text-gray-500 italic")], [
+        text("No items yet. Click Edit to add items."),
+      ])
+    items ->
+      div(
+        [class("flex flex-col gap-2")],
+        list.index_map(items, view_shopping_list_item),
+      )
+  }
+}
+
+fn view_edit_list_items(
+  model: ShoppingListModel,
+  list: ShoppingList,
+) -> Element(ShoppingListMsg) {
+  div([class("flex flex-col gap-4")], [
+    div(
+      [class("flex flex-col gap-2")],
+      list.index_map(list.items, view_edit_shopping_list_item),
+    ),
+    div([class("flex gap-2")], [
+      input([
+        attribute.type_("text"),
+        attribute.placeholder("Add item..."),
+        attribute.value(model.new_item_name),
+        event.on_input(UserUpdatedNewItemName),
+        class("flex-1 p-2 border border-gray-300 rounded"),
+      ]),
+      button(
+        [
+          class(
+            "px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700",
+          ),
+          event.on_click(UserSubmittedNewItem),
+        ],
+        [text("Add")],
+      ),
+    ]),
+  ])
+}
+
+fn view_edit_shopping_list_item(
+  item: ShoppingListIngredient,
+  index: Int,
+) -> Element(ShoppingListMsg) {
+  div(
+    [
+      class(
+        "flex items-center gap-3 p-3 border border-gray-200 rounded bg-white",
+      ),
+    ],
+    [
+      input([
+        attribute.type_("checkbox"),
+        attribute.checked(item.checked),
+        event.on_check(fn(_) { UserToggledItemChecked(index) }),
+        class("w-5 h-5"),
+      ]),
+      div([class("flex-1")], [
+        text(option.unwrap(item.ingredient.name, "Unknown")),
+      ]),
+      button(
+        [
+          class("text-red-600 hover:text-red-800"),
+          event.on_click(UserRemovedIngredient(index)),
+        ],
+        [text("🗑️")],
+      ),
     ],
   )
 }

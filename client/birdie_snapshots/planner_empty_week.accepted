@@ -14,7 +14,7 @@ test_name: planner_integration_tests
   <section class="grid grid-cols-12 h-env-screen col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2">
     <div class="mt-2 flex col-start-1 text-6xl underline-orange col-span-full md:col-span-11">
       <h1 class="min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
-        Week of November 10
+        Week of November 17
       </h1>
     </div>
     <section class="mb-2 text-sm p-1
@@ -38,25 +38,25 @@ test_name: planner_integration_tests
         </div>
       </div>
       <div class="md:col-start-2 md:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortMon) before:sm:content-(--longMon)" style="--shortMon:&#39;Mon 10&#39;;--longMon:&#39;Monday 10&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortMon) before:sm:content-(--longMon)" style="--shortMon:&#39;Mon 17&#39;;--longMon:&#39;Monday 17&#39;;"></h2>
       </div>
       <div class="md:col-start-3 md:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortTue) before:sm:content-(--longTue)" style="--shortTue:&#39;Tue 11&#39;;--longTue:&#39;Tuesday 11&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortTue) before:sm:content-(--longTue)" style="--shortTue:&#39;Tue 18&#39;;--longTue:&#39;Tuesday 18&#39;;"></h2>
       </div>
       <div class="md:col-start-4 md:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortWed) before:sm:content-(--longWed)" style="--shortWed:&#39;Wed 12&#39;;--longWed:&#39;Wednesday 12&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortWed) before:sm:content-(--longWed)" style="--shortWed:&#39;Wed 19&#39;;--longWed:&#39;Wednesday 19&#39;;"></h2>
       </div>
       <div class="md:col-start-5 md:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortThu) before:sm:content-(--longThu)" style="--shortThu:&#39;Thu 13&#39;;--longThu:&#39;Thursday 13&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortThu) before:sm:content-(--longThu)" style="--shortThu:&#39;Thu 20&#39;;--longThu:&#39;Thursday 20&#39;;"></h2>
       </div>
       <div class="md:col-start-6 md:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortFri) before:sm:content-(--longFri)" style="--shortFri:&#39;Fri 14&#39;;--longFri:&#39;Friday 14&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortFri) before:sm:content-(--longFri)" style="--shortFri:&#39;Fri 21&#39;;--longFri:&#39;Friday 21&#39;;"></h2>
       </div>
       <div class="md:col-start-7 md:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortSat) before:sm:content-(--longSat)" style="--shortSat:&#39;Sat 15&#39;;--longSat:&#39;Saturday 15&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortSat) before:sm:content-(--longSat)" style="--shortSat:&#39;Sat 22&#39;;--longSat:&#39;Saturday 22&#39;;"></h2>
       </div>
       <div class="md:col-start-8 md:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortSun) before:sm:content-(--longSun)" style="--shortSun:&#39;Sun 16&#39;;--longSun:&#39;Sunday 16&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortSun) before:sm:content-(--longSun)" style="--shortSun:&#39;Sun 23&#39;;--longSun:&#39;Sunday 23&#39;;"></h2>
       </div>
       <div class="flex outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
@@ -147,13 +147,13 @@ test_name: planner_integration_tests
       <a class="text-center" href="/">
         🏠
       </a>
-      <a class="text-center" href="/planner/edit?date=2025-11-10">
+      <a class="text-center" href="/planner/edit?date=2025-11-17">
         ✏️
       </a>
-      <a class="text-center" href="/planner?date=2025-11-03">
+      <a class="text-center" href="/planner?date=2025-11-10">
         ⬅️
       </a>
-      <a class="text-center" href="/planner?date=2025-11-17">
+      <a class="text-center" href="/planner?date=2025-11-24">
         ➡️
       </a>
     </nav>
