@@ -1,11 +1,3 @@
-/////////////////////////
-//// 
-//// 
-//// WIP
-//// Persistence doesn't work
-//// Need to fetch data in route handler
-//// Need to model more closely on the recipe view/edit page
-
 import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import gleam/dynamic/decode.{type Decoder, type Dynamic}
@@ -15,11 +7,17 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import lustre/attribute.{class, href}
+import glearray.{type Array}
+import lib/utils
+import lustre/attribute.{
+  attribute, class, href, id, name, placeholder, type_, value,
+}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/element/html.{a, button, div, h2, h3, input, section, span, text}
-import lustre/event
+import lustre/element/html.{
+  a, button, div, h2, h3, input, label, section, span, text, textarea,
+}
+import lustre/event.{on_click, on_input}
 import rada/date
 import shared/codecs
 import shared/types
@@ -28,17 +26,16 @@ import shared/types
 
 pub type ShoppingListMsg {
   UserCreatedList(date.Date)
-  UserAddedIngredient(types.Ingredient)
-  UserRemovedIngredient(Int)
-  UserToggledItemChecked(Int)
+  UserRemovedIngredientAtIndex(Int)
+  UserAddedIngredientAtIndex(Int)
+  UserUpdatedIngredientNameAtIndex(Int, String)
+  UserToggledItemCheckedAtIndex(Int)
+  UserDeletedList(ShoppingList)
   ShoppingListSubscriptionOpened(date.Date, fn() -> Nil)
+  DbSubscribedListSummaries(Dynamic)
   DbRetrievedListSummaries(List(ShoppingList))
   DbSubscribedOneList(Dynamic)
   DbRetrievedOneList(ShoppingList)
-  UserToggledEditMode
-  UserUpdatedNewItemName(String)
-  UserSubmittedNewItem
-  UserDeletedList(ShoppingList)
 }
 
 pub type ShoppingListModel {
@@ -65,7 +62,7 @@ pub type ShoppingListIngredient {
 pub type ShoppingList {
   ShoppingList(
     id: Option(String),
-    items: List(ShoppingListIngredient),
+    items: Array(ShoppingListIngredient),
     status: Status,
     date: date.Date,
     linked_recipes: List(types.PlannedRecipe),
@@ -89,48 +86,11 @@ pub fn shopping_list_update(
     // SubscriptionOpened is handled in the layer above
     // Not sure if this is really a great pattern....
     ShoppingListSubscriptionOpened(_date, _callback) -> #(model, effect.none())
-    UserToggledEditMode -> #(model, effect.none())
-    UserUpdatedNewItemName(name) -> #(
-      ShoppingListModel(..model, new_item_name: name),
-      effect.none(),
-    )
-    UserSubmittedNewItem -> {
-      case model.current, model.new_item_name {
-        Some(list), name if name != "" -> {
-          let new_ingredient =
-            types.Ingredient(
-              name: Some(name),
-              quantity: None,
-              units: None,
-              category: None,
-              ismain: None,
-            )
-          let new_item =
-            ShoppingListIngredient(
-              ingredient: new_ingredient,
-              source: ManualEntry,
-              checked: False,
-            )
-          let updated_list =
-            ShoppingList(..list, items: [new_item, ..list.items])
-          do_save_shopping_list(updated_list)
-          #(
-            ShoppingListModel(
-              ..model,
-              current: Some(updated_list),
-              new_item_name: "",
-            ),
-            effect.none(),
-          )
-        }
-        _, _ -> #(model, effect.none())
-      }
-    }
     UserCreatedList(list_date) -> {
       let new_list =
         ShoppingList(
           id: None,
-          items: [],
+          items: glearray.new(),
           status: Active,
           date: list_date,
           linked_recipes: [],
@@ -146,17 +106,28 @@ pub fn shopping_list_update(
         effect.none(),
       )
     }
-    UserAddedIngredient(ingredient) -> {
+    UserAddedIngredientAtIndex(index) -> {
       case model.current {
         Some(list) -> {
           let new_item =
             ShoppingListIngredient(
-              ingredient: ingredient,
+              ingredient: types.Ingredient(
+                name: None,
+                quantity: None,
+                units: None,
+                category: None,
+                ismain: None,
+              ),
               source: ManualEntry,
               checked: False,
             )
           let updated_list =
-            ShoppingList(..list, items: [new_item, ..list.items])
+            ShoppingList(
+              ..list,
+              items: list.items
+                |> glearray.copy_insert(index, new_item)
+                |> result.unwrap(list.items),
+            )
           do_save_shopping_list(updated_list)
           #(
             ShoppingListModel(..model, current: Some(updated_list)),
@@ -166,18 +137,10 @@ pub fn shopping_list_update(
         None -> #(model, effect.none())
       }
     }
-    UserRemovedIngredient(index) -> {
+    UserRemovedIngredientAtIndex(index) -> {
       case model.current {
         Some(list) -> {
-          let updated_items =
-            list.items
-            |> list.index_fold([], fn(acc, item, i) {
-              case i == index {
-                True -> acc
-                False -> [item, ..acc]
-              }
-            })
-            |> list.reverse
+          let updated_items = utils.remove_at_index(list.items, index)
           let updated_list = ShoppingList(..list, items: updated_items)
           do_save_shopping_list(updated_list)
           #(
@@ -188,17 +151,19 @@ pub fn shopping_list_update(
         None -> #(model, effect.none())
       }
     }
-    UserToggledItemChecked(index) -> {
+    UserToggledItemCheckedAtIndex(index) -> {
       case model.current {
         Some(list) -> {
           let updated_items =
             list.items
+            |> glearray.to_list
             |> list.index_map(fn(item, i) {
               case i == index {
                 True -> ShoppingListIngredient(..item, checked: !item.checked)
                 False -> item
               }
             })
+            |> glearray.from_list
           let updated_list = ShoppingList(..list, items: updated_items)
           do_save_shopping_list(updated_list)
           #(
@@ -208,6 +173,59 @@ pub fn shopping_list_update(
         }
         None -> #(model, effect.none())
       }
+    }
+    UserUpdatedIngredientNameAtIndex(index, name) -> {
+      case model.current {
+        Some(list) -> {
+          let updated_items =
+            list.items
+            |> glearray.to_list
+            |> list.index_map(fn(item, i) {
+              case i == index {
+                True ->
+                  ShoppingListIngredient(
+                    ..item,
+                    ingredient: types.Ingredient(
+                      name: Some(name),
+                      quantity: None,
+                      units: None,
+                      category: None,
+                      ismain: None,
+                    ),
+                  )
+                False -> item
+              }
+            })
+            |> glearray.from_list
+          let updated_list = ShoppingList(..list, items: updated_items)
+          do_save_shopping_list(updated_list)
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
+    }
+    DbSubscribedListSummaries(jsdata) -> {
+      let decoder = {
+        use data <- decode.subfield(
+          ["data", "shopping_lists"],
+          decode.list(shopping_list_summary_decoder()),
+        )
+        decode.success(data)
+      }
+      let try_decode = decode.run(jsdata, decoder)
+      let try_effect = case try_decode {
+        Ok(list) -> {
+          use dispatch <- effect.from
+          DbRetrievedListSummaries(list) |> dispatch
+        }
+        Error(e) -> {
+          effect.none()
+        }
+      }
+      #(model, try_effect)
     }
     DbRetrievedListSummaries(lists) -> #(
       ShoppingListModel(
@@ -281,6 +299,7 @@ fn do_save_shopping_list(list: ShoppingList) -> Nil {
       // Return a failing decoder for any other strings
     },
     list.items
+      |> glearray.to_list
       |> list.map(encode_shopping_list_ingredient)
       |> json.array(fn(x) { x })
       |> json.to_string,
@@ -296,15 +315,16 @@ fn do_save_shopping_list(list: ShoppingList) -> Nil {
   do_save_shopping_list_external(list_obj)
 }
 
-@external(javascript, ".././db.ts", "do_retrieve_shopping_list_summaries")
-fn do_retrieve_shopping_list_summaries() -> Promise(Dynamic)
+@external(javascript, ".././db.ts", "do_subscribe_to_shopping_list_summaries")
+fn do_subscribe_to_shopping_list_summaries(callback: fn(a) -> Nil) -> Nil
 
-pub fn retrieve_shopping_list_summaries() -> Effect(ShoppingListMsg) {
+pub fn subscribe_to_shopping_list_summaries() -> Effect(ShoppingListMsg) {
   use dispatch <- effect.from
-  do_retrieve_shopping_list_summaries()
-  |> promise.map(decode.run(_, decode.list(shopping_list_summary_decoder())))
-  |> promise.map(result.map(_, DbRetrievedListSummaries))
-  |> promise.tap(result.map(_, dispatch))
+  do_subscribe_to_shopping_list_summaries(fn(data) {
+    data
+    |> DbSubscribedListSummaries
+    |> dispatch
+  })
   Nil
 }
 
@@ -330,7 +350,6 @@ pub fn subscribe_to_one_shoppinglist_by_date(
 
 //-VIEW---------------------------------------------------------------
 
-// TODO: improve UI, hook up to Msg firing events
 pub fn view_all_shopping_lists(
   model: ShoppingListModel,
 ) -> Element(ShoppingListMsg) {
@@ -356,27 +375,6 @@ pub fn view_all_shopping_lists(
           class("col-span-full flex flex-col gap-4 overflow-y-auto p-4"),
         ],
         [
-          // Action buttons
-          div([class("flex gap-2 mb-4")], [
-            a(
-              [
-                href("/shopping-list/" <> date.to_iso_string(date.today())),
-                class(
-                  "px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700",
-                ),
-              ],
-              [text("+ New List")],
-            ),
-            a(
-              [
-                href("/planner"),
-                class(
-                  "px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700",
-                ),
-              ],
-              [text("Create from Plan")],
-            ),
-          ]),
           // Active lists
           view_shopping_list_group("Active Lists", active_lists),
           // Completed lists
@@ -387,6 +385,13 @@ pub fn view_all_shopping_lists(
       ),
       nav_footer([
         a([href("/"), class("text-center")], [text("🏠")]),
+        a(
+          [
+            href("/shopping-list/" <> date.to_iso_string(date.today())),
+            class("text-center"),
+          ],
+          [text("➕")],
+        ),
         a([href("/planner"), class("text-center")], [text("📅")]),
       ]),
     ],
@@ -411,8 +416,6 @@ fn view_shopping_list_group(
 }
 
 fn view_shopping_list_card(list: ShoppingList) -> Element(ShoppingListMsg) {
-  let item_count = list.items |> list.length
-  let recipe_count = list.linked_recipes |> list.length
   let date_str = date.to_iso_string(list.date)
 
   div(
@@ -443,14 +446,6 @@ fn view_shopping_list_card(list: ShoppingList) -> Element(ShoppingListMsg) {
           ),
         ]),
       ]),
-      div([class("text-sm text-gray-600")], [
-        text(
-          int.to_string(item_count)
-          <> " items • "
-          <> int.to_string(recipe_count)
-          <> " recipes",
-        ),
-      ]),
     ],
   )
 }
@@ -459,62 +454,21 @@ pub fn view_shopping_list_detail(
   model: ShoppingListModel,
   list_date: date.Date,
 ) -> Element(ShoppingListMsg) {
-  // Find list for this date or show create button
   let maybe_list =
     model.all_lists
     |> list.find(fn(l) { l.date == list_date })
-
-  case maybe_list {
-    Ok(list) -> view_existing_list(model, list, list_date)
-    Error(_) -> view_create_list_prompt(list_date)
+  let list = case maybe_list {
+    Ok(list) -> list
+    Error(_) ->
+      ShoppingList(
+        id: None,
+        date: list_date,
+        items: glearray.new(),
+        status: Active,
+        linked_plan: None,
+        linked_recipes: [],
+      )
   }
-}
-
-fn view_create_list_prompt(list_date: date.Date) -> Element(ShoppingListMsg) {
-  section(
-    [
-      class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
-      ),
-    ],
-    [
-      page_title(
-        "Shopping List - " <> date.to_iso_string(list_date),
-        "underline-purple col-span-full md:col-span-11",
-      ),
-      div(
-        [
-          class(
-            "col-span-full flex flex-col items-center justify-center gap-4 p-8",
-          ),
-        ],
-        [
-          text("No shopping list exists for this date."),
-          button(
-            [
-              attribute.type_("button"),
-              event.on_click(UserCreatedList(list_date)),
-              class(
-                "px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700",
-              ),
-            ],
-            [text("Create Shopping List")],
-          ),
-        ],
-      ),
-      nav_footer([
-        a([href("/"), class("text-center")], [text("🏠")]),
-        a([href("/shopping-list"), class("text-center")], [text("📋")]),
-      ]),
-    ],
-  )
-}
-
-fn view_existing_list(
-  model: ShoppingListModel,
-  list: ShoppingList,
-  list_date: date.Date,
-) -> Element(ShoppingListMsg) {
   section(
     [
       class(
@@ -549,8 +503,12 @@ fn view_existing_list(
             ),
           ]),
         ]),
-        // Items list
-        view_edit_list_items(model, list),
+        div([class("flex flex-col gap-4")], [
+          div(
+            [class("flex flex-col gap-2")],
+            list.index_map(list.items |> glearray.to_list, shopping_list_item),
+          ),
+        ]),
       ]),
       nav_footer([
         a([href("/"), class("text-center")], [text("🏠")]),
@@ -560,88 +518,32 @@ fn view_existing_list(
   )
 }
 
-fn view_edit_list_items(
-  model: ShoppingListModel,
-  list: ShoppingList,
-) -> Element(ShoppingListMsg) {
-  div([class("flex flex-col gap-4")], [
-    div(
-      [class("flex flex-col gap-2")],
-      list.index_map(list.items, view_edit_shopping_list_item),
-    ),
-    div([class("flex gap-2")], [
-      input([
-        attribute.type_("text"),
-        attribute.placeholder("Add item..."),
-        attribute.value(model.new_item_name),
-        event.on_input(UserUpdatedNewItemName),
-        class(
-          "flex-1 p-2 border border-ecru-white-950 bg-ecru-white-100 rounded",
-        ),
-      ]),
-      button(
-        [
-          class(
-            "px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700",
-          ),
-          event.on_click(UserSubmittedNewItem),
-        ],
-        [text("Add")],
-      ),
+fn shopping_list_item(item: ShoppingListIngredient, index: Int) {
+  div([class("flex w-full items-baseline col-span-full px-1 mb-1 text-base")], [
+    html.label([class("font-mono text-sm")], [
+      text(index + 1 |> int.to_string <> "."),
     ]),
-  ])
-}
-
-fn view_edit_shopping_list_item(
-  item: ShoppingListIngredient,
-  index: Int,
-) -> Element(ShoppingListMsg) {
-  div(
-    [
+    html.input([
+      attribute("aria-label", "Enter ingredient name"),
+      name("ingredient-name-" <> int.to_string(index)),
+      type_("text"),
+      placeholder("Ingredient"),
       class(
-        "flex items-center gap-3 p-3 border border-gray-200 rounded bg-white",
+        "text-base input-base max-w-[20ch] md:max-w-[34ch] input-focus bg-ecru-white-100",
       ),
-    ],
-    [
-      input([
-        attribute.type_("checkbox"),
-        attribute.checked(item.checked),
-        event.on_check(fn(_) { UserToggledItemChecked(index) }),
-        class("w-5 h-5"),
-      ]),
-      div([class("flex-1")], [
-        span(
-          [
-            class(case item.checked {
-              True -> "line-through text-gray-500"
-              False -> ""
-            }),
-          ],
-          [
-            text({
-              let name = option.unwrap(item.ingredient.name, "Unknown")
-              let quantity_text = case item.ingredient.quantity {
-                Some(q) -> " - " <> q
-                None -> ""
-              }
-              let units_text = case item.ingredient.units {
-                Some(u) -> " " <> u
-                None -> ""
-              }
-              name <> quantity_text <> units_text
-            }),
-          ],
-        ),
-      ]),
-      button(
-        [
-          class("text-red-600 hover:text-red-800"),
-          event.on_click(UserRemovedIngredient(index)),
-        ],
-        [text("🗑️")],
-      ),
-    ],
-  )
+      value(item.ingredient.name |> option.unwrap("")),
+      on_input(UserUpdatedIngredientNameAtIndex(index, _)),
+    ]),
+    button(
+      [
+        class("text-ecru-white-950 text-xs cursor-pointer"),
+        type_("button"),
+        id("remove-ingredient-input"),
+        on_click(UserRemovedIngredientAtIndex(index)),
+      ],
+      [text("➖")],
+    ),
+  ])
 }
 
 //-DECODER------------------------------------------------------------
@@ -691,7 +593,7 @@ pub fn shopping_list_decoder() -> Decoder(ShoppingList) {
   decode.success(
     ShoppingList(
       id: id,
-      items: items,
+      items: glearray.from_list(items),
       status: status,
       date: date.from_rata_die(date),
       linked_recipes: linked_recipes,
@@ -709,7 +611,7 @@ fn shopping_list_summary_decoder() -> Decoder(ShoppingList) {
   use date <- decode.field("date", decode.int)
   decode.success(ShoppingList(
     id: id,
-    items: [],
+    items: glearray.new(),
     status: status,
     date: date.from_rata_die(date),
     linked_recipes: [],
@@ -777,6 +679,7 @@ pub fn encode_shopping_list(list: ShoppingList) -> Json {
       "items",
       json.string(
         list.items
+        |> glearray.to_list
         |> list.map(encode_shopping_list_ingredient)
         |> json.array(fn(x) { x })
         |> json.to_string,

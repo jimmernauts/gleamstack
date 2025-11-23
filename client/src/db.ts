@@ -225,7 +225,7 @@ export async function do_save_settings(api_key: string) {
 
 // SHOPPING LIST
 
-export async function do_retrieve_shopping_list_summaries() {
+export function do_subscribe_to_shopping_list_summaries(dispatch: (result: unknown) => void) {
     const query = {
         shopping_lists: {
             $: {
@@ -237,8 +237,8 @@ export async function do_retrieve_shopping_list_summaries() {
             },
         },
     };
-    const result = await db.queryOnce(query);
-    return result.data.shopping_lists;
+    const result = db.subscribeQuery(query,dispatch);
+    return result;
 }
 
 export async function do_get_shopping_list(date: number) {

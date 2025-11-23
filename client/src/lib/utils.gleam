@@ -5,6 +5,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/pair
 import gleam/regexp
 import gleam/result
+import glearray.{type Array}
 import justin
 import lustre/effect.{type Effect}
 import plinth/javascript/global.{set_timeout}
@@ -44,6 +45,12 @@ pub fn list_at(list: List(a), n: Int) -> Option(a) {
     [_x, ..xs] -> list_at(xs, n - 1)
   }
 }
+
+/// Remove the element at the given index from the array.
+///
+/// If the index is out of bounds, the array is returned unchanged.
+@external(javascript, "utils.mjs", "removeAtIndex")
+pub fn remove_at_index(list: Array(a), index: Int) -> Array(a)
 
 /// Update child view of a given view.
 ///
