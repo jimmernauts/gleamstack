@@ -53,11 +53,10 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         recipe_list: [],
         start_date: date.floor(date.today(), date.Monday),
       ),
-      db_subscriptions: dict.from_list([]),
+      db_subscriptions: dict.new(),
       shoppinglist: shoppinglist.ShoppingListModel(
-        all_lists: [],
+        all_lists: dict.new(),
         current: None,
-        new_item_name: "",
       ),
       settings: settings.SettingsModel(api_key: None),
       upload: upload.UploadModel(
@@ -272,13 +271,26 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         ShoppingList,
       ),
     )
-    OnRouteChange(ViewShoppingList(date: list_date)) -> #(
-      Model(..model, current_route: ViewShoppingList(date: list_date)),
-      effect.map(
-        shoppinglist.subscribe_to_one_shoppinglist_by_date(list_date),
-        ShoppingList,
-      ),
-    )
+    OnRouteChange(ViewShoppingList(date: list_date)) -> {
+      let find_list =
+        model.shoppinglist.all_lists
+        |> dict.get(list_date)
+        |> option.from_result
+      #(
+        Model(
+          ..model,
+          current_route: ViewShoppingList(date: list_date),
+          shoppinglist: shoppinglist.ShoppingListModel(
+            ..model.shoppinglist,
+            current: find_list,
+          ),
+        ),
+        effect.map(
+          shoppinglist.subscribe_to_one_shoppinglist_by_date(list_date),
+          ShoppingList,
+        ),
+      )
+    }
     OnRouteChange(route) -> #(
       Model(..model, current_route: route, current_recipe: None),
       effect.none(),
@@ -643,7 +655,7 @@ fn view(model: Model) -> Element(Msg) {
       )
     ViewShoppingList(date: list_date) ->
       element.map(
-        shoppinglist.view_shopping_list_detail(model.shoppinglist, list_date),
+        shoppinglist.view_shopping_list_detail(model.shoppinglist.current),
         ShoppingList,
       )
     ViewUpload -> element.map(upload.view_upload(model.upload), Upload)

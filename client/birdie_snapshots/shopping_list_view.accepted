@@ -1,8 +1,6 @@
 ---
 version: 1.4.1
 title: shopping_list_view
-file: ./test/integration/shopping_list_test.gleam
-test_name: shopping_list_workflow_tests
 ---
 <main class="h-env-screen grid ml-2 mr-2 gap-2
       2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90%_[main-end]_3fr_[full-end]_1fr_[end]]
@@ -14,7 +12,7 @@ test_name: shopping_list_workflow_tests
   <section class="grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2">
     <div class="mt-2 flex col-start-1 text-7xl underline-purple col-span-full md:col-span-11">
       <h1 class="min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
-        2025-11-20
+        2025-11-23
       </h1>
     </div>
     <div class="col-span-full flex flex-col gap-4 overflow-y-auto p-4">
@@ -28,12 +26,9 @@ test_name: shopping_list_workflow_tests
       </div>
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-2"></div>
-        <div class="flex gap-2">
-          <input class="flex-1 p-2 border border-ecru-white-950 bg-ecru-white-100 rounded" placeholder="Add item..." type="text" value>
-          <button class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
-            Add
-          </button>
-        </div>
+        <button class="w-full py-2 bg-ecru-white-200 hover:bg-ecru-white-300 rounded text-center text-sm font-medium text-ecru-white-950">
+          ➕ Add Item
+        </button>
       </div>
     </div>
     <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base  justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">

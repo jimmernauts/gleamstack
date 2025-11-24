@@ -1,5 +1,6 @@
 import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
+import gleam/dict.{type Dict}
 import gleam/dynamic/decode.{type Decoder, type Dynamic}
 import gleam/int
 import gleam/javascript/promise.{type Promise}
@@ -31,18 +32,18 @@ pub type ShoppingListMsg {
   UserUpdatedIngredientNameAtIndex(Int, String)
   UserToggledItemCheckedAtIndex(Int)
   UserDeletedList(ShoppingList)
+  UserSavedList
   ShoppingListSubscriptionOpened(date.Date, fn() -> Nil)
   DbSubscribedListSummaries(Dynamic)
-  DbRetrievedListSummaries(List(ShoppingList))
+  DbRetrievedListSummaries(Dict(date.Date, ShoppingList))
   DbSubscribedOneList(Dynamic)
   DbRetrievedOneList(ShoppingList)
 }
 
 pub type ShoppingListModel {
   ShoppingListModel(
-    all_lists: List(ShoppingList),
+    all_lists: Dict(date.Date, ShoppingList),
     current: Option(ShoppingList),
-    new_item_name: String,
   )
 }
 
@@ -82,6 +83,7 @@ pub fn shopping_list_update(
   model: ShoppingListModel,
   msg: ShoppingListMsg,
 ) -> #(ShoppingListModel, Effect(ShoppingListMsg)) {
+  echo model
   case msg {
     // SubscriptionOpened is handled in the layer above
     // Not sure if this is really a great pattern....
@@ -96,12 +98,12 @@ pub fn shopping_list_update(
           linked_recipes: [],
           linked_plan: None,
         )
-      do_save_shopping_list(new_list)
+      save_shopping_list(new_list)
       #(
         ShoppingListModel(
-          all_lists: [new_list, ..model.all_lists],
+          all_lists: model.all_lists
+            |> dict.upsert(list_date, fn(_old) { new_list }),
           current: Some(new_list),
-          new_item_name: "",
         ),
         effect.none(),
       )
@@ -128,7 +130,6 @@ pub fn shopping_list_update(
                 |> glearray.copy_insert(index, new_item)
                 |> result.unwrap(list.items),
             )
-          do_save_shopping_list(updated_list)
           #(
             ShoppingListModel(..model, current: Some(updated_list)),
             effect.none(),
@@ -142,7 +143,6 @@ pub fn shopping_list_update(
         Some(list) -> {
           let updated_items = utils.remove_at_index(list.items, index)
           let updated_list = ShoppingList(..list, items: updated_items)
-          do_save_shopping_list(updated_list)
           #(
             ShoppingListModel(..model, current: Some(updated_list)),
             effect.none(),
@@ -165,7 +165,6 @@ pub fn shopping_list_update(
             })
             |> glearray.from_list
           let updated_list = ShoppingList(..list, items: updated_items)
-          do_save_shopping_list(updated_list)
           #(
             ShoppingListModel(..model, current: Some(updated_list)),
             effect.none(),
@@ -198,11 +197,20 @@ pub fn shopping_list_update(
             })
             |> glearray.from_list
           let updated_list = ShoppingList(..list, items: updated_items)
-          do_save_shopping_list(updated_list)
+          echo updated_list
           #(
             ShoppingListModel(..model, current: Some(updated_list)),
             effect.none(),
           )
+        }
+        None -> #(model, effect.none())
+      }
+    }
+    UserSavedList -> {
+      case model.current {
+        Some(list) -> {
+          save_shopping_list(list)
+          #(ShoppingListModel(..model, current: Some(list)), effect.none())
         }
         None -> #(model, effect.none())
       }
@@ -217,9 +225,23 @@ pub fn shopping_list_update(
       }
       let try_decode = decode.run(jsdata, decoder)
       let try_effect = case try_decode {
-        Ok(list) -> {
+        Ok(list_of_lists) -> {
           use dispatch <- effect.from
-          DbRetrievedListSummaries(list) |> dispatch
+          let grouped =
+            list_of_lists
+            |> list.group(fn(x) { x.date })
+            |> dict.map_values(fn(k, v) {
+              list.first(v)
+              |> result.unwrap(ShoppingList(
+                id: None,
+                items: glearray.new(),
+                status: Active,
+                date: k,
+                linked_recipes: [],
+                linked_plan: None,
+              ))
+            })
+          DbRetrievedListSummaries(grouped) |> dispatch
         }
         Error(e) -> {
           effect.none()
@@ -228,14 +250,7 @@ pub fn shopping_list_update(
       #(model, try_effect)
     }
     DbRetrievedListSummaries(lists) -> #(
-      ShoppingListModel(
-        all_lists: lists,
-        current: lists
-          |> list.filter(fn(x) { x.status == Active })
-          |> list.first
-          |> option.from_result,
-        new_item_name: "",
-      ),
+      ShoppingListModel(all_lists: lists, current: model.current),
       effect.none(),
     )
     DbSubscribedOneList(jsdata) -> {
@@ -261,18 +276,19 @@ pub fn shopping_list_update(
     }
     DbRetrievedOneList(list) -> #(
       ShoppingListModel(
-        all_lists: [list, ..model.all_lists],
+        all_lists: dict.merge(
+          model.all_lists,
+          dict.from_list([#(list.date, list)]),
+        ),
         current: Some(list),
-        new_item_name: "",
       ),
       effect.none(),
     )
     UserDeletedList(list) -> {
-      let updated_lists =
-        list.filter(model.all_lists, fn(l) { l.id != list.id })
+      let updated_lists = dict.drop(model.all_lists, [list.date])
       do_delete_shopping_list(option.unwrap(list.id, ""))
       #(
-        ShoppingListModel(..model, all_lists: updated_lists, current: None),
+        ShoppingListModel(all_lists: updated_lists, current: None),
         effect.none(),
       )
     }
@@ -280,14 +296,12 @@ pub fn shopping_list_update(
 }
 
 @external(javascript, ".././db.ts", "do_save_shopping_list")
-fn do_save_shopping_list_external(
-  list_obj: #(Int, String, String, String, Int),
-) -> Nil
+fn do_save_shopping_list(list_obj: #(Int, String, String, String, Int)) -> Nil
 
 @external(javascript, ".././db.ts", "do_delete_shopping_list")
 fn do_delete_shopping_list(id: String) -> Nil
 
-fn do_save_shopping_list(list: ShoppingList) -> Nil {
+fn save_shopping_list(list: ShoppingList) -> Nil {
   // Convert to a plain object with proper types for TypeScript
   let list_obj = #(
     date.to_rata_die(list.date),
@@ -312,7 +326,7 @@ fn do_save_shopping_list(list: ShoppingList) -> Nil {
       None -> 0
     },
   )
-  do_save_shopping_list_external(list_obj)
+  do_save_shopping_list(list_obj)
 }
 
 @external(javascript, ".././db.ts", "do_subscribe_to_shopping_list_summaries")
@@ -353,11 +367,12 @@ pub fn subscribe_to_one_shoppinglist_by_date(
 pub fn view_all_shopping_lists(
   model: ShoppingListModel,
 ) -> Element(ShoppingListMsg) {
-  let active_lists = list.filter(model.all_lists, fn(l) { l.status == Active })
+  let active_lists =
+    dict.filter(model.all_lists, fn(k, v) { v.status == Active })
   let completed_lists =
-    list.filter(model.all_lists, fn(l) { l.status == Completed })
+    dict.filter(model.all_lists, fn(k, v) { v.status == Completed })
   let archived_lists =
-    list.filter(model.all_lists, fn(l) { l.status == Archived })
+    dict.filter(model.all_lists, fn(k, v) { v.status == Archived })
 
   section(
     [
@@ -376,11 +391,17 @@ pub fn view_all_shopping_lists(
         ],
         [
           // Active lists
-          view_shopping_list_group("Active Lists", active_lists),
+          view_shopping_list_group("Active Lists", active_lists |> dict.values),
           // Completed lists
-          view_shopping_list_group("Completed Lists", completed_lists),
+          view_shopping_list_group(
+            "Completed Lists",
+            completed_lists |> dict.values,
+          ),
           // Archived lists
-          view_shopping_list_group("Archived Lists", archived_lists),
+          view_shopping_list_group(
+            "Archived Lists",
+            archived_lists |> dict.values,
+          ),
         ],
       ),
       nav_footer([
@@ -451,18 +472,14 @@ fn view_shopping_list_card(list: ShoppingList) -> Element(ShoppingListMsg) {
 }
 
 pub fn view_shopping_list_detail(
-  model: ShoppingListModel,
-  list_date: date.Date,
+  current_list: Option(ShoppingList),
 ) -> Element(ShoppingListMsg) {
-  let maybe_list =
-    model.all_lists
-    |> list.find(fn(l) { l.date == list_date })
-  let list = case maybe_list {
-    Ok(list) -> list
-    Error(_) ->
+  let list = case current_list {
+    Some(list) -> list
+    None ->
       ShoppingList(
         id: None,
-        date: list_date,
+        date: date.today(),
         items: glearray.new(),
         status: Active,
         linked_plan: None,
@@ -477,7 +494,7 @@ pub fn view_shopping_list_detail(
     ],
     [
       page_title(
-        date.to_iso_string(list_date),
+        date.to_iso_string(list.date),
         "underline-purple col-span-full md:col-span-11",
       ),
       div([class("col-span-full flex flex-col gap-4 overflow-y-auto p-4")], [
@@ -508,10 +525,27 @@ pub fn view_shopping_list_detail(
             [class("flex flex-col gap-2")],
             list.index_map(list.items |> glearray.to_list, shopping_list_item),
           ),
+          button(
+            [
+              class(
+                "w-full py-2 bg-ecru-white-200 hover:bg-ecru-white-300 rounded text-center text-sm font-medium text-ecru-white-950",
+              ),
+              on_click(UserAddedIngredientAtIndex(glearray.length(list.items))),
+            ],
+            [text("➕ Add Item")],
+          ),
         ]),
       ]),
       nav_footer([
         a([href("/"), class("text-center")], [text("🏠")]),
+        button(
+          [
+            type_("button"),
+            class("text-center"),
+            on_click(UserSavedList),
+          ],
+          [text("💾")],
+        ),
         a([href("/shopping-list"), class("text-center")], [text("📋")]),
       ]),
     ],

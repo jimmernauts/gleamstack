@@ -49,7 +49,7 @@ pub fn list_at(list: List(a), n: Int) -> Option(a) {
 /// Remove the element at the given index from the array.
 ///
 /// If the index is out of bounds, the array is returned unchanged.
-@external(javascript, "utils.mjs", "removeAtIndex")
+@external(javascript, "./utils_ffi.mjs", "removeAtIndex")
 pub fn remove_at_index(list: Array(a), index: Int) -> Array(a)
 
 /// Update child view of a given view.

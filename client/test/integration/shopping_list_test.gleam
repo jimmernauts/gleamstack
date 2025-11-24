@@ -1,11 +1,12 @@
 import app.{OnRouteChange, ShoppingList, ViewShoppingList}
 import birdie
 import domains/shoppinglist.{
-  ShoppingListModel, UserCreatedList, UserDeletedList, UserSubmittedNewItem,
-  UserUpdatedNewItemName,
+  ShoppingListModel, UserAddedIngredientAtIndex, UserCreatedList,
+  UserDeletedList, UserUpdatedIngredientNameAtIndex,
 }
 import gleam/list
 import gleam/option.{None, Some}
+import glearray
 import lustre/dev/simulate
 import lustre/element
 import rada/date
@@ -75,8 +76,10 @@ pub fn shopping_list_workflow_tests() {
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
         |> simulate.message(ShoppingList(UserCreatedList(today)))
-        |> simulate.message(ShoppingList(UserUpdatedNewItemName("Milk")))
-        |> simulate.message(ShoppingList(UserSubmittedNewItem))
+        |> simulate.message(ShoppingList(UserAddedIngredientAtIndex(0)))
+        |> simulate.message(
+          ShoppingList(UserUpdatedIngredientNameAtIndex(0, "Milk")),
+        )
 
       let model = simulate.model(simulation)
       case model {
@@ -84,7 +87,7 @@ pub fn shopping_list_workflow_tests() {
           case current {
             Some(list) -> {
               list.items
-              |> list.length
+              |> glearray.length
               |> expect.to_equal(1)
             }
             None -> panic as "Expected shopping list to exist"
@@ -141,8 +144,10 @@ pub fn shopping_list_workflow_tests() {
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
         |> simulate.message(ShoppingList(UserCreatedList(today)))
-        |> simulate.message(ShoppingList(UserUpdatedNewItemName("Milk")))
-        |> simulate.message(ShoppingList(UserSubmittedNewItem))
+        |> simulate.message(ShoppingList(UserAddedIngredientAtIndex(0)))
+        |> simulate.message(
+          ShoppingList(UserUpdatedIngredientNameAtIndex(0, "Milk")),
+        )
 
       simulate.view(simulation)
       |> element.to_readable_string
