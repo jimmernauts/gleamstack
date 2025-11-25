@@ -161,7 +161,10 @@ pub fn planner_update(
     UserToggledMealComplete(date, meal, complete) -> {
       let result =
         toggle_meal_complete_in_plan(model.plan_week, date, meal, complete)
-      #(PlannerModel(..model, plan_week: result), save_plan(result))
+      #(PlannerModel(..model, plan_week: result), {
+        use dispatch <- effect.from
+        dispatch(UserSavedPlan)
+      })
     }
     UserSavedPlan -> {
       #(model, save_plan(model.plan_week))
@@ -874,7 +877,6 @@ fn planned_meals_decoder() -> decode.Decoder(List(PlannedMealWithStatus)) {
       _, _, Some(recipe_id) -> Some(recipe_id)
       _, _, _ -> None
     }
-    echo maybe_recipe
     decode.success(PlannedMealWithStatus(
       for: for,
       recipe: maybe_recipe,

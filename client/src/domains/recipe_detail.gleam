@@ -1266,7 +1266,7 @@ fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
       type_("text"),
       placeholder("Ingredient"),
       class(
-        "text-base input-base max-w-[20ch] md:max-w-[34ch] input-focus bg-ecru-white-100",
+        "text-base input-base w-[20ch] md:w-[34ch] input-focus bg-ecru-white-100",
       ),
       value(case ingredient {
         Some(ing) -> option.unwrap(ing.name, "")
@@ -1280,7 +1280,7 @@ fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
         name("ingredient-qty-" <> int.to_string(index)),
         type_("text"),
         placeholder("Qty"),
-        class("pt-0.5 max-w-[3ch] text-sm input-focus bg-ecru-white-100"),
+        class("pt-0.5 w-[3ch] text-sm input-focus bg-ecru-white-100"),
         value(case ingredient {
           Some(ing) -> option.unwrap(ing.quantity, "")
           _ -> ""
@@ -1292,7 +1292,7 @@ fn ingredient_input(index: Int, ingredient: Option(Ingredient)) {
         name("ingredient-units-" <> int.to_string(index)),
         type_("text"),
         placeholder("Units"),
-        class("pt-0.5 max-w-[3ch] text-sm mr-0 input-focus bg-ecru-white-100"),
+        class("pt-0.5 w-[3.5ch] text-sm mr-0 input-focus bg-ecru-white-100"),
         value(case ingredient {
           Some(ing) -> option.unwrap(ing.units, "")
           _ -> ""

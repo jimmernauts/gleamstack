@@ -12,6 +12,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import gleam/uri.{type Uri}
+import glearray
 import lustre
 import lustre/attribute.{class, href}
 import lustre/effect.{type Effect}
@@ -128,6 +129,7 @@ pub type Msg {
 // UPDATE ----------------------------------------------------------------------
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
+  echo msg
   // this is the main part of the update function
   let step1 = case msg {
     OnRouteChange(ViewRecipeList) -> #(
@@ -205,18 +207,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     )
     OnRouteChange(ViewPlanner(start_date)) -> #(
       Model(..model, current_route: ViewPlanner(start_date)),
-      effect.batch([
-        effect.map(
-          planner.subscribe_to_plan(date.floor(start_date, date.Monday)),
-          Planner,
-        ),
-        case list.length(model.recipes.recipes) {
-          // TODO: does this really need to get the whole list?
-          // maybe it should just get the summaries (or use the existing subscribe_to_summaries)
-          0 -> effect.map(recipe_list.get_recipes(), RecipeList)
-          _ -> effect.none()
-        },
-      ]),
+      effect.map(
+        planner.subscribe_to_plan(date.floor(start_date, date.Monday)),
+        Planner,
+      ),
     )
     OnRouteChange(EditPlanner(start_date)) -> #(
       Model(..model, current_route: EditPlanner(start_date)),
@@ -272,10 +266,34 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       ),
     )
     OnRouteChange(ViewShoppingList(date: list_date)) -> {
+      let default_list =
+        shoppinglist.ShoppingList(
+          id: None,
+          items: [
+            shoppinglist.ShoppingListIngredient(
+              ingredient: types.Ingredient(
+                name: None,
+                ismain: None,
+                quantity: None,
+                units: None,
+                category: None,
+              ),
+              source: shoppinglist.ManualEntry,
+              checked: False,
+            ),
+          ]
+            |> glearray.from_list(),
+          status: shoppinglist.Active,
+          date: list_date,
+          linked_recipes: [],
+          linked_plan: None,
+        )
       let find_list =
         model.shoppinglist.all_lists
         |> dict.get(list_date)
+        |> result.try_recover(fn(_) { Ok(default_list) })
         |> option.from_result
+
       #(
         Model(
           ..model,
@@ -381,11 +399,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           ..model,
           planner: planner.PlannerModel(..model.planner, start_date: date),
         ),
-        // TODO: Better handle navigating in response to the updated data
-        {
-          use dispatch <- effect.from
-          OnRouteChange(ViewPlanner(date)) |> dispatch
-        },
+        effect.none(),
       )
     }
     Planner(planner.DbRetrievedPlan(plan_week, start_date)) -> {

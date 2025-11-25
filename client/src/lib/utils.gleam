@@ -22,9 +22,8 @@ pub fn dict_update(
   let item =
     dict
     |> dict.get(key)
-    |> option.from_result
   case item {
-    Some(item) -> item |> fun |> dict.insert(dict, key, _)
+    Ok(item) -> item |> fun |> dict.insert(dict, key, _)
     _ -> dict
   }
 }

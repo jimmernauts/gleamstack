@@ -30,7 +30,12 @@ pub type ShoppingListMsg {
   UserRemovedIngredientAtIndex(Int)
   UserAddedIngredientAtIndex(Int)
   UserUpdatedIngredientNameAtIndex(Int, String)
+  UserUpdatedIngredientMainAtIndex(Int, Bool)
+  UserUpdatedIngredientQtyAtIndex(Int, String)
+  UserUpdatedIngredientUnitsAtIndex(Int, String)
   UserToggledItemCheckedAtIndex(Int)
+  UserMarkedCurrentListAsCompleted
+  UserMarkedCurrentListAsActive
   UserDeletedList(ShoppingList)
   UserSavedList
   ShoppingListSubscriptionOpened(date.Date, fn() -> Nil)
@@ -74,7 +79,32 @@ pub type ShoppingList {
 pub type Status {
   Active
   Completed
-  Archived
+}
+
+pub fn new_list(date: date.Date) -> ShoppingList {
+  ShoppingList(
+    id: None,
+    items: [new_ingredient()]
+      |> glearray.from_list,
+    status: Active,
+    date: date,
+    linked_recipes: [],
+    linked_plan: None,
+  )
+}
+
+pub fn new_ingredient() -> ShoppingListIngredient {
+  ShoppingListIngredient(
+    ingredient: types.Ingredient(
+      name: None,
+      quantity: None,
+      units: None,
+      category: None,
+      ismain: None,
+    ),
+    source: ManualEntry,
+    checked: False,
+  )
 }
 
 //-UPDATE-------------------------------------------------------------
@@ -89,21 +119,12 @@ pub fn shopping_list_update(
     // Not sure if this is really a great pattern....
     ShoppingListSubscriptionOpened(_date, _callback) -> #(model, effect.none())
     UserCreatedList(list_date) -> {
-      let new_list =
-        ShoppingList(
-          id: None,
-          items: glearray.new(),
-          status: Active,
-          date: list_date,
-          linked_recipes: [],
-          linked_plan: None,
-        )
-      save_shopping_list(new_list)
+      save_shopping_list(new_list(list_date))
       #(
         ShoppingListModel(
           all_lists: model.all_lists
-            |> dict.upsert(list_date, fn(_old) { new_list }),
-          current: Some(new_list),
+            |> dict.upsert(list_date, fn(_old) { new_list(list_date) }),
+          current: Some(new_list(list_date)),
         ),
         effect.none(),
       )
@@ -127,7 +148,7 @@ pub fn shopping_list_update(
             ShoppingList(
               ..list,
               items: list.items
-                |> glearray.copy_insert(index, new_item)
+                |> glearray.copy_insert(index + 1, new_item)
                 |> result.unwrap(list.items),
             )
           #(
@@ -198,6 +219,135 @@ pub fn shopping_list_update(
             |> glearray.from_list
           let updated_list = ShoppingList(..list, items: updated_items)
           echo updated_list
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
+    }
+    UserUpdatedIngredientMainAtIndex(index, ismain) -> {
+      case model.current {
+        Some(list) -> {
+          let updated_items =
+            list.items
+            |> glearray.to_list
+            |> list.index_map(fn(item, i) {
+              case i == index {
+                True ->
+                  ShoppingListIngredient(
+                    ..item,
+                    ingredient: types.Ingredient(
+                      name: item.ingredient.name,
+                      quantity: item.ingredient.quantity,
+                      units: item.ingredient.units,
+                      category: item.ingredient.category,
+                      ismain: Some(ismain),
+                    ),
+                  )
+                False -> item
+              }
+            })
+            |> glearray.from_list
+          let updated_list = ShoppingList(..list, items: updated_items)
+          echo updated_list
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
+    }
+    UserUpdatedIngredientQtyAtIndex(index, qty) -> {
+      case model.current {
+        Some(list) -> {
+          let updated_items =
+            list.items
+            |> glearray.to_list
+            |> list.index_map(fn(item, i) {
+              case i == index {
+                True ->
+                  ShoppingListIngredient(
+                    ..item,
+                    ingredient: types.Ingredient(
+                      name: item.ingredient.name,
+                      quantity: Some(qty),
+                      units: item.ingredient.units,
+                      category: item.ingredient.category,
+                      ismain: item.ingredient.ismain,
+                    ),
+                  )
+                False -> item
+              }
+            })
+            |> glearray.from_list
+          let updated_list = ShoppingList(..list, items: updated_items)
+          echo updated_list
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
+    }
+    UserUpdatedIngredientUnitsAtIndex(index, units) -> {
+      case model.current {
+        Some(list) -> {
+          let updated_items =
+            list.items
+            |> glearray.to_list
+            |> list.index_map(fn(item, i) {
+              case i == index {
+                True ->
+                  ShoppingListIngredient(
+                    ..item,
+                    ingredient: types.Ingredient(
+                      name: item.ingredient.name,
+                      quantity: item.ingredient.quantity,
+                      units: Some(units),
+                      category: item.ingredient.category,
+                      ismain: item.ingredient.ismain,
+                    ),
+                  )
+                False -> item
+              }
+            })
+            |> glearray.from_list
+          let updated_list = ShoppingList(..list, items: updated_items)
+          echo updated_list
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
+    }
+    UserMarkedCurrentListAsCompleted -> {
+      case model.current {
+        Some(list) -> {
+          let updated_list = ShoppingList(..list, status: Completed)
+          save_shopping_list(updated_list)
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
+    }
+    UserMarkedCurrentListAsActive -> {
+      case model.current {
+        Some(list) -> {
+          let updated_list = ShoppingList(..list, status: Active)
+          save_shopping_list(updated_list)
+          find_any_other_active_lists_and_complete_them(
+            model.all_lists,
+            updated_list.date,
+          )
           #(
             ShoppingListModel(..model, current: Some(updated_list)),
             effect.none(),
@@ -309,7 +459,6 @@ fn save_shopping_list(list: ShoppingList) -> Nil {
       // Return succeeding decoders for valid strings
       Active -> "Active"
       Completed -> "Completed"
-      Archived -> "Archived"
       // Return a failing decoder for any other strings
     },
     list.items
@@ -327,6 +476,26 @@ fn save_shopping_list(list: ShoppingList) -> Nil {
     },
   )
   do_save_shopping_list(list_obj)
+}
+
+fn find_any_other_active_lists_and_complete_them(
+  all_lists: Dict(date.Date, ShoppingList),
+  date: date.Date,
+) -> Nil {
+  let other_active_lists =
+    dict.filter(all_lists, fn(k, v) { v.status == Active && k != date })
+  case dict.size(other_active_lists) {
+    0 -> Nil
+    _ -> {
+      let updated_lists =
+        dict.map_values(other_active_lists, fn(_k, v) {
+          ShoppingList(..v, status: Completed)
+        })
+      dict.values(updated_lists)
+      |> list.map(save_shopping_list)
+      Nil
+    }
+  }
 }
 
 @external(javascript, ".././db.ts", "do_subscribe_to_shopping_list_summaries")
@@ -367,17 +536,10 @@ pub fn subscribe_to_one_shoppinglist_by_date(
 pub fn view_all_shopping_lists(
   model: ShoppingListModel,
 ) -> Element(ShoppingListMsg) {
-  let active_lists =
-    dict.filter(model.all_lists, fn(k, v) { v.status == Active })
-  let completed_lists =
-    dict.filter(model.all_lists, fn(k, v) { v.status == Completed })
-  let archived_lists =
-    dict.filter(model.all_lists, fn(k, v) { v.status == Archived })
-
   section(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
+        "h-env-screen grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
       ),
     ],
     [
@@ -387,22 +549,11 @@ pub fn view_all_shopping_lists(
       ),
       div(
         [
-          class("col-span-full flex flex-col gap-4 overflow-y-auto p-4"),
-        ],
-        [
-          // Active lists
-          view_shopping_list_group("Active Lists", active_lists |> dict.values),
-          // Completed lists
-          view_shopping_list_group(
-            "Completed Lists",
-            completed_lists |> dict.values,
-          ),
-          // Archived lists
-          view_shopping_list_group(
-            "Archived Lists",
-            archived_lists |> dict.values,
+          class(
+            "col-span-full grid grid-cols-12 grid-rows-[repeat(12,minmax(min-content,35px))] gap-y-2",
           ),
         ],
+        list.map(model.all_lists |> dict.values, view_shopping_list_card),
       ),
       nav_footer([
         a([href("/"), class("text-center")], [text("🏠")]),
@@ -419,53 +570,26 @@ pub fn view_all_shopping_lists(
   )
 }
 
-fn view_shopping_list_group(
-  title: String,
-  lists: List(ShoppingList),
-) -> Element(ShoppingListMsg) {
-  case lists {
-    [] -> element.none()
-    _ ->
-      div([class("mb-6")], [
-        h2([class("text-xl font-bold mb-3")], [text(title)]),
-        div(
-          [class("flex flex-col gap-2")],
-          list.map(lists, view_shopping_list_card),
-        ),
-      ])
-  }
-}
-
 fn view_shopping_list_card(list: ShoppingList) -> Element(ShoppingListMsg) {
   let date_str = date.to_iso_string(list.date)
-
-  div(
+  a(
     [
+      href("/shopping-list/" <> date_str),
       class(
-        "border border-ecru-white-950 rounded p-4 bg-ecru-white-50 shadow-sm relative",
+        "subgrid-cols col-span-full grid-flow-row-dense col-span-full text-xl subgrid-cols border-b border-b-gray-200",
       ),
     ],
     [
-      div([class("flex justify-between items-start mb-2")], [
-        h3([class("text-lg font-semibold")], [
-          text(date.to_iso_string(list.date)),
-        ]),
-        div([class("flex gap-2")], [
-          a(
-            [
-              href("/shopping-list/" <> date_str),
-              class("text-sm text-blue-600 hover:underline"),
-            ],
-            [text("View")],
-          ),
-          button(
-            [
-              class("text-sm text-red-600 hover:underline"),
-              event.on_click(UserDeletedList(list)),
-            ],
-            [text("Delete")],
-          ),
-        ]),
+      span([class("col-span-1")], [
+        {
+          case list.status {
+            Active -> text("🛒")
+            Completed -> text("✅")
+          }
+        },
+      ]),
+      span([class("col-start-2 col-span-10")], [
+        text(date.to_iso_string(list.date)),
       ]),
     ],
   )
@@ -497,47 +621,73 @@ pub fn view_shopping_list_detail(
         date.to_iso_string(list.date),
         "underline-purple col-span-full md:col-span-11",
       ),
-      div([class("col-span-full flex flex-col gap-4 overflow-y-auto p-4")], [
-        // Status badge
-        div([class("flex items-center justify-between")], [
-          div([class("flex items-center gap-2")], [
-            text("Status: "),
-            span(
-              [
-                class(case list.status {
-                  Active -> "px-2 py-1 bg-green-100 text-green-800 rounded"
-                  Completed -> "px-2 py-1 bg-blue-100 text-blue-800 rounded"
-                  Archived -> "px-2 py-1 bg-gray-100 text-gray-800 rounded"
-                }),
-              ],
-              [
-                text(case list.status {
-                  Active -> "Active"
-                  Completed -> "Completed"
-                  Archived -> "Archived"
-                }),
-              ],
-            ),
-          ]),
-        ]),
-        div([class("flex flex-col gap-4")], [
-          div(
-            [class("flex flex-col gap-2")],
-            list.index_map(list.items |> glearray.to_list, shopping_list_item),
+      div(
+        [
+          class(
+            "subgrid-cols grid-rows-[repeat(12,minmax(min-content,35px))] overflow-y-scroll col-span-full gap-y-2",
           ),
-          button(
+        ],
+        [
+          div(
             [
               class(
-                "w-full py-2 bg-ecru-white-200 hover:bg-ecru-white-300 rounded text-center text-sm font-medium text-ecru-white-950",
+                "col-span-full flex justify-between items-baseline text-base",
               ),
-              on_click(UserAddedIngredientAtIndex(glearray.length(list.items))),
             ],
-            [text("➕ Add Item")],
+            [
+              div(
+                [
+                  class(
+                    "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+                  ),
+                ],
+                [
+                  text(case list.status {
+                    Active -> "Active"
+                    Completed -> "Completed"
+                  }),
+                ],
+              ),
+            ],
           ),
-        ]),
-      ]),
+
+          element.fragment(list.index_map(
+            list.items |> glearray.to_list,
+            shopping_list_item,
+          )),
+        ],
+      ),
       nav_footer([
         a([href("/"), class("text-center")], [text("🏠")]),
+        a([href("/shopping-list"), class("text-center")], [text("❎")]),
+        case list.status {
+          Active ->
+            button(
+              [
+                type_("button"),
+                class("text-center"),
+                on_click(UserMarkedCurrentListAsCompleted),
+              ],
+              [text("✅")],
+            )
+          Completed ->
+            button(
+              [
+                type_("button"),
+                class("text-center"),
+                on_click(UserMarkedCurrentListAsActive),
+              ],
+              [text("🛒")],
+            )
+        },
+        button(
+          [
+            type_("button"),
+            class("text-center"),
+            on_click(UserDeletedList(list)),
+          ],
+          [text("🗑️")],
+        ),
         button(
           [
             type_("button"),
@@ -546,38 +696,95 @@ pub fn view_shopping_list_detail(
           ],
           [text("💾")],
         ),
-        a([href("/shopping-list"), class("text-center")], [text("📋")]),
       ]),
     ],
   )
 }
 
 fn shopping_list_item(item: ShoppingListIngredient, index: Int) {
-  div([class("flex w-full items-baseline col-span-full px-1 mb-1 text-base")], [
-    html.label([class("font-mono text-sm")], [
-      text(index + 1 |> int.to_string <> "."),
-    ]),
-    html.input([
-      attribute("aria-label", "Enter ingredient name"),
-      name("ingredient-name-" <> int.to_string(index)),
-      type_("text"),
-      placeholder("Ingredient"),
-      class(
-        "text-base input-base max-w-[20ch] md:max-w-[34ch] input-focus bg-ecru-white-100",
-      ),
-      value(item.ingredient.name |> option.unwrap("")),
-      on_input(UserUpdatedIngredientNameAtIndex(index, _)),
-    ]),
-    button(
-      [
-        class("text-ecru-white-950 text-xs cursor-pointer"),
-        type_("button"),
-        id("remove-ingredient-input"),
-        on_click(UserRemovedIngredientAtIndex(index)),
-      ],
-      [text("➖")],
-    ),
-  ])
+  let update_name_with_index = fn(index) {
+    UserUpdatedIngredientNameAtIndex(index, _)
+  }
+  let update_main_with_index = fn(index) {
+    UserUpdatedIngredientMainAtIndex(index, _)
+  }
+  let update_qty_with_index = fn(index) {
+    UserUpdatedIngredientQtyAtIndex(index, _)
+  }
+  let update_units_with_index = fn(index) {
+    UserUpdatedIngredientUnitsAtIndex(index, _)
+  }
+  div(
+    [class("my-1 col-span-full flex justify-between items-baseline  text-base")],
+    [
+      input([
+        attribute("aria-label", "Enter ingredient name"),
+        name("ingredient-name-" <> int.to_string(index)),
+        type_("text"),
+        placeholder("Ingredient"),
+        class(
+          "text-base input-base w-[20ch] md:w-[34ch] input-focus bg-ecru-white-100",
+        ),
+        value(option.unwrap(item.ingredient.name, "")),
+        on_input(update_name_with_index(index)),
+      ]),
+      div([class("flex justify-end gap-1 items-baseline")], [
+        input([
+          attribute("aria-label", "Enter ingredient quanitity"),
+          name("ingredient-qty-" <> int.to_string(index)),
+          type_("text"),
+          placeholder("Qty"),
+          class("pt-0.5 w-[3ch] text-sm input-focus bg-ecru-white-100"),
+          value(option.unwrap(item.ingredient.quantity, "")),
+          on_input(update_qty_with_index(index)),
+        ]),
+        input([
+          attribute("aria-label", "Enter ingredient units"),
+          name("ingredient-units-" <> int.to_string(index)),
+          type_("text"),
+          placeholder("Units"),
+          class("pt-0.5 w-[3.5ch] text-sm mr-0 input-focus bg-ecru-white-100"),
+          value(option.unwrap(item.ingredient.units, "")),
+          on_input(update_units_with_index(index)),
+        ]),
+        div([class("flex text-xs items-baseline")], [
+          label(
+            [
+              class("ingredient-toggle"),
+              attribute("aria-label", "Toggle main ingredient"),
+            ],
+            [
+              input([
+                attribute.checked(option.unwrap(item.ingredient.ismain, False)),
+                name("`ingredient-main-" <> int.to_string(index)),
+                type_("checkbox"),
+                event.on_check(update_main_with_index(index)),
+              ]),
+              span([], []),
+            ],
+          ),
+          button(
+            [
+              class("text-ecru-white-950 cursor-pointer"),
+              type_("button"),
+              id("remove-ingredient-input"),
+              on_click(UserRemovedIngredientAtIndex(index)),
+            ],
+            [text("➖")],
+          ),
+          button(
+            [
+              class("text-ecru-white-950 cursor-pointer"),
+              type_("button"),
+              id("add-ingredient-input"),
+              on_click(UserAddedIngredientAtIndex(index)),
+            ],
+            [text("➕")],
+          ),
+        ]),
+      ]),
+    ],
+  )
 }
 
 //-DECODER------------------------------------------------------------
@@ -669,9 +876,8 @@ pub fn shopping_list_status_decoder() -> Decoder(Status) {
     // Return succeeding decoders for valid strings
     "Active" -> decode.success(Active)
     "Completed" -> decode.success(Completed)
-    "Archived" -> decode.success(Archived)
     // Return a failing decoder for any other strings
-    _ -> decode.failure(Archived, "Status")
+    _ -> decode.failure(Active, "Status")
   }
 }
 
@@ -706,7 +912,6 @@ pub fn encode_shopping_list(list: ShoppingList) -> Json {
       json.string(case list.status {
         Active -> "Active"
         Completed -> "Completed"
-        Archived -> "Archived"
       }),
     ),
     #(

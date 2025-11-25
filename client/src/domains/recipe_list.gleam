@@ -347,17 +347,20 @@ fn view_recipe_summary(recipe: Recipe, class_props: String) {
 
 //-DATABASE----------------------------------------------------------
 
-pub fn get_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_get_one_recipe_by_slug(slug)
-  |> promise.map(decode.run(_, decode_recipe_with_inner_json()))
-  |> promise.map(result.map(_, DbRetrievedOneRecipe))
-  |> promise.tap(result.map(_, dispatch))
-  Nil
-}
+// Removing because we don't want to fetch a single recipe synchronously.
+// Instead, subscribe to a recipe detail, so we can hold a callback for updates.
 
-@external(javascript, "../db.ts", "do_get_one_recipe_by_slug")
-fn do_get_one_recipe_by_slug(slug: String) -> Promise(Dynamic)
+// pub fn get_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
+//   use dispatch <- effect.from
+//   do_get_one_recipe_by_slug(slug)
+//   |> promise.map(decode.run(_, decode_recipe_with_inner_json()))
+//   |> promise.map(result.map(_, DbRetrievedOneRecipe))
+//   |> promise.tap(result.map(_, dispatch))
+//   Nil
+// }
+// 
+// @external(javascript, "../db.ts", "do_get_one_recipe_by_slug")
+// fn do_get_one_recipe_by_slug(slug: String) -> Promise(Dynamic)
 
 pub fn subscribe_to_one_recipe_by_slug(slug: String) -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
@@ -377,17 +380,20 @@ fn do_subscribe_to_one_recipe_by_slug(
   callback: fn(a) -> Nil,
 ) -> fn() -> Nil
 
-pub fn get_recipes() -> Effect(RecipeListMsg) {
-  use dispatch <- effect.from
-  do_get_recipes()
-  |> promise.map(decode.run(_, decode.list(decode_recipe_with_inner_json())))
-  |> promise.map(result.map(_, DbRetrievedRecipes))
-  |> promise.tap(result.map(_, dispatch))
-  Nil
-}
+// Removing because we never want to get all recipes at once. Instead, subscribe
+// to the recipe summaries, and then fetch individual recipe details as needed.
 
-@external(javascript, "../db.ts", "do_get_recipes")
-fn do_get_recipes() -> Promise(Dynamic)
+// pub fn get_recipes() -> Effect(RecipeListMsg) {
+//   use dispatch <- effect.from
+//   do_get_recipes()
+//   |> promise.map(decode.run(_, decode.list(decode_recipe_with_inner_json())))
+//   |> promise.map(result.map(_, DbRetrievedRecipes))
+//   |> promise.tap(result.map(_, dispatch))
+//   Nil
+// }
+// 
+// @external(javascript, "../db.ts", "do_get_recipes")
+// fn do_get_recipes() -> Promise(Dynamic)
 
 pub fn get_tag_options() -> Effect(RecipeListMsg) {
   use dispatch <- effect.from
