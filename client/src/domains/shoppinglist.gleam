@@ -9,6 +9,7 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/set.{type Set}
 import glearray.{type Array}
 import lib/utils
 import lustre/attribute.{
@@ -38,7 +39,9 @@ pub type ShoppingListMsg {
   UserMarkedCurrentListAsActive
   UserDeletedList(ShoppingList)
   UserSavedList
-  UserLinkedRecipeToCurrentList(types.PlannedRecipe)
+  UserRemovedLinkedRecipeAtIndex(Int)
+  UserAddedLinkedRecipeAtIndex(Int)
+  UserUpdatedLinkedRecipeAtIndex(Int, types.PlannedRecipe)
   ShoppingListSubscriptionOpened(date.Date, fn() -> Nil)
   DbSubscribedListSummaries(Dynamic)
   DbRetrievedListSummaries(Dict(date.Date, ShoppingList))
@@ -74,7 +77,7 @@ pub type ShoppingList {
     items: Array(ShoppingListIngredient),
     status: Status,
     date: date.Date,
-    linked_recipes: List(types.PlannedRecipe),
+    linked_recipes: Array(types.PlannedRecipe),
     linked_plan: Option(date.Date),
   )
 }
@@ -91,7 +94,7 @@ pub fn new_list(date: date.Date) -> ShoppingList {
       |> glearray.from_list,
     status: Active,
     date: date,
-    linked_recipes: [],
+    linked_recipes: glearray.new(),
     linked_plan: None,
   )
 }
@@ -116,7 +119,7 @@ pub fn shopping_list_update(
   model: ShoppingListModel,
   msg: ShoppingListMsg,
 ) -> #(ShoppingListModel, Effect(ShoppingListMsg)) {
-  echo model
+  echo msg
   case msg {
     // SubscriptionOpened is handled in the layer above
     // Not sure if this is really a great pattern....
@@ -375,11 +378,58 @@ pub fn shopping_list_update(
         None -> #(model, effect.none())
       }
     }
-    UserLinkedRecipeToCurrentList(recipe) -> {
+    UserAddedLinkedRecipeAtIndex(index) -> {
       case model.current {
         Some(list) -> {
           let updated_list =
-            ShoppingList(..list, linked_recipes: [recipe, ..list.linked_recipes])
+            ShoppingList(
+              ..list,
+              linked_recipes: glearray.copy_insert(
+                  list.linked_recipes,
+                  index,
+                  types.RecipeName(""),
+                )
+                |> result.unwrap(list.linked_recipes),
+            )
+          save_shopping_list(updated_list)
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
+    }
+    UserRemovedLinkedRecipeAtIndex(index) -> {
+      case model.current {
+        Some(list) -> {
+          let updated_list =
+            ShoppingList(
+              ..list,
+              linked_recipes: utils.remove_at_index(list.linked_recipes, index),
+            )
+          save_shopping_list(updated_list)
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
+    }
+    UserUpdatedLinkedRecipeAtIndex(index, recipe) -> {
+      case model.current {
+        Some(list) -> {
+          let updated_list =
+            ShoppingList(
+              ..list,
+              linked_recipes: glearray.copy_set(
+                  list.linked_recipes,
+                  index,
+                  recipe,
+                )
+                |> result.unwrap(list.linked_recipes),
+            )
           save_shopping_list(updated_list)
           #(
             ShoppingListModel(..model, current: Some(updated_list)),
@@ -411,7 +461,7 @@ pub fn shopping_list_update(
                 items: glearray.new(),
                 status: Active,
                 date: k,
-                linked_recipes: [],
+                linked_recipes: glearray.new(),
                 linked_plan: None,
               ))
             })
@@ -481,10 +531,8 @@ fn save_shopping_list(list: ShoppingList) -> Nil {
   let list_obj = #(
     date.to_rata_die(list.date),
     case list.status {
-      // Return succeeding decoders for valid strings
       Active -> "Active"
       Completed -> "Completed"
-      // Return a failing decoder for any other strings
     },
     list.items
       |> glearray.to_list
@@ -492,6 +540,7 @@ fn save_shopping_list(list: ShoppingList) -> Nil {
       |> json.array(fn(x) { x })
       |> json.to_string,
     list.linked_recipes
+      |> glearray.to_list
       |> list.map(encode_planned_recipe)
       |> json.array(fn(x) { x })
       |> json.to_string,
@@ -634,7 +683,7 @@ pub fn view_shopping_list_detail(
         items: glearray.new(),
         status: Active,
         linked_plan: None,
-        linked_recipes: [],
+        linked_recipes: glearray.new(),
       )
   }
   section(
@@ -689,7 +738,10 @@ pub fn view_shopping_list_detail(
                 [
                   text(
                     "Recipes: "
-                    <> list.linked_recipes |> list.length |> int.to_string,
+                    <> list.linked_recipes
+                    |> glearray.to_list
+                    |> list.length
+                    |> int.to_string,
                   ),
                 ],
               ),
@@ -741,45 +793,64 @@ pub fn view_shopping_list_detail(
 }
 
 fn view_linked_recipes(
-  linked_recipes: List(types.PlannedRecipe),
+  linked_recipes: Array(types.PlannedRecipe),
   recipes: List(types.Recipe),
 ) -> Element(ShoppingListMsg) {
-  let maybe_linked_recipes = case linked_recipes {
-    [] -> [types.RecipeName("")]
-    _ -> linked_recipes
-  }
   div([class("col-span-full")], [
     text("Recipes: "),
 
-    list.map(maybe_linked_recipes, fn(recipe) {
-      linked_recipe_input(recipe, recipes)
-    })
+    linked_recipes
+      |> glearray.to_list
+      |> list.index_map(fn(recipe, index) {
+        linked_recipe_input(index, recipe, recipes)
+      })
       |> element.fragment,
   ])
 }
 
 fn linked_recipe_input(
+  index: Int,
   selected_recipe: types.PlannedRecipe,
   recipe_list: List(types.Recipe),
 ) -> Element(ShoppingListMsg) {
-  typeahead.typeahead([
-    typeahead.recipes(recipe_list),
-    typeahead.search_term(
-      selected_recipe |> codecs.json_encode_planned_recipe |> json.to_string,
+  element.fragment([
+    typeahead.typeahead([
+      typeahead.recipes(recipe_list),
+      typeahead.search_term(
+        selected_recipe |> codecs.json_encode_planned_recipe |> json.to_string,
+      ),
+      event.on("typeahead-change", {
+        use res <- decode.subfield(["detail"], decode.string)
+        let decoded = json.parse(res, codecs.planned_recipe_decoder())
+        case decoded {
+          Ok(planned_recipe) ->
+            decode.success(UserUpdatedLinkedRecipeAtIndex(index, planned_recipe))
+          Error(_) ->
+            decode.failure(
+              UserUpdatedLinkedRecipeAtIndex(index, types.RecipeName("")),
+              "Failed to decode PlannedRecipe",
+            )
+        }
+      }),
+    ]),
+    button(
+      [
+        class("text-ecru-white-950 cursor-pointer"),
+        type_("button"),
+        id("remove-linked-recipe-input"),
+        on_click(UserRemovedLinkedRecipeAtIndex(index)),
+      ],
+      [text("➖")],
     ),
-    event.on("typeahead-change", {
-      use res <- decode.subfield(["detail"], decode.string)
-      let decoded = json.parse(res, codecs.decode_planned_recipe())
-      case decoded {
-        Ok(planned_recipe) ->
-          decode.success(UserLinkedRecipeToCurrentList(planned_recipe))
-        Error(_) ->
-          decode.failure(
-            UserLinkedRecipeToCurrentList(types.RecipeName("")),
-            "Failed to decode PlannedRecipe",
-          )
-      }
-    }),
+    button(
+      [
+        class("text-ecru-white-950 cursor-pointer"),
+        type_("button"),
+        id("add-linked-recipe-input"),
+        on_click(UserAddedLinkedRecipeAtIndex(index)),
+      ],
+      [text("➕")],
+    ),
   ])
 }
 
@@ -919,7 +990,7 @@ pub fn shopping_list_decoder() -> Decoder(ShoppingList) {
       items: glearray.from_list(items),
       status: status,
       date: date.from_rata_die(date),
-      linked_recipes: linked_recipes,
+      linked_recipes: linked_recipes |> glearray.from_list,
       linked_plan: case linked_plan {
         Some(plan_date) -> Some(date.from_rata_die(plan_date))
         None -> None
@@ -937,17 +1008,26 @@ fn shopping_list_summary_decoder() -> Decoder(ShoppingList) {
     items: glearray.new(),
     status: status,
     date: date.from_rata_die(date),
-    linked_recipes: [],
+    linked_recipes: glearray.new(),
     linked_plan: None,
   ))
 }
 
 fn planned_recipe_decoder() -> Decoder(types.PlannedRecipe) {
-  use recipe_name <- decode.optional_field("recipe_name", "", decode.string)
-  use recipe_slug <- decode.optional_field("recipe_slug", "", decode.string)
+  use recipe_name <- decode.optional_field(
+    "recipe_name",
+    "not found",
+    decode.string,
+  )
+  use recipe_slug <- decode.optional_field(
+    "recipe_slug",
+    "not found",
+    decode.string,
+  )
   case recipe_name, recipe_slug {
-    "", "" -> decode.failure(types.RecipeName(""), "PlannedRecipe")
-    "", slug -> decode.success(types.RecipeSlug(slug))
+    "not found", "not found" ->
+      decode.failure(types.RecipeName(""), "PlannedRecipe")
+    "not found", slug -> decode.success(types.RecipeSlug(slug))
     name, _ -> decode.success(types.RecipeName(name))
   }
 }
@@ -1010,6 +1090,7 @@ pub fn encode_shopping_list(list: ShoppingList) -> Json {
       "linked_recipes",
       json.string(
         list.linked_recipes
+        |> glearray.to_list
         |> list.map(encode_planned_recipe)
         |> json.array(fn(x) { x })
         |> json.to_string,

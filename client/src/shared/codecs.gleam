@@ -352,7 +352,7 @@ pub fn json_encode_planned_recipe(planned_recipe: types.PlannedRecipe) -> Json {
   }
 }
 
-pub fn decode_planned_recipe() -> decode.Decoder(types.PlannedRecipe) {
+pub fn planned_recipe_decoder() -> decode.Decoder(types.PlannedRecipe) {
   use type_ <- decode.field("type", decode.string)
   use value <- decode.field("value", decode.string)
   case type_ {

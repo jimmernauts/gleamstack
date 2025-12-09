@@ -30,8 +30,7 @@ pub fn app() -> App(Nil, Model, Msg) {
       |> result.map_error(fn(_x) { Nil })
     }),
     on_attribute_change("search-term", fn(attr_str) {
-      attr_str
-      |> json.parse(codecs.decode_planned_recipe())
+      json.parse(attr_str, codecs.planned_recipe_decoder())
       |> result.map(RetrievedInitialSearchTerm)
       |> result.map_error(fn(_x) { Nil })
     }),
@@ -57,7 +56,7 @@ pub fn recipes(all: List(Recipe)) -> Attribute(msg) {
 }
 
 pub fn search_term(term: String) -> Attribute(msg) {
-  attribute.attribute("search-term", json.to_string(json.string(term)))
+  attribute.attribute("search-term", term)
 }
 
 pub fn class_list(class_list: String) -> Attribute(msg) {
@@ -105,8 +104,6 @@ pub type Msg {
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  echo msg
-  echo model
   case msg {
     RetrievedInitialSearchTerm(a) -> {
       #(Model(..model, search_term: a), effect.none())
@@ -308,10 +305,20 @@ fn search_result(
   )
 }
 
+fn find_recipe_in_list_by_slug(
+  slug: String,
+  list: List(RecipeSummary),
+) -> Option(RecipeSummary) {
+  list |> list.find(fn(r) { r.slug == slug }) |> option.from_result
+}
+
 fn view(model: Model) -> Element(Msg) {
-  let display_search_term = case model.search_term {
+  let found_term = case model.search_term {
     types.RecipeName(a) -> a
-    types.RecipeSlug(a) -> a
+    types.RecipeSlug(a) ->
+      find_recipe_in_list_by_slug(a, model.search_items)
+      |> option.map(fn(r) { r.title })
+      |> option.unwrap("")
   }
   fragment([
     textarea(
@@ -339,12 +346,12 @@ fn view(model: Model) -> Element(Msg) {
           #("line-height", "inherit"),
           #("resize", "none"),
         ]),
-        class(case string.length(display_search_term) {
+        class(case string.length(found_term) {
           num if num > 38 -> "text-base"
           num if num > 17 -> "text-lg"
           _ -> "text-xl"
         }),
-        value(display_search_term),
+        value(found_term),
         attribute("autocapitalize", "none"),
         attribute("autocomplete", "off"),
         attribute("aria-autocomplete", "list"),

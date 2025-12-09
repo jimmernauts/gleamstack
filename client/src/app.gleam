@@ -11,6 +11,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/set
 import gleam/string
 import gleam/uri.{type Uri}
 import glearray
@@ -293,7 +294,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             |> glearray.from_list(),
           status: shoppinglist.Active,
           date: list_date,
-          linked_recipes: [],
+          linked_recipes: glearray.new(),
           linked_plan: None,
         )
       let find_list =

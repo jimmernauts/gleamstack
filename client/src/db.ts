@@ -283,7 +283,11 @@ export function do_subscribe_to_one_shoppinglist_by_date(date: number, dispatch:
             },
         },
     };
-    const result = db.subscribeQuery(query, dispatch);
+    
+    const result = db.subscribeQuery(query, (result: any) => {
+        console.log(result);
+        dispatch(result);
+    });
     return result;
 }
 
