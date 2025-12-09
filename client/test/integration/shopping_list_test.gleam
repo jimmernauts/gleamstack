@@ -4,7 +4,6 @@ import domains/shoppinglist.{
   ShoppingListModel, UserAddedIngredientAtIndex, UserCreatedList,
   UserDeletedList, UserUpdatedIngredientNameAtIndex,
 }
-import gleam/list
 import gleam/option.{None, Some}
 import glearray
 import lustre/dev/simulate

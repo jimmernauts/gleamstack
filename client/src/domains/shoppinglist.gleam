@@ -1,9 +1,10 @@
 import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
+import components/typeahead_2 as typeahead
+import domains/recipe_list
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode.{type Decoder, type Dynamic}
 import gleam/int
-import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -15,9 +16,7 @@ import lustre/attribute.{
 }
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/element/html.{
-  a, button, div, h2, h3, input, label, section, span, text, textarea,
-}
+import lustre/element/html.{a, button, div, input, label, section, span, text}
 import lustre/event.{on_click, on_input}
 import rada/date
 import shared/codecs
@@ -34,10 +33,12 @@ pub type ShoppingListMsg {
   UserUpdatedIngredientQtyAtIndex(Int, String)
   UserUpdatedIngredientUnitsAtIndex(Int, String)
   UserToggledItemCheckedAtIndex(Int)
+  UserToggledRecipeList
   UserMarkedCurrentListAsCompleted
   UserMarkedCurrentListAsActive
   UserDeletedList(ShoppingList)
   UserSavedList
+  UserLinkedRecipeToCurrentList(types.PlannedRecipe)
   ShoppingListSubscriptionOpened(date.Date, fn() -> Nil)
   DbSubscribedListSummaries(Dynamic)
   DbRetrievedListSummaries(Dict(date.Date, ShoppingList))
@@ -48,7 +49,9 @@ pub type ShoppingListMsg {
 pub type ShoppingListModel {
   ShoppingListModel(
     all_lists: Dict(date.Date, ShoppingList),
+    recipe_list_open: Bool,
     current: Option(ShoppingList),
+    recipe_list: recipe_list.RecipeListModel,
   )
 }
 
@@ -118,10 +121,17 @@ pub fn shopping_list_update(
     // SubscriptionOpened is handled in the layer above
     // Not sure if this is really a great pattern....
     ShoppingListSubscriptionOpened(_date, _callback) -> #(model, effect.none())
+    UserToggledRecipeList -> {
+      #(
+        ShoppingListModel(..model, recipe_list_open: !model.recipe_list_open),
+        effect.none(),
+      )
+    }
     UserCreatedList(list_date) -> {
       save_shopping_list(new_list(list_date))
       #(
         ShoppingListModel(
+          ..model,
           all_lists: model.all_lists
             |> dict.upsert(list_date, fn(_old) { new_list(list_date) }),
           current: Some(new_list(list_date)),
@@ -365,6 +375,20 @@ pub fn shopping_list_update(
         None -> #(model, effect.none())
       }
     }
+    UserLinkedRecipeToCurrentList(recipe) -> {
+      case model.current {
+        Some(list) -> {
+          let updated_list =
+            ShoppingList(..list, linked_recipes: [recipe, ..list.linked_recipes])
+          save_shopping_list(updated_list)
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
+    }
     DbSubscribedListSummaries(jsdata) -> {
       let decoder = {
         use data <- decode.subfield(
@@ -393,14 +417,14 @@ pub fn shopping_list_update(
             })
           DbRetrievedListSummaries(grouped) |> dispatch
         }
-        Error(e) -> {
+        Error(_e) -> {
           effect.none()
         }
       }
       #(model, try_effect)
     }
     DbRetrievedListSummaries(lists) -> #(
-      ShoppingListModel(all_lists: lists, current: model.current),
+      ShoppingListModel(..model, all_lists: lists),
       effect.none(),
     )
     DbSubscribedOneList(jsdata) -> {
@@ -426,6 +450,7 @@ pub fn shopping_list_update(
     }
     DbRetrievedOneList(list) -> #(
       ShoppingListModel(
+        ..model,
         all_lists: dict.merge(
           model.all_lists,
           dict.from_list([#(list.date, list)]),
@@ -438,7 +463,7 @@ pub fn shopping_list_update(
       let updated_lists = dict.drop(model.all_lists, [list.date])
       do_delete_shopping_list(option.unwrap(list.id, ""))
       #(
-        ShoppingListModel(all_lists: updated_lists, current: None),
+        ShoppingListModel(..model, all_lists: updated_lists, current: None),
         effect.none(),
       )
     }
@@ -597,6 +622,8 @@ fn view_shopping_list_card(list: ShoppingList) -> Element(ShoppingListMsg) {
 
 pub fn view_shopping_list_detail(
   current_list: Option(ShoppingList),
+  recipe_list_open: Bool,
+  recipes: List(types.Recipe),
 ) -> Element(ShoppingListMsg) {
   let list = case current_list {
     Some(list) -> list
@@ -619,12 +646,12 @@ pub fn view_shopping_list_detail(
     [
       page_title(
         date.to_iso_string(list.date),
-        "underline-purple col-span-full md:col-span-11",
+        "underline-purple col-span-full col-start-1 md:col-span-11",
       ),
       div(
         [
           class(
-            "subgrid-cols grid-rows-[repeat(12,minmax(min-content,35px))] overflow-y-scroll col-span-full gap-y-2",
+            "subgrid-cols grid-rows-[repeat(12,minmax(min-content,20px))] overflow-y-scroll col-span-full gap-y-2",
           ),
         ],
         [
@@ -638,19 +665,51 @@ pub fn view_shopping_list_detail(
               div(
                 [
                   class(
-                    "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+                    "font-mono pt-0.5 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
                   ),
+                  case list.status {
+                    Active -> on_click(UserMarkedCurrentListAsCompleted)
+                    Completed -> on_click(UserMarkedCurrentListAsActive)
+                  },
                 ],
                 [
                   text(case list.status {
-                    Active -> "Active"
-                    Completed -> "Completed"
+                    Active -> "🛒 Active"
+                    Completed -> "✅ Completed"
                   }),
+                ],
+              ),
+              div(
+                [
+                  class(
+                    "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+                  ),
+                  on_click(UserToggledRecipeList),
+                ],
+                [
+                  text(
+                    "Recipes: "
+                    <> list.linked_recipes |> list.length |> int.to_string,
+                  ),
                 ],
               ),
             ],
           ),
-
+          div(
+            [
+              class(
+                "col-span-full 
+                bg-ecru-white-50 border border-ecru-white-950 px-1 text-xs",
+              ),
+              case recipe_list_open {
+                False -> class("hidden")
+                True -> attribute.none()
+              },
+            ],
+            [
+              view_linked_recipes(list.linked_recipes, recipes),
+            ],
+          ),
           element.fragment(list.index_map(
             list.items |> glearray.to_list,
             shopping_list_item,
@@ -660,26 +719,6 @@ pub fn view_shopping_list_detail(
       nav_footer([
         a([href("/"), class("text-center")], [text("🏠")]),
         a([href("/shopping-list"), class("text-center")], [text("❎")]),
-        case list.status {
-          Active ->
-            button(
-              [
-                type_("button"),
-                class("text-center"),
-                on_click(UserMarkedCurrentListAsCompleted),
-              ],
-              [text("✅")],
-            )
-          Completed ->
-            button(
-              [
-                type_("button"),
-                class("text-center"),
-                on_click(UserMarkedCurrentListAsActive),
-              ],
-              [text("🛒")],
-            )
-        },
         button(
           [
             type_("button"),
@@ -699,6 +738,49 @@ pub fn view_shopping_list_detail(
       ]),
     ],
   )
+}
+
+fn view_linked_recipes(
+  linked_recipes: List(types.PlannedRecipe),
+  recipes: List(types.Recipe),
+) -> Element(ShoppingListMsg) {
+  let maybe_linked_recipes = case linked_recipes {
+    [] -> [types.RecipeName("")]
+    _ -> linked_recipes
+  }
+  div([class("col-span-full")], [
+    text("Recipes: "),
+
+    list.map(maybe_linked_recipes, fn(recipe) {
+      linked_recipe_input(recipe, recipes)
+    })
+      |> element.fragment,
+  ])
+}
+
+fn linked_recipe_input(
+  selected_recipe: types.PlannedRecipe,
+  recipe_list: List(types.Recipe),
+) -> Element(ShoppingListMsg) {
+  typeahead.typeahead([
+    typeahead.recipes(recipe_list),
+    typeahead.search_term(
+      selected_recipe |> codecs.json_encode_planned_recipe |> json.to_string,
+    ),
+    event.on("typeahead-change", {
+      use res <- decode.subfield(["detail"], decode.string)
+      let decoded = json.parse(res, codecs.decode_planned_recipe())
+      case decoded {
+        Ok(planned_recipe) ->
+          decode.success(UserLinkedRecipeToCurrentList(planned_recipe))
+        Error(_) ->
+          decode.failure(
+            UserLinkedRecipeToCurrentList(types.RecipeName("")),
+            "Failed to decode PlannedRecipe",
+          )
+      }
+    }),
+  ])
 }
 
 fn shopping_list_item(item: ShoppingListIngredient, index: Int) {
@@ -862,10 +944,10 @@ fn shopping_list_summary_decoder() -> Decoder(ShoppingList) {
 
 fn planned_recipe_decoder() -> Decoder(types.PlannedRecipe) {
   use recipe_name <- decode.optional_field("recipe_name", "", decode.string)
-  use recipe_id <- decode.optional_field("recipe_id", "", decode.string)
-  case recipe_name, recipe_id {
+  use recipe_slug <- decode.optional_field("recipe_slug", "", decode.string)
+  case recipe_name, recipe_slug {
     "", "" -> decode.failure(types.RecipeName(""), "PlannedRecipe")
-    "", id -> decode.success(types.RecipeId(id))
+    "", slug -> decode.success(types.RecipeSlug(slug))
     name, _ -> decode.success(types.RecipeName(name))
   }
 }
@@ -900,7 +982,7 @@ fn encode_shopping_list_ingredient(item: ShoppingListIngredient) -> Json {
 fn encode_planned_recipe(recipe: types.PlannedRecipe) -> Json {
   case recipe {
     types.RecipeName(name) -> json.object([#("recipe_name", json.string(name))])
-    types.RecipeId(id) -> json.object([#("recipe_id", json.string(id))])
+    types.RecipeSlug(slug) -> json.object([#("recipe_slug", json.string(slug))])
   }
 }
 

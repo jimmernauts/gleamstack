@@ -1,5 +1,6 @@
 import components/page_title.{page_title}
 import components/typeahead
+import components/typeahead_2
 import domains/planner
 import domains/recipe_detail
 import domains/recipe_list
@@ -26,6 +27,7 @@ import shared/types.{type Recipe, Ingredient, MethodStep, Recipe, Tag}
 
 pub fn main() {
   let _ = lustre.register(typeahead.app(), "type-ahead")
+  let _ = lustre.register(typeahead_2.app(), "type-ahead-2")
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, "#app", Nil)
 }
@@ -40,15 +42,13 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         _ -> Home
       }
     })
+  let initial_recipe_list =
+    recipe_list.RecipeListModel(recipes: [], tag_options: [], group_by: None)
   #(
     Model(
       current_route: result.unwrap(initial_route, Home),
       current_recipe: None,
-      recipes: recipe_list.RecipeListModel(
-        recipes: [],
-        tag_options: [],
-        group_by: None,
-      ),
+      recipes: initial_recipe_list,
       planner: planner.PlannerModel(
         plan_week: dict.new(),
         recipe_list: [],
@@ -58,6 +58,8 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
       shoppinglist: shoppinglist.ShoppingListModel(
         all_lists: dict.new(),
         current: None,
+        recipe_list_open: False,
+        recipe_list: initial_recipe_list,
       ),
       settings: settings.SettingsModel(api_key: None),
       upload: upload.UploadModel(
@@ -129,7 +131,6 @@ pub type Msg {
 // UPDATE ----------------------------------------------------------------------
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  echo msg
   // this is the main part of the update function
   let step1 = case msg {
     OnRouteChange(ViewRecipeList) -> #(
@@ -259,7 +260,14 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       }
     }
     OnRouteChange(ViewShoppingLists) -> #(
-      Model(..model, current_route: ViewShoppingLists),
+      Model(
+        ..model,
+        current_route: ViewShoppingLists,
+        shoppinglist: shoppinglist.ShoppingListModel(
+          ..model.shoppinglist,
+          recipe_list: model.recipes,
+        ),
+      ),
       effect.map(
         shoppinglist.subscribe_to_shopping_list_summaries(),
         ShoppingList,
@@ -301,6 +309,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           shoppinglist: shoppinglist.ShoppingListModel(
             ..model.shoppinglist,
             current: find_list,
+            recipe_list: model.recipes,
           ),
         ),
         effect.map(
@@ -667,9 +676,13 @@ fn view(model: Model) -> Element(Msg) {
         shoppinglist.view_all_shopping_lists(model.shoppinglist),
         ShoppingList,
       )
-    ViewShoppingList(date: list_date) ->
+    ViewShoppingList(date: _list_date) ->
       element.map(
-        shoppinglist.view_shopping_list_detail(model.shoppinglist.current),
+        shoppinglist.view_shopping_list_detail(
+          model.shoppinglist.current,
+          model.shoppinglist.recipe_list_open,
+          model.recipes.recipes,
+        ),
         ShoppingList,
       )
     ViewUpload -> element.map(upload.view_upload(model.upload), Upload)

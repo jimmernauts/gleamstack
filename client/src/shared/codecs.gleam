@@ -336,3 +336,28 @@ pub fn json_string_decoder(
     }
   })
 }
+
+pub fn json_encode_planned_recipe(planned_recipe: types.PlannedRecipe) -> Json {
+  case planned_recipe {
+    types.RecipeSlug(slug) ->
+      json.object([
+        #("type", json.string("slug")),
+        #("value", json.string(slug)),
+      ])
+    types.RecipeName(name) ->
+      json.object([
+        #("type", json.string("name")),
+        #("value", json.string(name)),
+      ])
+  }
+}
+
+pub fn decode_planned_recipe() -> decode.Decoder(types.PlannedRecipe) {
+  use type_ <- decode.field("type", decode.string)
+  use value <- decode.field("value", decode.string)
+  case type_ {
+    "slug" -> decode.success(types.RecipeSlug(value))
+    "name" -> decode.success(types.RecipeName(value))
+    _ -> decode.failure(types.RecipeName(""), "Unknown PlannedRecipe type")
+  }
+}

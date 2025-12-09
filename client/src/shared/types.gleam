@@ -45,6 +45,6 @@ pub type IngredientCategory {
 }
 
 pub type PlannedRecipe {
-  RecipeId(String)
+  RecipeSlug(String)
   RecipeName(String)
 }

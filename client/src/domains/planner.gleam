@@ -69,7 +69,7 @@ pub type Meal {
 // Helper function to extract recipe name from PlannedRecipe
 fn recipe_name(recipe: Option(types.PlannedRecipe)) -> String {
   case recipe {
-    Some(types.RecipeId(id)) -> id
+    Some(types.RecipeSlug(slug)) -> slug
     Some(types.RecipeName(name)) -> name
     None -> ""
   }
@@ -847,7 +847,7 @@ fn planned_meals_decoder() -> decode.Decoder(List(PlannedMealWithStatus)) {
   }
   let recipe_id_decoder = {
     use recipe_str <- decode.then(decode.string)
-    decode.success(types.RecipeId(recipe_str))
+    decode.success(types.RecipeSlug(recipe_str))
   }
   let record_decoder = {
     use for <- decode.field("for", enum_decoder)
@@ -906,7 +906,7 @@ fn json_encode_planned_meal_with_status(meal: PlannedMealWithStatus) -> Json {
       json.object([
         case recipe {
           types.RecipeName(name) -> #("recipe_name", json.string(name))
-          types.RecipeId(id) -> #("recipe_id", json.string(id))
+          types.RecipeSlug(slug) -> #("recipe_slug", json.string(slug))
         },
         #(
           "for",
