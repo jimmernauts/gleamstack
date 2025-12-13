@@ -119,12 +119,12 @@ pub fn shopping_list_update(
   model: ShoppingListModel,
   msg: ShoppingListMsg,
 ) -> #(ShoppingListModel, Effect(ShoppingListMsg)) {
-  echo msg
   case msg {
     // SubscriptionOpened is handled in the layer above
     // Not sure if this is really a great pattern....
     ShoppingListSubscriptionOpened(_date, _callback) -> #(model, effect.none())
     UserToggledRecipeList -> {
+      // TODO: maybe add 1 when toggling it open if there are 0 linked recipes currently?
       #(
         ShoppingListModel(..model, recipe_list_open: !model.recipe_list_open),
         effect.none(),
@@ -386,12 +386,14 @@ pub fn shopping_list_update(
               ..list,
               linked_recipes: glearray.copy_insert(
                   list.linked_recipes,
-                  index,
+                  case index {
+                    0 -> index
+                    _ -> index + 1
+                  },
                   types.RecipeName(""),
                 )
                 |> result.unwrap(list.linked_recipes),
             )
-          save_shopping_list(updated_list)
           #(
             ShoppingListModel(..model, current: Some(updated_list)),
             effect.none(),
@@ -408,7 +410,6 @@ pub fn shopping_list_update(
               ..list,
               linked_recipes: utils.remove_at_index(list.linked_recipes, index),
             )
-          save_shopping_list(updated_list)
           #(
             ShoppingListModel(..model, current: Some(updated_list)),
             effect.none(),
@@ -418,6 +419,7 @@ pub fn shopping_list_update(
       }
     }
     UserUpdatedLinkedRecipeAtIndex(index, recipe) -> {
+      // TODO: lookup recipe by slug and add its ingredients to the list
       case model.current {
         Some(list) -> {
           let updated_list =
@@ -430,7 +432,6 @@ pub fn shopping_list_update(
                 )
                 |> result.unwrap(list.linked_recipes),
             )
-          save_shopping_list(updated_list)
           #(
             ShoppingListModel(..model, current: Some(updated_list)),
             effect.none(),
@@ -750,8 +751,7 @@ pub fn view_shopping_list_detail(
           div(
             [
               class(
-                "col-span-full 
-                bg-ecru-white-50 border border-ecru-white-950 px-1 text-xs",
+                "col-span-full subgrid-cols gap-y-1 bg-ecru-white-50 border border-ecru-white-950 p-1 text-xs",
               ),
               case recipe_list_open {
                 False -> class("hidden")
@@ -796,9 +796,19 @@ fn view_linked_recipes(
   linked_recipes: Array(types.PlannedRecipe),
   recipes: List(types.Recipe),
 ) -> Element(ShoppingListMsg) {
-  div([class("col-span-full")], [
-    text("Recipes: "),
-
+  element.fragment([
+    case glearray.length(linked_recipes) {
+      0 ->
+        button(
+          [
+            type_("button"),
+            class("text-center"),
+            on_click(UserAddedLinkedRecipeAtIndex(0)),
+          ],
+          [text("➕")],
+        )
+      _ -> element.none()
+    },
     linked_recipes
       |> glearray.to_list
       |> list.index_map(fn(recipe, index) {
@@ -832,10 +842,11 @@ fn linked_recipe_input(
             )
         }
       }),
+      class("col-span-10"),
     ]),
     button(
       [
-        class("text-ecru-white-950 cursor-pointer"),
+        class("text-ecru-white-950 cursor-pointer col-start-11 col-span-1"),
         type_("button"),
         id("remove-linked-recipe-input"),
         on_click(UserRemovedLinkedRecipeAtIndex(index)),
@@ -844,7 +855,7 @@ fn linked_recipe_input(
     ),
     button(
       [
-        class("text-ecru-white-950 cursor-pointer"),
+        class("text-ecru-white-950 cursor-pointer col-start-12 col-span-1"),
         type_("button"),
         id("add-linked-recipe-input"),
         on_click(UserAddedLinkedRecipeAtIndex(index)),

@@ -1,6 +1,7 @@
 TODO
 
-[] SHOPPING LIST
+[-] SHOPPING LIST
+[] fix up nav icons in both small and large views
 [] write proper readme
 [] BUG: noticed double plan entry when editing an existing plan entry
 [] BUG: save recipe slow
