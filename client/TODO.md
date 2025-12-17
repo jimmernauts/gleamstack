@@ -1,8 +1,12 @@
 TODO
 
 [-] SHOPPING LIST
+[] add ingredients from linked recipe
 [] fix up nav icons in both small and large views
 [] write proper readme
+[] make planner entry edit into a popover card
+[] replace typeahead with typeahead_2 in planner
+[] add group by to recipe selector in typeahead
 [] BUG: noticed double plan entry when editing an existing plan entry
 [] BUG: save recipe slow
 [] copy recipes from browser bookmarks
@@ -12,6 +16,8 @@ TODO
 [] work out process to correct side-by-side
 [] extract nav, page layout to shared view functions
 [] Build auth
+[] deploy server to cloudflare as serverless function
+[] deploy server to fly as erlang server (switch from glen to wisp)
 [] Decide if stay SPA only or move to SSR / other. Maybe just classic SPA + Backend API - make scraping API endpoint more permanent. Or go other way and make scraping endpoint into a serverless function. Maybe the scraping endpoint could still be done browser-side in WASM somehow
 
 WIP

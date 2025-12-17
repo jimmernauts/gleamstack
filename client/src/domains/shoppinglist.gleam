@@ -9,7 +9,6 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/set.{type Set}
 import glearray.{type Array}
 import lib/utils
 import lustre/attribute.{
@@ -27,6 +26,7 @@ import shared/types
 
 pub type ShoppingListMsg {
   UserCreatedList(date.Date)
+  // TODO: add clone list feature
   UserRemovedIngredientAtIndex(Int)
   UserAddedIngredientAtIndex(Int)
   UserUpdatedIngredientNameAtIndex(Int, String)

@@ -299,7 +299,7 @@ export async function do_scrape_url(
     cb: dispatchFunction,
 ): Promise<void> {
     const response = await fetch(
-        `http://localhost:8000/api/scrape_url?target=${url}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/scrape_url?target=${url}`,
     );
     const body = await response.text();
     try {
