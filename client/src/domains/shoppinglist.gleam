@@ -826,9 +826,7 @@ fn linked_recipe_input(
   element.fragment([
     typeahead.typeahead([
       typeahead.recipes(recipe_list),
-      typeahead.search_term(
-        selected_recipe |> codecs.json_encode_planned_recipe |> json.to_string,
-      ),
+      typeahead.search_term(selected_recipe),
       event.on("typeahead-change", {
         use res <- decode.subfield(["detail"], decode.string)
         let decoded = json.parse(res, codecs.planned_recipe_decoder())

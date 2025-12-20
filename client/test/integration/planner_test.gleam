@@ -148,7 +148,11 @@ pub fn planner_integration_tests() {
       let final_simulation =
         simulation
         |> simulate.message(
-          Planner(UserUpdatedMealTitle(monday, Lunch, "Pasta Carbonara")),
+          Planner(UserUpdatedMealTitle(
+            monday,
+            Lunch,
+            types.RecipeName("Pasta Carbonara"),
+          )),
         )
 
       // Assert
@@ -189,10 +193,18 @@ pub fn planner_integration_tests() {
       let final_simulation =
         simulation
         |> simulate.message(
-          Planner(UserUpdatedMealTitle(monday, Lunch, "Pasta Carbonara")),
+          Planner(UserUpdatedMealTitle(
+            monday,
+            Lunch,
+            types.RecipeName("Pasta Carbonara"),
+          )),
         )
         |> simulate.message(
-          Planner(UserUpdatedMealTitle(monday, Dinner, "Thai Green Curry")),
+          Planner(UserUpdatedMealTitle(
+            monday,
+            Dinner,
+            types.RecipeName("Thai Green Curry"),
+          )),
         )
 
       // Assert
@@ -230,10 +242,18 @@ pub fn planner_integration_tests() {
       let final_simulation =
         simulation
         |> simulate.message(
-          Planner(UserUpdatedMealTitle(monday, Lunch, "Pasta Carbonara")),
+          Planner(UserUpdatedMealTitle(
+            monday,
+            Lunch,
+            types.RecipeName("Pasta Carbonara"),
+          )),
         )
         |> simulate.message(
-          Planner(UserUpdatedMealTitle(monday, Lunch, "Spaghetti Bolognese")),
+          Planner(UserUpdatedMealTitle(
+            monday,
+            Lunch,
+            types.RecipeName("Spaghetti Bolognese"),
+          )),
         )
 
       // Assert
@@ -274,9 +294,15 @@ pub fn planner_integration_tests() {
       let final_simulation =
         simulation
         |> simulate.message(
-          Planner(UserUpdatedMealTitle(monday, Lunch, "Pasta Carbonara")),
+          Planner(UserUpdatedMealTitle(
+            monday,
+            Lunch,
+            types.RecipeName("Pasta Carbonara"),
+          )),
         )
-        |> simulate.message(Planner(UserUpdatedMealTitle(monday, Lunch, "")))
+        |> simulate.message(
+          Planner(UserUpdatedMealTitle(monday, Lunch, types.RecipeName(""))),
+        )
 
       // Assert
       let final_model = simulate.model(final_simulation)

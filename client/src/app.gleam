@@ -53,6 +53,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         plan_week: dict.new(),
         recipe_list: [],
         start_date: date.floor(date.today(), date.Monday),
+        editing: None,
       ),
       db_subscriptions: dict.new(),
       shoppinglist: shoppinglist.ShoppingListModel(
@@ -105,7 +106,6 @@ pub type Route {
   EditRecipeDetail(RouteParams)
   ViewRecipeList
   ViewPlanner(start_date: date.Date)
-  EditPlanner(start_date: date.Date)
   ViewShoppingLists
   ViewShoppingList(date: date.Date)
   ViewSettings
@@ -212,10 +212,6 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         planner.subscribe_to_plan(date.floor(start_date, date.Monday)),
         Planner,
       ),
-    )
-    OnRouteChange(EditPlanner(start_date)) -> #(
-      Model(..model, current_route: EditPlanner(start_date)),
-      effect.none(),
     )
     OnRouteChange(ViewSettings) -> #(
       Model(..model, current_route: ViewSettings),
@@ -365,8 +361,9 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           recipes: child_model,
           planner: planner.PlannerModel(
             plan_week: model.planner.plan_week,
-            recipe_list: list.map(child_model.recipes, fn(a) { a.title }),
+            recipe_list: child_model.recipes,
             start_date: model.planner.start_date,
+            editing: model.planner.editing,
           ),
         ),
         effect.map(child_effect, RecipeList),
@@ -406,7 +403,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(
         Model(
           ..model,
-          planner: planner.PlannerModel(..model.planner, start_date: date),
+          planner: planner.PlannerModel(
+            ..model.planner,
+            start_date: date,
+            editing: model.planner.editing,
+          ),
         ),
         effect.none(),
       )
@@ -416,7 +417,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         Model(
           ..model,
           current_route: ViewPlanner(start_date),
-          planner: planner.PlannerModel(..model.planner, plan_week: plan_week),
+          planner: planner.PlannerModel(
+            ..model.planner,
+            plan_week: plan_week,
+            editing: model.planner.editing,
+          ),
         ),
         effect.none(),
       )
@@ -525,13 +530,12 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         _, _ -> #(step1.0, step1.1)
       }
     }
-    ViewPlanner(start_date) | EditPlanner(start_date) -> {
+    ViewPlanner(start_date) -> {
       case
         msg,
         dict.get(model.db_subscriptions, date.to_iso_string(start_date))
       {
         OnRouteChange(ViewPlanner(_start_date)), _ -> #(step1.0, step1.1)
-        OnRouteChange(EditPlanner(_start_date)), _ -> #(step1.0, step1.1)
         OnRouteChange(_), Ok(_) -> #(
           Model(
             ..step1.0,
@@ -585,9 +589,9 @@ fn on_route_change(uri: Uri) -> Msg {
       case uri.parse_query(query) {
         Ok([#("date", v)]) ->
           OnRouteChange(
-            EditPlanner(result.unwrap(date.from_iso_string(v), date.today())),
+            ViewPlanner(result.unwrap(date.from_iso_string(v), date.today())),
           )
-        _ -> OnRouteChange(EditPlanner(date.today()))
+        _ -> OnRouteChange(ViewPlanner(date.today()))
       }
     }
     Some(query), ["planner"] -> {
@@ -605,7 +609,7 @@ fn on_route_change(uri: Uri) -> Msg {
       OnRouteChange(EditRecipeDetail(SlugParam(slug: slug)))
     _, ["recipes", slug] -> OnRouteChange(ViewRecipeDetail(slug: slug))
     _, ["recipes"] -> OnRouteChange(ViewRecipeList)
-    _, ["planner", "edit"] -> OnRouteChange(EditPlanner(date.today()))
+    _, ["planner", "edit"] -> OnRouteChange(ViewPlanner(date.today()))
     _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
     _, ["shopping-list"] -> OnRouteChange(ViewShoppingLists)
     _, ["shopping-list", date_str] ->
@@ -655,17 +659,9 @@ fn view(model: Model) -> Element(Msg) {
       element.map(
         planner.view_planner(planner.PlannerModel(
           plan_week: model.planner.plan_week,
-          recipe_list: list.map(model.recipes.recipes, fn(a) { a.title }),
+          recipe_list: model.recipes.recipes,
           start_date: start_date,
-        )),
-        Planner,
-      )
-    EditPlanner(start_date) ->
-      element.map(
-        planner.edit_planner(planner.PlannerModel(
-          plan_week: model.planner.plan_week,
-          recipe_list: list.map(model.recipes.recipes, fn(a) { a.title }),
-          start_date: start_date,
+          editing: model.planner.editing,
         )),
         Planner,
       )

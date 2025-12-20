@@ -1,4 +1,14 @@
-# Gleamstack Project Rules
+---
+description: Gleam & Lustre Coding Standards
+---
+
+# Gleam & Lustre Coding Standards
+
+## Gleam language paradigms
+
+- You shouldn't need to run `gleam build`. The LSP reports type errors to the IDE that you should be able to read.
+- NEVER fix lint warnings until you are finished with the task at hand.
+- ALWAYS fix lint errors as soon as possible, as Gleam's static typing catches many issues early on
 
 ## Gleam & Lustre Patterns
 
@@ -57,24 +67,6 @@ Each domain module should follow this order:
 - Clean up subscriptions when navigating away from a route
 - Use date strings or slugs as subscription keys
 
-## Routing
-
-### Route Handling
-- Define all routes in `app.gleam` Route type
-- Parse routes in `on_route_change` function
-- Handle route changes in main update function
-- Use query parameters for optional data (e.g., `?date=2025-01-01`)
-- Prefer inline editing over separate edit routes when possible
-
-### URL Structure
-- `/recipes` - list view
-- `/recipes/new` - create new
-- `/recipes/:slug` - detail view
-- `/recipes/:slug/edit` - edit view
-- `/planner?date=YYYY-MM-DD` - planner with optional date
-- `/shopping-list` - list view
-- `/shopping-list/:date` - detail view for specific date
-
 ## UI/UX Patterns
 
 ### Views
@@ -91,46 +83,10 @@ Each domain module should follow this order:
 - Provide immediate visual feedback for user actions
 - Use checkboxes for toggleable state
 
-
 ### State Management
 - Keep current item in model (e.g., `current_recipe`, `current` shopping list)
 - Store lists/collections separately (e.g., `all_lists`, `recipes`)
 - Use optimistic updates where appropriate
-
-## Testing
-
-### Running Tests
-- Run all tests: `gleam test --target javascript` (must be run in `client/` directory)
-- Run snapshot tests (Birdie): `gleam run -m birdie` (must be run in `client/` directory)
-  - Press `a` to accept a new snapshot
-  - Press `r` to reject a new snapshot
-  - Press `d` to toggle the diff view
-
-### Test Organization
-- Unit tests in `client/test/unit/`
-- Snapshot tests use birdie in `client/birdie_snapshots/`
-- Follow existing test patterns from planner and recipe tests
-
-### What to Test
-- Write snapshot tests for all view functions
-- Write unit tests for complex update logic
-- Test decoders with various input shapes
-- Test edge cases (empty lists, missing data, etc.)
-
-## Documentation
-
-### Code Comments
-- Add doc comments (`///`) to all public functions
-- Explain "why" not "what" in comments
-- Document external function signatures clearly
-- Note any workarounds or TODOs with context
-
-### Planning
-- Keep implementation plans in `plans/` directory
-- Update plans as implementation progresses
-- Mark completed sections with ✅
-- Link to actual code in plans using file:// links
-- NEVER give me estimated completion times in plans
 
 ## Gleam-Specific Guidelines
 
@@ -161,19 +117,6 @@ Each domain module should follow this order:
 - Gleam Dict ↔ JS object (via JSON)
 - Gleam List ↔ JS array
 - Gleam Option(T) ↔ JS null/undefined (handle carefully)
-
-## Performance
-
-### Optimization
-- Use `keyed.fragment` for dynamic lists that change
-- Minimize effect batching (only when truly parallel)
-- Cache expensive computations in model when needed
-- Use subscriptions instead of polling
-
-### Don't Optimize Prematurely
-- Gleam/Lustre is fast by default
-- Profile before optimizing
-- Readability > micro-optimizations
 
 ## Error Handling
 

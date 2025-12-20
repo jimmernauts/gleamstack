@@ -55,8 +55,11 @@ pub fn recipes(all: List(Recipe)) -> Attribute(msg) {
   )
 }
 
-pub fn search_term(term: String) -> Attribute(msg) {
-  attribute.attribute("search-term", term)
+pub fn search_term(term: types.PlannedRecipe) -> Attribute(msg) {
+  attribute.attribute(
+    "search-term",
+    json.to_string(codecs.json_encode_planned_recipe(term)),
+  )
 }
 
 pub fn class_list(class_list: String) -> Attribute(msg) {
