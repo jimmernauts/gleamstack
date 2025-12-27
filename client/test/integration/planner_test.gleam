@@ -1,12 +1,13 @@
 import app.{OnRouteChange, Planner, ViewPlanner}
 import birdie
 import domains/planner.{
-  DbRetrievedPlan, Dinner, Lunch, PlanDay, PlannedMealWithStatus,
+  DbRetrievedPlan, Dinner, EditingMeal, Lunch, PlanDay, PlannedMealWithStatus,
   UserToggledMealComplete, UserUpdatedMealTitle,
 }
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
+import lustre/dev/query
 import lustre/dev/simulate
 import lustre/element
 import rada/date
@@ -445,6 +446,36 @@ pub fn planner_integration_tests() {
       simulate.view(simulation)
       |> element.to_readable_string
       |> birdie.snap(title: "planner_with_meals")
+    }),
+    it("should open edit modal when click edit button", fn() {
+      // Arrange
+      let start_date = date.floor(date.today(), date.Monday)
+      let initial_route = ViewPlanner(start_date)
+      let simulation =
+        simulate.application(
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
+        )
+        |> simulate.start(Nil)
+        |> simulate.message(OnRouteChange(initial_route))
+
+      let monday = start_date
+      let button_id = "edit-meal-" <> date.to_iso_string(monday) <> "-lunch"
+
+      // Act
+      let final_simulation =
+        simulation |> simulate.click(query.element(query.id(button_id)))
+
+      // Assert
+      let model = simulate.model(final_simulation)
+      case model {
+        app.Model(planner: planner, ..) -> {
+          planner.editing
+          |> expect.to_be_some
+          |> expect.to_equal(EditingMeal(monday, Lunch))
+        }
+      }
     }),
   ])
 }

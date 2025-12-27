@@ -91,10 +91,10 @@ test_name: recipe_creation_workflow_tests
         </legend>
         <div class="contents">
           <div data-lustre-key="0" class="my-1 w-full flex justify-between items-baseline  text-base">
-            <input aria-label="Enter ingredient name" class="text-base input-base max-w-[20ch] md:max-w-[34ch] input-focus bg-ecru-white-100" name="ingredient-name-0" placeholder="Ingredient" type="text" value>
+            <input aria-label="Enter ingredient name" class="text-base input-base w-[20ch] md:w-[34ch] input-focus bg-ecru-white-100" name="ingredient-name-0" placeholder="Ingredient" type="text" value>
             <div class="flex justify-end gap-1 items-baseline">
-              <input aria-label="Enter ingredient quanitity" class="pt-0.5 max-w-[3ch] text-sm input-focus bg-ecru-white-100" name="ingredient-qty-0" placeholder="Qty" type="text" value>
-              <input aria-label="Enter ingredient units" class="pt-0.5 max-w-[3ch] text-sm mr-0 input-focus bg-ecru-white-100" name="ingredient-units-0" placeholder="Units" type="text" value>
+              <input aria-label="Enter ingredient quanitity" class="pt-0.5 w-[3ch] text-sm input-focus bg-ecru-white-100" name="ingredient-qty-0" placeholder="Qty" type="text" value>
+              <input aria-label="Enter ingredient units" class="pt-0.5 w-[3.5ch] text-sm mr-0 input-focus bg-ecru-white-100" name="ingredient-units-0" placeholder="Units" type="text" value>
               <div class="flex text-xs items-baseline">
                 <label aria-label="Toggle main ingredient" class="ingredient-toggle">
                   <input name="`ingredient-main-0" type="checkbox">

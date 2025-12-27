@@ -56,6 +56,7 @@ pub type PlannerMsg {
   UserSavedPlan
   UserClickedEditMeal(Date, Meal)
   UserClosedEditMeal
+  PlannerNoOp
 }
 
 pub type PlanWeek =
@@ -226,6 +227,7 @@ pub fn planner_update(
     UserClosedEditMeal -> {
       #(PlannerModel(..model, editing: None), effect.none())
     }
+    PlannerNoOp -> #(model, effect.none())
   }
 }
 
@@ -630,6 +632,12 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
       card,
       button(
         [
+          id(
+            "edit-meal-"
+            <> date.to_iso_string(pd.date)
+            <> "-"
+            <> string.lowercase(string.inspect(for)),
+          ),
           class(
             "absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100",
           ),
@@ -706,6 +714,10 @@ fn view_edit_popover(
         [
           class(
             "relative w-full max-w-lg rounded-lg border border-ecru-white-950 bg-ecru-white-50 p-6 shadow-xl",
+          ),
+          event.advanced(
+            "click",
+            decode.success(event.handler(PlannerNoOp, False, True)),
           ),
         ],
         [
