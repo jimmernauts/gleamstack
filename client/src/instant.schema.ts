@@ -24,6 +24,8 @@ const _schema = i.schema({
 		plan: i.entity({
 			date: i.number().indexed(),
 			planned_meals: i.json().optional(),
+			lunch: i.string().optional(),
+			dinner: i.string().optional(),
 		}),
 		settings: i.entity({
 			api_key: i.string().optional(),

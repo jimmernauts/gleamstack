@@ -542,7 +542,7 @@ fn save_shopping_list(list: ShoppingList) -> Nil {
       |> json.to_string,
     list.linked_recipes
       |> glearray.to_list
-      |> list.map(encode_planned_recipe)
+      |> list.map(codecs.encode_planned_recipe)
       |> json.array(fn(x) { x })
       |> json.to_string,
     case list.linked_plan {
@@ -986,7 +986,7 @@ pub fn shopping_list_decoder() -> Decoder(ShoppingList) {
   use linked_recipes <- decode.optional_field(
     "linked_recipes",
     [],
-    codecs.json_string_decoder(decode.list(planned_recipe_decoder()), []),
+    codecs.json_string_decoder(decode.list(codecs.planned_recipe_decoder()), []),
   )
   use linked_plan <- decode.optional_field(
     "linked_plan",
@@ -1022,25 +1022,6 @@ fn shopping_list_summary_decoder() -> Decoder(ShoppingList) {
   ))
 }
 
-fn planned_recipe_decoder() -> Decoder(types.PlannedRecipe) {
-  use recipe_name <- decode.optional_field(
-    "recipe_name",
-    "not found",
-    decode.string,
-  )
-  use recipe_slug <- decode.optional_field(
-    "recipe_slug",
-    "not found",
-    decode.string,
-  )
-  case recipe_name, recipe_slug {
-    "not found", "not found" ->
-      decode.failure(types.RecipeName(""), "PlannedRecipe")
-    "not found", slug -> decode.success(types.RecipeSlug(slug))
-    name, _ -> decode.success(types.RecipeName(name))
-  }
-}
-
 pub fn shopping_list_status_decoder() -> Decoder(Status) {
   use decoded_string <- decode.then(decode.string)
   case decoded_string {
@@ -1068,13 +1049,6 @@ fn encode_shopping_list_ingredient(item: ShoppingListIngredient) -> Json {
   ])
 }
 
-fn encode_planned_recipe(recipe: types.PlannedRecipe) -> Json {
-  case recipe {
-    types.RecipeName(name) -> json.object([#("recipe_name", json.string(name))])
-    types.RecipeSlug(slug) -> json.object([#("recipe_slug", json.string(slug))])
-  }
-}
-
 pub fn encode_shopping_list(list: ShoppingList) -> Json {
   json.object([
     #("date", json.int(date.to_rata_die(list.date))),
@@ -1100,7 +1074,7 @@ pub fn encode_shopping_list(list: ShoppingList) -> Json {
       json.string(
         list.linked_recipes
         |> glearray.to_list
-        |> list.map(encode_planned_recipe)
+        |> list.map(codecs.encode_planned_recipe)
         |> json.array(fn(x) { x })
         |> json.to_string,
       ),

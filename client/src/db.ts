@@ -142,6 +142,8 @@ export async function do_get_plan(
         id: string;
         date: number;
         planned_meals?: string | undefined;
+        lunch?: string | undefined;
+        dinner?: string | undefined;
     }[]
 > {
     const query = {
@@ -157,6 +159,7 @@ export async function do_get_plan(
         },
     };
     const result = await db.queryOnce(query);
+    console.log(result)
     return result.data.plan;
 }
 
@@ -177,7 +180,11 @@ export function do_subscribe_to_plan(
             },
         },
     };
-    const result = db.subscribeQuery(query, dispatch);
+    const logAndDispatch = (result: unknown) => {
+        console.log(result);
+        dispatch(result);
+    }
+    const result = db.subscribeQuery(query, logAndDispatch);
     return result;
 }
 
@@ -189,7 +196,8 @@ export async function do_save_plan(plan: PlanDay[]): Promise<PlanDay[]> {
         await db.transact(
             db.tx.plan[id_to_update].update({
                 date: day.date,
-                planned_meals: JSON.stringify(day.planned_meals),
+                lunch: day.lunch,
+                dinner: day.dinner,
             }),
         );
     }

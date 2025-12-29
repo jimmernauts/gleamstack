@@ -10,6 +10,7 @@ TODO
     [] Typeahead puts focus to end of input when typing each letter
     [] Typeahead saves recipe selection as soon as an item is selected. Instead, it should only save to the model, and then the model should flush to the db when 'Save' is clicked on the edit modal.
     [] Try and make the modal pop with the typeahead input as close as possible to the current cursor position when we hit the edit button
+    [] why do i have both a 'get' and 'subscribe' to the planner
     [] migration to 
 [] add ingredients from linked recipe
 [] fix up nav icons in both small and large views
