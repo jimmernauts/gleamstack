@@ -60,7 +60,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:2;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-22-lunch">
@@ -69,7 +69,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:3;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-23-lunch">
@@ -78,7 +78,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:4;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-24-lunch">
@@ -87,7 +87,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:5;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-25-lunch">
@@ -96,7 +96,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:6;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-26-lunch">
@@ -105,7 +105,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:7;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-27-lunch">
@@ -114,7 +114,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:8;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-28-lunch">
@@ -123,7 +123,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:2;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-22-dinner">
@@ -132,7 +132,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:3;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-23-dinner">
@@ -141,7 +141,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:4;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-24-dinner">
@@ -150,7 +150,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:5;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-25-dinner">
@@ -159,7 +159,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:6;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-26-dinner">
@@ -168,7 +168,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:7;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-27-dinner">
@@ -177,7 +177,7 @@ test_name: planner_integration_tests
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:8;">
 
         <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-28-dinner">

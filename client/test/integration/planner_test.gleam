@@ -1,11 +1,11 @@
 import app.{OnRouteChange, Planner, ViewPlanner}
 import birdie
 import domains/planner.{
-  DbRetrievedPlan, Dinner, EditingMeal, Lunch, PlanDay, PlannedMealWithStatus,
+  DbRetrievedPlan, Dinner, EditingMeal, Lunch, PlanDay, PlannedMeal,
   UserToggledMealComplete, UserUpdatedMealTitle,
 }
 import gleam/dict
-import gleam/list
+
 import gleam/option.{None, Some}
 import lustre/dev/query
 import lustre/dev/simulate
@@ -88,30 +88,30 @@ pub fn planner_integration_tests() {
         dict.from_list([
           #(
             monday,
-            PlanDay(date: monday, planned_meals: [
-              PlannedMealWithStatus(
-                for: Lunch,
-                recipe: Some(types.RecipeName("Pasta Carbonara")),
-                complete: None,
-              ),
-              PlannedMealWithStatus(
-                for: Dinner,
-                recipe: Some(types.RecipeName("Thai Green Curry")),
-                complete: None,
-              ),
-            ]),
+            PlanDay(
+              date: monday,
+              lunch: Some(PlannedMeal(
+                recipe: types.RecipeName("Pasta Carbonara"),
+                complete: False,
+              )),
+              dinner: Some(PlannedMeal(
+                recipe: types.RecipeName("Thai Green Curry"),
+                complete: False,
+              )),
+            ),
           ),
           #(
             tuesday,
-            PlanDay(date: tuesday, planned_meals: [
-              PlannedMealWithStatus(
-                for: Lunch,
-                recipe: Some(types.RecipeName("Spaghetti Bolognese")),
-                complete: None,
-              ),
-            ]),
+            PlanDay(
+              date: tuesday,
+              lunch: Some(PlannedMeal(
+                recipe: types.RecipeName("Spaghetti Bolognese"),
+                complete: False,
+              )),
+              dinner: None,
+            ),
           ),
-          #(wednesday, PlanDay(date: wednesday, planned_meals: [])),
+          #(wednesday, PlanDay(date: wednesday, lunch: None, dinner: None)),
         ])
 
       // Act
@@ -160,17 +160,13 @@ pub fn planner_integration_tests() {
       let final_model = simulate.model(final_simulation)
       case final_model {
         app.Model(planner: planner, ..) -> {
-          case dict.get(planner.plan_week, monday) {
-            Ok(plan_day) -> {
-              plan_day.planned_meals
-              |> list.any(fn(meal) {
-                meal.for == Lunch
-                && meal.recipe == Some(types.RecipeName("Pasta Carbonara"))
-              })
-              |> expect.to_equal(True)
-            }
-            Error(_) -> panic as "Expected plan day to exist"
-          }
+          let day =
+            planner.plan_week
+            |> dict.get(monday)
+            |> expect.to_be_ok
+          let meal = day.lunch |> expect.to_be_some
+          meal.recipe
+          |> expect.to_equal(types.RecipeName("Pasta Carbonara"))
         }
       }
     }),
@@ -212,14 +208,13 @@ pub fn planner_integration_tests() {
       let final_model = simulate.model(final_simulation)
       case final_model {
         app.Model(planner: planner, ..) -> {
-          case dict.get(planner.plan_week, monday) {
-            Ok(plan_day) -> {
-              plan_day.planned_meals
-              |> list.length
-              |> expect.to_equal(2)
-            }
-            Error(_) -> panic as "Expected plan day to exist"
-          }
+          let day =
+            planner.plan_week
+            |> dict.get(monday)
+            |> expect.to_be_ok
+          let _ = day.lunch |> expect.to_be_some
+          let _ = day.dinner |> expect.to_be_some
+          Nil
         }
       }
     }),
@@ -261,17 +256,13 @@ pub fn planner_integration_tests() {
       let final_model = simulate.model(final_simulation)
       case final_model {
         app.Model(planner: planner, ..) -> {
-          case dict.get(planner.plan_week, monday) {
-            Ok(plan_day) -> {
-              plan_day.planned_meals
-              |> list.any(fn(meal) {
-                meal.for == Lunch
-                && meal.recipe == Some(types.RecipeName("Spaghetti Bolognese"))
-              })
-              |> expect.to_equal(True)
-            }
-            Error(_) -> panic as "Expected plan day to exist"
-          }
+          let day =
+            planner.plan_week
+            |> dict.get(monday)
+            |> expect.to_be_ok
+          let meal = day.lunch |> expect.to_be_some
+          meal.recipe
+          |> expect.to_equal(types.RecipeName("Spaghetti Bolognese"))
         }
       }
     }),
@@ -309,14 +300,11 @@ pub fn planner_integration_tests() {
       let final_model = simulate.model(final_simulation)
       case final_model {
         app.Model(planner: planner, ..) -> {
-          case dict.get(planner.plan_week, monday) {
-            Ok(plan_day) -> {
-              plan_day.planned_meals
-              |> list.any(fn(meal) { meal.for == Lunch })
-              |> expect.to_equal(False)
-            }
-            Error(_) -> panic as "Expected plan day to exist"
-          }
+          let day =
+            planner.plan_week
+            |> dict.get(monday)
+            |> expect.to_be_ok
+          day.lunch |> expect.to_be_none
         }
       }
     }),
@@ -330,13 +318,14 @@ pub fn planner_integration_tests() {
         dict.from_list([
           #(
             monday,
-            PlanDay(date: monday, planned_meals: [
-              PlannedMealWithStatus(
-                for: Lunch,
-                recipe: Some(types.RecipeName("Pasta Carbonara")),
-                complete: Some(False),
-              ),
-            ]),
+            PlanDay(
+              date: monday,
+              lunch: Some(PlannedMeal(
+                recipe: types.RecipeName("Pasta Carbonara"),
+                complete: False,
+              )),
+              dinner: None,
+            ),
           ),
         ])
 
@@ -361,16 +350,12 @@ pub fn planner_integration_tests() {
       let final_model = simulate.model(final_simulation)
       case final_model {
         app.Model(planner: planner, ..) -> {
-          case dict.get(planner.plan_week, monday) {
-            Ok(plan_day) -> {
-              plan_day.planned_meals
-              |> list.any(fn(meal) {
-                meal.for == Lunch && meal.complete == Some(True)
-              })
-              |> expect.to_equal(True)
-            }
-            Error(_) -> panic as "Expected plan day to exist"
-          }
+          let day =
+            planner.plan_week
+            |> dict.get(monday)
+            |> expect.to_be_ok
+          let meal = day.lunch |> expect.to_be_some
+          meal.complete |> expect.to_equal(True)
         }
       }
     }),
@@ -406,28 +391,28 @@ pub fn planner_integration_tests() {
         dict.from_list([
           #(
             monday,
-            PlanDay(date: monday, planned_meals: [
-              PlannedMealWithStatus(
-                for: Lunch,
-                recipe: Some(types.RecipeName("Pasta Carbonara")),
-                complete: Some(False),
-              ),
-              PlannedMealWithStatus(
-                for: Dinner,
-                recipe: Some(types.RecipeName("Thai Green Curry")),
-                complete: Some(True),
-              ),
-            ]),
+            PlanDay(
+              date: monday,
+              lunch: Some(PlannedMeal(
+                recipe: types.RecipeName("Pasta Carbonara"),
+                complete: False,
+              )),
+              dinner: Some(PlannedMeal(
+                recipe: types.RecipeName("Thai Green Curry"),
+                complete: False,
+              )),
+            ),
           ),
           #(
             tuesday,
-            PlanDay(date: tuesday, planned_meals: [
-              PlannedMealWithStatus(
-                for: Lunch,
-                recipe: Some(types.RecipeName("Spaghetti Bolognese")),
-                complete: Some(False),
-              ),
-            ]),
+            PlanDay(
+              date: tuesday,
+              lunch: Some(PlannedMeal(
+                recipe: types.RecipeName("Spaghetti Bolognese"),
+                complete: False,
+              )),
+              dinner: None,
+            ),
           ),
         ])
 

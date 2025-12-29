@@ -7,7 +7,6 @@ description: Gleam & Lustre Coding Standards
 ## Gleam language paradigms
 
 - You shouldn't need to run `gleam build`. The LSP reports type errors to the IDE that you should be able to read.
-- NEVER fix lint warnings until you are finished with the task at hand.
 - ALWAYS fix lint errors as soon as possible, as Gleam's static typing catches many issues early on
 
 ## Gleam & Lustre Patterns

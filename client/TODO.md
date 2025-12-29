@@ -1,11 +1,19 @@
 TODO
 
 [-] SHOPPING LIST
+[-] Planner refactor: WIP
+    [] Planner card shows slug, not title, when recipe is selected from list
+    [] Edit button on card only shows on hover, hidden on mobile. Make it just any click on the card itself loads the edit modal
+    [] Popover background is too blurred
+    [] Popover styling
+    [] Typeahead doesn't accept ctrl+a
+    [] Typeahead puts focus to end of input when typing each letter
+    [] Typeahead saves recipe selection as soon as an item is selected. Instead, it should only save to the model, and then the model should flush to the db when 'Save' is clicked on the edit modal.
+    [] Try and make the modal pop with the typeahead input as close as possible to the current cursor position when we hit the edit button
+    [] migration to 
 [] add ingredients from linked recipe
 [] fix up nav icons in both small and large views
 [] write proper readme
-[] make planner entry edit into a popover card
-[] replace typeahead with typeahead_2 in planner
 [] add group by to recipe selector in typeahead
 [] BUG: noticed double plan entry when editing an existing plan entry
 [] BUG: save recipe slow
@@ -24,6 +32,8 @@ WIP
 
 DONE
 
+[X] make planner entry edit into a popover card
+[X] replace typeahead with typeahead_2 in planner
 [X] switch to Instant DB instead of triplit
 [X] reseed all the data from triplit
 [X] BUG: tag labels repeated on recipe list page

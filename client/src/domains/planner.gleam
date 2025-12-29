@@ -25,24 +25,20 @@ import shared/types
 
 //-TYPES-------------------------------------------------------------
 
+pub type PlannedMeal {
+  PlannedMeal(recipe: types.PlannedRecipe, complete: Bool)
+}
+
 pub type PlanDay {
-  PlanDay(date: Date, planned_meals: List(PlannedMealWithStatus))
+  PlanDay(date: Date, lunch: Option(PlannedMeal), dinner: Option(PlannedMeal))
 }
 
 pub type JsPlanDay {
-  JsPlanDay(date: Int, planned_meals: String)
+  JsPlanDay(date: Int, lunch: String, dinner: String)
 }
 
 pub type EditingMeal {
   EditingMeal(date: Date, meal: Meal)
-}
-
-pub type PlannedMealWithStatus {
-  PlannedMealWithStatus(
-    for: Meal,
-    recipe: Option(types.PlannedRecipe),
-    complete: Option(Bool),
-  )
 }
 
 pub type PlannerMsg {
@@ -78,15 +74,6 @@ pub type Meal {
 
 //-UPDATE---------------------------------------------
 
-// Helper function to extract recipe name from PlannedRecipe
-fn recipe_name(recipe: Option(types.PlannedRecipe)) -> String {
-  case recipe {
-    Some(types.RecipeSlug(slug)) -> slug
-    Some(types.RecipeName(name)) -> name
-    None -> ""
-  }
-}
-
 fn update_meal_title_in_plan(
   current: PlanWeek,
   date: Date,
@@ -94,43 +81,39 @@ fn update_meal_title_in_plan(
   value: types.PlannedRecipe,
 ) -> PlanWeek {
   dict.upsert(current, date, fn(a) {
-    PlanDay(date: date, planned_meals: case a {
-      Some(a) ->
+    let day =
+      a
+      |> option.lazy_unwrap(fn() {
+        PlanDay(date: date, lunch: None, dinner: None)
+      })
+    case meal {
+      Lunch ->
         case value {
-          types.RecipeName("") ->
-            a.planned_meals
-            |> list.filter(fn(a) { a.for != meal })
-          _ -> {
-            let tup =
-              a.planned_meals
-              |> list.split_while(fn(b) { b.for == meal })
-            case tup {
-              #([], b) ->
-                list.append(
-                  [
-                    PlannedMealWithStatus(
-                      for: meal,
-                      recipe: Some(value),
-                      complete: None,
-                    ),
-                  ],
-                  b,
-                )
-              #([a], b) ->
-                list.append(
-                  [
-                    PlannedMealWithStatus(..a, recipe: Some(value)),
-                  ],
-                  b,
-                )
-              #(_, _) -> []
-            }
-          }
+          types.RecipeName("") -> PlanDay(..day, lunch: None)
+          _ ->
+            PlanDay(
+              ..day,
+              lunch: Some(
+                day.lunch
+                |> option.map(fn(m) { PlannedMeal(..m, recipe: value) })
+                |> option.lazy_unwrap(fn() { PlannedMeal(value, False) }),
+              ),
+            )
         }
-      None -> [
-        PlannedMealWithStatus(for: meal, recipe: Some(value), complete: None),
-      ]
-    })
+      Dinner ->
+        case value {
+          types.RecipeName("") -> PlanDay(..day, dinner: None)
+          _ ->
+            PlanDay(
+              ..day,
+              dinner: Some(
+                day.dinner
+                |> option.map(fn(m) { PlannedMeal(..m, recipe: value) })
+                |> option.lazy_unwrap(fn() { PlannedMeal(value, False) }),
+              ),
+            )
+        }
+    }
   })
 }
 
@@ -140,17 +123,19 @@ fn toggle_meal_complete_in_plan(
   meal: Meal,
   complete: Bool,
 ) -> PlanWeek {
-  utils.dict_update(current, date, fn(a) {
-    PlanDay(
-      date: date,
-      planned_meals: a.planned_meals
-        |> list.map(fn(b) {
-          case b.for == meal {
-            True -> PlannedMealWithStatus(..b, complete: Some(complete))
-            False -> b
-          }
-        }),
-    )
+  utils.dict_update(current, date, fn(day) {
+    case meal {
+      Lunch ->
+        PlanDay(
+          ..day,
+          lunch: option.map(day.lunch, fn(m) { PlannedMeal(..m, complete:) }),
+        )
+      Dinner ->
+        PlanDay(
+          ..day,
+          dinner: option.map(day.dinner, fn(m) { PlannedMeal(..m, complete:) }),
+        )
+    }
   })
 }
 
@@ -293,7 +278,10 @@ fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 pub fn view_planner(model: PlannerModel) {
   let start_of_week = date.floor(model.start_date, date.Monday)
   let find_in_week = fn(a) {
-    result.unwrap(dict.get(model.plan_week, a), PlanDay(a, []))
+    result.unwrap(
+      dict.get(model.plan_week, a),
+      PlanDay(date: a, lunch: None, dinner: None),
+    )
   }
   let week =
     dict.from_list([
@@ -611,18 +599,16 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
     Lunch -> "col-start-2 md:row-start-2"
     Dinner -> "col-start-3 md:row-start-3"
   }
-  let card = {
-    use <- bool.guard(when: pd.planned_meals == [], return: element.none())
-    list.filter(pd.planned_meals, fn(a) { a.for == for })
-    |> list.map(inner_card(pd.date, _))
-    |> element.fragment
+  let card = case for {
+    Lunch -> inner_card(pd.date, Lunch, pd.lunch)
+    Dinner -> inner_card(pd.date, Dinner, pd.dinner)
   }
   div(
     [
       class(
         "group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
-                md:col-start-[var(--dayPlacement)] 
+                md:col-start-[var(--dayPlacement)]
                 snap-start scroll-p-[-40px] "
         <> row,
       ),
@@ -649,38 +635,57 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
   )
 }
 
-fn inner_card(date: Date, meal: PlannedMealWithStatus) -> Element(PlannerMsg) {
-  let PlannedMealWithStatus(_f, r, c) = meal
-  div(
-    [
-      class(
-        "flex h-11/12 m-1 flex-row items-baseline gap-1 overflow-y-scroll overflow-x-hidden",
-      ),
-    ],
-    [
-      input([
-        type_("checkbox"),
-        class("inline cursor-pointer"),
-        event.on_check(fn(a) { UserToggledMealComplete(date, meal.for, a) }),
-        checked(option.unwrap(meal.complete, False)),
-      ]),
-      h2(
+fn inner_card(
+  date: Date,
+  for: Meal,
+  planned_meal: Option(PlannedMeal),
+) -> Element(PlannerMsg) {
+  let recipe_title = case planned_meal {
+    Some(m) ->
+      case m.recipe {
+        types.RecipeSlug(slug) -> slug
+        types.RecipeName(name) -> name
+      }
+    None -> ""
+  }
+
+  let is_complete = case planned_meal {
+    Some(m) -> m.complete
+    None -> False
+  }
+
+  let card = case recipe_title == "" {
+    True -> element.none()
+    False ->
+      div(
         [
-          class("text-xl text-wrap leading-tight"),
-          styles([
-            #("text-decoration", {
-              use <- bool.guard(
-                when: option.unwrap(c, False),
-                return: "line-through",
-              )
-              "none"
-            }),
-          ]),
+          class(
+            "flex h-11/12 m-1 flex-row items-baseline gap-1 overflow-y-scroll overflow-x-hidden",
+          ),
         ],
-        [text(recipe_name(r))],
-      ),
-    ],
-  )
+        [
+          input([
+            type_("checkbox"),
+            class("inline cursor-pointer"),
+            event.on_check(fn(a) { UserToggledMealComplete(date, for, a) }),
+            checked(is_complete),
+          ]),
+          h2(
+            [
+              class("text-xl text-wrap leading-tight"),
+              styles([
+                #("text-decoration", {
+                  use <- bool.guard(when: is_complete, return: "line-through")
+                  "none"
+                }),
+              ]),
+            ],
+            [text(recipe_title)],
+          ),
+        ],
+      )
+  }
+  card
 }
 
 fn view_edit_popover(
@@ -692,13 +697,15 @@ fn view_edit_popover(
     model.plan_week
     |> dict.get(date)
     |> result.map(fn(pd) {
-      list.find(pd.planned_meals, fn(m) { m.for == meal })
+      case meal {
+        Lunch -> pd.lunch
+        Dinner -> pd.dinner
+      }
     })
-    |> result.flatten
-    |> option.from_result
+    |> result.unwrap(None)
 
   let current_planned_recipe = case current_meal {
-    Some(m) -> m.recipe
+    Some(m) -> Some(m.recipe)
     None -> Some(types.RecipeName(""))
   }
 
@@ -787,100 +794,45 @@ fn plan_day_decoder() -> decode.Decoder(PlanDay) {
     "date",
     decode.int |> decode.map(fn(a) { date.from_rata_die(a) }),
   )
-  use planned_meals <- decode.field(
-    "planned_meals",
-    codecs.json_string_decoder(planned_meals_decoder(), []),
+  use lunch <- decode.optional_field(
+    "lunch",
+    option.None,
+    decode.optional(codecs.json_string_decoder(
+      planned_meal_decoder(),
+      PlannedMeal(types.RecipeName(""), False),
+    )),
   )
-  decode.success(PlanDay(date: date, planned_meals: planned_meals))
+  use dinner <- decode.optional_field(
+    "dinner",
+    option.None,
+    decode.optional(codecs.json_string_decoder(
+      planned_meal_decoder(),
+      PlannedMeal(types.RecipeName(""), False),
+    )),
+  )
+  decode.success(PlanDay(date: date, lunch: lunch, dinner: dinner))
 }
 
-fn planned_meals_decoder() -> decode.Decoder(List(PlannedMealWithStatus)) {
-  let enum_decoder = {
-    use decoded_string <- decode.then(decode.string)
-    case decoded_string {
-      "lunch" -> decode.success(Lunch)
-      "dinner" -> decode.success(Dinner)
-      _ -> decode.failure(Lunch, "Meal")
-    }
-  }
-  let recipe_name_decoder = {
-    use recipe_str <- decode.then(decode.string)
-    decode.success(types.RecipeName(recipe_str))
-  }
-  let recipe_id_decoder = {
-    use recipe_str <- decode.then(decode.string)
-    decode.success(types.RecipeSlug(recipe_str))
-  }
-  let record_decoder = {
-    use for <- decode.field("for", enum_decoder)
-    use title <- decode.optional_field(
-      "title",
-      option.None,
-      decode.optional(recipe_name_decoder),
-    )
-    use recipe_id <- decode.optional_field(
-      "recipe_id",
-      option.None,
-      decode.optional(recipe_id_decoder),
-    )
-    use recipe_name <- decode.optional_field(
-      "recipe_name",
-      option.None,
-      decode.optional(recipe_name_decoder),
-    )
-    use complete <- decode.optional_field(
-      "complete",
-      option.None,
-      decode.optional(codecs.decode_stringed_bool()),
-    )
-    let maybe_recipe = case title, recipe_name, recipe_id {
-      Some(title), _, _ -> Some(title)
-      _, Some(recipe_name), _ -> Some(recipe_name)
-      _, _, Some(recipe_id) -> Some(recipe_id)
-      _, _, _ -> None
-    }
-    decode.success(PlannedMealWithStatus(
-      for: for,
-      recipe: maybe_recipe,
-      complete: complete,
-    ))
-  }
-  codecs.json_string_decoder(decode.list(of: record_decoder), [])
+fn planned_meal_decoder() -> decode.Decoder(PlannedMeal) {
+  use recipe <- decode.field("recipe", codecs.planned_recipe_decoder())
+  use complete <- decode.field("complete", decode.bool)
+  decode.success(PlannedMeal(recipe:, complete:))
 }
 
 fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {
   JsPlanDay(
     date: date.to_rata_die(plan_day.date),
-    planned_meals: json.to_string(json_encode_planned_meals(
-      plan_day.planned_meals,
-    )),
+    lunch: json.to_string(json_encode_planned_meal(plan_day.lunch)),
+    dinner: json.to_string(json_encode_planned_meal(plan_day.dinner)),
   )
 }
 
-fn json_encode_planned_meals(input: List(PlannedMealWithStatus)) -> Json {
-  input
-  |> json.array(of: json_encode_planned_meal_with_status)
-}
-
-fn json_encode_planned_meal_with_status(meal: PlannedMealWithStatus) -> Json {
-  case meal.recipe {
-    Some(recipe) ->
+fn json_encode_planned_meal(input: Option(PlannedMeal)) -> Json {
+  case input {
+    Some(meal) ->
       json.object([
-        case recipe {
-          types.RecipeName(name) -> #("recipe_name", json.string(name))
-          types.RecipeSlug(slug) -> #("recipe_slug", json.string(slug))
-        },
-        #(
-          "for",
-          json.string(case meal.for {
-            Lunch -> "lunch"
-            Dinner -> "dinner"
-          }),
-        ),
-        #(
-          "complete",
-          json.string(bool.to_string(option.unwrap(meal.complete, False))),
-        ),
+        #("recipe", codecs.json_encode_planned_recipe(meal.recipe)),
+        #("complete", json.bool(meal.complete)),
       ])
     None -> json.null()
   }

@@ -75,7 +75,6 @@ pub fn shopping_list_workflow_tests() {
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
         |> simulate.message(ShoppingList(UserCreatedList(today)))
-        |> simulate.message(ShoppingList(UserAddedIngredientAtIndex(0)))
         |> simulate.message(
           ShoppingList(UserUpdatedIngredientNameAtIndex(0, "Milk")),
         )
