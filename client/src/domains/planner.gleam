@@ -34,7 +34,7 @@ pub type PlanDay {
 }
 
 pub type JsPlanDay {
-  JsPlanDay(date: Int, lunch: String, dinner: String)
+  JsPlanDay(date: Int, lunch: Option(String), dinner: Option(String))
 }
 
 pub type EditingMeal {
@@ -51,6 +51,7 @@ pub type PlannerMsg {
   DbSavedPlan(Date)
   UserSavedPlan
   UserClickedEditMeal(Date, Meal)
+  UserCancelledEditMeal
   UserClosedEditMeal
   PlannerNoOp
 }
@@ -209,8 +210,14 @@ pub fn planner_update(
         effect.none(),
       )
     }
-    UserClosedEditMeal -> {
+    UserCancelledEditMeal -> {
       #(PlannerModel(..model, editing: None), effect.none())
+    }
+    UserClosedEditMeal -> {
+      #(PlannerModel(..model, editing: None), {
+        use dispatch <- effect.from
+        UserSavedPlan |> dispatch
+      })
     }
     PlannerNoOp -> #(model, effect.none())
   }
@@ -767,7 +774,7 @@ fn view_edit_popover(
                 class(
                   "rounded border border-ecru-white-950 px-4 py-2 hover:bg-ecru-white-100 cursor-pointer",
                 ),
-                event.on_click(UserClosedEditMeal),
+                event.on_click(UserCancelledEditMeal),
               ],
               [text("Cancel")],
             ),
@@ -778,7 +785,7 @@ fn view_edit_popover(
                 ),
                 event.on_click(UserClosedEditMeal),
               ],
-              [text("Done")],
+              [text("Save")],
             ),
           ]),
         ],
@@ -822,18 +829,18 @@ fn planned_meal_decoder() -> decode.Decoder(PlannedMeal) {
 fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {
   JsPlanDay(
     date: date.to_rata_die(plan_day.date),
-    lunch: json.to_string(json_encode_planned_meal(plan_day.lunch)),
-    dinner: json.to_string(json_encode_planned_meal(plan_day.dinner)),
+    lunch: plan_day.lunch
+      |> option.map(json_encode_planned_meal)
+      |> option.map(json.to_string),
+    dinner: plan_day.dinner
+      |> option.map(json_encode_planned_meal)
+      |> option.map(json.to_string),
   )
 }
 
-fn json_encode_planned_meal(input: Option(PlannedMeal)) -> Json {
-  case input {
-    Some(meal) ->
-      json.object([
-        #("recipe", codecs.json_encode_planned_recipe(meal.recipe)),
-        #("complete", json.bool(meal.complete)),
-      ])
-    None -> json.null()
-  }
+fn json_encode_planned_meal(input: PlannedMeal) -> Json {
+  json.object([
+    #("recipe", codecs.encode_planned_recipe(input.recipe)),
+    #("complete", json.bool(input.complete)),
+  ])
 }

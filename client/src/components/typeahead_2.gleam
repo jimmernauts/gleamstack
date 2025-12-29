@@ -58,7 +58,7 @@ pub fn recipes(all: List(Recipe)) -> Attribute(msg) {
 pub fn search_term(term: types.PlannedRecipe) -> Attribute(msg) {
   attribute.attribute(
     "search-term",
-    json.to_string(codecs.json_encode_planned_recipe(term)),
+    json.to_string(codecs.encode_planned_recipe(term)),
   )
 }
 
@@ -142,9 +142,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         event.emit(
           "typeahead-change",
           json.string(
-            json.to_string(
-              codecs.json_encode_planned_recipe(types.RecipeName(a)),
-            ),
+            json.to_string(codecs.encode_planned_recipe(types.RecipeName(a))),
           ),
         ),
       )
@@ -156,7 +154,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           "typeahead-change",
           json.string(
             json.to_string(
-              codecs.json_encode_planned_recipe(types.RecipeSlug(a.slug)),
+              codecs.encode_planned_recipe(types.RecipeSlug(a.slug)),
             ),
           ),
         ),

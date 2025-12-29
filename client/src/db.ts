@@ -1,6 +1,9 @@
 import { id, init } from "@instantdb/core";
 import type { PlanDay, Recipe, ShoppingList } from "../../common/types.ts";
 import schema from "./instant.schema.ts";
+// not sure how to fix these import type errors at write time
+import { JsPlanDay } from "./domains/planner.mjs"
+import { Option$isSome, Option$Some$0 } from "../gleam_stdlib/gleam/option.mjs";
 
 const db = init({
     appId: "eeaf3b82-5b5d-40c4-a29a-b68988377c3c",
@@ -64,7 +67,6 @@ export function do_subscribe_to_one_recipe_by_slug(
         },
     };
     const result = db.subscribeQuery(query, dispatch);
-    console.log(result);
     return result;
 }
 
@@ -159,7 +161,6 @@ export async function do_get_plan(
         },
     };
     const result = await db.queryOnce(query);
-    console.log(result)
     return result.data.plan;
 }
 
@@ -184,25 +185,29 @@ export function do_subscribe_to_plan(
         console.log(result);
         dispatch(result);
     }
-    const result = db.subscribeQuery(query, logAndDispatch);
+    const result = db.subscribeQuery(query, dispatch);
     return result;
 }
 
-export async function do_save_plan(plan: PlanDay[]): Promise<PlanDay[]> {
+export async function do_save_plan(plan: JsPlanDay[]): Promise<void> {
+    console.log(plan)
     for (const day of plan) {
+        console.log(day)
         const plan_day_to_update = await do_get_plan(day.date, day.date);
         const id_to_update =
             plan_day_to_update.length > 0 ? plan_day_to_update[0].id : id();
+        const record_to_insert = {
+            date: day.date,
+            ...(Option$isSome(day.lunch) ? { lunch: Option$Some$0(day.lunch) } : {}),
+            ...(Option$isSome(day.dinner) ? { dinner: Option$Some$0(day.dinner) } : {}),
+        }
+        console.log(record_to_insert)
         await db.transact(
-            db.tx.plan[id_to_update].update({
-                date: day.date,
-                lunch: day.lunch,
-                dinner: day.dinner,
-            }),
+            db.tx.plan[id_to_update].update(record_to_insert),
         );
     }
 
-    return plan;
+    return;
 }
 
 // SETTINGS
@@ -293,7 +298,6 @@ export function do_subscribe_to_one_shoppinglist_by_date(date: number, dispatch:
     };
     
     const result = db.subscribeQuery(query, (result: any) => {
-        console.log(result);
         dispatch(result);
     });
     return result;
