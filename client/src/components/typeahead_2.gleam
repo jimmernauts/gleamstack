@@ -11,7 +11,7 @@ import lustre/attribute.{type Attribute, attribute, class, id, name, value}
 import lustre/component.{on_attribute_change}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, fragment, text}
-import lustre/element/html.{li, textarea, ul}
+import lustre/element/html.{button, div, li, textarea, ul}
 import lustre/event.{on, on_click, on_focus, on_input, on_keydown}
 import plinth/javascript/global
 import shared/codecs
@@ -103,6 +103,7 @@ pub type Msg {
   UserFocusedSearchInput
   UserMousedDownOption
   UserBlurredSearchInput
+  UserClearedSearchInput
   UserClosedOptionList
 }
 
@@ -250,6 +251,21 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     UserUnHoveredOption(_a) -> {
       #(Model(..model, hovered_item: None), effect.none())
     }
+    UserClearedSearchInput -> {
+      #(
+        Model(
+          ..model,
+          search_term: types.RecipeName(""),
+          hovered_item: None,
+          is_focused: False,
+          is_open: False,
+        ),
+        {
+          use dispatch <- effect.from
+          UserSelectedValue("") |> dispatch
+        },
+      )
+    }
   }
 }
 
@@ -322,53 +338,62 @@ fn view(model: Model) -> Element(Msg) {
       |> option.unwrap("")
   }
   fragment([
-    textarea(
-      [
-        id("meal-input-" <> model.elem_id),
-        attribute.styles([
-          #("field-sizing", "content"),
-          #("overflow-x", "hidden"),
-          #("width", "100%"),
-          #(
-            "font-family",
-            "Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif",
-          ),
-          #(
-            "font-size",
-            "clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem)",
-          ),
-          #("line-height", "1.6"),
-          #("color", "rgb(47 40 27)"),
-          #("background-color", "rgb(241 241 227)"),
-          #("border-width", "0px"),
-          #("border-bottom-width", "0px"),
-          #("padding-top", "0px"),
-          #("padding-bottom", "0px"),
-          #("line-height", "inherit"),
-          #("resize", "none"),
-        ]),
-        class(case string.length(found_term) {
-          num if num > 38 -> "text-base"
-          num if num > 17 -> "text-lg"
-          _ -> "text-xl"
-        }),
-        value(found_term),
-        attribute("autocapitalize", "none"),
-        attribute("autocomplete", "off"),
-        attribute("aria-autocomplete", "list"),
-        attribute("role", "combobox"),
-        name("meal-input"),
-        on_input(UserTypedInSearchInput),
-        on("change", {
-          use val <- decode.subfield(["target", "value"], decode.string)
-          decode.success(UserSelectedValue(val))
-        }),
-        on_keydown(UserPressedKeyInSearchInput),
-        on_focus(UserFocusedSearchInput),
-        on("blur", decode.success(UserBlurredSearchInput)),
-      ],
-      "",
-    ),
+    div([class("relative")], [
+      textarea(
+        [
+          id("meal-input-" <> model.elem_id),
+          attribute.styles([
+            #("field-sizing", "content"),
+            #("overflow-x", "hidden"),
+            #("width", "100%"),
+            #(
+              "font-family",
+              "Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif",
+            ),
+            #(
+              "font-size",
+              "clamp(1.125rem, calc(1.125rem + ((1.25 - 1.125) * ((100vw - 20rem) / (96 - 20)))), 1.25rem)",
+            ),
+            #("line-height", "1.6"),
+            #("color", "rgb(47 40 27)"),
+            #("background-color", "rgb(241 241 227)"),
+            #("border-width", "0px"),
+            #("border-bottom-width", "0px"),
+            #("padding-top", "0px"),
+            #("padding-bottom", "0px"),
+            #("line-height", "inherit"),
+            #("resize", "none"),
+          ]),
+          class(case string.length(found_term) {
+            num if num > 38 -> "text-base"
+            num if num > 17 -> "text-lg"
+            _ -> "text-xl"
+          }),
+          value(found_term),
+          attribute("autocapitalize", "none"),
+          attribute("autocomplete", "off"),
+          attribute("aria-autocomplete", "list"),
+          attribute("role", "combobox"),
+          name("meal-input"),
+          on_input(UserTypedInSearchInput),
+          on("change", {
+            use val <- decode.subfield(["target", "value"], decode.string)
+            decode.success(UserSelectedValue(val))
+          }),
+          on_keydown(UserPressedKeyInSearchInput),
+          on_focus(UserFocusedSearchInput),
+          on("blur", decode.success(UserBlurredSearchInput)),
+        ],
+        "",
+      ),
+      button(
+        [
+          class("absolute top-1 right-1 cursor-pointer text-xs opacity-80"),
+          on_click(UserClearedSearchInput),
+        ],
+        [text("✖️")],
+      ),
+    ]),
     ul(
       [
         id("search-results-" <> model.elem_id),

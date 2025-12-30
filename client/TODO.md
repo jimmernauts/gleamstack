@@ -5,7 +5,7 @@ TODO
     [] Typeahead puts focus to end of input when typing each letter
     [] add link to planner recipe card when recipe is of type recipe-slug
     [] Planner card shows slug, not title, when recipe is selected from list
-    [] Popover background is too blurred
+
     [] Popover styling
     [] Typeahead doesn't accept ctrl+a
     [] Try and make the modal pop with the typeahead input as close as possible to the current cursor position when we hit the edit button
@@ -29,6 +29,7 @@ TODO
 WIP
 
 DONE
+[x] Popover background is too blurred
 [x] Edit button on card only shows on hover, hidden on mobile. Make it just any click on the card itself loads the edit modal
 [x] BUG: noticed double plan entry when editing an existing plan entry
 [X] make planner entry edit into a popover card
