@@ -616,29 +616,13 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
         "group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] "
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 "
         <> row,
       ),
       styles([#("--dayPlacement", int.to_string(i + 2))]),
+      event.on_click(UserClickedEditMeal(pd.date, for)),
     ],
-    [
-      card,
-      button(
-        [
-          id(
-            "edit-meal-"
-            <> date.to_iso_string(pd.date)
-            <> "-"
-            <> string.lowercase(string.inspect(for)),
-          ),
-          class(
-            "absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100",
-          ),
-          event.on_click(UserClickedEditMeal(pd.date, for)),
-        ],
-        [text("✏️")],
-      ),
-    ],
+    [card],
   )
 }
 
@@ -667,7 +651,7 @@ fn inner_card(
       div(
         [
           class(
-            "flex h-11/12 m-1 flex-row items-baseline gap-1 overflow-y-scroll overflow-x-hidden",
+            "flex m-1 flex-row items-baseline gap-1 overflow-y-auto overflow-x-hidden",
           ),
         ],
         [
@@ -675,6 +659,10 @@ fn inner_card(
             type_("checkbox"),
             class("inline cursor-pointer"),
             event.on_check(fn(a) { UserToggledMealComplete(date, for, a) }),
+            event.advanced(
+              "click",
+              decode.success(event.handler(PlannerNoOp, False, True)),
+            ),
             checked(is_complete),
           ]),
           h2(
