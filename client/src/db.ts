@@ -198,8 +198,8 @@ export async function do_save_plan(plan: JsPlanDay[]): Promise<void> {
             plan_day_to_update.length > 0 ? plan_day_to_update[0].id : id();
         const record_to_insert = {
             date: day.date,
-            ...(Option$isSome(day.lunch) ? { lunch: Option$Some$0(day.lunch) } : {}),
-            ...(Option$isSome(day.dinner) ? { dinner: Option$Some$0(day.dinner) } : {}),
+            ...(Option$isSome(day.lunch) ? { lunch: Option$Some$0(day.lunch) } : { lunch: null }),
+            ...(Option$isSome(day.dinner) ? { dinner: Option$Some$0(day.dinner) } : { dinner: null }),
         }
         console.log(record_to_insert)
         await db.transact(

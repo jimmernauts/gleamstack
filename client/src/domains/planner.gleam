@@ -651,13 +651,13 @@ fn inner_card(
       div(
         [
           class(
-            "flex m-1 flex-row items-baseline gap-1 overflow-y-auto overflow-x-hidden",
+            "flex m-2 flex-row items-baseline gap-1 overflow-y-auto overflow-x-hidden",
           ),
         ],
         [
           input([
             type_("checkbox"),
-            class("inline cursor-pointer"),
+            class("absolute top-2 right-2 cursor-pointer"),
             event.on_check(fn(a) { UserToggledMealComplete(date, for, a) }),
             event.advanced(
               "click",
@@ -707,7 +707,7 @@ fn view_edit_popover(
   div(
     [
       class(
-        "fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm",
+        "fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs",
       ),
       event.on_click(UserClosedEditMeal),
     ],
