@@ -95,7 +95,6 @@ pub type Msg {
   RetrievedSearchItems(List(RecipeSummary))
   RetrievedInitialSearchTerm(types.PlannedRecipe)
   UserTypedInSearchInput(String)
-  UserPressedKeyInSearchInput(String)
   UserSelectedValue(String)
   UserSelectedOption(RecipeSummary)
   UserHoveredOption(Int)
@@ -187,63 +186,6 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         Model(..model, is_open: False, is_focused: False, hovered_item: None),
         effect.none(),
       )
-    }
-    UserPressedKeyInSearchInput(a) -> {
-      case a, model.is_focused, model.is_open {
-        _, False, _ -> #(model, effect.none())
-        "ArrowDown", True, True -> {
-          #(
-            Model(
-              ..model,
-              hovered_item: case
-                model.hovered_item,
-                list.length(model.found_items)
-              {
-                None, _ -> Some(0)
-                Some(a), b -> Some(int.min(a + 1, b))
-              },
-            ),
-            effect.none(),
-          )
-        }
-        "ArrowDown", True, False -> {
-          #(Model(..model, is_open: True), effect.none())
-        }
-        "ArrowUp", True, True -> {
-          #(
-            Model(..model, hovered_item: case model.hovered_item {
-              None -> None
-              Some(a) -> Some(int.max(0, a - 1))
-            }),
-            effect.none(),
-          )
-        }
-        "Enter", True, _ -> {
-          case model.hovered_item, model.is_open {
-            None, False -> #(Model(..model, is_open: True), effect.none())
-            Some(a), True -> {
-              #(Model(..model, is_open: False, hovered_item: None), {
-                use dispatch <- effect.from
-                UserSelectedOption(option.unwrap(
-                  utils.list_at(model.found_items, a),
-                  RecipeSummary("", ""),
-                ))
-                |> dispatch
-              })
-            }
-            _, _ -> #(model, effect.none())
-          }
-        }
-        "Escape", True, True -> {
-          #(Model(..model, is_open: False, hovered_item: None), {
-            use dispatch <- effect.from
-            UserBlurredSearchInput |> dispatch
-          })
-        }
-        _, _, _ -> {
-          #(model, effect.none())
-        }
-      }
     }
     UserHoveredOption(a) -> {
       #(Model(..model, hovered_item: Some(a)), effect.none())
@@ -380,7 +322,6 @@ fn view(model: Model) -> Element(Msg) {
             use val <- decode.subfield(["target", "value"], decode.string)
             decode.success(UserSelectedValue(val))
           }),
-          on_keydown(UserPressedKeyInSearchInput),
           on_focus(UserFocusedSearchInput),
           on("blur", decode.success(UserBlurredSearchInput)),
         ],

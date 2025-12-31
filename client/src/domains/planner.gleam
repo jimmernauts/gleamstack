@@ -333,7 +333,7 @@ pub fn view_planner(model: PlannerModel) {
         [
           id("active-week"),
           class(
-            "mb-2 text-sm p-1
+            "m-1 text-sm
             overflow-x-hidden overflow-y-scroll md:overflow-x-scroll md:overflow-y-hidden snap-mandatory snap-always
             col-span-full row-start-2 grid gap-1 
             grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
@@ -429,14 +429,14 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
     div(
       [
         class(
-          "subgrid-cols md:col-start-1 row-start-1 subgrid-rows col-span-full md:row-span-full md:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full",
+          "subgrid-cols md:col-start-1 row-start-1 subgrid-rows col-span-full md:row-span-full md:col-span-1 sticky left-0 top-0 outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full  z-100",
         ),
       ],
       [
         div(
           [
             class(
-              "md:row-start-2 md:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 shadow-orangep-0 bg-ecru-white-50",
+              "md:row-start-2 md:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 shadow-orange bg-ecru-white-50",
             ),
           ],
           [h2([class("mx-2 ")], [text("Lunch")])],
@@ -444,7 +444,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
         div(
           [
             class(
-              "md:row-start-3 md:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  shadow-orange sticky left-0 top-0 bg-ecru-white-50",
+              "md:row-start-3 md:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  shadow-orange bg-ecru-white-50 z-100",
             ),
           ],
           [h2([class("mx-2 ")], [text("Dinner")])],
