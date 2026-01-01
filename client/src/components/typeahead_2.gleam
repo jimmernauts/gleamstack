@@ -5,14 +5,13 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import lib/utils
 import lustre.{type App}
 import lustre/attribute.{type Attribute, attribute, class, id, name, value}
 import lustre/component.{on_attribute_change}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, fragment, text}
 import lustre/element/html.{button, div, li, textarea, ul}
-import lustre/event.{on, on_click, on_focus, on_input, on_keydown}
+import lustre/event.{on, on_click, on_focus}
 import plinth/javascript/global
 import shared/codecs
 import shared/types.{type Recipe}
@@ -72,6 +71,7 @@ pub type Model {
   Model(
     elem_id: String,
     search_items: List(RecipeSummary),
+    caret_position: Option(Int),
     search_term: types.PlannedRecipe,
     found_items: List(RecipeSummary),
     is_open: Bool,
@@ -84,7 +84,7 @@ pub type Model {
 fn init(_) -> #(Model, Effect(Msg)) {
   let elem_id = int.to_string(int.random(999_999))
   #(
-    Model(elem_id, [], types.RecipeName(""), [], False, False, None, None),
+    Model(elem_id, [], None, types.RecipeName(""), [], False, False, None, None),
     effect.none(),
   )
 }
@@ -94,7 +94,7 @@ fn init(_) -> #(Model, Effect(Msg)) {
 pub type Msg {
   RetrievedSearchItems(List(RecipeSummary))
   RetrievedInitialSearchTerm(types.PlannedRecipe)
-  UserTypedInSearchInput(String)
+  UserTypedInSearchInput(String, Int)
   UserSelectedValue(String)
   UserSelectedOption(RecipeSummary)
   UserHoveredOption(Int)
@@ -104,9 +104,11 @@ pub type Msg {
   UserBlurredSearchInput
   UserClearedSearchInput
   UserClosedOptionList
+  TypeaheadNoop
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
+  echo msg
   case msg {
     RetrievedInitialSearchTerm(a) -> {
       #(Model(..model, search_term: a), effect.none())
@@ -114,24 +116,25 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     RetrievedSearchItems(a) -> {
       #(Model(..model, search_items: a, found_items: a), effect.none())
     }
-    UserTypedInSearchInput(a) -> {
+    UserTypedInSearchInput(value, selection) -> {
       #(
         Model(
           ..model,
-          search_term: types.RecipeName(a),
+          search_term: types.RecipeName(value),
           found_items: {
-            case string.length(a) {
+            case string.length(value) {
               num if num < 1 -> []
               _ ->
                 list.filter(model.search_items, fn(r) {
                   string.contains(
                     string.lowercase(r.title),
-                    string.lowercase(a),
+                    string.lowercase(value),
                   )
                 })
             }
           },
-          is_open: !list.any(model.search_items, fn(r) { r.title == a }),
+          is_open: !list.any(model.search_items, fn(r) { r.title == value }),
+          caret_position: Some(selection),
         ),
         effect.none(),
       )
@@ -207,6 +210,9 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           UserSelectedValue("") |> dispatch
         },
       )
+    }
+    TypeaheadNoop -> {
+      #(model, effect.none())
     }
   }
 }
@@ -316,8 +322,23 @@ fn view(model: Model) -> Element(Msg) {
           attribute("autocomplete", "off"),
           attribute("aria-autocomplete", "list"),
           attribute("role", "combobox"),
+          attribute.property(
+            "selectionStart",
+            model.caret_position |> option.unwrap(100) |> json.int,
+          ),
+          attribute.property(
+            "selectionEnd",
+            model.caret_position |> option.unwrap(100) |> json.int,
+          ),
           name("meal-input"),
-          on_input(UserTypedInSearchInput),
+          on("input", {
+            use selection <- decode.subfield(
+              ["target", "selectionStart"],
+              decode.int,
+            )
+            use value <- decode.subfield(["target", "value"], decode.string)
+            decode.success(UserTypedInSearchInput(value, selection))
+          }),
           on("change", {
             use val <- decode.subfield(["target", "value"], decode.string)
             decode.success(UserSelectedValue(val))

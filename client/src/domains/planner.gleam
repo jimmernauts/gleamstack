@@ -144,6 +144,7 @@ pub fn planner_update(
   model: PlannerModel,
   msg: PlannerMsg,
 ) -> #(PlannerModel, Effect(PlannerMsg)) {
+  echo msg
   case msg {
     UserUpdatedMealTitle(date, meal, value) -> {
       let result = update_meal_title_in_plan(model.plan_week, date, meal, value)
