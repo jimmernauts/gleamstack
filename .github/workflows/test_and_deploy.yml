@@ -15,16 +15,9 @@ jobs:
                   rebar3-version: "3"
                   # elixir-version: "1.15.4"
             - uses: oven-sh/setup-bun@v2
-            - run: bun install
-              working-directory: app
-            - run: gleam test
-              working-directory: app
-            - run: gleam format --check src test
-              working-directory: app
-            - run: gleam test
-              working-directory: worker
-            - run: gleam build
-              working-directory: worker
-            - run: bunx wrangler deploy
+            - uses: actions/setup-node@v6
+              with:
+                node-version: "24"
+            - run: ./deploy/test-and-deploy.sh
               env: # Or as an environment variable
                 CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
