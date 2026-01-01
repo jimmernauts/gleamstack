@@ -38,7 +38,7 @@ pub type JsPlanDay {
 }
 
 pub type EditingMeal {
-  EditingMeal(date: Date, meal: Meal)
+  EditingMeal(day: PlanDay, meal: Meal)
 }
 
 pub type PlannerMsg {
@@ -50,9 +50,9 @@ pub type PlannerMsg {
   DbSubscribedPlan(Dynamic)
   DbSavedPlan(Date)
   UserSavedPlan
-  UserClickedEditMeal(Date, Meal)
+  UserClickedEditMeal(PlanDay, Meal)
   UserCancelledEditMeal
-  UserClosedEditMeal
+  UserSavedEditMeal
   PlannerNoOp
 }
 
@@ -205,16 +205,16 @@ pub fn planner_update(
     DbSavedPlan(_date) -> {
       #(model, effect.none())
     }
-    UserClickedEditMeal(date, meal) -> {
+    UserClickedEditMeal(day, meal) -> {
       #(
-        PlannerModel(..model, editing: Some(EditingMeal(date, meal))),
+        PlannerModel(..model, editing: Some(EditingMeal(day, meal))),
         effect.none(),
       )
     }
     UserCancelledEditMeal -> {
       #(PlannerModel(..model, editing: None), effect.none())
     }
-    UserClosedEditMeal -> {
+    UserSavedEditMeal -> {
       #(PlannerModel(..model, editing: None), {
         use dispatch <- effect.from
         UserSavedPlan |> dispatch
@@ -356,6 +356,11 @@ pub fn view_planner(model: PlannerModel) {
             |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
             |> list.index_map(fn(x, i) { planner_meal_card(x, i, Dinner) })
           }),
+          case model.editing {
+            None -> element.none()
+            Some(EditingMeal(day, meal)) ->
+              view_edit_popover(day, meal, model.recipe_list)
+          },
         ],
       ),
       nav_footer([
@@ -381,10 +386,6 @@ pub fn view_planner(model: PlannerModel) {
           [text("➡️")],
         ),
       ]),
-      case model.editing {
-        Some(editing) -> view_edit_popover(model, editing)
-        None -> element.none()
-      },
     ],
   )
 }
@@ -621,7 +622,7 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
         <> row,
       ),
       styles([#("--dayPlacement", int.to_string(i + 2))]),
-      event.on_click(UserClickedEditMeal(pd.date, for)),
+      event.on_click(UserClickedEditMeal(pd, for)),
     ],
     [card],
   )
@@ -685,20 +686,15 @@ fn inner_card(
 }
 
 fn view_edit_popover(
-  model: PlannerModel,
-  editing: EditingMeal,
+  day: PlanDay,
+  meal: Meal,
+  recipe_list: List(types.Recipe),
 ) -> Element(PlannerMsg) {
-  let EditingMeal(date, meal) = editing
-  let current_meal =
-    model.plan_week
-    |> dict.get(date)
-    |> result.map(fn(pd) {
-      case meal {
-        Lunch -> pd.lunch
-        Dinner -> pd.dinner
-      }
-    })
-    |> result.unwrap(None)
+  let current_meal = case meal {
+    Lunch -> day.lunch
+    Dinner -> day.dinner
+  }
+  let day_index = date.weekday_number(day.date)
 
   let current_planned_recipe = case current_meal {
     Some(m) -> Some(m.recipe)
@@ -708,15 +704,26 @@ fn view_edit_popover(
   div(
     [
       class(
-        "fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs",
+        "col-span-2 col-start-2 w-full h-full z-[100] flex items-center justify-center bg-ecru-white-50",
       ),
-      event.on_click(UserClosedEditMeal),
+      class("md:col-start-" <> int.to_string(day_index + 1)),
+      class(
+        "md:row-start-"
+        <> {
+          case meal {
+            Lunch -> "2"
+            Dinner -> "3"
+          }
+        },
+      ),
+      class("row-start-" <> int.to_string(day_index + 1)),
+      event.on_click(UserCancelledEditMeal),
     ],
     [
-      div(
+      html.fieldset(
         [
           class(
-            "relative w-full max-w-lg rounded-lg border border-ecru-white-950 bg-ecru-white-50 p-6 shadow-xl",
+            "relative w-full max-w-lg h-full grid gap-1 grid-rows-[1fr_auto] border border-ecru-white-950 bg-ecru-white-50 px-2 pt-1 shadow-orange overflow-auto",
           ),
           event.advanced(
             "click",
@@ -724,59 +731,54 @@ fn view_edit_popover(
           ),
         ],
         [
-          h2([class("mb-4 font-mono text-2xl")], [
-            text(
-              "Edit "
-              <> string.lowercase(string.inspect(meal))
-              <> " for "
-              <> utils.month_date_string(date),
-            ),
+          html.legend([class("mx-2 px-1 text-sm font-mono")], [
+            text(case meal {
+              Lunch -> "Lunch"
+              Dinner -> "Dinner"
+            }),
           ]),
-          div([class("mb-6")], [
-            typeahead_2.typeahead([
-              typeahead_2.recipes(model.recipe_list),
-              typeahead_2.search_term(option.unwrap(
-                current_planned_recipe,
-                types.RecipeName(""),
-              )),
-              event.on("typeahead-change", {
-                use res <- decode.subfield(["detail"], decode.string)
-                case json.parse(res, codecs.planned_recipe_decoder()) {
-                  Ok(planned_recipe) ->
-                    decode.success(UserUpdatedMealTitle(
-                      date,
-                      meal,
-                      planned_recipe,
-                    ))
-                  Error(_) ->
-                    decode.failure(
-                      UserUpdatedMealTitle(date, meal, types.RecipeName("")),
-                      "PlannedRecipe",
-                    )
-                }
-              }),
-            ]),
+          typeahead_2.typeahead([
+            typeahead_2.recipes(recipe_list),
+            typeahead_2.search_term(option.unwrap(
+              current_planned_recipe,
+              types.RecipeName(""),
+            )),
+            event.on("typeahead-change", {
+              use res <- decode.subfield(["detail"], decode.string)
+              case json.parse(res, codecs.planned_recipe_decoder()) {
+                Ok(planned_recipe) ->
+                  decode.success(UserUpdatedMealTitle(
+                    day.date,
+                    meal,
+                    planned_recipe,
+                  ))
+                Error(_) ->
+                  decode.failure(
+                    UserUpdatedMealTitle(day.date, meal, types.RecipeName("")),
+                    "PlannedRecipe",
+                  )
+              }
+            }),
           ]),
-          div([class("flex justify-end gap-2")], [
-            button(
-              [
-                class(
-                  "rounded border border-ecru-white-950 px-4 py-2 hover:bg-ecru-white-100 cursor-pointer",
-                ),
-                event.on_click(UserCancelledEditMeal),
-              ],
-              [text("Cancel")],
-            ),
-            button(
-              [
-                class(
-                  "rounded bg-ecru-white-950 px-4 py-2 text-ecru-white-50 hover:bg-ecru-white-900 cursor-pointer",
-                ),
-                event.on_click(UserClosedEditMeal),
-              ],
-              [text("Save")],
-            ),
-          ]),
+          div(
+            [class("flex flex-row flex-wrap text-base gap-2 justify-around")],
+            [
+              button(
+                [
+                  class("cursor-pointer"),
+                  event.on_click(UserCancelledEditMeal),
+                ],
+                [text("⬅️")],
+              ),
+              button(
+                [
+                  class("cursor-pointer"),
+                  event.on_click(UserSavedEditMeal),
+                ],
+                [text("💾")],
+              ),
+            ],
+          ),
         ],
       ),
     ],
