@@ -1,0 +1,30 @@
+name: test_and_deploy
+on:
+    push:
+        branches:
+            - main
+jobs:
+    test_and_deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: erlef/setup-beam@v1
+              with:
+                  otp-version: "26.0.2"
+                  gleam-version: "1.14.0"
+                  rebar3-version: "3"
+                  # elixir-version: "1.15.4"
+            - uses: oven-sh/setup-bun@v2
+            - run: gleam deps download && gleam test
+              working-directory: app
+            - run: gleam test
+              working-directory: app
+            - run: gleam format --check src test
+              working-directory: app
+            - run: gleam test
+              working-directory: worker
+            - run: gleam build
+              working-directory: worker
+            - run: bunx wrangler deploy
+              env: # Or as an environment variable
+                CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

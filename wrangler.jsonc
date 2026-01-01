@@ -1,0 +1,22 @@
+{
+    "name": "mealstack",
+    "compatibility_date": "2025-04-01",
+    "main": "./worker/build/dev/javascript/mealstack_worker/index.mjs",
+    "assets": {
+        "directory": "./app/dist",
+        "not_found_handling": "single-page-application"
+    },
+    "workers_dev": true,
+    "preview_urls": false,
+    "compatibility_flags": [
+        "nodejs_compat"
+    ],
+    "observability": {
+        "logs": {
+            "enabled": false,
+            "head_sampling_rate": 1,
+            "invocation_logs": true,
+            "persist": true
+        }
+    }
+}

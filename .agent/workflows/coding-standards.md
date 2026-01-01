@@ -33,7 +33,7 @@ description: Gleam & Lustre Coding Standards
 ## Code Organization
 
 ### File Structure
-- Domain logic goes in `client/src/domains/` (one file per domain: planner, shoppinglist, recipe_list, etc.)
+- Domain logic goes in `client/src/pages/` (one file per domain: planner, shoppinglist, recipe_list, etc.)
 - Shared types in `client/src/shared/types.gleam`
 - Shared codecs (encoders/decoders) in `client/src/shared/codecs.gleam`
 - Reusable components in `client/src/components/`

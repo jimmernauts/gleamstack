@@ -4,10 +4,10 @@
 // Not even sure if this is the latest approach
 
 import { TriplitClient } from "@triplit/client";
-import { schema } from "../client/src/schema.ts";
-import type { Ingredient, MethodStep } from "../client/src/types.ts";
+import { schema } from "../app/src/schema.ts";
+import type { Ingredient, MethodStep } from "../app/src/types.ts";
 import { readdir } from "node:fs/promises";
-import { kebab_case } from "../client/build/dev/javascript/justin/justin.mjs";
+import { kebab_case } from "../app/build/dev/javascript/justin/justin.mjs";
 
 const client = new TriplitClient({
     serverUrl: "https://912d44e1-48a6-46b7-b6b9-7bc0fcd59a81.triplit.io",
