@@ -14,7 +14,7 @@ test_name: shopping_list_workflow_tests
   <section class="grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2">
     <div class="mt-2 flex col-start-1 text-7xl underline-purple col-span-full col-start-1 md:col-span-11">
       <h1 class="min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
-        2026-01-01
+        2026-01-02
       </h1>
     </div>
     <div class="subgrid-cols grid-rows-[repeat(12,minmax(min-content,20px))] overflow-y-scroll col-span-full gap-y-2">
