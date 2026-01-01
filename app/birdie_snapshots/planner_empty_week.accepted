@@ -1,5 +1,5 @@
 ---
-version: 1.4.1
+version: 1.5.3
 title: planner_empty_week
 file: ./test/integration/planner_test.gleam
 test_name: planner_integration_tests
@@ -14,10 +14,10 @@ test_name: planner_integration_tests
   <section class="grid grid-cols-12 h-env-screen col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2">
     <div class="mt-2 flex col-start-1 text-6xl underline-orange col-span-full md:col-span-11">
       <h1 class="min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
-        Week of December 22
+        Week of December 29
       </h1>
     </div>
-    <section class="mb-2 text-sm p-1
+    <section class="m-1 text-sm
             overflow-x-hidden overflow-y-scroll md:overflow-x-scroll md:overflow-y-hidden snap-mandatory snap-always
             col-span-full row-start-2 grid gap-1 
             grid-cols-[minmax(0,15%)_minmax(0,45%)_minmax(0,45%)] grid-rows-[fit-content(10%)_repeat(7,20%)]
@@ -25,177 +25,135 @@ test_name: planner_integration_tests
             md:text-base md:grid-cols-[fit-content(10%)_repeat(7,_15vw)] md:grid-rows-[fit-content(20%)_minmax(20vh,1fr)_minmax(20vh,1fr)]
             md:snap-x md:scroll-pl-[9%] md:scroll-pt-0
             xl:grid-cols-[fit-content(10%)_repeat(7,_11.5vw)]" id="active-week">
-      <div class="subgrid-cols md:col-start-1 row-start-1 subgrid-rows col-span-full md:row-span-full md:col-span-1 sticky left-[-.25rem] top-[-.25rem] outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full">
-        <div class="md:row-start-2 md:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 shadow-orangep-0 bg-ecru-white-50">
+      <div class="subgrid-cols md:col-start-1 row-start-1 subgrid-rows col-span-full md:row-span-full md:col-span-1 sticky left-0 top-0 outline-1 outline-ecru-white-50 border  border-ecru-white-50 bg-ecru-white-50 min-h-full min-w-full  z-100">
+        <div class="md:row-start-2 md:col-start-1 font-mono col-start-2 flex justify-center items-center border border-ecru-white-950 shadow-orange bg-ecru-white-50">
           <h2 class="mx-2 ">
             Lunch
           </h2>
         </div>
-        <div class="md:row-start-3 md:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  shadow-orange sticky left-0 top-0 bg-ecru-white-50">
+        <div class="md:row-start-3 md:col-start-1 font-mono col-start-3 flex justify-center items-center border border-ecru-white-950  shadow-orange bg-ecru-white-50 z-100">
           <h2 class="mx-2 ">
             Dinner
           </h2>
         </div>
       </div>
       <div class="md:col-start-2 md:row-start-1 font-mono row-start-2 border border-ecru-white-950 flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortMon) before:sm:content-(--longMon)" style="--shortMon:&#39;Mon 22&#39;;--longMon:&#39;Monday 22&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortMon) before:sm:content-(--longMon)" style="--shortMon:&#39;Mon 29&#39;;--longMon:&#39;Monday 29&#39;;"></h2>
       </div>
       <div class="md:col-start-3 md:row-start-1 font-mono row-start-3  border border-ecru-white-950   flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortTue) before:sm:content-(--longTue)" style="--shortTue:&#39;Tue 23&#39;;--longTue:&#39;Tuesday 23&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortTue) before:sm:content-(--longTue)" style="--shortTue:&#39;Tue 30&#39;;--longTue:&#39;Tuesday 30&#39;;"></h2>
       </div>
       <div class="md:col-start-4 md:row-start-1 font-mono row-start-4  border border-ecru-white-950   flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortWed) before:sm:content-(--longWed)" style="--shortWed:&#39;Wed 24&#39;;--longWed:&#39;Wednesday 24&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortWed) before:sm:content-(--longWed)" style="--shortWed:&#39;Wed 31&#39;;--longWed:&#39;Wednesday 31&#39;;"></h2>
       </div>
       <div class="md:col-start-5 md:row-start-1 font-mono row-start-5  border border-ecru-white-950   flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortThu) before:sm:content-(--longThu)" style="--shortThu:&#39;Thu 25&#39;;--longThu:&#39;Thursday 25&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortThu) before:sm:content-(--longThu)" style="--shortThu:&#39;Thu 1&#39;;--longThu:&#39;Thursday 1&#39;;"></h2>
       </div>
       <div class="md:col-start-6 md:row-start-1 font-mono row-start-6  border border-ecru-white-950   flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortFri) before:sm:content-(--longFri)" style="--shortFri:&#39;Fri 26&#39;;--longFri:&#39;Friday 26&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortFri) before:sm:content-(--longFri)" style="--shortFri:&#39;Fri 2&#39;;--longFri:&#39;Friday 2&#39;;"></h2>
       </div>
       <div class="md:col-start-7 md:row-start-1 font-mono row-start-7  border border-ecru-white-950  flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortSat) before:sm:content-(--longSat)" style="--shortSat:&#39;Sat 27&#39;;--longSat:&#39;Saturday 27&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortSat) before:sm:content-(--longSat)" style="--shortSat:&#39;Sat 3&#39;;--longSat:&#39;Saturday 3&#39;;"></h2>
       </div>
       <div class="md:col-start-8 md:row-start-1 font-mono row-start-8 border border-ecru-white-950   flex justify-center items-center shadow-orange">
-        <h2 class="text-center  before:content-(--shortSun) before:sm:content-(--longSun)" style="--shortSun:&#39;Sun 28&#39;;--longSun:&#39;Sunday 28&#39;;"></h2>
+        <h2 class="text-center  before:content-(--shortSun) before:sm:content-(--longSun)" style="--shortSun:&#39;Sun 4&#39;;--longSun:&#39;Sunday 4&#39;;"></h2>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:2;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" style="--dayPlacement:2;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-22-lunch">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:3;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" style="--dayPlacement:3;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-23-lunch">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:4;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" style="--dayPlacement:4;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-24-lunch">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:5;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" style="--dayPlacement:5;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-25-lunch">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:6;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" style="--dayPlacement:6;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-26-lunch">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:7;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" style="--dayPlacement:7;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-27-lunch">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-2 md:row-start-2" style="--dayPlacement:8;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" style="--dayPlacement:8;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-28-lunch">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:2;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" style="--dayPlacement:2;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-22-dinner">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:3;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" style="--dayPlacement:3;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-23-dinner">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:4;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" style="--dayPlacement:4;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-24-dinner">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:5;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" style="--dayPlacement:5;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-25-dinner">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:6;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" style="--dayPlacement:6;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-26-dinner">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:7;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" style="--dayPlacement:7;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-27-dinner">
-          ✏️
-        </button>
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] col-start-3 md:row-start-3" style="--dayPlacement:8;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" style="--dayPlacement:8;">
 
-        <button class="absolute right-1 top-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100" id="edit-meal-2025-12-28-dinner">
-          ✏️
-        </button>
       </div>
+
     </section>
     <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base  justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
       <a class="text-center" href="/">
         🏠
       </a>
-      <a class="text-center" href="/planner?date=2025-12-15">
+      <a class="text-center" href="/planner?date=2025-12-22">
         ⬅️
       </a>
-      <a class="text-center" href="/planner?date=2025-12-29">
+      <a class="text-center" href="/planner?date=2026-01-05">
         ➡️
       </a>
     </nav>
-
   </section>
 </main>

@@ -17,8 +17,6 @@ jobs:
             - uses: oven-sh/setup-bun@v2
             - run: bun install
               working-directory: app
-            - run: gleam deps download && gleam test
-              working-directory: app
             - run: gleam test
               working-directory: app
             - run: gleam format --check src test
