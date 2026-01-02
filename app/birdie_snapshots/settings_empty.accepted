@@ -1,5 +1,5 @@
 ---
-version: 1.4.1
+version: 1.5.3
 title: settings_empty
 file: ./test/integration/settings_test.gleam
 test_name: settings_integration_tests
@@ -13,7 +13,7 @@ test_name: settings_integration_tests
       text-ecru-white-950 font-transitional text-lg">
   <form class="grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(3,fit-content(65px))] gap-y-2">
     <div class="mt-2 flex col-start-1 text-7xl underline-grey col-span-full md:col-span-11">
-      <h1 class="min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
+      <h1 class="min-h-14 max-h-36 overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
         Settings
       </h1>
     </div>
@@ -21,7 +21,7 @@ test_name: settings_integration_tests
       API Key
     </label>
     <input class="bg-ecru-white-100 input-base input-focus pr-0.5 w-[20ch] text-left text-base" name="api_key" type="text" value>
-    <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base  justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
+    <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base items-baseline justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
       <a class="text-center" href="/">
         🏠
       </a>

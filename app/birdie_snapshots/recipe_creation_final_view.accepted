@@ -1,5 +1,5 @@
 ---
-version: 1.4.1
+version: 1.5.3
 title: recipe_creation_final_view
 file: ./test/integration/recipe_creation_test.gleam
 test_name: recipe_creation_workflow_tests
@@ -133,7 +133,7 @@ test_name: recipe_creation_workflow_tests
         </div>
       </fieldset>
     </div>
-    <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base  justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
+    <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base items-baseline justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
       <a class="text-center" href="/">
         🏠
       </a>

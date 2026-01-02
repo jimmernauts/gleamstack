@@ -1,5 +1,5 @@
 ---
-version: 1.4.1
+version: 1.5.3
 title: recipe_list_author_grouping
 file: ./test/integration/recipe_list_test.gleam
 test_name: recipe_list_integration_tests
@@ -13,7 +13,7 @@ test_name: recipe_list_integration_tests
       text-ecru-white-950 font-transitional text-lg">
   <section class="h-env-screen grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2">
     <div class="mt-2 flex col-start-1 text-7xl underline-green  col-span-full md:col-span-[11]">
-      <h1 class="min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
+      <h1 class="min-h-14 max-h-36 overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
         Recipe Book
       </h1>
     </div>
@@ -64,7 +64,7 @@ test_name: recipe_list_integration_tests
         </div>
       </details>
     </div>
-    <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base  justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
+    <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base items-baseline justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
       <a class="text-center" href="/">
         🏠
       </a>

@@ -1,5 +1,5 @@
 ---
-version: 1.4.1
+version: 1.5.3
 title: upload_with_url
 file: ./test/integration/url_import_test.gleam
 test_name: url_import_integration_tests
@@ -11,13 +11,45 @@ test_name: url_import_integration_tests
       md:grid-cols-[[start_full-start]_1fr_[main-start]_95%_[main-end]_1fr_[full-end_end]]
       grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
       text-ecru-white-950 font-transitional text-lg">
-  <form class="grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(4,fit-content(65px))] gap-2">
-    <div class="mt-2 flex col-start-1 text-6xl underline-yellow">
-      <h1 class="min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
+  <form class="h-env-screen grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2">
+    <div class="mt-2 flex col-start-1 text-6xl underline-yellow [grid-area:header] col-span-full md:col-span-[11]">
+      <h1 class="min-h-14 max-h-36 overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950" id="title">
         Import a new recipe
       </h1>
     </div>
-    <nav class="flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4">
+    <div class="[grid-area:content]">
+
+      <fieldset class="md:col-span-4 flex flex-col gap-y-2 col-span-11 row-start-3 p-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
+        <legend class="mx-2 px-1 text-base">
+          Image
+        </legend>
+        <label class="inline-block self-start items-baseline cursor-pointer bg-ecru-white-100 border border-ecru-white-950 px-1" for="recipe-image">
+          Upload an image
+        </label>
+        <input accept="image/*" class="hidden" id="recipe-image" type="file">
+
+      </fieldset>
+      <fieldset class="md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
+        <legend class="mx-2 px-1 text-base">
+          Web
+        </legend>
+        <div class=" gap-x-2">
+          <label class="inline-block" for="recipe-url">
+            URL:
+          </label>
+          <input class="inline-block w-[16ch] xxs:w-[23ch] xs:w-[28ch] sm:w-[16ch] md:w-[23ch] lg:w-[28ch] text-base bg-ecru-white-100 ml-1 p-2" id="recipe-url" type="url">
+        </div>
+      </fieldset>
+      <fieldset class="md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
+        <legend class="mx-2 px-1 text-base">
+          Text
+        </legend>
+        <textarea class="mx-1 p-2 bg-ecru-white-100 w-full input-focus text-base resize-none field-sizing-content" id="recipe-text-to-import" name="recipe-text-to-import" rows="3">
+
+        </textarea>
+      </fieldset>
+    </div>
+    <nav class="flex flex-row flex-wrap mb-2 col-span-full text-base items-baseline justify-around md:row-start-1 md:justify-start items-middle md:col-span-1 md:col-start-12 md:text-lg md:mt-4">
       <a class="text-center" href="/">
         🏠
       </a>
@@ -25,35 +57,5 @@ test_name: url_import_integration_tests
         📤
       </button>
     </nav>
-
-    <fieldset class="md:col-span-4 flex flex-col gap-y-2 col-span-11 row-start-3 p-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
-      <legend class="mx-2 px-1 text-base">
-        Image
-      </legend>
-      <label class="inline-block self-start items-baseline cursor-pointer bg-ecru-white-100 border border-ecru-white-950 px-1" for="recipe-image">
-        Upload an image
-      </label>
-      <input accept="image/*" class="hidden" id="recipe-image" type="file">
-
-    </fieldset>
-    <fieldset class="md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
-      <legend class="mx-2 px-1 text-base">
-        Web
-      </legend>
-      <div class=" gap-x-2">
-        <label class="inline-block" for="recipe-url">
-          URL:
-        </label>
-        <input class="inline-block w-[16ch] xxs:w-[23ch] xs:w-[28ch] sm:w-[16ch] md:w-[23ch] lg:w-[28ch] text-base bg-ecru-white-100 ml-1 p-2" id="recipe-url" type="url">
-      </div>
-    </fieldset>
-    <fieldset class="md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
-      <legend class="mx-2 px-1 text-base">
-        Text
-      </legend>
-      <textarea class="mx-1 p-2 bg-ecru-white-100 w-full input-focus text-base resize-none field-sizing-content" id="recipe-text-to-import" name="recipe-text-to-import" rows="3">
-
-      </textarea>
-    </fieldset>
   </form>
 </main>
