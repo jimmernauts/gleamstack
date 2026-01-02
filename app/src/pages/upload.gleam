@@ -310,7 +310,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
   form(
     [
       class(
-        "grid grid-cols-12 col-start-[main-start] grid-rows-[repeat(4,fit-content(65px))] gap-2",
+        "h-env-screen grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2",
       ),
       on_submit(fn(_x) {
         case model {

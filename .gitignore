@@ -17,6 +17,7 @@ app/cloudflare
 app/anthropic
 /app/anthropic
 fly_pg
-
+.wrangler
+.dev.vars*
 # windsurf rules
 .windsurfrules

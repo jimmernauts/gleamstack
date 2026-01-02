@@ -1,4 +1,8 @@
 [working-directory: './app']
+build-app:
+    bun run vite build
+
+[working-directory: './app']
 test-app:
     bun install
     gleam test
@@ -13,3 +17,6 @@ test-worker:
 
 deploy: test-app test-worker
     bunx wrangler deploy
+
+dev: build-app
+    bunx wrangler dev
