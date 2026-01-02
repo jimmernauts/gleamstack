@@ -1,6 +1,6 @@
 [working-directory: './app']
 build-app:
-    bun run vite build
+    bun run vite build --watch
 
 [working-directory: './app']
 test-app:
