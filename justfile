@@ -7,6 +7,7 @@ test-app:
 
 [working-directory: './worker']
 test-worker:
+    bun install
     gleam test
     gleam build
 
