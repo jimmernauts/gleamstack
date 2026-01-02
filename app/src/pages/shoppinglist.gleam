@@ -622,6 +622,7 @@ pub fn view_all_shopping_lists(
           class(
             "col-span-full grid grid-cols-12 grid-rows-[repeat(12,minmax(min-content,35px))] gap-y-2",
           ),
+          id("main-content"),
         ],
         list.map(model.all_lists |> dict.values, view_shopping_list_card),
       ),
