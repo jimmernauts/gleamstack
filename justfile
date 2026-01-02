@@ -18,5 +18,9 @@ test-worker:
 deploy: test-app test-worker
     bunx wrangler deploy
 
-dev: build-app
+[working-directory: './app']
+dev:
+    bun run vite dev
+
+dev-full: build-app
     bunx wrangler dev

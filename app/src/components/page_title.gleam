@@ -23,7 +23,7 @@ pub fn page_title(title: String, styles: String) {
         [
           id("title"),
           class(
-            "min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950",
+            "min-h-14 max-h-36 overflow-hidden px-0 pb-1 mt-3 mr-2 w-full font-transitional font-bold italic text-ecru-white-950",
           ),
         ],
         [text(title)],

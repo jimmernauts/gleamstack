@@ -1,3 +1,4 @@
+import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import gleam/dynamic
 import gleam/dynamic/decode
@@ -322,152 +323,150 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
       }),
     ],
     [
-      page_title("Import a new recipe", "underline-yellow"),
-      nav(
-        [
-          class(
-            "flex flex-col justify-start items-middle col-span-1 col-start-12 text-base md:text-lg mt-4",
-          ),
-        ],
-        [
-          a([href("/"), class("text-center")], [text("🏠")]),
-          button(
-            [
-              class(
-                "flex flex-row justify-center items-center gap-2 p-2 cursor-pointer text-base md:text-lg bg-underline-grey hover:bg-underline-hover",
-              ),
-              name("Upload"),
-              type_("submit"),
-            ],
-            [text("📤")],
-          ),
-        ],
+      page_title(
+        "Import a new recipe",
+        "underline-yellow [grid-area:header] col-span-full md:col-span-[11]",
       ),
-      case model.status {
-        NotStarted -> element.none()
-        ImageLoaded -> element.none()
-        ImageProcessing ->
-          div(
-            [
-              class(
-                "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
-              ),
-            ],
-            [text("Processing image...")],
-          )
-        ImageSubmitting ->
-          div(
-            [
-              class(
-                "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
-              ),
-            ],
-            [text("Parsing image with AI...")],
-          )
-        UrlProcessing ->
-          div(
-            [
-              class(
-                "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
-              ),
-            ],
-            [text("Scraping URL for Recipe content...")],
-          )
-        UrlSubmitting ->
-          div(
-            [
-              class(
-                "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
-              ),
-            ],
-            [text("Parsing scraped data with AI...")],
-          )
-        TextSubmitting ->
-          div(
-            [
-              class(
-                "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
-              ),
-            ],
-            [text("Parsing text with AI...")],
-          )
-        Finished -> element.none()
-      },
-      //col-span-full text-base my-1 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#fce68b] mr-1
-      html.fieldset(
-        [
-          class(
-            "md:col-span-4 flex flex-col gap-y-2 col-span-11 row-start-3 p-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
-          ),
-        ],
-        [
-          html.legend([class("mx-2 px-1 text-base")], [text("Image")]),
-          label(
-            [
-              class(
-                "inline-block self-start items-baseline cursor-pointer bg-ecru-white-100 border border-ecru-white-950 px-1",
-              ),
-              for("recipe-image"),
-            ],
-            [text("Upload an image")],
-          ),
-          input([
-            class("hidden"),
-            type_("file"),
-            id("recipe-image"),
-            accept(["image/*"]),
-            on("change", handle_file_upload()),
-          ]),
-          case model.file_data {
-            Some(file_data) ->
-              div([class("")], [img([src(file_data), class("")])])
-            None -> element.none()
-          },
-        ],
-      ),
-      html.fieldset(
-        [
-          class(
-            "md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
-          ),
-        ],
-        [
-          html.legend([class("mx-2 px-1 text-base")], [text("Web")]),
-          div([class(" gap-x-2")], [
-            label([class("inline-block"), for("recipe-url")], [text("URL:")]),
+      div([class("[grid-area:content]")], [
+        case model.status {
+          NotStarted -> element.none()
+          ImageLoaded -> element.none()
+          ImageProcessing ->
+            div(
+              [
+                class(
+                  "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+                ),
+              ],
+              [text("Processing image...")],
+            )
+          ImageSubmitting ->
+            div(
+              [
+                class(
+                  "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+                ),
+              ],
+              [text("Parsing image with AI...")],
+            )
+          UrlProcessing ->
+            div(
+              [
+                class(
+                  "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+                ),
+              ],
+              [text("Scraping URL for Recipe content...")],
+            )
+          UrlSubmitting ->
+            div(
+              [
+                class(
+                  "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+                ),
+              ],
+              [text("Parsing scraped data with AI...")],
+            )
+          TextSubmitting ->
+            div(
+              [
+                class(
+                  "font-mono col-span-2 py-1 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+                ),
+              ],
+              [text("Parsing text with AI...")],
+            )
+          Finished -> element.none()
+        },
+        //col-span-full text-base my-1 pt-1 pb-2 px-2 border-ecru-white-950 border-[1px] rounded-[1px] sm:row-span-2 sm:col-span-5 [box-shadow:1px_1px_0_#fce68b] mr-1
+        fieldset(
+          [
+            class(
+              "md:col-span-4 flex flex-col gap-y-2 col-span-11 row-start-3 p-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
+            ),
+          ],
+          [
+            html.legend([class("mx-2 px-1 text-base")], [text("Image")]),
+            label(
+              [
+                class(
+                  "inline-block self-start items-baseline cursor-pointer bg-ecru-white-100 border border-ecru-white-950 px-1",
+                ),
+                for("recipe-image"),
+              ],
+              [text("Upload an image")],
+            ),
             input([
-              class(
-                "inline-block w-[16ch] xxs:w-[23ch] xs:w-[28ch] sm:w-[16ch] md:w-[23ch] lg:w-[28ch] text-base bg-ecru-white-100 ml-1 p-2",
-              ),
-              type_("url"),
-              id("recipe-url"),
-              on_input(UserUpdatedUrl),
+              class("hidden"),
+              type_("file"),
+              id("recipe-image"),
+              accept(["image/*"]),
+              on("change", handle_file_upload()),
             ]),
-          ]),
-        ],
-      ),
-      fieldset(
-        [
-          class(
-            "md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
-          ),
-        ],
-        [
-          html.legend([class("mx-2 px-1 text-base")], [text("Text")]),
-          textarea(
-            [
-              name("recipe-text-to-import"),
-              id("recipe-text-to-import"),
-              class(
-                "mx-1 p-2 bg-ecru-white-100 w-full input-focus text-base resize-none field-sizing-content",
-              ),
-              attribute("rows", "3"),
-              on_input(UserUpdatedText),
-            ],
-            model.text |> option.unwrap(""),
-          ),
-        ],
-      ),
+            case model.file_data {
+              Some(file_data) ->
+                div([class("")], [img([src(file_data), class("")])])
+              None -> element.none()
+            },
+          ],
+        ),
+        fieldset(
+          [
+            class(
+              "md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
+            ),
+          ],
+          [
+            html.legend([class("mx-2 px-1 text-base")], [text("Web")]),
+            div([class(" gap-x-2")], [
+              label([class("inline-block"), for("recipe-url")], [text("URL:")]),
+              input([
+                class(
+                  "inline-block w-[16ch] xxs:w-[23ch] xs:w-[28ch] sm:w-[16ch] md:w-[23ch] lg:w-[28ch] text-base bg-ecru-white-100 ml-1 p-2",
+                ),
+                type_("url"),
+                id("recipe-url"),
+                on_input(UserUpdatedUrl),
+              ]),
+            ]),
+          ],
+        ),
+        fieldset(
+          [
+            class(
+              "md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]",
+            ),
+          ],
+          [
+            html.legend([class("mx-2 px-1 text-base")], [text("Text")]),
+            textarea(
+              [
+                name("recipe-text-to-import"),
+                id("recipe-text-to-import"),
+                class(
+                  "mx-1 p-2 bg-ecru-white-100 w-full input-focus text-base resize-none field-sizing-content",
+                ),
+                attribute("rows", "3"),
+                on_input(UserUpdatedText),
+              ],
+              model.text |> option.unwrap(""),
+            ),
+          ],
+        ),
+      ]),
+      nav_footer([
+        a([href("/"), class("text-center")], [text("🏠")]),
+        button(
+          [
+            class(
+              "flex flex-row justify-center items-center gap-2 p-2 cursor-pointer text-base md:text-lg bg-underline-grey hover:bg-underline-hover",
+            ),
+            name("Upload"),
+            type_("submit"),
+          ],
+          [text("📤")],
+        ),
+      ]),
     ],
   )
 }
