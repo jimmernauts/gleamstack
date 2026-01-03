@@ -6,7 +6,7 @@ import gleam/io
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import lustre/attribute.{
-  accept, attribute, class, for, href, id, name, src, type_,
+  accept, attribute, class, for, href, id, name, src, type_, value,
 }
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
@@ -68,7 +68,7 @@ pub fn upload_update(
   model: UploadModel,
   msg: UploadMsg,
 ) -> #(UploadModel, Effect(UploadMsg)) {
-  echo msg
+  echo model
   case msg {
     UserSelectedFile(file_name, raw_file_change_event) -> #(
       UploadModel(
@@ -427,6 +427,7 @@ pub fn view_upload(model: UploadModel) -> Element(UploadMsg) {
                 type_("url"),
                 id("recipe-url"),
                 on_input(UserUpdatedUrl),
+                value(model.url |> option.unwrap("")),
               ]),
             ]),
           ],

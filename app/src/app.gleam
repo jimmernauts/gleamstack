@@ -4,6 +4,7 @@ import components/typeahead_2
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/pair
 import gleam/result
 import gleam/string
 import gleam/uri.{type Uri}
@@ -109,7 +110,7 @@ pub type Route {
   ViewShoppingLists
   ViewShoppingList(date: date.Date)
   ViewSettings
-  ViewUpload
+  ViewUpload(url: Option(String))
 }
 
 pub type RouteParams {
@@ -126,6 +127,63 @@ pub type Msg {
   Upload(upload.UploadMsg)
   ShoppingList(shoppinglist.ShoppingListMsg)
   DbSubscriptionOpened(String, fn() -> Nil)
+}
+
+// ROUTER ----------------------------------------------------------------------
+
+fn on_route_change(uri: Uri) -> Msg {
+  case uri.query, uri.path_segments(uri.path) {
+    Some(query), ["planner", "edit"] -> {
+      case uri.parse_query(query) {
+        Ok([#("date", v)]) ->
+          OnRouteChange(
+            ViewPlanner(result.unwrap(date.from_iso_string(v), date.today())),
+          )
+        _ -> OnRouteChange(ViewPlanner(date.today()))
+      }
+    }
+    Some(query), ["planner"] -> {
+      case uri.parse_query(query) {
+        Ok([#("date", v)]) ->
+          OnRouteChange(
+            ViewPlanner(result.unwrap(date.from_iso_string(v), date.today())),
+          )
+        _ -> OnRouteChange(ViewPlanner(date.today()))
+      }
+    }
+    Some(query), ["import"] -> {
+      let query_url =
+        query
+        |> uri.parse_query
+        |> result.unwrap([])
+        |> list.find(fn(item) { pair.first(item) == "url" })
+      case query_url {
+        Ok(#("url", v)) -> {
+          OnRouteChange(ViewUpload(url: Some(v)))
+        }
+        _ -> OnRouteChange(ViewUpload(url: None))
+      }
+    }
+    _, ["recipes", "new"] ->
+      OnRouteChange(EditRecipeDetail(SlugParam(slug: "")))
+    _, ["recipes", slug, "edit"] ->
+      OnRouteChange(EditRecipeDetail(SlugParam(slug: slug)))
+    _, ["recipes", slug] -> OnRouteChange(ViewRecipeDetail(slug: slug))
+    _, ["recipes"] -> OnRouteChange(ViewRecipeList)
+    _, ["planner", "edit"] -> OnRouteChange(ViewPlanner(date.today()))
+    _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
+    _, ["shopping-list"] -> OnRouteChange(ViewShoppingLists)
+    _, ["shopping-list", date_str] ->
+      OnRouteChange(
+        ViewShoppingList(result.unwrap(
+          date.from_iso_string(date_str),
+          date.today(),
+        )),
+      )
+    _, ["settings"] -> OnRouteChange(ViewSettings)
+    _, ["import"] -> OnRouteChange(ViewUpload(url: None))
+    _, _ -> OnRouteChange(Home)
+  }
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -217,12 +275,13 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(..model, current_route: ViewSettings),
       effect.map(settings.retrieve_settings(), Settings),
     )
-    OnRouteChange(ViewUpload) -> {
+    OnRouteChange(ViewUpload(url: url)) -> {
+      echo url
       case model.settings.api_key {
         Some(api_key) -> #(
           Model(
             ..model,
-            current_route: ViewUpload,
+            current_route: ViewUpload(url: url),
             current_recipe: None,
             upload: upload.UploadModel(
               status: upload.NotStarted,
@@ -230,7 +289,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               file_name: None,
               file_data: None,
               raw_file_change_event: None,
-              url: None,
+              url: url,
               text: None,
             ),
           ),
@@ -239,7 +298,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         None -> #(
           Model(
             ..model,
-            current_route: ViewUpload,
+            current_route: ViewUpload(url: url),
             current_recipe: None,
             upload: upload.UploadModel(
               status: upload.NotStarted,
@@ -247,7 +306,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               file_name: None,
               file_data: None,
               raw_file_change_event: None,
-              url: None,
+              url: url,
               text: None,
             ),
           ),
@@ -583,48 +642,6 @@ fn lookup_recipe_by_slug(model: Model, slug: String) -> Option(Recipe) {
   option.from_result(list.find(model.recipes.recipes, fn(a) { a.slug == slug }))
 }
 
-fn on_route_change(uri: Uri) -> Msg {
-  case uri.query, uri.path_segments(uri.path) {
-    Some(query), ["planner", "edit"] -> {
-      case uri.parse_query(query) {
-        Ok([#("date", v)]) ->
-          OnRouteChange(
-            ViewPlanner(result.unwrap(date.from_iso_string(v), date.today())),
-          )
-        _ -> OnRouteChange(ViewPlanner(date.today()))
-      }
-    }
-    Some(query), ["planner"] -> {
-      case uri.parse_query(query) {
-        Ok([#("date", v)]) ->
-          OnRouteChange(
-            ViewPlanner(result.unwrap(date.from_iso_string(v), date.today())),
-          )
-        _ -> OnRouteChange(ViewPlanner(date.today()))
-      }
-    }
-    _, ["recipes", "new"] ->
-      OnRouteChange(EditRecipeDetail(SlugParam(slug: "")))
-    _, ["recipes", slug, "edit"] ->
-      OnRouteChange(EditRecipeDetail(SlugParam(slug: slug)))
-    _, ["recipes", slug] -> OnRouteChange(ViewRecipeDetail(slug: slug))
-    _, ["recipes"] -> OnRouteChange(ViewRecipeList)
-    _, ["planner", "edit"] -> OnRouteChange(ViewPlanner(date.today()))
-    _, ["planner"] -> OnRouteChange(ViewPlanner(date.today()))
-    _, ["shopping-list"] -> OnRouteChange(ViewShoppingLists)
-    _, ["shopping-list", date_str] ->
-      OnRouteChange(
-        ViewShoppingList(result.unwrap(
-          date.from_iso_string(date_str),
-          date.today(),
-        )),
-      )
-    _, ["settings"] -> OnRouteChange(ViewSettings)
-    _, ["import"] -> OnRouteChange(ViewUpload)
-    _, _ -> OnRouteChange(Home)
-  }
-}
-
 // VIEW ------------------------------------------------------------------------
 
 fn view(model: Model) -> Element(Msg) {
@@ -681,7 +698,8 @@ fn view(model: Model) -> Element(Msg) {
         ),
         ShoppingList,
       )
-    ViewUpload -> element.map(upload.view_upload(model.upload), Upload)
+    ViewUpload(url: _url) ->
+      element.map(upload.view_upload(model.upload), Upload)
   }
   view_base(page)
 }

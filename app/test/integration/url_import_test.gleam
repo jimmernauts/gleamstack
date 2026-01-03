@@ -13,7 +13,7 @@ pub fn url_import_integration_tests() {
   describe("URL Import and Recipe Parsing (with server)", [
     it("should load upload route", fn() {
       // Arrange
-      let initial_route = ViewUpload
+      let initial_route = ViewUpload(None)
 
       // Act
       let simulation =
@@ -30,13 +30,13 @@ pub fn url_import_integration_tests() {
       case model {
         app.Model(current_route: route, ..) -> {
           route
-          |> expect.to_equal(ViewUpload)
+          |> expect.to_equal(ViewUpload(None))
         }
       }
     }),
     it("should start with empty URL input", fn() {
       // Arrange
-      let initial_route = ViewUpload
+      let initial_route = ViewUpload(None)
 
       // Act
       let simulation =
@@ -59,7 +59,7 @@ pub fn url_import_integration_tests() {
     }),
     it("should update URL input field", fn() {
       // Arrange
-      let initial_route = ViewUpload
+      let initial_route = ViewUpload(None)
 
       let simulation =
         simulate.application(
@@ -88,7 +88,7 @@ pub fn url_import_integration_tests() {
     }),
     it("should handle server response with parsed recipe", fn() {
       // Arrange
-      let initial_route = ViewUpload
+      let initial_route = ViewUpload(None)
 
       let simulation =
         simulate.application(
@@ -162,7 +162,7 @@ pub fn url_import_integration_tests() {
     }),
     it("should handle server error gracefully", fn() {
       // Arrange
-      let initial_route = ViewUpload
+      let initial_route = ViewUpload(None)
 
       let simulation =
         simulate.application(
@@ -187,13 +187,13 @@ pub fn url_import_integration_tests() {
       case final_model {
         app.Model(current_route: route, ..) -> {
           route
-          |> expect.to_equal(ViewUpload)
+          |> expect.to_equal(ViewUpload(None))
         }
       }
     }),
     it("should snapshot upload view with empty state", fn() {
       // Arrange
-      let initial_route = ViewUpload
+      let initial_route = ViewUpload(None)
 
       // Act
       let simulation =
@@ -212,7 +212,7 @@ pub fn url_import_integration_tests() {
     }),
     it("should snapshot upload view with URL entered", fn() {
       // Arrange
-      let initial_route = ViewUpload
+      let initial_route = ViewUpload(None)
 
       // Act
       let simulation =
