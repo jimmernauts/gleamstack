@@ -3,32 +3,29 @@ TODO
 [-] SHOPPING LIST
 [-] Planner refactor: WIP
     [x] Typeahead puts focus to end of input when typing each letter
-    [] add link to planner recipe card when recipe is of type recipe-slug
+    [x] add link to planner recipe card when recipe is of type recipe-slug
     [x] Planner card shows slug, not title, when recipe is selected from list
-
     [] Popover styling
     [x] Typeahead doesn't accept ctrl+a
     [x] Try and make the modal pop with the typeahead input as close as possible to the current cursor position when we hit the edit button
     [] why do i have both a 'get' and 'subscribe' to the planner
 [] add ingredients from linked recipe
 [] fix up nav icons in both small and large views
-[] write proper readme
 [] add group by to recipe selector in typeahead
 [] BUG: save recipe slow
 [] copy recipes from browser bookmarks
 [] Add bunch of recipes
 [] Add cooking notes and ratings to recipes, group by rating
-[] PWA
 [] work out process to correct side-by-side
 [] extract nav, page layout to shared view functions
 [] Build auth
-[] deploy server to cloudflare as serverless function
-[] deploy server to fly as erlang server (switch from glen to wisp)
-[] Decide if stay SPA only or move to SSR / other. Maybe just classic SPA + Backend API - make scraping API endpoint more permanent. Or go other way and make scraping endpoint into a serverless function. Maybe the scraping endpoint could still be done browser-side in WASM somehow
+[] Import from URL to handle multiple recipes on a page (both JsonLD + HTML scraping) 
 
-WIP
 
 DONE
+[x] PWA
+[x] deploy server to cloudflare as serverless function
+[x] write proper readme
 [x] Popover background is too blurred
 [x] Edit button on card only shows on hover, hidden on mobile. Make it just any click on the card itself loads the edit modal
 [x] BUG: noticed double plan entry when editing an existing plan entry

@@ -6,12 +6,11 @@ description: Gleamstack Testing Standards
 
 ## Running Tests
 // turbo
-- Run all tests: `gleam test --target javascript` (must be run in `client/` directory)
+- Run all tests: `gleam test --target javascript` (must be run in `app/` directory)
 // turbo
-- Run snapshot tests (Birdie): `gleam run -m birdie` (must be run in `client/` directory)
-  - Press `a` to accept a new snapshot
-  - Press `r` to reject a new snapshot
-  - Press `d` to toggle the diff view
+- Run snapshot tests (Birdie): `gleam run -m birdie` (must be run in `app/` directory)
+  - Approve all snapshots: `gleam run -m birdie accept`
+  - Review snapshots interactively: `gleam run -m birdie review`
 
 ## Test Patterns
 
@@ -26,9 +25,9 @@ description: Gleamstack Testing Standards
 - No string formatting or arbitrary data snapshots
 
 ## File Structure
-- [test/unit/](file:///home/ubuntu/projects/gleamstack/client/test/unit) - Unit tests for core logic
-- [test/snapshot/](file:///home/ubuntu/projects/gleamstack/client/test/snapshot) - Component view snapshots
-- [test/utils/](file:///home/ubuntu/projects/gleamstack/client/test/utils) - Mock data and test helpers
+- [test/unit/](file:///home/ubuntu/projects/gleamstack/app/test/unit) - Unit tests for core logic
+- [test/snapshot/](file:///home/ubuntu/projects/gleamstack/app/test/snapshot) - Component view snapshots
+- [test/utils/](file:///home/ubuntu/projects/gleamstack/app/test/utils) - Mock data and test helpers
 
 ## Guidelines
 - Tests should exercise real application code

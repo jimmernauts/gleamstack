@@ -4,119 +4,98 @@ A recipe management and meal planning application built with Gleam.
 
 ## Technology Stack
 
-- **Frontend**: Gleam (compiles to JavaScript) with Lustre framework
-- **Database**: InstantDB (real-time database)
-- **Styling**: TailwindCSS
-- **Build Tool**: Vite
-- **Runtime**: Bun
-- **Server**: Gleam with Glen framework (recipe scraping service)
+- **Frontend**: [Gleam](https://gleam.run/) (compiles to JavaScript) with [Lustre](https://github.com/lustre-labs/lustre) framework
+- **Backend**: Gleam deployed on Cloudflare Workers
+- **Database**: [InstantDB](https://instantdb.com/) (real-time, client-side database)
+- **Styling**: [TailwindCSS v4](https://tailwindcss.com/)
+- **Build Tool**: [Vite](https://vitejs.dev/)
+- **Runtime**: [Bun](https://bun.sh/)
+- **Task Runner**: [Just](https://github.com/casey/just)
+
+## Features
+
+- **Recipe Management**: Create, edit, and organize recipes with tags.
+- **Recipe Import**: Scrape recipes from URLs or parse them from text/images using AI.
+- **Meal Planning**: Drag-and-drop weekly meal planner.
+- **Shopping List**: Generate shopping lists automatically from your meal plan.
+- **PWA Support**: Installable as a Progressive Web App.
+
+## Project Structure
+
+```bash
+gleamstack/
+├── app/             # Frontend application (Gleam + Lustre + Vite)
+├── worker/          # Backend worker (Gleam + Cloudflare Workers)
+├── common/          # Shared Gleam code
+└── justfile         # Task runner configuration
+```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Gleam compiler
-- Bun runtime
-- Node.js (for some dependencies)
+- [Gleam](https://gleam.run/getting-started/installing/)
+- [Bun](https://bun.sh/)
+- [Just](https://github.com/casey/just) (optional, but recommended)
 
 ### Installation
 
-```bash
-# Clone the repository
-git clone github.com/jimmernauts/gleamstack
-cd gleamstack
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/jimmernauts/gleamstack.git
+   cd gleamstack
+   ```
 
-# Install dependencies
-bun install
+2. Install dependencies:
+   ```bash
+   bun install
+   ```
 
-# Setup environment
-cp client/.env.example client/.env
-# Edit .env with InstantDB credentials
-```
+3. Configure environment variables:
+   ```bash
+   cp app/.env.example app/.env
+   # Edit app/.env with your InstantDB App ID
+   ```
 
 ### Development
 
+We use `just` to manage development commands.
+
+**Start the specific service:**
 ```bash
-# Start client development server
-bun run vite dev
-
-# Start server (for recipe scraping)
-cd server && gleam run
+# Start the frontend dev server
+just dev
 ```
 
-## Configuration
-
-InstantDB is configured using the `.env` file and the `src/instant.schema.ts` file in the client directory.
-
-## Project Structure
-
-```
-gleamstack/
-├── client/          # Gleam frontend application
-│   ├── src/         # Source code
-│   │   ├── pages/   # Page components
-│   │   ├── components/ # Shared components
-│   │   └── lib/     # Utility modules
-│   ├── gleam.toml   # Gleam configuration
-│   └── package.json # Node dependencies
-├── server/          # Recipe scraping service
-│   ├── gleam.toml   # Server configuration
-│   └── src/         # Server source code
-├── common/          # Shared code (if any)
-└── plans/           # Project plans and documentation
+**Run the full stack:**
+```bash
+# Builds app & worker, and serves the worker
+just dev-full
 ```
 
-## Features
+**Run tests:**
+```bash
+just test-app    # Run frontend tests
+just test-worker # Run backend tests
+```
 
-- Recipe management with CRUD operations
-- Meal planning with weekly calendar view
-- Shopping list generation from meal plans
-- Recipe import from URLs via web scraping
-- OCR recipe scanning capabilities (WIP)
-- Tag-based recipe categorization
-- PWA capabilities
+If you don't have `just` installed, you can look at the `justfile` to see the underlying `bun` and `gleam` commands.
 
-## Live Demo
+## Architecture Highlights
 
-https://gleamstack.pages.dev
+- **InstantDB Integration**: The app uses InstantDB for real-time data sync and offline capabilities.
+- **Gleam on the Edge**: The backend worker runs Gleam encoded as JavaScript on Cloudflare Workers, handling scraping and AI tasks.
+- **Modern Styling**: TailwindCSS v4 with fluid type scaling.
 
 ## Testing
 
-The project uses Startest for unit testing and Birdie for snapshot testing.
+The project uses a combination of Gleam's built-in testing harness, Startest, and Birdie for snapshot testing.
 
-### Running Tests
+- **Unit Tests**: Business logic and pure functions.
+- **Snapshot Tests**: Component rendering and integration.
 
+Run all tests from the root:
 ```bash
-# Run all tests (automatically discovers files ending in '_test.gleam')
-cd client
-gleam test
-
-# Test output shows discovered test files and individual test results
-# Example output:
-# Running 12 tests
-# ✓ utils ❯ slugify ❯ should strip spaces and convert to lowercase
-# ✓ Recipe List ❯ merge_recipe_into_model ❯ should merge a new recipe into empty model
-# Test Files: 2
-#      Tests: 12 passed (12)
+just test-app
+just test-worker
 ```
-
-### Test Structure
-
-- **Unit Tests**: `test/unit/` - Pure function and business logic tests
-- **Snapshot Tests**: `test/snapshot/` - Component and integration tests  
-- **Test Utilities**: `test/utils/` - Mock data and helper functions
-- **Main Test**: `test/mealstack_client_test.gleam` - Core functionality tests
-
-### Test Discovery
-
-Gleam automatically discovers all files ending in `_test.gleam` and runs:
-- Functions ending in `_test` (standalone tests)
-- Functions containing `describe` blocks (structured tests)
-
-## Build & Deployment
-
-// TODO: Add build and deployment process documentation
-
-## Database Schema
-
-// TODO: Add database schema documentation
