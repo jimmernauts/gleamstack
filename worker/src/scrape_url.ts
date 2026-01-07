@@ -111,7 +111,7 @@ export async function extractJsonLd(
         log("Starting JSON-LD frame");
 		parsed = await frame(JSON.parse(jsonLdContent), frameObject, {
 			documentLoader: documentLoader,
-		});
+		} as any) as unknown as NodeObject;
 		log("JSON-LD frame completed");
         // log(`Parsed: ${JSON.stringify(parsed)}`);
 	} catch (error: any) {

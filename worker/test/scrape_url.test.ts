@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { extractJsonLd } from "../src/scrape_url";
+import { extractJsonLd as extractJsonLdRaw } from "../src/scrape_url";
+import type { Recipe } from "../../common/types.ts";
+
+const extractJsonLd = async (html: string) =>
+	(await extractJsonLdRaw(html)) as Recipe | null;
 
 describe("extractJsonLd", () => {
 	describe("serves parsing", () => {
