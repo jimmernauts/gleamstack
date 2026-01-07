@@ -2,13 +2,13 @@ TODO
 
 [-] SHOPPING LIST
 [-] Planner refactor: WIP
-    [] Typeahead puts focus to end of input when typing each letter
+    [x] Typeahead puts focus to end of input when typing each letter
     [] add link to planner recipe card when recipe is of type recipe-slug
-    [] Planner card shows slug, not title, when recipe is selected from list
+    [x] Planner card shows slug, not title, when recipe is selected from list
 
     [] Popover styling
-    [] Typeahead doesn't accept ctrl+a
-    [] Try and make the modal pop with the typeahead input as close as possible to the current cursor position when we hit the edit button
+    [x] Typeahead doesn't accept ctrl+a
+    [x] Try and make the modal pop with the typeahead input as close as possible to the current cursor position when we hit the edit button
     [] why do i have both a 'get' and 'subscribe' to the planner
 [] add ingredients from linked recipe
 [] fix up nav icons in both small and large views

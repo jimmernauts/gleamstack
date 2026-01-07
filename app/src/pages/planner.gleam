@@ -52,6 +52,8 @@ pub type PlannerMsg {
   UserClickedEditMeal(PlanDay, Meal)
   UserCancelledEditMeal
   UserSavedEditMeal
+  UserDragStart(Date, Meal)
+  UserDrop(Date, Meal)
   PlannerNoOp
 }
 
@@ -64,6 +66,7 @@ pub type PlannerModel {
     recipe_list: List(types.Recipe),
     start_date: Date,
     editing: Option(EditingMeal),
+    dragging: Option(#(Date, Meal)),
   )
 }
 
@@ -137,6 +140,65 @@ fn toggle_meal_complete_in_plan(
         )
     }
   })
+}
+
+fn move_meal_in_plan(
+  current: PlanWeek,
+  from_date: Date,
+  from_meal: Meal,
+  to_date: Date,
+  to_meal: Meal,
+) -> PlanWeek {
+  let source_day =
+    dict.get(current, from_date)
+    |> result.unwrap(PlanDay(from_date, None, None))
+  let target_day =
+    dict.get(current, to_date)
+    |> result.unwrap(PlanDay(to_date, None, None))
+
+  let source_meal_data = case from_meal {
+    Lunch -> source_day.lunch
+    Dinner -> source_day.dinner
+  }
+
+  let target_meal_data = case to_meal {
+    Lunch -> target_day.lunch
+    Dinner -> target_day.dinner
+  }
+
+  case from_date == to_date {
+    True -> {
+      let new_day = case from_meal, to_meal {
+        Lunch, Dinner ->
+          PlanDay(
+            ..source_day,
+            lunch: target_meal_data,
+            dinner: source_meal_data,
+          )
+        Dinner, Lunch ->
+          PlanDay(
+            ..source_day,
+            lunch: target_meal_data,
+            dinner: source_meal_data,
+          )
+        _, _ -> source_day
+      }
+      dict.insert(current, from_date, new_day)
+    }
+    False -> {
+      let new_source_day = case from_meal {
+        Lunch -> PlanDay(..source_day, lunch: target_meal_data)
+        Dinner -> PlanDay(..source_day, dinner: target_meal_data)
+      }
+      let new_target_day = case to_meal {
+        Lunch -> PlanDay(..target_day, lunch: source_meal_data)
+        Dinner -> PlanDay(..target_day, dinner: source_meal_data)
+      }
+      current
+      |> dict.insert(from_date, new_source_day)
+      |> dict.insert(to_date, new_target_day)
+    }
+  }
 }
 
 pub fn planner_update(
@@ -219,6 +281,29 @@ pub fn planner_update(
       })
     }
     PlannerNoOp -> #(model, effect.none())
+    UserDragStart(date, meal) -> #(
+      PlannerModel(..model, dragging: Some(#(date, meal))),
+      effect.none(),
+    )
+    UserDrop(target_date, target_meal) -> {
+      case model.dragging {
+        Some(#(source_date, source_meal)) -> {
+          let new_plan =
+            move_meal_in_plan(
+              model.plan_week,
+              source_date,
+              source_meal,
+              target_date,
+              target_meal,
+            )
+          #(PlannerModel(..model, plan_week: new_plan, dragging: None), {
+            use dispatch <- effect.from
+            dispatch(UserSavedPlan)
+          })
+        }
+        None -> #(model, effect.none())
+      }
+    }
   }
 }
 
@@ -347,12 +432,26 @@ pub fn view_planner(model: PlannerModel) {
           fragment({
             dict.values(week)
             |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
-            |> list.index_map(fn(x, i) { planner_meal_card(x, i, Lunch) })
+            |> list.index_map(fn(x, i) {
+              planner_meal_card(
+                x,
+                i,
+                Lunch,
+                get_label_from_planday(x, Lunch, model.recipe_list),
+              )
+            })
           }),
           fragment({
             dict.values(week)
             |> list.sort(fn(a, b) { date.compare(a.date, b.date) })
-            |> list.index_map(fn(x, i) { planner_meal_card(x, i, Dinner) })
+            |> list.index_map(fn(x, i) {
+              planner_meal_card(
+                x,
+                i,
+                Dinner,
+                get_label_from_planday(x, Dinner, model.recipe_list),
+              )
+            })
           }),
           case model.editing {
             None -> element.none()
@@ -601,14 +700,19 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
   ])
 }
 
-fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
+fn planner_meal_card(
+  pd: PlanDay,
+  i: Int,
+  for: Meal,
+  label: String,
+) -> Element(PlannerMsg) {
   let row = case for {
     Lunch -> "col-start-2 md:row-start-2"
     Dinner -> "col-start-3 md:row-start-3"
   }
   let card = case for {
-    Lunch -> inner_card(pd.date, Lunch, pd.lunch)
-    Dinner -> inner_card(pd.date, Dinner, pd.dinner)
+    Lunch -> inner_card(pd.date, Lunch, pd.lunch, label)
+    Dinner -> inner_card(pd.date, Dinner, pd.dinner, label)
   }
   div(
     [
@@ -621,6 +725,13 @@ fn planner_meal_card(pd: PlanDay, i: Int, for: Meal) -> Element(PlannerMsg) {
       ),
       styles([#("--dayPlacement", int.to_string(i + 2))]),
       event.on_click(UserClickedEditMeal(pd, for)),
+      attribute.attribute("draggable", "true"),
+      event.on("dragstart", decode.success(UserDragStart(pd.date, for))),
+      event.advanced(
+        "dragover",
+        decode.success(event.handler(PlannerNoOp, True, False)),
+      ),
+      event.on("drop", decode.success(UserDrop(pd.date, for))),
     ],
     [card],
   )
@@ -630,14 +741,29 @@ fn inner_card(
   date: Date,
   for: Meal,
   planned_meal: Option(PlannedMeal),
+  label: String,
 ) -> Element(PlannerMsg) {
-  let recipe_title = case planned_meal {
+  let recipe_content = case planned_meal {
     Some(m) ->
       case m.recipe {
-        types.RecipeSlug(slug) -> slug
-        types.RecipeName(name) -> name
+        types.RecipeSlug(slug) ->
+          Some(
+            a(
+              [
+                href("/recipes/" <> slug),
+                event.advanced(
+                  "click",
+                  decode.success(event.handler(PlannerNoOp, False, True)),
+                ),
+                class("hover:text-orange-600 hover:underline"),
+              ],
+              [text(label)],
+            ),
+          )
+        types.RecipeName("") -> None
+        types.RecipeName(name) -> Some(text(name))
       }
-    None -> ""
+    None -> None
   }
 
   let is_complete = case planned_meal {
@@ -645,9 +771,9 @@ fn inner_card(
     None -> False
   }
 
-  let card = case recipe_title == "" {
-    True -> element.none()
-    False ->
+  let card = case recipe_content {
+    None -> element.none()
+    Some(content) ->
       div(
         [
           class(
@@ -675,7 +801,7 @@ fn inner_card(
                 }),
               ]),
             ],
-            [text(recipe_title)],
+            [content],
           ),
         ],
       )
@@ -702,7 +828,7 @@ fn view_edit_popover(
   div(
     [
       class(
-        "col-span-2 col-start-2 w-full h-full z-[100] flex items-center justify-center bg-ecru-white-50",
+        "col-span-2 col-start-2 w-full h-full z-100 flex items-center justify-center bg-ecru-white-50",
       ),
       class("md:col-start-" <> int.to_string(day_index + 1)),
       class(
@@ -832,4 +958,44 @@ fn json_encode_planned_meal(input: PlannedMeal) -> Json {
     #("recipe", codecs.encode_planned_recipe(input.recipe)),
     #("complete", json.bool(input.complete)),
   ])
+}
+
+// UTILS -----------------------------------------------------------------------
+fn get_label_from_planday(
+  plan_day: PlanDay,
+  meal: Meal,
+  recipe_list: List(types.Recipe),
+) -> String {
+  case meal {
+    Lunch -> {
+      case plan_day.lunch {
+        Some(pm) -> {
+          case pm.recipe {
+            types.RecipeName(name) -> name
+            types.RecipeSlug(slug) ->
+              recipe_list
+              |> list.find(fn(r) { r.slug == slug })
+              |> result.map(fn(r) { r.title })
+              |> result.unwrap("")
+          }
+        }
+        None -> ""
+      }
+    }
+    Dinner -> {
+      case plan_day.dinner {
+        Some(pm) -> {
+          case pm.recipe {
+            types.RecipeName(name) -> name
+            types.RecipeSlug(slug) ->
+              recipe_list
+              |> list.find(fn(r) { r.slug == slug })
+              |> result.map(fn(r) { r.title })
+              |> result.unwrap("")
+          }
+        }
+        None -> ""
+      }
+    }
+  }
 }

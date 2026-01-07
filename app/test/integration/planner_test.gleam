@@ -2,8 +2,8 @@ import app.{OnRouteChange, Planner, ViewPlanner}
 import birdie
 import gleam/dict
 import pages/planner.{
-  DbRetrievedPlan, Dinner, Lunch, PlanDay, PlannedMeal, UserToggledMealComplete,
-  UserUpdatedMealTitle,
+  DbRetrievedPlan, Dinner, Lunch, PlanDay, PlannedMeal, UserDragStart, UserDrop,
+  UserToggledMealComplete, UserUpdatedMealTitle,
 }
 
 import gleam/option.{None, Some}
@@ -430,6 +430,68 @@ pub fn planner_integration_tests() {
       simulate.view(simulation)
       |> element.to_readable_string
       |> birdie.snap(title: "planner_with_meals")
+    }),
+    it("should move meal via drag and drop", fn() {
+      // Arrange
+      let start_date = date.floor(date.today(), date.Monday)
+      let initial_route = ViewPlanner(start_date)
+
+      let monday = start_date
+      let tuesday = date.add(monday, 1, date.Days)
+
+      // Start with meal on Monday Lunch
+      let test_plan_week =
+        dict.from_list([
+          #(
+            monday,
+            PlanDay(
+              date: monday,
+              lunch: Some(PlannedMeal(
+                recipe: types.RecipeName("Pasta Carbonara"),
+                complete: False,
+              )),
+              dinner: None,
+            ),
+          ),
+        ])
+
+      let simulation =
+        simulate.application(
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
+        )
+        |> simulate.start(Nil)
+        |> simulate.message(OnRouteChange(initial_route))
+        |> simulate.message(Planner(DbRetrievedPlan(test_plan_week, monday)))
+
+      // Act - Drag from Mon Lunch to Tue Lunch
+      let final_simulation =
+        simulation
+        |> simulate.message(Planner(UserDragStart(monday, Lunch)))
+        |> simulate.message(Planner(UserDrop(tuesday, Lunch)))
+
+      // Assert
+      let final_model = simulate.model(final_simulation)
+      case final_model {
+        app.Model(planner: planner, ..) -> {
+          // Monday Lunch should be None
+          let mon_day =
+            planner.plan_week
+            |> dict.get(monday)
+            |> expect.to_be_ok
+          mon_day.lunch |> expect.to_be_none
+
+          // Tuesday Lunch should be Pasta Carbonara
+          let tue_day =
+            planner.plan_week
+            |> dict.get(tuesday)
+            |> expect.to_be_ok
+          let meal = tue_day.lunch |> expect.to_be_some
+          meal.recipe
+          |> expect.to_equal(types.RecipeName("Pasta Carbonara"))
+        }
+      }
     }),
   ])
 }
