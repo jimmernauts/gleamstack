@@ -68,7 +68,6 @@ pub fn upload_update(
   model: UploadModel,
   msg: UploadMsg,
 ) -> #(UploadModel, Effect(UploadMsg)) {
-  echo model
   case msg {
     UserSelectedFile(file_name, raw_file_change_event) -> #(
       UploadModel(
@@ -153,41 +152,30 @@ pub fn upload_update(
     })
     ScrapeUrlResponseReceived(Ok(scraped_json)) -> {
       #(UploadModel(..model, status: UrlSubmitting), {
-        case model.api_key {
-          Some(key) -> {
-            use dispatch <- effect.from
-            do_submit_text(scraped_json, key, fn(response) {
-              case response {
-                Ok(recipe_data) -> {
-                  let decoded =
-                    recipe_data
-                    |> decode.run(codecs.decode_recipe_no_json())
-                  case decoded {
-                    Ok(recipe) ->
-                      dispatch(ParseRecipeResponseReceived(Ok(recipe)))
-                    Error(errors) -> {
-                      echo "Could not decode recipe from scraped content."
-                      echo errors
-                      dispatch(
-                        ParseRecipeResponseReceived(
-                          Error(Other("Response could not be decoded")),
-                        ),
-                      )
-                    }
-                  }
+        use dispatch <- effect.from
+        do_submit_text(scraped_json, fn(response) {
+          case response {
+            Ok(recipe_data) -> {
+              let decoded =
+                recipe_data
+                |> decode.run(codecs.decode_recipe_no_json())
+              case decoded {
+                Ok(recipe) -> dispatch(ParseRecipeResponseReceived(Ok(recipe)))
+                Error(errors) -> {
+                  echo "Could not decode recipe from scraped content."
+                  echo errors
+                  dispatch(
+                    ParseRecipeResponseReceived(
+                      Error(Other("Response could not be decoded")),
+                    ),
+                  )
                 }
-                Error(inner_error) ->
-                  dispatch(ParseRecipeResponseReceived(Error(inner_error)))
               }
-            })
+            }
+            Error(inner_error) ->
+              dispatch(ParseRecipeResponseReceived(Error(inner_error)))
           }
-          None -> {
-            use dispatch <- effect.from
-            dispatch(
-              ParseRecipeResponseReceived(Error(Other("No API key provided"))),
-            )
-          }
-        }
+        })
       })
     }
     ScrapeUrlResponseReceived(Error(error)) -> {
@@ -208,10 +196,10 @@ pub fn upload_update(
     )
     UserSubmittedText -> #(
       UploadModel(..model, status: TextSubmitting),
-      case model.text, model.api_key {
-        Some(text), Some(api_key) -> {
+      case model.text {
+        Some(text) -> {
           use dispatch <- effect.from
-          do_submit_text(text, api_key, fn(response) {
+          do_submit_text(text, fn(response) {
             case response {
               Ok(recipe_data) -> {
                 let decoded =
@@ -235,8 +223,8 @@ pub fn upload_update(
             }
           })
         }
-        _, _ -> {
-          echo "No text or API key provided"
+        _ -> {
+          echo "No text provided"
           effect.none()
         }
       },
@@ -295,7 +283,6 @@ fn do_submit_file(
 @external(javascript, ".././upload.ts", "do_submit_text")
 fn do_submit_text(
   text: String,
-  api_key: String,
   cb: fn(Result(dynamic.Dynamic, ParseToRecipeError)) -> Nil,
 ) -> Nil
 

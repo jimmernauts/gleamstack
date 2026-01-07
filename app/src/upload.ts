@@ -2,8 +2,6 @@ import Anthropic from "@anthropic-ai/sdk";
 import { Jimp } from "jimp";
 import { Ok, Error as GError } from "./gleam.mjs";
 import { do_retrieve_settings } from "./db.ts";
-import { generateObject } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod/v4";
 
 type dispatchFunction = (
@@ -263,24 +261,33 @@ export async function do_submit_file(
 
 export async function do_submit_text(
     data: string,
-    api_key: string,
     dispatch: dispatchFunction,
 ): Promise<void> {
-    console.log("got passed in this api_key: ", api_key);
-    const openai_client = createOpenAI({
-        apiKey: api_key,
-    });
     try {
-        const res = await generateObject({
-            model: openai_client("gpt-4.1"),
-            schema: importedRecipeSchema,
-            system: "You are a helpful assistant that extracts recipe information from HTML or JSON-LD data, or plaintext. Extract all recipe details including title, ingredients, preparation steps, cooking time, and serving size.",
-            prompt: `Extract the recipe from this data and format it using the schema provided: ${data}`,
+        const response = await fetch("/api/parse_recipe_text", {
+             method: "POST",
+             headers: {
+                 "Content-Type": "application/json",
+             },
+             body: JSON.stringify({ text: data }),
         });
-        console.log("resp from AI: ", res.object);
-        //@ts-ignore
-        dispatch(new Ok(res.object));
+
+        if (!response.ok) {
+            throw new Error(`Worker returned ${response.status}: ${await response.text()}`);
+        }
+
+        const result = await response.json();
+        
+        // The worker returns the recipe object directly in the JSON on success?
+        // Let's check mealstack_worker.gleam:
+        // Ok(data) -> data |> json.to_string |> glen.json(status.ok)
+        // data is from do_parse_recipe_text which returns Ok(recipeData).
+        // So yes, result is the recipe object.
+
+        dispatch(new Ok(result));
+
     } catch (error) {
+        console.error("Error submitting text to worker:", error);
         dispatch(
             new GError({
                 Other: {

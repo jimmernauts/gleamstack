@@ -68,6 +68,7 @@ pub fn list_update(
           DbRetrievedOneRecipe(recipe) |> dispatch
         }
         Error(e) -> {
+          echo e
           effect.none()
         }
       }

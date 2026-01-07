@@ -11,6 +11,7 @@ description: Project Overview and Core Commands
 4. The command to run the client project is `bun run vite dev` (executed in the `client/` directory).
 5. NEVER fix lint warnings until you are finished with the task at hand.
 6. ALWAYS fix lint errors as soon as possible, as Gleam's static typing catches many issues early on.
+7. ALWAYS use `bun` to manage package.json files and javascript dependencies, not `npm`.
 
 ## Verification
 - Home screen: [http://localhost:5173/](http://localhost:5173/)
@@ -25,3 +26,4 @@ description: Project Overview and Core Commands
 - `/planner?date=YYYY-MM-DD` - planner with optional date
 - `/shopping-list` - list view
 - `/shopping-list/:date` - detail view for specific date
+- `/import` - import view (corresponds to the upload.gleam page, because import is a reserved keyword)
