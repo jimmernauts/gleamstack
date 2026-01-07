@@ -13,11 +13,11 @@ build/*
 notebooks/*
 !notebooks/claude.py
 !notebooks/post_recipes.ts
+node_modules
+node_modules/**
 app/cloudflare
 app/anthropic
 /app/anthropic
 fly_pg
 .wrangler
 .dev.vars*
-# windsurf rules
-.windsurfrules

@@ -37,7 +37,7 @@ test_name: url_import_integration_tests
           <label class="inline-block" for="recipe-url">
             URL:
           </label>
-          <input class="inline-block w-[16ch] xxs:w-[23ch] xs:w-[28ch] sm:w-[16ch] md:w-[23ch] lg:w-[28ch] text-base bg-ecru-white-100 ml-1 p-2" id="recipe-url" type="url">
+          <input class="inline-block w-[16ch] xxs:w-[23ch] xs:w-[28ch] sm:w-[16ch] md:w-[23ch] lg:w-[28ch] text-base bg-ecru-white-100 ml-1 p-2" id="recipe-url" type="url" value="https://example.com/recipe">
         </div>
       </fieldset>
       <fieldset class="md:col-span-4 col-span-11 flex  row-start-3 p-2 gap-y-2 border-ecru-white-950 border rounded-[1px] [box-shadow:1px_1px_0_#fce68b]">
