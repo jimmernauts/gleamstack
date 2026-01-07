@@ -489,6 +489,7 @@ pub fn shopping_list_update(
           DbRetrievedOneList(list) |> dispatch
         }
         Error(e) -> {
+          echo e
           effect.none()
         }
       }

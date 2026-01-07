@@ -11,7 +11,7 @@ import lustre/attribute.{
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{
-  a, button, div, fieldset, form, img, input, label, nav, textarea,
+  a, button, div, fieldset, form, img, input, label, textarea,
 }
 import lustre/event.{on, on_input, on_submit}
 import shared/codecs

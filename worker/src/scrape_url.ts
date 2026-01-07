@@ -6,20 +6,65 @@ import durationParse from "iso8601-duration";
 
 export async function do_fetch_jsonld(
 	url: string,
+	request: Request,
 ): Promise<Result<Recipe, string>> {
 	// Fetch URL content
-	const response = await fetch(url);
-	const html = await response.text();
-	// Extract JSON-LD data
-	const jsonLd = await extractJsonLd(html);
-	if (jsonLd) {
-		return new Ok(jsonLd);
+	const logs: string[] = [];
+	const log = (msg: string) => {
+		console.log(msg);
+		logs.push(msg);
+	};
+
+	try {
+        log(`Fetching ${url}`);
+		const response = await fetch(url, request);
+		log(`Response status: ${response.status}`);
+		const html = await response.text();
+        log(`HTML length: ${html.length}`);
+		// Extract JSON-LD data
+		const jsonLd = await extractJsonLd(html, log);
+		if (jsonLd) {
+			return new Ok(jsonLd);
+		}
+		return new GError(`URL Error: No recipe data found on the page. Logs: ${logs.join("; ")}`);
+	} catch (e: any) {
+		return new GError(`Exception during scrape: ${e.message}. Logs: ${logs.join("; ")}`);
 	}
-	return new GError("URL Error: No recipe data found on the page");
 }
+
+const documentLoader = async (url: string) => {
+	// schema.org/ often returns HTML even with correct headers, so we explicitly fetch the JSON context
+	if (url === "https://schema.org/" || url === "http://schema.org/" || url === "https://schema.org" || url === "http://schema.org") {
+		url = "https://schema.org/docs/jsonldcontext.json";
+	}
+
+	try {
+		const response = await fetch(url, {
+			headers: {
+				Accept: "application/ld+json, application/json",
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+		}
+
+		const data = await response.json();
+
+		return {
+			contextUrl: null,
+			document: data,
+			documentUrl: url,
+		};
+	} catch (error) {
+		console.error(`Error loading document ${url}:`, error);
+		throw error;
+	}
+};
 
 export async function extractJsonLd(
 	html: string,
+    log: (msg: string) => void = console.log,
 ): Promise<Recipe | NodeObject | null> {
 	let jsonLdContent = "";
 
@@ -35,10 +80,13 @@ export async function extractJsonLd(
 		.text();
 
 	if (!jsonLdContent) {
+        log("No jsonLdContent found via HTMLRewriter");
 		return null;
 	}
-
+	log(`Found JSON-LD content length: ${jsonLdContent.length}`);
+	
 	let parsed: NodeObject | null = null;
+	
 	try {
 		const frameObject = {
 			"@context": "https://schema.org/",
@@ -60,14 +108,19 @@ export async function extractJsonLd(
 			url: { "@explicit": true, id: {} },
 		};
 		const { frame } = api;
-		parsed = await frame(JSON.parse(jsonLdContent), frameObject);
-		console.log("parsed: ", parsed);
-	} catch (error) {
-		console.error("Failed to parse JSON-LD:", error);
+        log("Starting JSON-LD frame");
+		parsed = await frame(JSON.parse(jsonLdContent), frameObject, {
+			documentLoader: documentLoader,
+		});
+		log("JSON-LD frame completed");
+        // log(`Parsed: ${JSON.stringify(parsed)}`);
+	} catch (error: any) {
+		log(`Failed to parse JSON-LD: ${error.message}`);
 		return null;
 	}
 
 	if (!parsed) {
+        log("Parsed object is null");
 		return null;
 	}
 	const parsedIngredients = parsed?.recipeIngredient

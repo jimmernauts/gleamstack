@@ -1,3 +1,4 @@
+import conversation
 import gleam/javascript/promise.{type Promise}
 import gleam/json.{type Json}
 import gleam/list
@@ -16,7 +17,7 @@ pub fn handle_req(req: Request) -> Promise(Response) {
         glen.get_query(req)
         |> list.key_find("target")
       case target {
-        Ok(target) -> scrape_url_page(target)
+        Ok(target) -> scrape_url_page(target, req)
         _ -> not_found(req)
       }
     }
@@ -24,8 +25,9 @@ pub fn handle_req(req: Request) -> Promise(Response) {
   }
 }
 
-pub fn scrape_url_page(target: String) -> Promise(Response) {
-  do_fetch_jsonld(target)
+pub fn scrape_url_page(target: String, req: Request) -> Promise(Response) {
+  echo "Scraping URL: " <> target
+  do_fetch_jsonld(target, conversation.to_js_request(req))
   |> promise.map(fn(data) {
     case data {
       Ok(data) -> {
@@ -50,4 +52,7 @@ pub fn not_found(_req: Request) -> Promise(Response) {
 }
 
 @external(javascript, "./scrape_url.ts", "do_fetch_jsonld")
-fn do_fetch_jsonld(url: String) -> Promise(Result(Json, String))
+fn do_fetch_jsonld(
+  url: String,
+  request: conversation.JsRequest,
+) -> Promise(Result(Json, String))

@@ -1,14 +1,14 @@
 {
-    "name": "Mealstack",
-    "short_name": "Mealstack",
+    "name": "Mealstack (Dev)",
+    "short_name": "Mealstack (Dev)",
     "icons": [
         {
-            "src": "/android-chrome-192x192.png",
+            "src": "/android-chrome-192x192-dev.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "/android-chrome-512x512.png",
+            "src": "/android-chrome-512x512-dev.png",
             "sizes": "512x512",
             "type": "image/png"
         }
@@ -16,9 +16,9 @@
     "theme_color": "#2f281b",
     "background_color": "#fdfdfb",
     "display": "standalone",
-    "start_url": "https://mealstack.jimmernauts.workers.dev/",
+    "start_url": "http://localhost:5173/",
     "share_target": {
-        "action": "https://mealstack.jimmernauts.workers.dev/import",
+        "action": "http://localhost:5173/import",
         "method": "GET",
         "params": {
             "title": "title",

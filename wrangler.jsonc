@@ -9,7 +9,8 @@
     "workers_dev": true,
     "preview_urls": false,
     "compatibility_flags": [
-        "nodejs_compat"
+        "nodejs_compat",
+        "enable_weak_ref"
     ],
     "observability": {
         "logs": {

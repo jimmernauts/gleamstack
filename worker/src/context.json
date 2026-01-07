@@ -1,0 +1,9 @@
+{
+    "@context": {
+        "type": "@type",
+        "id": "@id"
+    },
+    "Recipe": {
+        "@id": "https://schema.org/Recipe"
+    }
+}

@@ -1,14 +1,10 @@
 import app.{OnRouteChange, ShoppingList, ViewShoppingList}
-import birdie
 import gleam/option.{None, Some}
-import gleam/result
 import glearray
-import lustre/dev/query
 import lustre/dev/simulate
-import lustre/element
 import pages/shoppinglist.{
-  ShoppingListModel, UserAddedIngredientAtIndex, UserCreatedList,
-  UserDeletedList, UserUpdatedIngredientNameAtIndex,
+  ShoppingListModel, UserCreatedList, UserDeletedList,
+  UserUpdatedIngredientNameAtIndex,
 }
 import rada/date
 import startest.{describe, it}

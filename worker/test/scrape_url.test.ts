@@ -10,6 +10,7 @@ describe("extractJsonLd", () => {
             "@context": "https://schema.org/",
             "@type": "Recipe",
             "name": "Test Recipe",
+            "recipeIngredient": ["test"],
             "recipeYield": 4
           }
         </script>
@@ -26,6 +27,7 @@ describe("extractJsonLd", () => {
             "@context": "https://schema.org/",
             "@type": "Recipe",
             "name": "Test Recipe",
+            "recipeIngredient": ["test"],
             "recipeYield": "6"
           }
         </script>
@@ -42,6 +44,7 @@ describe("extractJsonLd", () => {
             "@context": "https://schema.org/",
             "@type": "Recipe",
             "name": "Test Recipe",
+            "recipeIngredient": ["test"],
             "recipeYield": ["8", "8 servings"]
           }
         </script>
@@ -58,6 +61,7 @@ describe("extractJsonLd", () => {
             "@context": "https://schema.org/",
             "@type": "Recipe",
             "name": "Test Recipe",
+            "recipeIngredient": ["test"],
             "recipeYield": "invalid"
           }
         </script>
@@ -76,6 +80,7 @@ describe("extractJsonLd", () => {
             "@context": "https://schema.org/",
             "@type": "Recipe",
             "name": "Test Recipe",
+            "recipeIngredient": ["test"],
             "cookTime": "PT1H30M"
           }
         </script>
@@ -92,6 +97,7 @@ describe("extractJsonLd", () => {
             "@context": "https://schema.org/",
             "@type": "Recipe",
             "name": "Test Recipe",
+            "recipeIngredient": ["test"],
             "prepTime": "PT45M"
           }
         </script>
@@ -109,7 +115,8 @@ describe("extractJsonLd", () => {
           {
             "@context": "https://schema.org/",
             "@type": "Recipe",
-            "name": "Chocolate Cake"
+            "name": "Chocolate Cake",
+            "recipeIngredient": ["test"]
           }
         </script>
       `;
@@ -125,7 +132,8 @@ describe("extractJsonLd", () => {
           {
             "@context": "https://schema.org/",
             "@type": "Recipe",
-            "title": "Chocolate Cake"
+            "title": "Chocolate Cake",
+            "recipeIngredient": ["test"]
           }
         </script>
       `;
@@ -204,7 +212,8 @@ describe("extractJsonLd", () => {
         <script type="application/ld+json">
           {
             "@context": "https://schema.org/",
-            "@type": "Recipe"
+            "@type": "Recipe",
+            "recipeIngredient": ["test"]
           }
         </script>
       `;
