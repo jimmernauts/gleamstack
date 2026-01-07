@@ -14,18 +14,18 @@ console.log(`Initialized DB with Admin Token: ${!!(process.env.INSTANT_ADMIN_TOK
 
 
 
-export async function do_parse_recipe_text(text: string): Promise<Result<any, any>> {
+export async function do_parse_recipe_text(text: string, log: (msg: string) => void = console.log): Promise<Result<any, any>> {
   if (!text.trim()) {
     return new GError({
       Other: { message: "Recipe text is empty." },
     });
   }
 
-  console.log("Parsing recipe text...");
+  log("Parsing recipe text...");
 
   try {
     // 1. Retrieve API Key from Instant DB
-    console.log("Retrieving settings from Instant DB...");
+    log("Retrieving settings from Instant DB...");
     const settingsHelper = await db.query({ settings: { $: { limit: 1 } } });
     const settings = settingsHelper.settings?.[0];
     
@@ -33,18 +33,18 @@ export async function do_parse_recipe_text(text: string): Promise<Result<any, an
     // We ignore 'sk-' keys as they are likely OpenAI
     let apiKey = settings?.api_key;
     if (apiKey && apiKey.startsWith("sk-")) {
-        console.warn("Found OpenAI API key in settings, ignoring for Gemini usage.");
+        log("Found OpenAI API key in settings, ignoring for Gemini usage.");
         apiKey = undefined;
     }
     apiKey = apiKey || process.env.GEMINI_API_KEY;
 
-    console.log(`Using API Key: ${apiKey ? apiKey.substring(0, 5) + "..." : "undefined"}`);
+    log(`Using API Key: ${apiKey ? apiKey.substring(0, 5) + "..." : "undefined"}`);
 
     if (!apiKey) {
         return new GError({ Other: { message: "No valid Gemini API key available (DB has OpenAI key, env var missing)." } });
     }
 
-    console.log("Initializing Gemini...");
+    log("Initializing Gemini...");
     // 2. Initialize Gemini
     const ai = new GoogleGenAI({ apiKey: apiKey });
 
@@ -52,7 +52,7 @@ export async function do_parse_recipe_text(text: string): Promise<Result<any, an
 
     // 3. Generate Content
     const prompt = `Extract the recipe from this data: ${text}`;
-    console.log("Sending request to Gemini...");
+    log("Sending request to Gemini...");
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview", 
       contents: prompt,
@@ -64,7 +64,7 @@ export async function do_parse_recipe_text(text: string): Promise<Result<any, an
     
     // 4. Parse Response
     const responseText = response.text; 
-    console.log("Raw response text:", responseText); // Debugging
+    log("Raw response text:" + responseText); // Debugging
     
     if (!responseText) {
         throw new Error("No response text received.");
@@ -74,13 +74,100 @@ export async function do_parse_recipe_text(text: string): Promise<Result<any, an
     return new Ok(recipeData);
 
   } catch (error: any) {
-    console.error("Error parsing recipe:", error);
+    log("Error parsing recipe: " + error);
     return new GError({
         Other: {
             message: `Failed to parse recipe: ${error.message}`,
         },
     });
   }
+}
+
+
+export async function do_parse_recipe_image(imageDataUrl: string, log: (msg: string) => void = console.log): Promise<Result<any, any>> {
+    if (!imageDataUrl.trim()) {
+        return new GError({
+            Other: { message: "Image data is empty." },
+        });
+    }
+
+    log("Parsing recipe image...");
+
+    try {
+        // 1. Retrieve API Key
+        log("Retrieving settings from Instant DB...");
+        const settingsHelper = await db.query({ settings: { $: { limit: 1 } } });
+        const settings = settingsHelper.settings?.[0];
+        
+        let apiKey = settings?.api_key;
+        if (apiKey && apiKey.startsWith("sk-")) {
+            log("Found OpenAI API key in settings, ignoring for Gemini usage.");
+            apiKey = undefined;
+        }
+        apiKey = apiKey || process.env.GEMINI_API_KEY;
+
+        log(`Using API Key: ${apiKey ? apiKey.substring(0, 5) + "..." : "undefined"}`);
+
+        if (!apiKey) {
+            return new GError({ Other: { message: "No valid Gemini API key available." } });
+        }
+
+        // 2. Initialize Gemini
+        const ai = new GoogleGenAI({ apiKey: apiKey });
+
+        // 3. Prepare Image Part
+        const matches = imageDataUrl.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+        
+        if (!matches || matches.length !== 3) {
+             return new GError({ Other: { message: "Invalid image data URL format." } });
+        }
+        
+        const mimeType = matches[1];
+        const base64Data = matches[2];
+
+        // 4. Generate Content
+        log("Sending request to Gemini with image...");
+        const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        { text: "Extract the recipe from this image." },
+                        {
+                            inlineData: {
+                                mimeType: mimeType,
+                                data: base64Data
+                            }
+                        }
+                    ]
+                }
+            ],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: recipeSchema,
+            },
+        });
+
+         // 5. Parse Response
+        const responseText = response.text;
+        log("Raw response text:" + responseText);
+
+        if (!responseText) {
+            throw new Error("No response text received.");
+        }
+        const recipeData = JSON.parse(responseText);
+
+        return new Ok(recipeData);
+
+    } catch (error: any) {
+        log("Error parsing recipe image: " + error);
+        return new GError({
+            Other: {
+                message: `Failed to parse recipe image: ${error.message}`,
+            },
+        });
+    }
 }
 
 

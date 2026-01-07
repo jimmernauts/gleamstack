@@ -3,6 +3,7 @@ import type { Ingredient, MethodStep, Recipe } from "../../common/types.ts";
 import api, { type NodeObject } from "jsonld";
 import { kebabCase } from "change-case";
 import durationParse from "iso8601-duration";
+import { do_parse_recipe_text } from "./parse_recipe.ts";
 
 export async function do_fetch_jsonld(
 	url: string,
@@ -25,6 +26,11 @@ export async function do_fetch_jsonld(
 		const jsonLd = await extractJsonLd(html, log);
 		if (jsonLd) {
 			return new Ok(jsonLd);
+		}
+		log("No JSON-LD found, trying to parse recipe text...");
+		const recipe = await do_parse_recipe_text(html, log);
+		if (recipe) {
+			return new Ok(recipe);
 		}
 		return new GError(`URL Error: No recipe data found on the page. Logs: ${logs.join("; ")}`);
 	} catch (e: any) {

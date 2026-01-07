@@ -24,6 +24,7 @@ pub fn handle_req(req: Request) -> Promise(Response) {
       }
     }
     ["api", "parse_recipe_text"] -> handle_parse_recipe_text(req)
+    ["api", "parse_recipe_image"] -> handle_parse_recipe_image(req)
     _ -> not_found(req)
   }
 }
@@ -86,6 +87,64 @@ fn decode_text_from_json(
   decode.run(json, decoder)
 }
 
+fn handle_parse_recipe_image(req: Request) -> Promise(Response) {
+  use body <- promise.await(glen.read_json_body(req))
+  case body {
+    Ok(json) -> {
+      case decode_image_from_json(json) {
+        Ok(image) -> {
+          do_parse_recipe_image(image)
+          |> promise.map(fn(result) {
+            case result {
+              Ok(data) -> {
+                data
+                |> json.to_string
+                |> glen.json(status.ok)
+                |> glen.set_header("Access-Control-Allow-Origin", "*")
+              }
+              Error(_error) -> {
+                glen.json(
+                  json.object([
+                    #("error", json.string("Failed to parse recipe from image")),
+                  ])
+                    |> json.to_string,
+                  status.internal_server_error,
+                )
+                |> glen.set_header("Access-Control-Allow-Origin", "*")
+              }
+            }
+          })
+        }
+        Error(_) -> {
+          promise.resolve(
+            glen.text(
+              "Invalid JSON body: missing 'image' field",
+              status.bad_request,
+            )
+            |> glen.set_header("Access-Control-Allow-Origin", "*"),
+          )
+        }
+      }
+    }
+    Error(_) -> {
+      promise.resolve(
+        glen.text("Invalid JSON body", status.bad_request)
+        |> glen.set_header("Access-Control-Allow-Origin", "*"),
+      )
+    }
+  }
+}
+
+fn decode_image_from_json(
+  json: dynamic.Dynamic,
+) -> Result(String, List(decode.DecodeError)) {
+  let decoder = {
+    use image <- decode.field("image", decode.string)
+    decode.success(image)
+  }
+  decode.run(json, decoder)
+}
+
 pub fn scrape_url_page(target: String, req: Request) -> Promise(Response) {
   echo "Scraping URL: " <> target
   do_fetch_jsonld(target, conversation.to_js_request(req))
@@ -120,3 +179,8 @@ fn do_fetch_jsonld(
 
 @external(javascript, "./parse_recipe.ts", "do_parse_recipe_text")
 fn do_parse_recipe_text(text: String) -> Promise(Result(Json, dynamic.Dynamic))
+
+@external(javascript, "./parse_recipe.ts", "do_parse_recipe_image")
+fn do_parse_recipe_image(
+  image_data: String,
+) -> Promise(Result(Json, dynamic.Dynamic))

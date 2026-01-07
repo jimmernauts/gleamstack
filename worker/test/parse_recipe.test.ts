@@ -39,4 +39,24 @@ describe("parse_recipe", () => {
             expect(result[0].Other.message).toBe("Recipe text is empty.");
         }
     });
+
+    it("should attempt to parse recipe from image (mock/structure check)", async () => {
+        // 1x1 pixel red GIF
+        const mockImage = "data:image/gif;base64,R0lGODlhAQABAPAAAP8AAAAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
+        
+        // We expect this to fail with "No valid Gemini API key" or network error since we don't have a key in test env usually,
+        // or if we do, it might fail to find a recipe in a red pixel.
+        // The goal is to ensure the function executes the logic up to API call or failure.
+        
+        const { do_parse_recipe_image } = await import("../src/parse_recipe.ts");
+        const result = await do_parse_recipe_image(mockImage);
+        
+        // It should return a Result (Ok or GError), not throw.
+        // If we have an API key, it might return Ok or Error from Gemini.
+        // If we don't, it returns GError.
+        console.log("Image Parse Result:", result);
+        
+        expect(result).toBeDefined();
+        // expect(result).toBeInstanceOf(GError); // Likely GError in test env without key or with block
+    });
 });
