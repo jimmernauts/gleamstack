@@ -190,9 +190,7 @@ export function do_subscribe_to_plan(
 }
 
 export async function do_save_plan(plan: JsPlanDay[]): Promise<void> {
-    console.log(plan)
     for (const day of plan) {
-        console.log(day)
         const plan_day_to_update = await do_get_plan(day.date, day.date);
         const id_to_update =
             plan_day_to_update.length > 0 ? plan_day_to_update[0].id : id();
@@ -201,7 +199,6 @@ export async function do_save_plan(plan: JsPlanDay[]): Promise<void> {
             ...(Option$isSome(day.lunch) ? { lunch: Option$Some$0(day.lunch) } : { lunch: null }),
             ...(Option$isSome(day.dinner) ? { dinner: Option$Some$0(day.dinner) } : { dinner: null }),
         }
-        console.log(record_to_insert)
         await db.transact(
             db.tx.plan[id_to_update].update(record_to_insert),
         );

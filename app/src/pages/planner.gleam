@@ -18,7 +18,6 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, fragment, text}
 import lustre/element/html.{a, button, div, h2, input, section}
 import lustre/event
-import plinth/browser/element.{type Element as DomElement} as dom_element
 import rada/date.{type Date}
 import shared/codecs
 import shared/types
@@ -54,6 +53,7 @@ pub type PlannerMsg {
   UserCancelledEditMeal
   UserSavedEditMeal
   UserDragStart(Date, Meal)
+  UserDragOver(Date, Meal)
   UserDrop(Date, Meal)
   PlannerNoOp
 }
@@ -68,6 +68,7 @@ pub type PlannerModel {
     start_date: Date,
     editing: Option(EditingMeal),
     dragging: Option(#(Date, Meal)),
+    hovering: Option(#(Date, Meal)),
   )
 }
 
@@ -286,23 +287,33 @@ pub fn planner_update(
       PlannerModel(..model, dragging: Some(#(date, meal))),
       effect.none(),
     )
+    UserDragOver(date, meal) -> #(
+      PlannerModel(..model, hovering: Some(#(date, meal))),
+      effect.none(),
+    )
     UserDrop(target_date, target_meal) -> {
-      case model.dragging {
-        Some(#(source_date, source_meal)) -> {
-          let new_plan =
-            move_meal_in_plan(
-              model.plan_week,
-              source_date,
-              source_meal,
-              target_date,
-              target_meal,
-            )
-          #(PlannerModel(..model, plan_week: new_plan, dragging: None), {
-            use dispatch <- effect.from
-            dispatch(UserSavedPlan)
-          })
+      case model.dragging == Some(#(target_date, target_meal)) {
+        True -> {
+          #(PlannerModel(..model, dragging: None), effect.none())
         }
-        None -> #(model, effect.none())
+        False ->
+          case model.dragging {
+            Some(#(source_date, source_meal)) -> {
+              let new_plan =
+                move_meal_in_plan(
+                  model.plan_week,
+                  source_date,
+                  source_meal,
+                  target_date,
+                  target_meal,
+                )
+              #(PlannerModel(..model, plan_week: new_plan, dragging: None), {
+                use dispatch <- effect.from
+                dispatch(UserSavedPlan)
+              })
+            }
+            None -> #(model, effect.none())
+          }
       }
     }
   }
@@ -365,18 +376,13 @@ pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {
 @external(javascript, ".././db.ts", "do_save_plan")
 fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 
-@external(javascript, ".././planner.ts", "do_enable_drag_drop_touch")
-fn do_enable_drag_drop_touch() -> Nil
-
 pub fn enable_drag_drop_touch() -> Effect(PlannerMsg) {
-  // In addition to a `dispatch` function, before_paint and after_paint effects
-  // have access to the "root element" of your Lustre app.
-  // 
-  // For `lustre.start` apps, this is the element that matched your selector.
-  // For components, this is their shadow root.
-  use dispatch, root_element <- effect.after_paint
+  use _dispatch, _root_element <- effect.after_paint
   do_enable_drag_drop_touch()
 }
+
+@external(javascript, ".././planner.ts", "do_enable_drag_drop_touch")
+fn do_enable_drag_drop_touch() -> Nil
 
 //-VIEWS-------------------------------------------------------------
 
@@ -452,6 +458,7 @@ pub fn view_planner(model: PlannerModel) {
                 i,
                 Lunch,
                 get_label_from_planday(x, Lunch, model.recipe_list),
+                model.hovering,
               )
             })
           }),
@@ -464,6 +471,7 @@ pub fn view_planner(model: PlannerModel) {
                 i,
                 Dinner,
                 get_label_from_planday(x, Dinner, model.recipe_list),
+                model.hovering,
               )
             })
           }),
@@ -719,7 +727,14 @@ fn planner_meal_card(
   i: Int,
   for: Meal,
   label: String,
+  model_hovering: Option(#(Date, Meal)),
 ) -> Element(PlannerMsg) {
+  let is_hovering = model_hovering == Some(#(pd.date, for))
+  let hovering_styles = case is_hovering {
+    True -> "bg-ecru-white-100 shadow-orange"
+    False -> ""
+  }
+
   let row = case for {
     Lunch -> "col-start-2 md:row-start-2"
     Dinner -> "col-start-3 md:row-start-3"
@@ -734,17 +749,19 @@ fn planner_meal_card(
         "group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 "
-        <> row,
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100"
+        <> " "
+        <> row
+        <> " "
+        <> hovering_styles,
       ),
       styles([#("--dayPlacement", int.to_string(i + 2))]),
       event.on_click(UserClickedEditMeal(pd, for)),
       attribute.attribute("draggable", "true"),
       event.on("dragstart", decode.success(UserDragStart(pd.date, for))),
-      event.advanced(
-        "dragover",
-        decode.success(event.handler(PlannerNoOp, True, False)),
-      ),
+      event.advanced("dragover", {
+        decode.success(event.handler(UserDragOver(pd.date, for), True, False))
+      }),
       event.on("drop", decode.success(UserDrop(pd.date, for))),
     ],
     [card],

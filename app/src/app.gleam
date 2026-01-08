@@ -56,6 +56,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         start_date: date.floor(date.today(), date.Monday),
         editing: None,
         dragging: None,
+        hovering: None,
       ),
       db_subscriptions: dict.new(),
       shoppinglist: shoppinglist.ShoppingListModel(
@@ -428,6 +429,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             start_date: model.planner.start_date,
             editing: model.planner.editing,
             dragging: model.planner.dragging,
+            hovering: model.planner.hovering,
           ),
         ),
         effect.map(child_effect, RecipeList),
@@ -687,6 +689,7 @@ fn view(model: Model) -> Element(Msg) {
           start_date: start_date,
           editing: model.planner.editing,
           dragging: model.planner.dragging,
+          hovering: model.planner.hovering,
         )),
         Planner,
       )
