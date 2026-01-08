@@ -61,7 +61,7 @@ test_name: planner_integration_tests
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" draggable="true" style="--dayPlacement:2;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2 " draggable="true" style="--dayPlacement:2;">
         <div class="flex m-2 flex-row items-baseline gap-1 overflow-y-auto overflow-x-hidden">
           <input class="absolute top-2 right-2 cursor-pointer" type="checkbox">
           <h2 class="text-xl text-wrap leading-tight" style="text-decoration:none;">
@@ -72,7 +72,7 @@ test_name: planner_integration_tests
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" draggable="true" style="--dayPlacement:3;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2 " draggable="true" style="--dayPlacement:3;">
         <div class="flex m-2 flex-row items-baseline gap-1 overflow-y-auto overflow-x-hidden">
           <input class="absolute top-2 right-2 cursor-pointer" type="checkbox">
           <h2 class="text-xl text-wrap leading-tight" style="text-decoration:none;">
@@ -83,37 +83,37 @@ test_name: planner_integration_tests
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" draggable="true" style="--dayPlacement:4;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2 " draggable="true" style="--dayPlacement:4;">
 
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" draggable="true" style="--dayPlacement:5;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2 " draggable="true" style="--dayPlacement:5;">
 
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" draggable="true" style="--dayPlacement:6;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2 " draggable="true" style="--dayPlacement:6;">
 
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" draggable="true" style="--dayPlacement:7;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2 " draggable="true" style="--dayPlacement:7;">
 
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2" draggable="true" style="--dayPlacement:8;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-2 md:row-start-2 " draggable="true" style="--dayPlacement:8;">
 
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" draggable="true" style="--dayPlacement:2;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3 " draggable="true" style="--dayPlacement:2;">
         <div class="flex m-2 flex-row items-baseline gap-1 overflow-y-auto overflow-x-hidden">
           <input class="absolute top-2 right-2 cursor-pointer" type="checkbox">
           <h2 class="text-xl text-wrap leading-tight" style="text-decoration:none;">
@@ -124,37 +124,37 @@ test_name: planner_integration_tests
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" draggable="true" style="--dayPlacement:3;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3 " draggable="true" style="--dayPlacement:3;">
 
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" draggable="true" style="--dayPlacement:4;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3 " draggable="true" style="--dayPlacement:4;">
 
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" draggable="true" style="--dayPlacement:5;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3 " draggable="true" style="--dayPlacement:5;">
 
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" draggable="true" style="--dayPlacement:6;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3 " draggable="true" style="--dayPlacement:6;">
 
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" draggable="true" style="--dayPlacement:7;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3 " draggable="true" style="--dayPlacement:7;">
 
       </div>
       <div class="group relative flex min-h-full min-w-full outline-1 outline-ecru-white-950 outline outline-offset-[-1px]
                 row-start-[var(--dayPlacement)]
                 md:col-start-[var(--dayPlacement)]
-                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3" draggable="true" style="--dayPlacement:8;">
+                snap-start scroll-p-[-40px] cursor-pointer hover:bg-ecru-white-100 col-start-3 md:row-start-3 " draggable="true" style="--dayPlacement:8;">
 
       </div>
 

@@ -190,6 +190,7 @@ export function do_subscribe_to_plan(
 }
 
 export async function do_save_plan(plan: JsPlanDay[]): Promise<void> {
+    console.log("Saving plan days:", plan);
     for (const day of plan) {
         const plan_day_to_update = await do_get_plan(day.date, day.date);
         const id_to_update =

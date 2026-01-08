@@ -48,13 +48,14 @@ pub type PlannerMsg {
   DbRetrievedPlan(PlanWeek, Date)
   DbSubscribedPlan(Dynamic)
   DbSavedPlan(Date)
-  UserSavedPlan
+
   UserClickedEditMeal(PlanDay, Meal)
   UserCancelledEditMeal
   UserSavedEditMeal
   UserDragStart(Date, Meal)
   UserDragOver(Date, Meal)
   UserDrop(Date, Meal)
+  UserSavedDays(List(Date))
   PlannerNoOp
 }
 
@@ -217,12 +218,10 @@ pub fn planner_update(
         toggle_meal_complete_in_plan(model.plan_week, date, meal, complete)
       #(PlannerModel(..model, plan_week: result), {
         use dispatch <- effect.from
-        dispatch(UserSavedPlan)
+        dispatch(UserSavedDays([date]))
       })
     }
-    UserSavedPlan -> {
-      #(model, save_plan(model.plan_week))
-    }
+
     UserFetchedPlan(date) -> {
       #(PlannerModel(..model, start_date: date), get_plan(date))
     }
@@ -277,10 +276,14 @@ pub fn planner_update(
       #(PlannerModel(..model, editing: None), effect.none())
     }
     UserSavedEditMeal -> {
-      #(PlannerModel(..model, editing: None), {
-        use dispatch <- effect.from
-        UserSavedPlan |> dispatch
-      })
+      let save_effect = case model.editing {
+        Some(EditingMeal(day, _)) -> {
+          use dispatch <- effect.from
+          dispatch(UserSavedDays([day.date]))
+        }
+        None -> effect.none()
+      }
+      #(PlannerModel(..model, editing: None), save_effect)
     }
     PlannerNoOp -> #(model, effect.none())
     UserDragStart(date, meal) -> #(
@@ -309,12 +312,19 @@ pub fn planner_update(
                 )
               #(PlannerModel(..model, plan_week: new_plan, dragging: None), {
                 use dispatch <- effect.from
-                dispatch(UserSavedPlan)
+                dispatch(UserSavedDays([source_date, target_date]))
               })
             }
             None -> #(model, effect.none())
           }
       }
+    }
+    UserSavedDays(dates) -> {
+      let days =
+        list.map(dates, fn(d) { dict.get(model.plan_week, d) })
+        |> result.values
+        |> list.map(encode_plan_day)
+      #(model, do_save_plan(days) |> fn(_) { effect.none() })
     }
   }
 }
@@ -359,19 +369,6 @@ fn do_subscribe_to_plan(
   start_date: Int,
   end_date: Int,
 ) -> fn() -> Nil
-
-pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {
-  use dispatch <- effect.from
-  do_save_plan(list.map(dict.values(planweek), encode_plan_day))
-
-  let first_day =
-    dict.keys(planweek)
-    |> list.sort(date.compare)
-    |> list.first
-  result.unwrap(first_day, date.today())
-  |> DbSavedPlan
-  |> dispatch
-}
 
 @external(javascript, ".././db.ts", "do_save_plan")
 fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
