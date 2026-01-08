@@ -8,7 +8,8 @@ TODO
     [] Popover styling
     [x] Typeahead doesn't accept ctrl+a
     [x] Try and make the modal pop with the typeahead input as close as possible to the current cursor position when we hit the edit button
-    [] why do i have both a 'get' and 'subscribe' to the planner
+    [] DRAG N DROP ON MOBILE
+    [] make it so planner day save only impacts 1 day not the whole week
 [] add ingredients from linked recipe
 [] fix up nav icons in both small and large views
 [] add group by to recipe selector in typeahead

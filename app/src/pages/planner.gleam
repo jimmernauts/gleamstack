@@ -18,6 +18,7 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, fragment, text}
 import lustre/element/html.{a, button, div, h2, input, section}
 import lustre/event
+import plinth/browser/element.{type Element as DomElement} as dom_element
 import rada/date.{type Date}
 import shared/codecs
 import shared/types
@@ -363,6 +364,19 @@ pub fn save_plan(planweek: PlanWeek) -> Effect(PlannerMsg) {
 
 @external(javascript, ".././db.ts", "do_save_plan")
 fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
+
+@external(javascript, ".././planner.ts", "do_enable_drag_drop_touch")
+fn do_enable_drag_drop_touch() -> Nil
+
+pub fn enable_drag_drop_touch() -> Effect(PlannerMsg) {
+  // In addition to a `dispatch` function, before_paint and after_paint effects
+  // have access to the "root element" of your Lustre app.
+  // 
+  // For `lustre.start` apps, this is the element that matched your selector.
+  // For components, this is their shadow root.
+  use dispatch, root_element <- effect.after_paint
+  do_enable_drag_drop_touch()
+}
 
 //-VIEWS-------------------------------------------------------------
 

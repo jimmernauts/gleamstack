@@ -267,10 +267,13 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     )
     OnRouteChange(ViewPlanner(start_date)) -> #(
       Model(..model, current_route: ViewPlanner(start_date)),
-      effect.map(
-        planner.subscribe_to_plan(date.floor(start_date, date.Monday)),
-        Planner,
-      ),
+      effect.batch([
+        effect.map(
+          planner.subscribe_to_plan(date.floor(start_date, date.Monday)),
+          Planner,
+        ),
+        effect.map(planner.enable_drag_drop_touch(), Planner),
+      ]),
     )
     OnRouteChange(ViewSettings) -> #(
       Model(..model, current_route: ViewSettings),
