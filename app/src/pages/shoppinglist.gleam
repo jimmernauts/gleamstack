@@ -2,8 +2,10 @@ import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import components/typeahead_2 as typeahead
 import gleam/dict.{type Dict}
-import gleam/dynamic/decode.{type Decoder, type Dynamic}
+import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/int
+import gleam/javascript/promise
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -20,6 +22,7 @@ import lustre/event.{on_click, on_input}
 import pages/recipe_list
 import rada/date
 import shared/codecs
+import shared/db
 import shared/types
 
 //-TYPES--------------------------------------------------------------
@@ -47,6 +50,9 @@ pub type ShoppingListMsg {
   DbRetrievedListSummaries(Dict(date.Date, ShoppingList))
   DbSubscribedOneList(Dynamic)
   DbRetrievedOneList(ShoppingList)
+  UserClickedLinkPlan(date.Date)
+  DbRetrievedPlanForLinking(types.PlanWeek)
+  UserAddedIngredientsFromLinkedRecipe(types.PlannedRecipe)
 }
 
 pub type ShoppingListModel {
@@ -141,6 +147,99 @@ pub fn shopping_list_update(
         ),
         effect.none(),
       )
+    }
+    UserClickedLinkPlan(start_date) -> {
+      let cmd =
+        effect.from(fn(dispatch) {
+          db.do_get_plan(
+            date.to_rata_die(start_date),
+            date.to_rata_die(date.add(start_date, 6, date.Days)),
+          )
+          |> promise.map(decode.run(_, decode.list(codecs.plan_day_decoder())))
+          |> promise.map(fn(res) {
+            case res {
+              Ok(days) -> {
+                let plan_week =
+                  list.fold(days, dict.new(), fn(acc, day) {
+                    dict.insert(acc, day.date, day)
+                  })
+                DbRetrievedPlanForLinking(plan_week)
+              }
+              Error(_) -> DbRetrievedPlanForLinking(dict.new())
+            }
+          })
+          |> promise.map(dispatch)
+          Nil
+        })
+      #(model, cmd)
+    }
+    DbRetrievedPlanForLinking(plan_week) -> {
+      case model.current {
+        Some(list) -> {
+          let recipes =
+            plan_week
+            |> dict.values
+            |> list.flat_map(fn(day: types.PlanDay) { [day.lunch, day.dinner] })
+            |> option.values
+            |> list.map(fn(meal: types.PlannedMeal) { meal.recipe })
+            |> glearray.from_list
+          let updated_list =
+            ShoppingList(
+              ..list,
+              linked_plan: Some(list.date),
+              linked_recipes: recipes,
+            )
+
+          save_shopping_list(updated_list)
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
+    }
+    UserAddedIngredientsFromLinkedRecipe(planned_recipe) -> {
+      case model.current {
+        Some(list) -> {
+          let recipe_slug = case planned_recipe {
+            types.RecipeSlug(slug) -> slug
+            types.RecipeName(_) -> ""
+          }
+          let ingredients_to_add =
+            model.recipe_list.recipes
+            |> list.find(fn(r) { r.slug == recipe_slug })
+            |> result.map(fn(r) {
+              r.ingredients
+              |> option.unwrap(dict.new())
+              |> dict.values
+              |> list.map(fn(i) {
+                ShoppingListIngredient(
+                  ingredient: i,
+                  source: FromRecipe(planned_recipe),
+                  checked: False,
+                )
+              })
+            })
+            |> result.unwrap([])
+            |> glearray.from_list
+
+          let updated_items =
+            list.items
+            |> glearray.to_list
+            |> list.append(glearray.to_list(ingredients_to_add))
+            |> glearray.from_list
+
+          let updated_list = ShoppingList(..list, items: updated_items)
+
+          save_shopping_list(updated_list)
+          #(
+            ShoppingListModel(..model, current: Some(updated_list)),
+            effect.none(),
+          )
+        }
+        None -> #(model, effect.none())
+      }
     }
     UserAddedIngredientAtIndex(index) -> {
       case model.current {
@@ -508,7 +607,7 @@ pub fn shopping_list_update(
     )
     UserDeletedList(list) -> {
       let updated_lists = dict.drop(model.all_lists, [list.date])
-      do_delete_shopping_list(option.unwrap(list.id, ""))
+      db.do_delete_shopping_list(option.unwrap(list.id, ""))
       #(
         ShoppingListModel(..model, all_lists: updated_lists, current: None),
         effect.none(),
@@ -516,12 +615,6 @@ pub fn shopping_list_update(
     }
   }
 }
-
-@external(javascript, ".././db.ts", "do_save_shopping_list")
-fn do_save_shopping_list(list_obj: #(Int, String, String, String, Int)) -> Nil
-
-@external(javascript, ".././db.ts", "do_delete_shopping_list")
-fn do_delete_shopping_list(id: String) -> Nil
 
 fn save_shopping_list(list: ShoppingList) -> Nil {
   // Convert to a plain object with proper types for TypeScript
@@ -546,7 +639,7 @@ fn save_shopping_list(list: ShoppingList) -> Nil {
       None -> 0
     },
   )
-  do_save_shopping_list(list_obj)
+  db.do_save_shopping_list(list_obj)
 }
 
 fn find_any_other_active_lists_and_complete_them(
@@ -569,12 +662,9 @@ fn find_any_other_active_lists_and_complete_them(
   }
 }
 
-@external(javascript, ".././db.ts", "do_subscribe_to_shopping_list_summaries")
-fn do_subscribe_to_shopping_list_summaries(callback: fn(a) -> Nil) -> Nil
-
 pub fn subscribe_to_shopping_list_summaries() -> Effect(ShoppingListMsg) {
   use dispatch <- effect.from
-  do_subscribe_to_shopping_list_summaries(fn(data) {
+  db.do_subscribe_to_shopping_list_summaries(fn(data) {
     data
     |> DbSubscribedListSummaries
     |> dispatch
@@ -582,17 +672,11 @@ pub fn subscribe_to_shopping_list_summaries() -> Effect(ShoppingListMsg) {
   Nil
 }
 
-@external(javascript, ".././db.ts", "do_subscribe_to_one_shoppinglist_by_date")
-fn do_subscribe_to_one_shoppinglist_by_date(
-  date: Int,
-  callback: fn(a) -> Nil,
-) -> fn() -> Nil
-
 pub fn subscribe_to_one_shoppinglist_by_date(
   date: date.Date,
 ) -> Effect(ShoppingListMsg) {
   use dispatch <- effect.from
-  do_subscribe_to_one_shoppinglist_by_date(date.to_rata_die(date), fn(data) {
+  db.do_subscribe_to_one_shoppinglist_by_date(date.to_rata_die(date), fn(data) {
     data
     |> DbSubscribedOneList
     |> dispatch
@@ -756,6 +840,7 @@ pub fn view_shopping_list_detail(
               },
             ],
             [
+              view_plan_linker(list),
               view_linked_recipes(list.linked_recipes, recipes),
             ],
           ),
@@ -787,6 +872,27 @@ pub fn view_shopping_list_detail(
       ]),
     ],
   )
+}
+
+fn view_plan_linker(list: ShoppingList) -> Element(ShoppingListMsg) {
+  div([class("flex gap-2 items-center mb-2")], [
+    case list.linked_plan {
+      Some(d) ->
+        span([class("text-sm font-mono")], [
+          text("Linked Plan: " <> date.to_iso_string(d)),
+        ])
+      None ->
+        button(
+          [
+            class(
+              "bg-ecru-white-100 hover:bg-ecru-white-200 border border-ecru-white-950 px-2 py-0.5 text-xs font-mono",
+            ),
+            on_click(UserClickedLinkPlan(list.date)),
+          ],
+          [text("Link Plan")],
+        )
+    },
+  ])
 }
 
 fn view_linked_recipes(
@@ -857,6 +963,20 @@ fn linked_recipe_input(
       ],
       [text("➕")],
     ),
+    case selected_recipe {
+      types.RecipeSlug(_slug) ->
+        button(
+          [
+            class(
+              "text-ecru-white-950 cursor-pointer ml-2 text-xs border border-ecru-white-950 px-1 bg-ecru-white-100",
+            ),
+            type_("button"),
+            on_click(UserAddedIngredientsFromLinkedRecipe(selected_recipe)),
+          ],
+          [text("🧂")],
+        )
+      _ -> element.none()
+    },
   ])
 }
 

@@ -2,7 +2,7 @@ import app.{OnRouteChange, Planner, ViewPlanner}
 import birdie
 import gleam/dict
 import pages/planner.{
-  DbRetrievedPlan, Dinner, Lunch, PlanDay, PlannedMeal, UserDragStart, UserDrop,
+  DbRetrievedPlan, Dinner, Lunch, UserDragStart, UserDrop,
   UserToggledMealComplete, UserUpdatedMealTitle,
 }
 
@@ -87,13 +87,13 @@ pub fn planner_integration_tests() {
         dict.from_list([
           #(
             monday,
-            PlanDay(
+            types.PlanDay(
               date: monday,
-              lunch: Some(PlannedMeal(
+              lunch: Some(types.PlannedMeal(
                 recipe: types.RecipeName("Pasta Carbonara"),
                 complete: False,
               )),
-              dinner: Some(PlannedMeal(
+              dinner: Some(types.PlannedMeal(
                 recipe: types.RecipeName("Thai Green Curry"),
                 complete: False,
               )),
@@ -101,16 +101,19 @@ pub fn planner_integration_tests() {
           ),
           #(
             tuesday,
-            PlanDay(
+            types.PlanDay(
               date: tuesday,
-              lunch: Some(PlannedMeal(
+              lunch: Some(types.PlannedMeal(
                 recipe: types.RecipeName("Spaghetti Bolognese"),
                 complete: False,
               )),
               dinner: None,
             ),
           ),
-          #(wednesday, PlanDay(date: wednesday, lunch: None, dinner: None)),
+          #(
+            wednesday,
+            types.PlanDay(date: wednesday, lunch: None, dinner: None),
+          ),
         ])
 
       // Act
@@ -317,9 +320,9 @@ pub fn planner_integration_tests() {
         dict.from_list([
           #(
             monday,
-            PlanDay(
+            types.PlanDay(
               date: monday,
-              lunch: Some(PlannedMeal(
+              lunch: Some(types.PlannedMeal(
                 recipe: types.RecipeName("Pasta Carbonara"),
                 complete: False,
               )),
@@ -390,13 +393,13 @@ pub fn planner_integration_tests() {
         dict.from_list([
           #(
             monday,
-            PlanDay(
+            types.PlanDay(
               date: monday,
-              lunch: Some(PlannedMeal(
+              lunch: Some(types.PlannedMeal(
                 recipe: types.RecipeName("Pasta Carbonara"),
                 complete: False,
               )),
-              dinner: Some(PlannedMeal(
+              dinner: Some(types.PlannedMeal(
                 recipe: types.RecipeName("Thai Green Curry"),
                 complete: False,
               )),
@@ -404,9 +407,9 @@ pub fn planner_integration_tests() {
           ),
           #(
             tuesday,
-            PlanDay(
+            types.PlanDay(
               date: tuesday,
-              lunch: Some(PlannedMeal(
+              lunch: Some(types.PlannedMeal(
                 recipe: types.RecipeName("Spaghetti Bolognese"),
                 complete: False,
               )),
@@ -444,9 +447,9 @@ pub fn planner_integration_tests() {
         dict.from_list([
           #(
             monday,
-            PlanDay(
+            types.PlanDay(
               date: monday,
-              lunch: Some(PlannedMeal(
+              lunch: Some(types.PlannedMeal(
                 recipe: types.RecipeName("Pasta Carbonara"),
                 complete: False,
               )),

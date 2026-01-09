@@ -1,5 +1,17 @@
 import gleam/dict.{type Dict}
 import gleam/option.{type Option}
+import rada/date.{type Date}
+
+pub type PlanWeek =
+  Dict(Date, PlanDay)
+
+pub type PlanDay {
+  PlanDay(date: Date, lunch: Option(PlannedMeal), dinner: Option(PlannedMeal))
+}
+
+pub type PlannedMeal {
+  PlannedMeal(recipe: PlannedRecipe, complete: Bool)
+}
 
 pub type Recipe {
   Recipe(
@@ -47,4 +59,8 @@ pub type IngredientCategory {
 pub type PlannedRecipe {
   RecipeSlug(String)
   RecipeName(String)
+}
+
+pub type JsPlanDay {
+  JsPlanDay(date: Int, lunch: Option(String), dinner: Option(String))
 }

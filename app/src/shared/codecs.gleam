@@ -8,6 +8,7 @@ import gleam/option
 import gleam/result
 import gleam/string
 import lib/utils
+import rada/date
 import shared/types.{
   type Ingredient, type IngredientCategory, type MethodStep, type Recipe,
   type Tag, type TagOption, Ingredient, IngredientCategory, MethodStep, Recipe,
@@ -361,4 +362,53 @@ pub fn encode_planned_recipe(recipe: types.PlannedRecipe) -> Json {
     types.RecipeName(name) -> json.object([#("recipe_name", json.string(name))])
     types.RecipeSlug(slug) -> json.object([#("recipe_slug", json.string(slug))])
   }
+}
+
+pub fn plan_day_decoder() -> decode.Decoder(types.PlanDay) {
+  use date <- decode.field(
+    "date",
+    decode.int |> decode.map(fn(a) { date.from_rata_die(a) }),
+  )
+  use lunch <- decode.optional_field(
+    "lunch",
+    option.None,
+    decode.optional(json_string_decoder(
+      planned_meal_decoder(),
+      types.PlannedMeal(types.RecipeName(""), False),
+    )),
+  )
+  use dinner <- decode.optional_field(
+    "dinner",
+    option.None,
+    decode.optional(json_string_decoder(
+      planned_meal_decoder(),
+      types.PlannedMeal(types.RecipeName(""), False),
+    )),
+  )
+  decode.success(types.PlanDay(date: date, lunch: lunch, dinner: dinner))
+}
+
+pub fn planned_meal_decoder() -> decode.Decoder(types.PlannedMeal) {
+  use recipe <- decode.field("recipe", planned_recipe_decoder())
+  use complete <- decode.field("complete", decode.bool)
+  decode.success(types.PlannedMeal(recipe:, complete:))
+}
+
+pub fn encode_plan_day(plan_day: types.PlanDay) -> types.JsPlanDay {
+  types.JsPlanDay(
+    date: date.to_rata_die(plan_day.date),
+    lunch: plan_day.lunch
+      |> option.map(json_encode_planned_meal)
+      |> option.map(json.to_string),
+    dinner: plan_day.dinner
+      |> option.map(json_encode_planned_meal)
+      |> option.map(json.to_string),
+  )
+}
+
+pub fn json_encode_planned_meal(input: types.PlannedMeal) -> Json {
+  json.object([
+    #("recipe", encode_planned_recipe(input.recipe)),
+    #("complete", json.bool(input.complete)),
+  ])
 }

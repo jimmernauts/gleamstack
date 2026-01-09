@@ -1,19 +1,12 @@
 TODO
 
 [-] SHOPPING LIST
-[-] Planner refactor: WIP
-    [x] Typeahead puts focus to end of input when typing each letter
-    [x] add link to planner recipe card when recipe is of type recipe-slug
-    [x] Planner card shows slug, not title, when recipe is selected from list
-    [] Popover styling
-    [x] Typeahead doesn't accept ctrl+a
-    [x] Try and make the modal pop with the typeahead input as close as possible to the current cursor position when we hit the edit button
-    [] DRAG N DROP ON MOBILE
-    [] make it so planner day save only impacts 1 day not the whole week
-[] add ingredients from linked recipe
+    [] add ingredients from linked recipe
+    [] add linked recipes from plan
+    [] go from plan to linked shopping list and vice versa
 [] fix up nav icons in both small and large views
 [] add group by to recipe selector in typeahead
-[] BUG: save recipe slow
+[] proper offline support (may require moving away from instantdb)
 [] copy recipes from browser bookmarks
 [] Add bunch of recipes
 [] Add cooking notes and ratings to recipes, group by rating
@@ -24,6 +17,15 @@ TODO
 
 
 DONE
+[x] Planner refactor
+    [x] Typeahead puts focus to end of input when typing each letter
+    [x] add link to planner recipe card when recipe is of type recipe-slug
+    [x] Planner card shows slug, not title, when recipe is selected from list
+    [x] Popover styling
+    [x] Typeahead doesn't accept ctrl+a
+    [x] Try and make the modal pop with the typeahead input as close as possible to the current cursor position when we hit the edit button
+    [x] DRAG N DROP ON MOBILE
+    [x] make it so planner day save only impacts 1 day not the whole week
 [x] PWA
 [x] deploy server to cloudflare as serverless function
 [x] write proper readme

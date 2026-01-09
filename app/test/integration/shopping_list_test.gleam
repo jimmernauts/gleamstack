@@ -1,12 +1,14 @@
 import app.{OnRouteChange, ShoppingList, ViewShoppingList}
+import gleam/dict
 import gleam/option.{None, Some}
 import glearray
 import lustre/dev/simulate
 import pages/shoppinglist.{
-  ShoppingListModel, UserCreatedList, UserDeletedList,
+  DbRetrievedPlanForLinking, ShoppingListModel, UserCreatedList, UserDeletedList,
   UserUpdatedIngredientNameAtIndex,
 }
 import rada/date
+import shared/types
 import startest.{describe, it}
 import startest/expect
 
@@ -124,6 +126,60 @@ pub fn shopping_list_workflow_tests() {
         app.Model(shoppinglist: ShoppingListModel(current: current, ..), ..) -> {
           current
           |> expect.to_be_none
+        }
+      }
+    }),
+    it("should link plan and populate recipes", fn() {
+      let today = date.today()
+      let initial_route = ViewShoppingList(today)
+
+      let monday = date.floor(today, date.Monday)
+      let plan_week =
+        dict.from_list([
+          #(
+            monday,
+            types.PlanDay(
+              date: monday,
+              lunch: Some(types.PlannedMeal(
+                recipe: types.RecipeName("Pasta Carbonara"),
+                complete: False,
+              )),
+              dinner: None,
+            ),
+          ),
+        ])
+
+      let simulation =
+        simulate.application(
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
+        )
+        |> simulate.start(Nil)
+        |> simulate.message(OnRouteChange(initial_route))
+        |> simulate.message(ShoppingList(UserCreatedList(today)))
+        |> simulate.message(ShoppingList(DbRetrievedPlanForLinking(plan_week)))
+
+      let model = simulate.model(simulation)
+      case model {
+        app.Model(shoppinglist: ShoppingListModel(current: current, ..), ..) -> {
+          case current {
+            Some(list) -> {
+              list.linked_plan
+              |> expect.to_be_some
+              |> expect.to_equal(today)
+
+              list.linked_recipes
+              |> glearray.length
+              |> expect.to_equal(1)
+
+              list.linked_recipes
+              |> glearray.get(0)
+              |> expect.to_be_ok
+              |> expect.to_equal(types.RecipeName("Pasta Carbonara"))
+            }
+            None -> panic as "Expected shopping list to exist"
+          }
         }
       }
     }),

@@ -2,7 +2,7 @@ import { id, init } from "@instantdb/core";
 import type { PlanDay, Recipe, ShoppingList } from "../../common/types.ts";
 import schema from "./instant.schema.ts";
 // not sure how to fix these import type errors at write time
-import { JsPlanDay } from "./pages/planner.mjs"
+import { JsPlanDay } from "./shared/types.mjs"
 import { Option$isSome, Option$Some$0 } from "../gleam_stdlib/gleam/option.mjs";
 
 const db = init({

@@ -20,24 +20,13 @@ import lustre/element/html.{a, button, div, h2, input, section}
 import lustre/event
 import rada/date.{type Date}
 import shared/codecs
+import shared/db
 import shared/types
 
 //-TYPES-------------------------------------------------------------
 
-pub type PlannedMeal {
-  PlannedMeal(recipe: types.PlannedRecipe, complete: Bool)
-}
-
-pub type PlanDay {
-  PlanDay(date: Date, lunch: Option(PlannedMeal), dinner: Option(PlannedMeal))
-}
-
-pub type JsPlanDay {
-  JsPlanDay(date: Int, lunch: Option(String), dinner: Option(String))
-}
-
 pub type EditingMeal {
-  EditingMeal(day: PlanDay, meal: Meal)
+  EditingMeal(day: types.PlanDay, meal: Meal)
 }
 
 pub type PlannerMsg {
@@ -45,11 +34,11 @@ pub type PlannerMsg {
   UserUpdatedMealTitle(Date, Meal, types.PlannedRecipe)
   UserToggledMealComplete(Date, Meal, Bool)
   UserFetchedPlan(Date)
-  DbRetrievedPlan(PlanWeek, Date)
+  DbRetrievedPlan(types.PlanWeek, Date)
   DbSubscribedPlan(Dynamic)
   DbSavedPlan(Date)
 
-  UserClickedEditMeal(PlanDay, Meal)
+  UserClickedEditMeal(types.PlanDay, Meal)
   UserCancelledEditMeal
   UserSavedEditMeal
   UserDragStart(Date, Meal)
@@ -59,12 +48,9 @@ pub type PlannerMsg {
   PlannerNoOp
 }
 
-pub type PlanWeek =
-  Dict(Date, PlanDay)
-
 pub type PlannerModel {
   PlannerModel(
-    plan_week: PlanWeek,
+    plan_week: types.PlanWeek,
     recipe_list: List(types.Recipe),
     start_date: Date,
     editing: Option(EditingMeal),
@@ -81,41 +67,45 @@ pub type Meal {
 //-UPDATE---------------------------------------------
 
 fn update_meal_title_in_plan(
-  current: PlanWeek,
+  current: types.PlanWeek,
   date: Date,
   meal: Meal,
   value: types.PlannedRecipe,
-) -> PlanWeek {
+) -> types.PlanWeek {
   dict.upsert(current, date, fn(a) {
     let day =
       a
       |> option.lazy_unwrap(fn() {
-        PlanDay(date: date, lunch: None, dinner: None)
+        types.PlanDay(date: date, lunch: None, dinner: None)
       })
     case meal {
       Lunch ->
         case value {
-          types.RecipeName("") -> PlanDay(..day, lunch: None)
+          types.RecipeName("") -> types.PlanDay(..day, lunch: None)
           _ ->
-            PlanDay(
+            types.PlanDay(
               ..day,
               lunch: Some(
                 day.lunch
-                |> option.map(fn(m) { PlannedMeal(..m, recipe: value) })
-                |> option.lazy_unwrap(fn() { PlannedMeal(value, False) }),
+                |> option.map(fn(m: types.PlannedMeal) {
+                  types.PlannedMeal(..m, recipe: value)
+                })
+                |> option.lazy_unwrap(fn() { types.PlannedMeal(value, False) }),
               ),
             )
         }
       Dinner ->
         case value {
-          types.RecipeName("") -> PlanDay(..day, dinner: None)
+          types.RecipeName("") -> types.PlanDay(..day, dinner: None)
           _ ->
-            PlanDay(
+            types.PlanDay(
               ..day,
               dinner: Some(
                 day.dinner
-                |> option.map(fn(m) { PlannedMeal(..m, recipe: value) })
-                |> option.lazy_unwrap(fn() { PlannedMeal(value, False) }),
+                |> option.map(fn(m: types.PlannedMeal) {
+                  types.PlannedMeal(..m, recipe: value)
+                })
+                |> option.lazy_unwrap(fn() { types.PlannedMeal(value, False) }),
               ),
             )
         }
@@ -124,40 +114,44 @@ fn update_meal_title_in_plan(
 }
 
 fn toggle_meal_complete_in_plan(
-  current: PlanWeek,
+  current: types.PlanWeek,
   date: Date,
   meal: Meal,
   complete: Bool,
-) -> PlanWeek {
-  utils.dict_update(current, date, fn(day) {
+) -> types.PlanWeek {
+  utils.dict_update(current, date, fn(day: types.PlanDay) {
     case meal {
       Lunch ->
-        PlanDay(
+        types.PlanDay(
           ..day,
-          lunch: option.map(day.lunch, fn(m) { PlannedMeal(..m, complete:) }),
+          lunch: option.map(day.lunch, fn(m) {
+            types.PlannedMeal(..m, complete:)
+          }),
         )
       Dinner ->
-        PlanDay(
+        types.PlanDay(
           ..day,
-          dinner: option.map(day.dinner, fn(m) { PlannedMeal(..m, complete:) }),
+          dinner: option.map(day.dinner, fn(m) {
+            types.PlannedMeal(..m, complete:)
+          }),
         )
     }
   })
 }
 
 fn move_meal_in_plan(
-  current: PlanWeek,
+  current: types.PlanWeek,
   from_date: Date,
   from_meal: Meal,
   to_date: Date,
   to_meal: Meal,
-) -> PlanWeek {
+) -> types.PlanWeek {
   let source_day =
     dict.get(current, from_date)
-    |> result.unwrap(PlanDay(from_date, None, None))
+    |> result.unwrap(types.PlanDay(from_date, None, None))
   let target_day =
     dict.get(current, to_date)
-    |> result.unwrap(PlanDay(to_date, None, None))
+    |> result.unwrap(types.PlanDay(to_date, None, None))
 
   let source_meal_data = case from_meal {
     Lunch -> source_day.lunch
@@ -173,13 +167,13 @@ fn move_meal_in_plan(
     True -> {
       let new_day = case from_meal, to_meal {
         Lunch, Dinner ->
-          PlanDay(
+          types.PlanDay(
             ..source_day,
             lunch: target_meal_data,
             dinner: source_meal_data,
           )
         Dinner, Lunch ->
-          PlanDay(
+          types.PlanDay(
             ..source_day,
             lunch: target_meal_data,
             dinner: source_meal_data,
@@ -190,12 +184,12 @@ fn move_meal_in_plan(
     }
     False -> {
       let new_source_day = case from_meal {
-        Lunch -> PlanDay(..source_day, lunch: target_meal_data)
-        Dinner -> PlanDay(..source_day, dinner: target_meal_data)
+        Lunch -> types.PlanDay(..source_day, lunch: target_meal_data)
+        Dinner -> types.PlanDay(..source_day, dinner: target_meal_data)
       }
       let new_target_day = case to_meal {
-        Lunch -> PlanDay(..target_day, lunch: source_meal_data)
-        Dinner -> PlanDay(..target_day, dinner: source_meal_data)
+        Lunch -> types.PlanDay(..target_day, lunch: source_meal_data)
+        Dinner -> types.PlanDay(..target_day, dinner: source_meal_data)
       }
       current
       |> dict.insert(from_date, new_source_day)
@@ -235,7 +229,7 @@ pub fn planner_update(
       let decoder = {
         use data <- decode.subfield(
           ["data", "plan"],
-          decode.list(plan_day_decoder()),
+          decode.list(codecs.plan_day_decoder()),
         )
         decode.success(data)
       }
@@ -251,7 +245,7 @@ pub fn planner_update(
             [first, ..] -> {
               use dispatch <- effect.from
               sorted
-              |> list.map(fn(x: PlanDay) { #(x.date, x) })
+              |> list.map(fn(x: types.PlanDay) { #(x.date, x) })
               |> dict.from_list
               |> DbRetrievedPlan(first.date)
               |> dispatch
@@ -323,33 +317,32 @@ pub fn planner_update(
       let days =
         list.map(dates, fn(d) { dict.get(model.plan_week, d) })
         |> result.values
-        |> list.map(encode_plan_day)
-      #(model, do_save_plan(days) |> fn(_) { effect.none() })
+        |> list.map(codecs.encode_plan_day)
+      #(model, db.do_save_plan(days) |> fn(_) { effect.none() })
     }
   }
 }
 
 pub fn get_plan(start_date: Date) -> Effect(PlannerMsg) {
   use dispatch <- effect.from
-  do_get_plan(
+  db.do_get_plan(
     date.to_rata_die(start_date),
     date.to_rata_die(date.add(start_date, 1, date.Weeks)),
   )
   |> echo
-  |> promise.map(decode.run(_, decode.list(plan_day_decoder())))
-  |> promise.map(result.map(_, list.map(_, fn(x: PlanDay) { #(x.date, x) })))
+  |> promise.map(decode.run(_, decode.list(codecs.plan_day_decoder())))
+  |> promise.map(
+    result.map(_, list.map(_, fn(x: types.PlanDay) { #(x.date, x) })),
+  )
   |> promise.map(result.map(_, dict.from_list))
   |> promise.map(result.map(_, DbRetrievedPlan(_, start_date)))
   |> promise.tap(result.map(_, dispatch))
   Nil
 }
 
-@external(javascript, ".././db.ts", "do_get_plan")
-fn do_get_plan(start_date: Int, end_date: Int) -> Promise(Dynamic)
-
 pub fn subscribe_to_plan(start_date: Date) -> Effect(PlannerMsg) {
   use dispatch <- effect.from
-  do_subscribe_to_plan(
+  db.do_subscribe_to_plan(
     fn(data) {
       data
       |> DbSubscribedPlan
@@ -362,16 +355,6 @@ pub fn subscribe_to_plan(start_date: Date) -> Effect(PlannerMsg) {
   |> dispatch
   Nil
 }
-
-@external(javascript, ".././db.ts", "do_subscribe_to_plan")
-fn do_subscribe_to_plan(
-  callback: fn(a) -> Nil,
-  start_date: Int,
-  end_date: Int,
-) -> fn() -> Nil
-
-@external(javascript, ".././db.ts", "do_save_plan")
-fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 
 pub fn enable_drag_drop_touch() -> Effect(PlannerMsg) {
   use _dispatch, _root_element <- effect.after_paint
@@ -388,7 +371,7 @@ pub fn view_planner(model: PlannerModel) {
   let find_in_week = fn(a) {
     result.unwrap(
       dict.get(model.plan_week, a),
-      PlanDay(date: a, lunch: None, dinner: None),
+      types.PlanDay(date: a, lunch: None, dinner: None),
     )
   }
   let week =
@@ -508,7 +491,7 @@ pub fn view_planner(model: PlannerModel) {
 
 //-COMPONENTS--------------------------------------------------
 
-fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
+fn planner_header_row(dates: types.PlanWeek) -> Element(PlannerMsg) {
   let date_keys =
     dict.to_list(dates)
     |> list.map(pair.map_first(_, fn(d) { date.weekday(d) }))
@@ -720,7 +703,7 @@ fn planner_header_row(dates: PlanWeek) -> Element(PlannerMsg) {
 }
 
 fn planner_meal_card(
-  pd: PlanDay,
+  pd: types.PlanDay,
   i: Int,
   for: Meal,
   label: String,
@@ -768,7 +751,7 @@ fn planner_meal_card(
 fn inner_card(
   date: Date,
   for: Meal,
-  planned_meal: Option(PlannedMeal),
+  planned_meal: Option(types.PlannedMeal),
   label: String,
 ) -> Element(PlannerMsg) {
   let recipe_content = case planned_meal {
@@ -838,7 +821,7 @@ fn inner_card(
 }
 
 fn view_edit_popover(
-  day: PlanDay,
+  day: types.PlanDay,
   meal: Meal,
   recipe_list: List(types.Recipe),
 ) -> Element(PlannerMsg) {
@@ -939,58 +922,9 @@ fn view_edit_popover(
 
 //-ENCODERS-DECODERS----------------------------------------------
 
-fn plan_day_decoder() -> decode.Decoder(PlanDay) {
-  use date <- decode.field(
-    "date",
-    decode.int |> decode.map(fn(a) { date.from_rata_die(a) }),
-  )
-  use lunch <- decode.optional_field(
-    "lunch",
-    option.None,
-    decode.optional(codecs.json_string_decoder(
-      planned_meal_decoder(),
-      PlannedMeal(types.RecipeName(""), False),
-    )),
-  )
-  use dinner <- decode.optional_field(
-    "dinner",
-    option.None,
-    decode.optional(codecs.json_string_decoder(
-      planned_meal_decoder(),
-      PlannedMeal(types.RecipeName(""), False),
-    )),
-  )
-  decode.success(PlanDay(date: date, lunch: lunch, dinner: dinner))
-}
-
-fn planned_meal_decoder() -> decode.Decoder(PlannedMeal) {
-  use recipe <- decode.field("recipe", codecs.planned_recipe_decoder())
-  use complete <- decode.field("complete", decode.bool)
-  decode.success(PlannedMeal(recipe:, complete:))
-}
-
-fn encode_plan_day(plan_day: PlanDay) -> JsPlanDay {
-  JsPlanDay(
-    date: date.to_rata_die(plan_day.date),
-    lunch: plan_day.lunch
-      |> option.map(json_encode_planned_meal)
-      |> option.map(json.to_string),
-    dinner: plan_day.dinner
-      |> option.map(json_encode_planned_meal)
-      |> option.map(json.to_string),
-  )
-}
-
-fn json_encode_planned_meal(input: PlannedMeal) -> Json {
-  json.object([
-    #("recipe", codecs.encode_planned_recipe(input.recipe)),
-    #("complete", json.bool(input.complete)),
-  ])
-}
-
 // UTILS -----------------------------------------------------------------------
 fn get_label_from_planday(
-  plan_day: PlanDay,
+  plan_day: types.PlanDay,
   meal: Meal,
   recipe_list: List(types.Recipe),
 ) -> String {
