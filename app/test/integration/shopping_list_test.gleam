@@ -4,7 +4,8 @@ import gleam/option.{None, Some}
 import glearray
 import lustre/dev/simulate
 import pages/shoppinglist.{
-  DbRetrievedPlanForLinking, ShoppingListModel, UserCreatedList, UserDeletedList,
+  DbRetrievedPlanForLinking, ShoppingListModel, UserConfirmedLinkPlan,
+  UserCreatedList, UserDeletedList, UserOpenedLinkPlanModal,
   UserUpdatedIngredientNameAtIndex,
 }
 import rada/date
@@ -134,6 +135,7 @@ pub fn shopping_list_workflow_tests() {
       let initial_route = ViewShoppingList(today)
 
       let monday = date.floor(today, date.Monday)
+      let end_date = date.add(monday, 6, date.Days)
       let plan_week =
         dict.from_list([
           #(
@@ -149,6 +151,7 @@ pub fn shopping_list_workflow_tests() {
           ),
         ])
 
+      // Create list and open modal
       let simulation =
         simulate.application(
           init: app.public_init,
@@ -158,16 +161,38 @@ pub fn shopping_list_workflow_tests() {
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
         |> simulate.message(ShoppingList(UserCreatedList(today)))
+        |> simulate.message(ShoppingList(UserOpenedLinkPlanModal))
         |> simulate.message(ShoppingList(DbRetrievedPlanForLinking(plan_week)))
 
+      // Verify modal is open and has preview
       let model = simulate.model(simulation)
       case model {
+        app.Model(
+          shoppinglist: ShoppingListModel(link_plan_modal: Some(modal), ..),
+          ..,
+        ) -> {
+          modal.preview
+          |> dict.size
+          |> expect.to_equal(1)
+        }
+        _ -> panic as "Expected modal to be open"
+      }
+
+      // Confirm linking
+      let final_simulation =
+        simulation
+        |> simulate.message(
+          ShoppingList(UserConfirmedLinkPlan(monday, end_date)),
+        )
+
+      let final_model = simulate.model(final_simulation)
+      case final_model {
         app.Model(shoppinglist: ShoppingListModel(current: current, ..), ..) -> {
           case current {
             Some(list) -> {
               list.linked_plan
               |> expect.to_be_some
-              |> expect.to_equal(today)
+              |> expect.to_equal(monday)
 
               list.linked_recipes
               |> glearray.length

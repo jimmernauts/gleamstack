@@ -64,6 +64,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
         current: None,
         recipe_list_open: False,
         recipe_list: initial_recipe_list,
+        linked_plan_preview: dict.new(),
       ),
       settings: settings.SettingsModel(api_key: None),
       upload: upload.UploadModel(
@@ -354,7 +355,8 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           status: shoppinglist.Active,
           date: list_date,
           linked_recipes: glearray.new(),
-          linked_plan: None,
+          linked_plan_start: None,
+          linked_plan_end: None,
         )
       let find_list =
         model.shoppinglist.all_lists
@@ -704,8 +706,8 @@ fn view(model: Model) -> Element(Msg) {
       element.map(
         shoppinglist.view_shopping_list_detail(
           model.shoppinglist.current,
-          model.shoppinglist.recipe_list_open,
           model.recipes.recipes,
+          model.shoppinglist.linked_plan_preview,
         ),
         ShoppingList,
       )

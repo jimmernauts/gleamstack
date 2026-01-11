@@ -17,7 +17,7 @@ pub fn do_save_plan(planweek: List(JsPlanDay)) -> Nil
 
 @external(javascript, ".././db.ts", "do_save_shopping_list")
 pub fn do_save_shopping_list(
-  list_obj: #(Int, String, String, String, Int),
+  list_obj: #(Int, String, String, String, Int, Int),
 ) -> Nil
 
 @external(javascript, ".././db.ts", "do_delete_shopping_list")

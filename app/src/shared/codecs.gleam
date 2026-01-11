@@ -1,5 +1,6 @@
 import gleam/bool
 import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/int
 import gleam/json.{type Json}
@@ -386,6 +387,35 @@ pub fn plan_day_decoder() -> decode.Decoder(types.PlanDay) {
     )),
   )
   decode.success(types.PlanDay(date: date, lunch: lunch, dinner: dinner))
+}
+
+pub fn decode_plan_week(jsdata: Dynamic) -> types.PlanWeek {
+  let decoder = {
+    use data <- decode.subfield(
+      ["data", "plan"],
+      decode.list(plan_day_decoder()),
+    )
+    decode.success(data)
+  }
+  let try_decode = decode.run(jsdata, decoder)
+  case try_decode {
+    Ok([]) -> dict.new()
+    Ok(plan_days) -> {
+      let sorted =
+        list.sort(plan_days, fn(a, b) {
+          int.compare(date.to_rata_die(a.date), date.to_rata_die(b.date))
+        })
+      case sorted {
+        [first, ..] -> {
+          sorted
+          |> list.map(fn(x: types.PlanDay) { #(x.date, x) })
+          |> dict.from_list
+        }
+        [] -> dict.new()
+      }
+    }
+    Error(_) -> dict.new()
+  }
 }
 
 pub fn planned_meal_decoder() -> decode.Decoder(types.PlannedMeal) {
