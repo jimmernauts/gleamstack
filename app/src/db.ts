@@ -267,8 +267,8 @@ export async function do_get_shopping_list(date: number) {
 }
 
 export async function do_save_shopping_list(listTuple: any) {
-    // Gleam passes a tuple: [date, status, items, linked_recipes, linked_plan]
-    const [date, status, items, linked_recipes, linked_plan] = listTuple;    
+    // Gleam passes a tuple: [date, status, items, linked_recipes, linked_plan_start, linked_plan_end]
+    const [date, status, items, linked_recipes, linked_plan_start, linked_plan_end] = listTuple;    
     const list_to_update = await do_get_shopping_list(date);
     const id_to_update = list_to_update ? list_to_update.id : id();
     const result = await db.transact(
@@ -277,7 +277,8 @@ export async function do_save_shopping_list(listTuple: any) {
             items: items,
             status: status,
             linked_recipes: linked_recipes,
-            linked_plan: linked_plan === 0 ? undefined : linked_plan,
+            linked_plan_start: linked_plan_start === 0 ? undefined : linked_plan_start,
+            linked_plan_end: linked_plan_end === 0 ? undefined : linked_plan_end,
         }),
     );
 

@@ -4,9 +4,9 @@ import gleam/option.{None, Some}
 import glearray
 import lustre/dev/simulate
 import pages/shoppinglist.{
-  DbRetrievedPlanForLinking, ShoppingListModel, UserConfirmedLinkPlan,
-  UserCreatedList, UserDeletedList, UserOpenedLinkPlanModal,
-  UserUpdatedIngredientNameAtIndex,
+  DbRetrievedPlanForLinking, ShoppingListModel, UserCreatedList, UserDeletedList,
+  UserToggledLinkedPlan, UserUpdatedIngredientNameAtIndex,
+  UserUpdatedLinkPlanEndDate, UserUpdatedLinkPlanStartDate,
 }
 import rada/date
 import shared/types
@@ -130,7 +130,7 @@ pub fn shopping_list_workflow_tests() {
         }
       }
     }),
-    it("should link plan and populate recipes", fn() {
+    it("should link plan and populate preview", fn() {
       let today = date.today()
       let initial_route = ViewShoppingList(today)
 
@@ -151,7 +151,7 @@ pub fn shopping_list_workflow_tests() {
           ),
         ])
 
-      // Create list and open modal
+      // Create list and confirm link plan (which triggers db fetch)
       let simulation =
         simulate.application(
           init: app.public_init,
@@ -161,47 +161,144 @@ pub fn shopping_list_workflow_tests() {
         |> simulate.start(Nil)
         |> simulate.message(OnRouteChange(initial_route))
         |> simulate.message(ShoppingList(UserCreatedList(today)))
-        |> simulate.message(ShoppingList(UserOpenedLinkPlanModal))
+        // Simulate receiving the plan data
         |> simulate.message(ShoppingList(DbRetrievedPlanForLinking(plan_week)))
 
-      // Verify modal is open and has preview
+      // Verify preview is populated
       let model = simulate.model(simulation)
       case model {
         app.Model(
-          shoppinglist: ShoppingListModel(link_plan_modal: Some(modal), ..),
+          shoppinglist: ShoppingListModel(linked_plan_preview: preview, ..),
           ..,
         ) -> {
-          modal.preview
+          preview
           |> dict.size
           |> expect.to_equal(1)
         }
-        _ -> panic as "Expected modal to be open"
       }
+    }),
+    it("should update linked_plan_start when start date is set", fn() {
+      let today = date.today()
+      let initial_route = ViewShoppingList(today)
+      let start_date_string = date.to_iso_string(today)
 
-      // Confirm linking
-      let final_simulation =
-        simulation
+      let simulation =
+        simulate.application(
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
+        )
+        |> simulate.start(Nil)
+        |> simulate.message(OnRouteChange(initial_route))
+        |> simulate.message(ShoppingList(UserCreatedList(today)))
         |> simulate.message(
-          ShoppingList(UserConfirmedLinkPlan(monday, end_date)),
+          ShoppingList(UserUpdatedLinkPlanStartDate(start_date_string)),
         )
 
-      let final_model = simulate.model(final_simulation)
-      case final_model {
+      let model = simulate.model(simulation)
+      case model {
         app.Model(shoppinglist: ShoppingListModel(current: current, ..), ..) -> {
           case current {
             Some(list) -> {
-              list.linked_plan
-              |> expect.to_be_some
-              |> expect.to_equal(monday)
+              list.linked_plan_start
+              |> expect.to_equal(Some(today))
+            }
+            None -> panic as "Expected shopping list to exist"
+          }
+        }
+      }
+    }),
+    it("should update linked_plan_end when end date is set", fn() {
+      let today = date.today()
+      let end_date = date.add(today, 7, date.Days)
+      let initial_route = ViewShoppingList(today)
+      let end_date_string = date.to_iso_string(end_date)
 
-              list.linked_recipes
-              |> glearray.length
-              |> expect.to_equal(1)
+      let simulation =
+        simulate.application(
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
+        )
+        |> simulate.start(Nil)
+        |> simulate.message(OnRouteChange(initial_route))
+        |> simulate.message(ShoppingList(UserCreatedList(today)))
+        |> simulate.message(
+          ShoppingList(UserUpdatedLinkPlanEndDate(end_date_string)),
+        )
 
-              list.linked_recipes
-              |> glearray.get(0)
-              |> expect.to_be_ok
-              |> expect.to_equal(types.RecipeName("Pasta Carbonara"))
+      let model = simulate.model(simulation)
+      case model {
+        app.Model(shoppinglist: ShoppingListModel(current: current, ..), ..) -> {
+          case current {
+            Some(list) -> {
+              list.linked_plan_end
+              |> expect.to_equal(Some(end_date))
+            }
+            None -> panic as "Expected shopping list to exist"
+          }
+        }
+      }
+    }),
+    it("should toggle linked_plan_open state", fn() {
+      let today = date.today()
+      let initial_route = ViewShoppingList(today)
+
+      let simulation =
+        simulate.application(
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
+        )
+        |> simulate.start(Nil)
+        |> simulate.message(OnRouteChange(initial_route))
+        |> simulate.message(ShoppingList(UserCreatedList(today)))
+        |> simulate.message(ShoppingList(UserToggledLinkedPlan))
+
+      let model = simulate.model(simulation)
+      case model {
+        app.Model(
+          shoppinglist: ShoppingListModel(linked_plan_open: is_open, ..),
+          ..,
+        ) -> {
+          is_open
+          |> expect.to_be_true
+        }
+      }
+    }),
+    it("should update both linked_plan_start and linked_plan_end", fn() {
+      let today = date.today()
+      let initial_route = ViewShoppingList(today)
+      let start_date = today
+      let end_date = date.add(today, 6, date.Days)
+
+      let simulation =
+        simulate.application(
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
+        )
+        |> simulate.start(Nil)
+        |> simulate.message(OnRouteChange(initial_route))
+        |> simulate.message(ShoppingList(UserCreatedList(today)))
+        |> simulate.message(
+          ShoppingList(
+            UserUpdatedLinkPlanStartDate(date.to_iso_string(start_date)),
+          ),
+        )
+        |> simulate.message(
+          ShoppingList(UserUpdatedLinkPlanEndDate(date.to_iso_string(end_date))),
+        )
+
+      let model = simulate.model(simulation)
+      case model {
+        app.Model(shoppinglist: ShoppingListModel(current: current, ..), ..) -> {
+          case current {
+            Some(list) -> {
+              list.linked_plan_start
+              |> expect.to_equal(Some(start_date))
+              list.linked_plan_end
+              |> expect.to_equal(Some(end_date))
             }
             None -> panic as "Expected shopping list to exist"
           }

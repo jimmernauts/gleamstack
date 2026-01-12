@@ -5,12 +5,22 @@ description: Gleamstack Testing Standards
 # Gleamstack Testing Standards
 
 ## Running Tests
+
 // turbo
-- Run all tests: `gleam test --target javascript` (must be run in `app/` directory)
-// turbo
-- Run snapshot tests (Birdie): `gleam run -m birdie` (must be run in `app/` directory)
-  - Approve all snapshots: `gleam run -m birdie accept`
-  - Review snapshots interactively: `gleam run -m birdie review`
+- Run all tests: `just test-app` (from project root)
+
+### Single Test Execution
+- **Gleam Tests:** Cannot run individual test files - all Gleam tests run through the main runner in `app/test/mealstack_client_test.gleam`. To test specific functionality, comment/uncomment test groups in the main runner.
+- **Birdie Snapshots:** Use `gleam run -m birdie review` for interactive review of specific snapshots.
+- **TypeScript Tests:** `bun test <specific-file.test.ts>`
+
+## Test Structure
+
+### File Structure
+- [test/unit/](file:///home/ubuntu/projects/gleamstack/app/test/unit) - Unit tests for pure functions and business logic
+- [test/snapshot/](file:///home/ubuntu/projects/gleamstack/app/test/snapshot) - Component view snapshots with Birdie
+- [test/utils/](file:///home/ubuntu/projects/gleamstack/app/test/utils) - Mock data and test helpers
+- [test/integration/](file:///home/ubuntu/projects/gleamstack/app/test/integration) - Integration tests for pages/features
 
 ## Test Patterns
 
@@ -23,17 +33,12 @@ description: Gleamstack Testing Standards
 - Only test actual `view` and `update` functions from source code
 - Use `birdie.snap(title: "descriptive_name")` for component output
 - No string formatting or arbitrary data snapshots
-
-## File Structure
-- [test/unit/](file:///home/ubuntu/projects/gleamstack/app/test/unit) - Unit tests for core logic
-- [test/snapshot/](file:///home/ubuntu/projects/gleamstack/app/test/snapshot) - Component view snapshots
-- [test/utils/](file:///home/ubuntu/projects/gleamstack/app/test/utils) - Mock data and test helpers
+- Use [lustre/dev/simulate](https://hexdocs.pm/lustre/lustre/dev/simulate.html) combined with birdie.snap to simulate user interactions
 
 ## Guidelines
 - Tests should exercise real application code
 - Prefer testing `update`/`view` functions over utilities
 - Keep snapshots focused on component rendering and testing interaction flows
-- Use [lustre/dev/simulate](https://hexdocs.pm/lustre/lustre/dev/simulate.html) combined with birdie.snap to simulate user interactions and test component behavior
 - Write snapshot tests for all view functions
 - Write unit tests for complex update logic
 - Test decoders with various input shapes

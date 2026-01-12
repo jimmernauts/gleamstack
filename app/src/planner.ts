@@ -6,6 +6,5 @@ export function do_enable_drag_drop_touch() {
      isPressHoldMode : true,
      
     }
-    console.log(rootel); 
     enableDragDropTouch(rootel,rootel,options);
 }

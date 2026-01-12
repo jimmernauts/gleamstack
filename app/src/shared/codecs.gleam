@@ -390,13 +390,7 @@ pub fn plan_day_decoder() -> decode.Decoder(types.PlanDay) {
 }
 
 pub fn decode_plan_week(jsdata: Dynamic) -> types.PlanWeek {
-  let decoder = {
-    use data <- decode.subfield(
-      ["data", "plan"],
-      decode.list(plan_day_decoder()),
-    )
-    decode.success(data)
-  }
+  let decoder = decode.list(plan_day_decoder())
   let try_decode = decode.run(jsdata, decoder)
   case try_decode {
     Ok([]) -> dict.new()

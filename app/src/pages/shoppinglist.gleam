@@ -1,6 +1,5 @@
 import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
-import components/typeahead_2 as typeahead
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
@@ -9,6 +8,7 @@ import gleam/javascript/promise
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/pair
 import gleam/result
 import glearray.{type Array}
 import lib/utils
@@ -37,7 +37,7 @@ pub type ShoppingListMsg {
   UserUpdatedIngredientQtyAtIndex(Int, String)
   UserUpdatedIngredientUnitsAtIndex(Int, String)
   UserToggledItemCheckedAtIndex(Int)
-  UserToggledRecipeList
+  UserToggledLinkedPlan
   UserMarkedCurrentListAsCompleted
   UserMarkedCurrentListAsActive
   UserDeletedList(ShoppingList)
@@ -61,7 +61,7 @@ pub type ShoppingListMsg {
 pub type ShoppingListModel {
   ShoppingListModel(
     all_lists: Dict(date.Date, ShoppingList),
-    recipe_list_open: Bool,
+    linked_plan_open: Bool,
     current: Option(ShoppingList),
     recipe_list: recipe_list.RecipeListModel,
     linked_plan_preview: types.PlanWeek,
@@ -131,14 +131,15 @@ pub fn shopping_list_update(
   model: ShoppingListModel,
   msg: ShoppingListMsg,
 ) -> #(ShoppingListModel, Effect(ShoppingListMsg)) {
+  echo msg
   case msg {
     // SubscriptionOpened is handled in the layer above
     // Not sure if this is really a great pattern....
     ShoppingListSubscriptionOpened(_date, _callback) -> #(model, effect.none())
-    UserToggledRecipeList -> {
+    UserToggledLinkedPlan -> {
       // TODO: maybe add 1 when toggling it open if there are 0 linked recipes currently?
       #(
-        ShoppingListModel(..model, recipe_list_open: !model.recipe_list_open),
+        ShoppingListModel(..model, linked_plan_open: !model.linked_plan_open),
         effect.none(),
       )
     }
@@ -161,7 +162,15 @@ pub fn shopping_list_update(
         Some(current_list) -> {
           let new_list =
             ShoppingList(..current_list, linked_plan_start: new_start)
-          #(ShoppingListModel(..model, current: Some(new_list)), effect.none())
+          #(ShoppingListModel(..model, current: Some(new_list)), {
+            case new_start, current_list.linked_plan_end {
+              Some(start_date), Some(end_date) -> {
+                use dispatch <- effect.from
+                dispatch(UserConfirmedLinkPlan(start_date, end_date))
+              }
+              _, _ -> effect.none()
+            }
+          })
         }
         None -> #(model, effect.none())
       }
@@ -172,7 +181,15 @@ pub fn shopping_list_update(
       case model.current {
         Some(current_list) -> {
           let new_list = ShoppingList(..current_list, linked_plan_end: new_end)
-          #(ShoppingListModel(..model, current: Some(new_list)), effect.none())
+          #(ShoppingListModel(..model, current: Some(new_list)), {
+            case current_list.linked_plan_start, new_end {
+              Some(start_date), Some(end_date) -> {
+                use dispatch <- effect.from
+                dispatch(UserConfirmedLinkPlan(start_date, end_date))
+              }
+              _, _ -> effect.none()
+            }
+          })
         }
         None -> #(model, effect.none())
       }
@@ -186,6 +203,7 @@ pub fn shopping_list_update(
               start_date |> date.to_rata_die(),
               end_date |> date.to_rata_die(),
             )
+            |> promise.map(fn(plan) { echo plan })
             |> promise.map(codecs.decode_plan_week)
             |> promise.map(DbRetrievedPlanForLinking)
             |> promise.tap(dispatch)
@@ -197,11 +215,34 @@ pub fn shopping_list_update(
       }
     }
     DbRetrievedPlanForLinking(plan_week) -> {
-      // Update the preview with the fetched plan data
-      #(
-        ShoppingListModel(..model, linked_plan_preview: plan_week),
-        effect.none(),
-      )
+      // Update the preview with the fetched plan data and link the recipes
+      {
+        let recipes =
+          plan_week
+          |> dict.values
+          |> list.map(fn(day) {
+            case day.lunch, day.dinner {
+              Some(lunch), Some(dinner) -> [lunch.recipe, dinner.recipe]
+              Some(lunch), None -> [lunch.recipe]
+              None, Some(dinner) -> [dinner.recipe]
+              None, None -> []
+            }
+          })
+          |> list.flatten
+          |> glearray.from_list
+        #(
+          ShoppingListModel(
+            ..model,
+            linked_plan_preview: plan_week,
+            current: case model.current {
+              Some(current_list) ->
+                Some(ShoppingList(..current_list, linked_recipes: recipes))
+              None -> None
+            },
+          ),
+          effect.none(),
+        )
+      }
     }
     UserAddedIngredientsFromLinkedRecipe(planned_recipe) -> {
       case model.current {
@@ -718,7 +759,24 @@ pub fn view_all_shopping_lists(
           ),
           id("main-content"),
         ],
-        list.map(model.all_lists |> dict.values, view_shopping_list_card),
+        {
+          let shopping_lists =
+            model.all_lists
+            |> dict.values
+            |> list.sort(fn(x, y) {
+              int.compare(date.to_rata_die(y.date), date.to_rata_die(x.date))
+            })
+
+          let ordered =
+            list.flatten([
+              shopping_lists
+                |> list.filter(fn(x) { x.status == Active }),
+              shopping_lists
+                |> list.filter(fn(x) { x.status == Completed }),
+            ])
+
+          list.map(ordered, view_shopping_list_card)
+        },
       ),
       nav_footer([
         a([href("/"), class("text-center")], [text("🏠")]),
@@ -764,8 +822,9 @@ pub fn view_shopping_list_detail(
   current_list: Option(ShoppingList),
   recipes: List(types.Recipe),
   linked_plan_preview: types.PlanWeek,
+  linked_plan_open: Bool,
 ) -> Element(ShoppingListMsg) {
-  let list = case current_list {
+  let current_list_nonempty = case current_list {
     Some(list) -> list
     None ->
       ShoppingList(
@@ -786,7 +845,7 @@ pub fn view_shopping_list_detail(
     ],
     [
       page_title(
-        date.to_iso_string(list.date),
+        utils.month_date_string(current_list_nonempty.date),
         "underline-purple col-span-full col-start-1 md:col-span-11",
       ),
       div(
@@ -799,90 +858,83 @@ pub fn view_shopping_list_detail(
           div(
             [
               class(
-                "col-span-full flex justify-between items-baseline text-base",
+                "col-span-full flex justify-between items-end text-base row-start-1",
               ),
             ],
             [
               div(
                 [
                   class(
-                    "font-mono pt-0.5 bg-ecru-white-100 border border-ecru-white-950 px-1 text-xs",
+                    "font-mono bg-ecru-white-100 border border-ecru-white-950 px-1 py-0.5  text-xs",
                   ),
-                  case list.status {
+                  case current_list_nonempty.status {
                     Active -> on_click(UserMarkedCurrentListAsCompleted)
                     Completed -> on_click(UserMarkedCurrentListAsActive)
                   },
                 ],
                 [
-                  text(case list.status {
+                  text(case current_list_nonempty.status {
                     Active -> "🛒 Active"
                     Completed -> "✅ Completed"
                   }),
                 ],
               ),
-              div([], [
-                div([class("flex flex-col gap-2")], [
-                  // Date inputs and link button row
-                  div([class("flex flex-wrap gap-2 items-end")], [
-                    div([class("flex flex-col gap-0.5")], [
-                      label([class("text-xs font-mono")], [text("From:")]),
-                      input([
-                        type_("date"),
-                        class(
-                          "border border-ecru-white-950 px-1 py-0.5 font-mono text-xs",
-                        ),
-                        value(case list.linked_plan_start {
-                          Some(start_date) -> date.to_iso_string(start_date)
-                          None -> ""
-                        }),
-                        on_input(UserUpdatedLinkPlanStartDate),
-                      ]),
-                    ]),
-                    div([class("flex flex-col gap-0.5")], [
-                      label([class("text-xs font-mono")], [text("To:")]),
-                      input([
-                        type_("date"),
-                        class(
-                          "border border-ecru-white-950 px-1 py-0.5 font-mono text-xs",
-                        ),
-                        value(case list.linked_plan_end {
-                          Some(end_date) -> date.to_iso_string(end_date)
-                          None -> ""
-                        }),
-                        on_input(UserUpdatedLinkPlanEndDate),
-                      ]),
-                    ]),
-                    button(
-                      [
-                        class(
-                          "bg-orange-200 hover:bg-orange-300 border border-ecru-white-950 px-2 py-0.5 text-xs font-mono cursor-pointer",
-                        ),
-                        on_click({
-                          case list.linked_plan_start, list.linked_plan_end {
-                            Some(start_date), Some(end_date) ->
-                              UserConfirmedLinkPlan(start_date, end_date)
-                            None, Some(end_date) ->
-                              UserConfirmedLinkPlan(date.today(), end_date)
-                            Some(start_date), None ->
-                              UserConfirmedLinkPlan(
-                                start_date,
-                                date.add(start_date, 7, date.Days),
-                              )
-                            None, None ->
-                              UserConfirmedLinkPlan(date.today(), date.today())
-                          }
-                        }),
-                      ],
-                      [text("🗓️")],
-                    ),
-                  ]),
-                ]),
-              ]),
-              element.fragment(list.index_map(
-                list.items |> glearray.to_list,
-                shopping_list_item,
-              )),
             ],
+          ),
+          div([class("flex gap-2 row-start-2 items-baseline")], [
+            label(
+              [
+                class("text-sm"),
+                attribute.for("linked_plan_start"),
+              ],
+              [text("From:")],
+            ),
+            input([
+              type_("date"),
+              id("linked_plan_start"),
+              class("bg-ecru-white-100 px-1 py-0.5 font-mono text-xs w-[15ch]"),
+              value(case current_list_nonempty.linked_plan_start {
+                Some(start_date) -> date.to_iso_string(start_date)
+                None -> ""
+              }),
+              on_input(UserUpdatedLinkPlanStartDate),
+            ]),
+            label(
+              [
+                class("text-sm"),
+                attribute.for("linked_plan_end"),
+              ],
+              [text("To:")],
+            ),
+            input([
+              type_("date"),
+              id("linked_plan_end"),
+              class("bg-ecru-white-100 px-1 py-0.5 font-mono text-xs w-[15ch]"),
+              value(case current_list_nonempty.linked_plan_end {
+                Some(end_date) -> date.to_iso_string(end_date)
+                None -> ""
+              }),
+              on_input(UserUpdatedLinkPlanEndDate),
+            ]),
+            button(
+              [
+                type_("button"),
+                on_click(UserToggledLinkedPlan),
+                class("text-center text-xs pl-4 font-mono cursor-pointer"),
+              ],
+              [text("🗓️")],
+            ),
+          ]),
+          view_plan_preview(
+            current_list_nonempty,
+            recipes,
+            linked_plan_preview,
+            linked_plan_open,
+          ),
+          element.fragment(
+            current_list_nonempty.items
+            |> glearray.to_list
+            |> list.index_map(shopping_list_item),
           ),
         ],
       ),
@@ -893,7 +945,7 @@ pub fn view_shopping_list_detail(
           [
             type_("button"),
             class("text-center"),
-            on_click(UserDeletedList(list)),
+            on_click(UserDeletedList(current_list_nonempty)),
           ],
           [text("🗑️")],
         ),
@@ -914,6 +966,7 @@ fn view_plan_preview(
   shopping_list: ShoppingList,
   recipes: List(types.Recipe),
   preview: types.PlanWeek,
+  linked_plan_open: Bool,
 ) -> Element(ShoppingListMsg) {
   // Get recipe title from PlannedRecipe
   let get_recipe_title = fn(planned_recipe: types.PlannedRecipe) -> String {
@@ -927,46 +980,63 @@ fn view_plan_preview(
     }
   }
   let preview_rows = preview |> dict.to_list
-  // Preview grid (date | lunch | dinner)
-  case list.length(preview_rows) {
-    0 ->
-      div([class("text-xs text-ecru-white-500 italic")], [
-        text("Select dates and preview will appear here"),
-      ])
-    _ ->
-      div(
-        [
-          class("grid grid-cols-[auto_1fr_1fr] gap-x-2 gap-y-0.5 text-xs"),
-        ],
-        // Header row
-        list.flatten([
-          [
-            span([class("font-mono font-bold")], [text("Date")]),
-            span([class("font-mono font-bold")], [text("Lunch")]),
-            span([class("font-mono font-bold")], [text("Dinner")]),
-          ],
-          // Data rows
-          list.flat_map(preview_rows, fn(entry) {
-            let #(day_date, plan_day) = entry
-            let lunch_text = case plan_day.lunch {
-              Some(meal) -> get_recipe_title(meal.recipe)
-              None -> "-"
-            }
-            let dinner_text = case plan_day.dinner {
-              Some(meal) -> get_recipe_title(meal.recipe)
-              None -> "-"
-            }
-            [
-              span([class("font-mono text-ecru-white-500")], [
-                text(date.to_iso_string(day_date)),
-              ]),
-              span([class("truncate")], [text(lunch_text)]),
-              span([class("truncate")], [text(dinner_text)]),
-            ]
-          }),
-        ]),
+  let preview_start_date =
+    preview_rows
+    |> list.sort(fn(a, b) {
+      int.compare(
+        a |> pair.first |> date.to_rata_die,
+        b |> pair.first |> date.to_rata_die,
       )
-  }
+    })
+    |> list.first
+  // Preview grid (date | lunch | dinner)
+  html.fieldset(
+    [
+      class(
+        "row-start-3 grid grid-cols-[auto_1fr_1fr] gap-x-2 gap-y-0.5 border border-ecru-white-950",
+      ),
+      case linked_plan_open {
+        False -> class("hidden")
+        True -> class("")
+      },
+    ],
+    [
+      html.legend([class("row-start-1 text-sm font-mono pl-1")], [
+        html.a(
+          [
+            attribute.href(case preview_start_date {
+              Ok(day) -> "/planner?date=" <> date.to_iso_string(day.0)
+              Error(_) -> "/planner"
+            }),
+          ],
+          [text("Linked Plan")],
+        ),
+      ]),
+      span([class("font-mono font-bold")], [text("Date")]),
+      span([class("font-mono font-bold")], [text("Lunch")]),
+      span([class("font-mono font-bold")], [text("Dinner")]),
+      // Data rows
+      list.flat_map(preview_rows, fn(entry) {
+        let #(day_date, plan_day) = entry
+        let lunch_text = case plan_day.lunch {
+          Some(meal) -> get_recipe_title(meal.recipe)
+          None -> "-"
+        }
+        let dinner_text = case plan_day.dinner {
+          Some(meal) -> get_recipe_title(meal.recipe)
+          None -> "-"
+        }
+        [
+          span([class("font-mono text-ecru-white-500")], [
+            text(date.to_iso_string(day_date)),
+          ]),
+          span([class("truncate")], [text(lunch_text)]),
+          span([class("truncate")], [text(dinner_text)]),
+        ]
+      })
+        |> element.fragment,
+    ],
+  )
 }
 
 fn shopping_list_item(item: ShoppingListIngredient, index: Int) {

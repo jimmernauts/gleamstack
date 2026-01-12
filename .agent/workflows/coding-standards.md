@@ -4,7 +4,7 @@ description: Gleam & Lustre Coding Standards
 
 # Gleam & Lustre Coding Standards
 
-## Gleam language paradigms
+## Gleam Language Paradigms
 
 - You shouldn't need to run `gleam build`. The LSP reports type errors to the IDE that you should be able to read.
 - ALWAYS fix lint errors as soon as possible, as Gleam's static typing catches many issues early on
@@ -33,12 +33,12 @@ description: Gleam & Lustre Coding Standards
 ## Code Organization
 
 ### File Structure
-- Domain logic goes in `client/src/pages/` (one file per domain: planner, shoppinglist, recipe_list, etc.)
-- Shared types in `client/src/shared/types.gleam`
-- Shared codecs (encoders/decoders) in `client/src/shared/codecs.gleam`
-- Reusable components in `client/src/components/`
-- Database functions in `client/src/db.ts` (TypeScript)
-- Main app orchestration in `client/src/app.gleam`
+- Domain logic goes in `app/src/pages/` (one file per domain: planner, shoppinglist, recipe_list, etc.)
+- Shared types in `app/src/shared/types.gleam`
+- Shared codecs (encoders/decoders) in `app/src/shared/codecs.gleam`
+- Reusable components in `app/src/components/`
+- Database functions in `app/src/db.ts` (TypeScript)
+- Main app orchestration in `app/src/app.gleam`
 
 ### Domain Module Structure
 Each domain module should follow this order:
@@ -50,6 +50,11 @@ Each domain module should follow this order:
 6. Components (helper view functions)
 7. Decoders
 8. Encoders
+
+### Import Style
+- Group imports: standard library → third-party → local modules
+- Use explicit imports, avoid `import.*`
+- Order alphabetically within groups
 
 ## Database & Persistence
 
@@ -87,21 +92,6 @@ Each domain module should follow this order:
 - Store lists/collections separately (e.g., `all_lists`, `recipes`)
 - Use optimistic updates where appropriate
 
-## Gleam-Specific Guidelines
-
-### Common Patterns
-- Use `option.unwrap(value, default)` for safe unwrapping
-- Use `result.unwrap(value, default)` for results
-- Use `list.map`, `list.filter`, `list.fold` instead of loops
-- Use `dict.get`, `dict.upsert`, `dict.update` for dictionary operations
-- Use `bool.guard` for early returns in view functions
-
-### Avoid
-- Don't use `let assert` in production code (only in tests or main)
-- Don't ignore compiler warnings
-- Don't use `todo` or `panic` in production code
-- Don't mutate data (Gleam is immutable)
-
 ## TypeScript Interop
 
 ### External Functions
@@ -116,6 +106,21 @@ Each domain module should follow this order:
 - Gleam Dict ↔ JS object (via JSON)
 - Gleam List ↔ JS array
 - Gleam Option(T) ↔ JS null/undefined (handle carefully)
+
+## Gleam-Specific Guidelines
+
+### Common Patterns
+- Use `option.unwrap(value, default)` for safe unwrapping
+- Use `result.unwrap(value, default)` for results
+- Use `list.map`, `list.filter`, `list.fold` instead of loops
+- Use `dict.get`, `dict.upsert`, `dict.update` for dictionary operations
+- Use `bool.guard` for early returns in view functions
+
+### Avoid
+- Don't use `let assert` in production code (only in tests or main)
+- Don't ignore compiler warnings
+- Don't use `todo` or `panic` in production code
+- Don't mutate data (Gleam is immutable)
 
 ## Error Handling
 

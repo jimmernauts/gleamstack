@@ -62,9 +62,9 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
       shoppinglist: shoppinglist.ShoppingListModel(
         all_lists: dict.new(),
         current: None,
-        recipe_list_open: False,
         recipe_list: initial_recipe_list,
         linked_plan_preview: dict.new(),
+        linked_plan_open: False,
       ),
       settings: settings.SettingsModel(api_key: None),
       upload: upload.UploadModel(
@@ -708,6 +708,7 @@ fn view(model: Model) -> Element(Msg) {
           model.shoppinglist.current,
           model.recipes.recipes,
           model.shoppinglist.linked_plan_preview,
+          model.shoppinglist.linked_plan_open,
         ),
         ShoppingList,
       )

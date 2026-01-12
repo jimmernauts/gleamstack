@@ -67,6 +67,7 @@ pub fn update_child(
   #(new_model, new_effect)
 }
 
+/// Format a date as "Month Day" (e.g., "January 15").
 pub fn month_date_string(day: Date) -> String {
   let n = date_num_string(day)
   let _s =
