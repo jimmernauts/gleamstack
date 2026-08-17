@@ -21,3 +21,4 @@ app/anthropic
 fly_pg
 .wrangler
 .dev.vars*
+.DS_STORE
