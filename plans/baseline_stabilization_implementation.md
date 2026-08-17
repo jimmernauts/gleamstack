@@ -1,75 +1,52 @@
-# Mealstack Release Stabilization, Bookmark Import, and Post-Release Roadmap
+# Mealstack Release First, Then One-Off Bookmark Import
 
 **Status:** Proposed revision for review
 **Repository:** `repos/james-personal/gleamstack`
 **Application baseline:** `main` at `a99473a`
-**Plan revision:** incorporates the review annotations from 2026-08-17
-**Purpose:** Make the existing single-user app reliable enough to release, exercise the current parser against the 200-bookmark corpus, fix the issues that corpus exposes, and defer new product features until after release.
+**Plan revision:** incorporates the 2026-08-17 review annotations
+**Purpose:** Release the existing single-user app first, then run the existing worker repeatedly over the supplied recipe bookmarks, fixing only the parser issues needed to complete that one-off import. Shopping-list work starts after the release and import are accepted.
 
-## Executive decision
+## What changed in this revision
 
-This revision changes the plan in four important ways:
+- The provided input is now concrete: `plans/favourites_17_08_2026.html` is a Netscape browser-bookmark export with 344 links total and 230 links inside the `recipe` folder. The runner should select that folder rather than process unrelated favourites such as music, jobs, and development links.
+- There is no parser spike or proposed batch-product feature. We will add a thin one-off loop around the worker endpoint that already exists.
+- The current product is released before parser/import changes, as requested.
+- Multiple recipes from one URL are in scope: the import must retain all distinct recipes.
+- If JSON-LD is missing, the worker will extract the page text and ask the LLM to identify every recipe in that text. We will not add a Python-only tool such as Trafilatura before seeing whether the existing JavaScript runtime can produce sufficient text.
+- The app remains explicitly single-user. There is no auth, ownership, or multi-user permissions milestone.
+- The local `/recipes` routing observation is still only a conditional check. We will not change routing unless it reproduces on the actual release path.
 
-1. **Treat the app as single-user.** Remove the proposed multi-user auth, ownership, and permission redesign from this work. Keep the current single-user InstantDB/settings approach unless a concrete release blocker appears.
-2. **Do not assume the SPA routing observation is a production bug.** We saw `/recipes` return 404 in one local Wrangler run, but the existing production experience has not shown that problem. Reproduce it against the actual release path before changing `worker/src/index.mjs`; if it cannot be reproduced, record it and move on.
-3. **Prioritize the 200-bookmark import.** The existing import path handles one URL at a time, and the current JSON-LD extraction concatenates multiple script blocks into one invalid JSON string. Build a resumable dev import runner and use the corpus to find parser failures, including pages containing multiple recipes.
-4. **Release before shopping-list work.** The shopping-list/planner integration becomes post-release scope. The release gate covers baseline stabilization, parser hardening, the bookmark import run, and the existing product. No new feature work starts until that gate passes.
+## Current repository facts
 
-The recommended first implementation commit remains small: make tests deterministic and make the parser/import code testable. Do not combine that with shopping-list changes.
-
-## Current baseline
-
-| Area | Observed state | Revised implication |
+| Area | Current state | Plan consequence |
 |---|---|---|
-| Repository | Clean application code at `a99473a`; the prior plan is committed separately | Preserve the clean baseline and keep this revision limited to planning. |
-| Frontend | Gleam + Lustre, Vite, Tailwind, InstantDB client | Existing URL import is a browser flow in `app/src/upload.gleam` and `app/src/upload.ts`. |
-| Worker | Gleam + Glen compiled to JavaScript, TypeScript FFI, Wrangler | The parser work crosses `worker/src/mealstack_worker.gleam`, `worker/src/scrape_url.ts`, and `worker/src/parse_recipe.ts`. |
-| App build | `bun run vite build` passes | The current frontend can be released once runtime and data preflight are complete. |
-| Worker build | `gleam build` passes | Keep the worker build as a release check. |
-| App tests | 60/62 pass; two Birdie planner snapshots fail | Fix the wall-clock dependence; do not simply accept August snapshots. |
-| Worker tests | 5/17 Bun tests pass | Separate deterministic tests from InstantDB/Gemini and schema.org network behavior. |
-| App formatting | `typeahead.gleam` and `typeahead_2.gleam` fail format check | Resolve this existing debt before release verification. |
-| Import path | One URL at a time: `/api/scrape_url` fetches a page, extracts JSON-LD, then falls back to AI text parsing | Add a batch runner around the same production parsing path. |
-| Multiple recipes | `worker/src/scrape_url.ts` appends every JSON-LD script’s text to one string before `JSON.parse` | Multiple script blocks can invalidate the whole page; this is the first known parser issue to fix. |
-| Bookmark tooling | No current bookmark importer exists. `notebooks/post_recipes.ts` is a Triplit-era seeding script, not an InstantDB importer, and contains a legacy credential | Do not reuse it. Build a new worker-side import tool and separately audit/revoke the legacy credential if it is still active. |
-| SPA routing | One local Wrangler smoke run returned 404 for `/recipes`; this has not been observed by the user in production | Reproduce on the real release path before touching routing. |
-| Credentials | Local environment had no InstantDB admin, Gemini, or Cloudflare credentials | Default tests must remain credential-free; dev/prod import and deployment require explicit local/production configuration. |
+| Frontend | Gleam/Lustre + Vite; URL import is wired through `app/src/upload.gleam` and `app/src/upload.ts` | Keep the existing UI contract for ordinary one-recipe imports. |
+| Worker | Gleam/Glen + TypeScript FFI under `worker/src/` | Extend the existing scrape endpoint with an explicit all-recipes mode rather than building a new service. |
+| Existing scrape flow | `/api/scrape_url` fetches one URL, tries JSON-LD, then falls back to AI text parsing | The one-off runner will call this worker repeatedly. |
+| Known multi-recipe bug | `worker/src/scrape_url.ts` concatenates all JSON-LD script text before parsing it as one JSON document | Parse each script independently and collect every recipe node. |
+| AI fallback | `worker/src/parse_recipe.ts` asks for one recipe using a single-recipe schema | Add an all-recipes fallback for the batch mode. |
+| Bookmark export | 344 links total; 230 under the `recipe` folder; 217 total links are on `theguardian.com` | Filter by bookmark folder and expect a domain-heavy corpus with varied page structures. |
+| Tests | App has two date-sensitive snapshot failures; worker tests include live InstantDB/Gemini/schema.org calls | Stabilize the default checks before releasing or changing parser behavior. |
+| Local runtime | Vite and Wrangler start; one local Wrangler run returned 404 for `/recipes` | Test actual release routing before changing `worker/src/index.mjs`. |
+| Legacy script | `notebooks/post_recipes.ts` is a Triplit-era seeder and contains a legacy credential | Do not reuse it for this import; audit/revoke the old credential separately if it remains valid. |
 
 ## Delivery order
 
-| Milestone | Scope | Exit condition |
+| Milestone | Work | Exit condition |
 |---|---|---|
-| 0. Release contract | Confirm single-user scope, import input, dev/prod environments, and release boundary | Decisions are recorded; no auth redesign is in the work. |
-| 1. Deterministic baseline | Fix snapshots, worker test isolation, formatting, and local commands | Default checks pass without secrets or external HTTP. |
-| 2. Bookmark/parser spike | Build the first import runner and run a representative corpus slice | We know the failure classes and have a stable per-URL result format. |
-| 3. Parser and importer hardening | Handle multiple recipes, retries, rate limits, checkpoints, dedupe, and InstantDB writes | The full bookmark folder completes in dev with an auditable report. |
-| 4. Release current product | Reproduce/close the routing observation, deploy the existing app, and smoke-test production | Current app is live and basic flows work. |
-| 5. Production bookmark import | Run a canary, then the approved full import with resume support | Production data is imported and the report is reviewed. |
-| 6. Post-release features | Revisit shopping-list/planner integration and other TODOs | Starts only after Milestone 5 is accepted. |
+| 0. Baseline release preparation | Make the existing checks deterministic and document the release commands | We can verify the current product without false failures. |
+| 1. Release current product | Deploy the existing app/worker without bookmark/parser changes | Current production app is live and its existing flows smoke-test successfully. |
+| 2. Minimal parser enhancement | Add all-recipes JSON-LD handling and all-recipes text fallback | The production-shaped worker can return every recipe found on one URL. |
+| 3. One-off loop runner | Read the supplied bookmark file, call the worker until every URL has a result, and checkpoint progress | A complete result file exists with no unclassified URLs. |
+| 4. Development import | Run the result/write process against a separate InstantDB development app | Dev records and failures are reviewed; reruns are safe. |
+| 5. Production parser release and import | Deploy the minimal parser change, canary it, then run the approved 230-link import | Production import completes or every failure has a manual disposition. |
+| 6. Post-release features | Return to shopping-list/planner integration and the remaining TODOs | Starts only after Milestone 5 is accepted. |
 
-## Milestone 0 — Release contract
+## Milestone 0 — Baseline release preparation
 
-### Scope decisions
+This is test/setup work, not new product functionality.
 
-- This is a single-user app. Do not add login, user ownership fields, multi-user sharing, or a permissions redesign as part of this plan.
-- Keep the existing Settings/API-key flow for now. Do not redesign Gemini key ownership unless it blocks the import or release path.
-- The 200-link bookmark run is operational hardening of an existing import capability, not a reason to build a new bookmark-management UI.
-- Release the existing product before implementing the shopping-list/planner feature work.
-- Default tests must be deterministic and offline. Live parser and production import runs are explicit operations with their own prerequisites.
-
-### Inputs to confirm before implementation
-
-1. What export format will the bookmark folder use: browser HTML, JSON, or a plain URL list? Support browser Netscape bookmark HTML plus a plain URL list in the first version; add other formats only if the real export requires them.
-2. Is there a separate InstantDB development app, or should dev writes use a disposable namespace in the current app? Prefer a separate dev app or a backup/export before the first write.
-3. For a page with multiple recipes, should the import bring in all recipes or select one? Recommend importing all distinct recipes in the batch tool, while keeping the existing single-URL UI’s first/selection behavior explicit.
-4. Should a URL that has no JSON-LD be sent to Gemini as one page-level recipe or as a possible list of recipes? Start by measuring the corpus; do not make the expensive array-AI path mandatory until the sample shows it is needed.
-5. What production deployment/account is used for the current app? A real Wrangler login and the existing InstantDB/Gemini configuration will be needed for Milestones 4–5.
-
-## Milestone 1 — Deterministic baseline
-
-This is the only work that should happen before the parser spike. It creates a trustworthy signal for every later parser change.
-
-### 1.1 Freeze planner snapshot dates
+### 0.1 Make planner snapshots deterministic
 
 **Files:**
 
@@ -77,375 +54,369 @@ This is the only work that should happen before the parser spike. It creates a t
 - `app/birdie_snapshots/planner_empty_week.accepted`
 - `app/birdie_snapshots/planner_with_meals.accepted`
 
-**Implementation:**
+Use a fixed date in the two snapshot scenarios instead of `date.today()`. Review the generated Birdie output and accept only the intended fixed-date/metadata changes. Do not regenerate snapshots from the current wall clock.
 
-1. Add a test-local fixed Monday matching the committed snapshot date.
-2. Use that fixed date only in the two rendered snapshot scenarios. Keep non-snapshot tests that intentionally exercise `date.today()` separate.
-3. Run the planner tests and inspect generated `.new` files.
-4. Review Birdie metadata changes separately from the date change. Pin or preserve the repository’s intended Birdie version rather than accepting machine-specific output.
-5. Remove all `.new` files after the accepted snapshots are correct.
+**Acceptance:** the app snapshots pass on different calendar dates and no `.new` files remain.
 
-**Acceptance:** planner snapshots pass on different calendar dates, and the accepted files contain no current-clock values.
-
-### 1.2 Isolate worker unit tests from live services
+### 0.2 Separate default tests from live services
 
 **Files:**
 
 - `worker/src/parse_recipe.ts`
 - `worker/test/parse_recipe.test.ts`
 - `worker/test/parse_recipe.integration.test.ts` (new)
-- `worker/package.json`
-- `justfile`
-
-**Implementation:**
-
-1. Extract response normalization/schema validation from `do_parse_recipe_text` and `do_parse_recipe_image` into functions that can consume deterministic fixture responses.
-2. Keep the production wrapper responsible for InstantDB settings lookup and Gemini invocation.
-3. Make the default unit tests cover empty input, malformed image data, malformed model JSON, valid fixture normalization, and schema fields without credentials.
-4. Move the current live text/image calls to an explicit integration test file.
-5. Add an explicit integration command that requires the existing `INSTANT_ADMIN_TOKEN` and Gemini configuration. It must fail with a clear prerequisite message when those are absent; it must not turn a missing secret into a false green.
-6. Keep the single-user settings lookup unchanged for now. This is test isolation, not an auth redesign.
-
-**Acceptance:** `bun test test/` passes without InstantDB, Gemini, or external HTTP; live coverage remains available through a separate command.
-
-### 1.3 Make JSON-LD tests use local fixtures
-
-**Files:**
-
 - `worker/src/scrape_url.ts`
 - `worker/test/scrape_url.test.ts`
 - `worker/test/fixtures/` (new)
+- `worker/package.json`
+- `justfile`
 
-**Implementation:**
+Make the default worker tests deterministic:
 
-1. Make the JSON-LD document loader injectable, with the current network loader as the production default.
-2. Add a minimal local schema.org context fixture for the terms used by the tests.
-3. Pass the fixture loader from tests so no test calls schema.org.
-4. Keep live document-loader behavior as an explicit integration check only if it is useful for release confidence.
+- test recipe response normalization from fixtures rather than calling Gemini;
+- test empty/malformed input locally;
+- use a local JSON-LD context fixture instead of fetching schema.org;
+- keep live InstantDB/Gemini tests in an explicit integration command.
 
-**Acceptance:** all default JSON-LD tests pass with network access disabled.
+This does not change the single-user runtime design. It only stops the default check from requiring live credentials and external network access.
 
-### 1.4 Resolve formatting and make checks discoverable
+### 0.3 Resolve existing formatting and command drift
+
+- Format `app/src/components/typeahead.gleam` and `typeahead_2.gleam` as a formatting-only change.
+- Add clear package checks to `justfile`.
+- Pin/document the Wrangler version used by local development instead of resolving an arbitrary `bunx` version.
+- Update `README.md` and `worker/README.md` with the commands that actually work.
+- Keep `worker/.dev.vars` and any `.env` files ignored. Never add values to the repository.
+
+**Baseline release check:** app format/tests/build, worker format/unit tests/Gleam tests/build, and `git diff --check` pass.
+
+## Milestone 1 — Release the current product first
+
+No bookmark importer or parser behavior change is included in this release.
+
+### 1.1 Production preflight
+
+Confirm:
+
+- the current InstantDB app and its existing data are available;
+- the existing worker has the admin token and Gemini settings it already expects;
+- the user can authenticate Wrangler in the sandbox;
+- the legacy Triplit credential in `notebooks/post_recipes.ts` has been checked and revoked/rotated if it is still active;
+- the current repository builds from a clean checkout.
+
+### 1.2 Conditional SPA route check
+
+A local Wrangler run returned 404 for `/recipes`, but this has not been a known production problem. Treat it as a check, not a planned rewrite.
+
+1. Build and run the current app through the exact Wrangler configuration used for deployment.
+2. Test direct navigation to `/`, `/recipes`, `/planner`, `/shopping-list`, `/settings`, and `/import`.
+3. If possible, test the current production URL before changing code.
+4. If routes work, record the local result as non-blocking and make no routing change.
+5. If routes fail in the actual release path, make the smallest targeted asset-delegation fix in `worker/src/index.mjs`, then rerun the checks.
+
+### 1.3 Deploy and smoke-test
+
+Use the existing deployment path after Wrangler authentication:
+
+- deploy the current app and worker;
+- load the home page;
+- open recipes, planner, shopping list, settings, and import;
+- create/edit one recipe;
+- verify the existing planner and shopping-list flows load/save;
+- run one known-good URL import;
+- confirm worker logs do not print credentials.
+
+**Exit condition:** the current product is live and usable. Stop feature work here before beginning the bookmark/parser changes.
+
+## Milestone 2 — Minimal parser enhancement for all recipes
+
+This is the smallest change required to make the one-off import useful. It extends the existing worker; it does not introduce a new batch API product.
+
+### 2.1 Preserve the existing endpoint and add an explicit mode
 
 **Files:**
 
-- `app/src/components/typeahead.gleam`
-- `app/src/components/typeahead_2.gleam`
-- `justfile`
-- `README.md`
-- `worker/README.md`
-
-**Implementation:**
-
-1. Run and review a formatting-only change for the two typeahead modules.
-2. Add package-level `check-app` and `check-worker` recipes that run format, tests, and builds in a predictable order.
-3. Add a root `check`/`verify` recipe that runs both packages.
-4. Document the supported Bun, Gleam, Just, and Wrangler versions and the exact local commands.
-5. Pin Wrangler as a worker development dependency instead of resolving an unpinned package through `bunx` at runtime.
-6. Document the names and locations of local secrets without committing values.
-
-**Acceptance:** a new checkout can find one default check command; the default path does not require Cloudflare login, InstantDB, Gemini, or external HTTP.
-
-## Milestone 2 — Bookmark/parser spike
-
-The spike should start with a small sample, not all 200 links. Its purpose is to discover the corpus shape before building a production import loop.
-
-### 2.1 Build a standalone bookmark input reader
-
-**New area:** `worker/scripts/` or another worker-local scripts directory.
-
-**Files likely involved:**
-
-- `worker/scripts/import_bookmarks.ts` (new)
-- `worker/scripts/bookmark_input.ts` (new, if kept separate)
-- `worker/test/bookmark_input.test.ts` (new)
-- `worker/package.json`
-- `worker/README.md`
-
-**Input contract:**
-
-- Netscape browser bookmark HTML: recursively find `<A HREF="...">` links and retain folder/title metadata when available.
-- Plain text URL list: one HTTP(S) URL per non-empty, non-comment line.
-- Reject unsupported schemes, blank URLs, and malformed entries before making network calls.
-- Normalize obvious URL noise such as fragments and tracking parameters only through an explicit, tested rule; do not rewrite recipe URLs aggressively.
-
-**Output contract:** every input URL gets a stable record with:
-
-- input URL and normalized URL;
-- bookmark title/folder, if present;
-- attempt count and timestamps;
-- status: `success`, `multiple_recipes`, `no_recipe`, `blocked`, `rate_limited`, `parse_error`, or `network_error`;
-- recipe count;
-- normalized recipe payloads when present;
-- warnings and a human-readable error;
-- parser version/commit for reproducibility.
-
-### 2.2 Run a representative sample
-
-Select approximately 15–20 links covering likely domains and bookmark folders. Run a **dry-run** that does not write InstantDB records.
-
-Capture:
-
-- domains and HTTP status distribution;
-- JSON-LD present/absent;
-- one vs. multiple JSON-LD blocks;
-- `@graph`, arrays, `ItemList`, and recipe objects embedded in other data;
-- blocked pages, bot checks, redirects, timeouts, and rate limits;
-- pages with multiple recipes;
-- pages whose JSON-LD is malformed but whose visible text might be parseable;
-- duplicate URLs and duplicate recipes;
-- title/slug/source collisions.
-
-Write the report as JSONL plus a summary table. Do not use the legacy `notebooks/post_recipes.ts`; it targets Triplit and contains an old credential.
-
-**Spike exit condition:** the sample report identifies the first implementation changes and proves that the runner can resume from a result file.
-
-## Milestone 3 — Parser and importer hardening
-
-### 3.1 Extract multiple JSON-LD documents independently
-
-**Primary file:** `worker/src/scrape_url.ts`
-
-The current implementation appends the text from every `application/ld+json` script into one `jsonLdContent` string. Replace that behavior with a collection of independent script payloads.
-
-For each script:
-
-1. Parse independently; one malformed script must not discard valid scripts from the same page.
-2. Accept a top-level object or array.
-3. Walk `@graph` and common list containers such as `itemListElement`.
-4. Select nodes whose `@type` is `Recipe` or an equivalent schema.org URL.
-5. Normalize title/name, source URL, yield, durations, ingredients, and instructions using the existing recipe shape.
-6. Deduplicate equivalent recipes by canonical source URL plus normalized title, with a stable fallback when source URL is absent.
-7. Preserve warnings when a page contains more than one recipe or when fields are incomplete.
-
-Add tests for:
-
-- two separate JSON-LD script blocks;
-- one JSON-LD array containing multiple recipes;
-- an `@graph` containing recipes and non-recipe nodes;
-- one malformed script followed by one valid recipe;
-- duplicate recipe nodes;
-- a page with no recipe JSON-LD;
-- multiple instruction formats (`HowToStep`, strings, and arrays).
-
-### 3.2 Define an explicit multi-recipe response
-
-Do not silently discard additional recipes from the batch path.
-
-Recommended compatibility design:
-
-- Extract a core `ScrapeResult` containing `source_url`, `recipes`, `warnings`, and parser status.
-- Add a batch-facing endpoint or worker entry point such as `/api/scrape_url_all` that returns the complete result.
-- Keep the existing `/api/scrape_url` response compatible with the current one-recipe upload UI, but make its first-recipe behavior explicit and log when additional recipes were found.
-- Update the upload UI later if selecting among multiple recipes becomes necessary; it is not required for the first 200-link import.
-
-If the sample shows that no-JSON-LD pages commonly contain multiple recipes, add a separate multi-recipe Gemini schema and test it explicitly. Otherwise retain the current single-page fallback and mark the limitation in the batch report.
-
-**Files likely involved:**
-
+- `worker/src/mealstack_worker.gleam`
 - `worker/src/scrape_url.ts`
 - `worker/src/parse_recipe.ts`
-- `worker/src/mealstack_worker.gleam`
 - `worker/test/`
-- `app/src/upload.ts` only if the existing endpoint contract must change
 
-### 3.3 Make the runner safe to leave running
+Keep the current `/api/scrape_url?target=...` behavior for the existing upload UI. Add an explicit query option such as `all=true` for the one-off runner:
 
-**Primary file:** `worker/scripts/import_bookmarks.ts`
+- without `all=true`: preserve the current one-recipe response contract;
+- with `all=true`: return a structured result containing all distinct recipes, source URL, warnings, and status.
 
-Implement:
+The runner will call the existing production worker endpoint with this option. There is no need for a new permanent batch endpoint or bookmark UI.
 
-- bounded concurrency, starting at 2–3 requests;
-- per-request timeout;
-- retry with exponential backoff only for transient network/5xx/429 failures;
-- respect `Retry-After` when available;
-- no retry for permanent 4xx, invalid URL, or deterministic parse failures;
-- checkpoint after every URL, not only at the end;
-- `--resume results.jsonl` to retry unfinished/transient records without duplicating successes;
-- `--limit N` and `--only-domain example.com` for controlled testing;
-- structured logs that never print API keys or full sensitive headers;
-- a dry-run mode that writes only result files;
-- a write mode that requires an explicit confirmation flag.
+### 2.2 Parse JSON-LD script blocks independently
 
-### 3.4 Make writes idempotent for the single-user database
+Replace the current concatenation behavior in `worker/src/scrape_url.ts`:
 
-Use the existing InstantDB admin configuration for now; do not introduce a multi-user ownership model.
+1. collect each `application/ld+json` script as its own payload;
+2. parse each payload independently so one malformed script does not discard valid scripts;
+3. accept top-level objects, arrays, `@graph`, and common `itemListElement` containers;
+4. retain every node whose type is `Recipe` or a schema.org Recipe URL;
+5. normalize the existing recipe fields: title/name, source URL, yield, durations, ingredients, and instructions;
+6. deduplicate identical nodes while retaining distinct recipes from the same page;
+7. preserve warnings when fields are incomplete or multiple recipes are found.
 
-The write path should:
+Add fixtures for:
 
-1. preserve the original source URL in the recipe’s `source` field;
-2. derive a stable slug from the normalized title, with collision handling;
-3. query for an existing matching source/slug before inserting;
-4. update only when the import record is explicitly approved to overwrite;
-5. write one recipe at a time with a result record containing the Instant transaction ID;
-6. continue after an individual failure and record it for resume.
+- two JSON-LD script blocks with two recipes;
+- one array with multiple recipes;
+- an `@graph` containing recipe and non-recipe nodes;
+- one malformed script followed by a valid recipe;
+- duplicate recipe nodes;
+- multiple instruction formats;
+- a page with no usable JSON-LD.
 
-If the existing schema cannot support a reliable source lookup, add the smallest single-user-compatible field/index needed. Do not use the old Triplit schema or seed script as the migration path.
+### 2.3 Send page text to the LLM when JSON-LD is absent
 
-### 3.5 Dev import run
+For the `all=true` path, if JSON-LD yields no recipes:
 
-Run in this order:
+1. fetch the page once;
+2. extract readable text using the existing JavaScript-compatible stack, preferably `HTMLRewriter`/`linkedom` already present in the worker;
+3. remove scripts, styles, navigation, and obvious non-content regions where practical;
+4. cap and log the text length so a pathological page cannot create an unbounded request;
+5. send the extracted page text to Gemini with a prompt that asks it to return **every recipe found**, not one recipe;
+6. validate the response against an array-of-recipes schema;
+7. return an empty recipe list plus a clear status if the page contains no recipe.
 
-1. Dry-run the representative sample.
-2. Fix parser and runner issues until the sample report is understandable.
-3. Run the full 200-link input against the development InstantDB environment with writes enabled.
-4. Review successes, multiple-recipe pages, failures, duplicate candidates, and suspicious low-content recipes.
-5. Re-run only failed/transient records after corrections.
-6. Export an approved result set for the production run.
+Do not add Trafilatura first: it is primarily a Python tool and the current worker is TypeScript/Gleam running under Bun/Cloudflare. If the first corpus run shows that the lightweight extraction is too noisy, evaluate a JS readability package as a separate, evidence-based change.
 
-The dev run is complete only when every input URL has a terminal status and the report explains every non-success.
+Keep the current single-recipe schema and UI path intact. Add a separate multi-recipe schema/function for `all=true` so the existing import screen does not break unexpectedly.
 
-## Milestone 4 — Release the current product
+### 2.4 Tests for the parser change
 
-This milestone happens before shopping-list/planner feature work.
+Default tests must cover:
 
-### 4.1 Pre-release checks
+- all JSON-LD recipes are returned;
+- malformed JSON-LD does not erase valid recipes;
+- an HTML page with no JSON-LD sends its extracted text to the mocked all-recipes model path;
+- the model can return zero, one, or multiple recipes;
+- source URL is retained on every result;
+- duplicates are removed deterministically;
+- one-recipe mode remains compatible with the current UI;
+- oversized/empty text produces a controlled result.
 
-Run the default verification command from Milestone 1 and confirm:
+## Milestone 3 — One-off runner around the existing worker
 
-- app format, tests, and Vite build pass;
-- worker format, deterministic Bun tests, Gleam tests, and build pass;
-- no generated `.new` snapshots or local credentials are present;
-- the current InstantDB app and worker configuration are available for production;
-- the legacy Triplit credential in `notebooks/post_recipes.ts` has been checked and revoked/rotated if it is still valid.
+### 3.1 Input: the provided favourites export
 
-### 4.2 Conditional SPA route check
+**Input:** `plans/favourites_17_08_2026.html`
 
-The local Wrangler run observed a 404 for `/recipes`, but this has not been a known production issue. Do not implement an asset-routing change yet.
+The file is a standard Netscape bookmark export. The one-off runner should:
 
-Verify the actual release path:
+- parse the folder tree;
+- select the `recipe` folder and its links, currently 230 URLs;
+- retain bookmark title and folder path for reporting;
+- ignore the other 114 links by default;
+- reject non-HTTP(S) links and duplicate normalized URLs before network calls.
 
-1. Run the built app through the same Wrangler configuration used for release.
-2. Test direct navigation to `/`, `/recipes`, `/planner`, `/shopping-list`, `/settings`, and `/import`.
-3. If possible, test the current deployed site before changing code.
-4. If direct routes work in the real path, close this as a local-only observation.
-5. If direct routes fail, make the smallest targeted change in `worker/src/index.mjs` to delegate non-API requests to the configured assets binding, then repeat the route smoke checks.
+Do not build generic JSON/plain-text input support unless the actual input changes. This is a one-off operation against the supplied file.
 
-This check is a release diagnostic, not a new architecture milestone.
+### 3.2 Loop behavior
 
-### 4.3 Deploy and smoke-test
+**New file:** `worker/scripts/import_favourites.ts`
 
-Deployment requires the user’s existing Cloudflare access; local Wrangler development does not.
+The runner should be intentionally small:
 
-After deployment:
+1. read and filter the one input file;
+2. call the configured existing worker endpoint for each URL, using `all=true`;
+3. write one JSONL result immediately after each URL;
+4. continue after individual failures;
+5. support `--limit 5` for a smoke run, then run the full recipe folder;
+6. support `--resume results.jsonl` so an interrupted run does not repeat completed URLs;
+7. record URL, bookmark metadata, HTTP status, recipe count, recipes, warnings, error, and parser/deployment version;
+8. use low bounded concurrency, initially 2 requests, with timeout and retry for 429/5xx/transient network failures;
+9. honor `Retry-After` where available;
+10. never log token values or authorization headers.
 
-- load the home page;
-- open recipes, planner, shopping list, settings, and import from the UI;
-- create or edit one recipe;
-- verify planner load/save;
-- verify shopping-list load/save at its current behavior level;
-- run one known-good URL import;
-- confirm worker logs do not expose secrets;
-- confirm the production InstantDB app contains the expected single-user data.
+This runner is not a new application feature. It is a disposable operational script that invokes the worker already used by the application.
 
-**Release gate:** the current product is live and the known workflows work. Stop here before implementing shopping-list/planner improvements.
+### 3.3 Separate parse results from database writes
 
-## Milestone 5 — Production bookmark import
+The first run must be parse-only. It writes a result file and does not mutate InstantDB. After reviewing the result file, run an explicit write step that:
 
-Run the parser against production only after the current product has been released and the dev run has been reviewed.
+- targets a selected InstantDB app;
+- inserts all recipes returned for each URL;
+- preserves the original source URL;
+- derives stable slugs and handles collisions;
+- skips or updates an existing recipe according to an explicit rule;
+- writes a transaction/result record for each recipe;
+- can resume without duplicating successful writes.
 
-1. Use the same input file and parser version recorded in the dev report.
-2. Start with a canary of approximately 5–10 URLs, including one known-good page, one multiple-recipe page, and one likely failure.
-3. Confirm the production records and source URLs are correct.
-4. Run the remaining URLs with bounded concurrency and checkpointing.
-5. Monitor rate limits, Gemini usage, worker duration, and InstantDB transaction errors.
-6. Stop/review if the failure rate or duplicate rate is materially different from dev.
-7. Produce a final report with successes, imported recipe count, duplicate decisions, failures, and URLs requiring manual review.
+The write step can live in the same one-off script behind `--write`, or be a second worker-local script. Do not add a production API endpoint solely for this import.
 
-Production import must be resumable and idempotent. A rerun must not create a second copy of every successful recipe.
+## Milestone 4 — Development database and credentials
 
-## Milestone 6 — Post-release feature backlog
+### 4.1 Development InstantDB app
 
-Only after the production release and bookmark import are accepted should we return to product TODOs. The next likely slice is shopping-list ↔ planner integration.
+There is currently no separate InstantDB development app. Create one before the first database write. The development app is not a multi-user feature; it is a safety boundary so the 230-link run cannot pollute production.
 
-When that work starts, cover:
+The plan assumes one of these paths:
 
-- plan link persistence;
-- multiple meal extraction and recipe deduplication;
+- the user creates the dev app and supplies its app ID plus admin token through the sandbox secret file; or
+- the agent creates it after authenticated InstantDB CLI/API access is available in the sandbox.
+
+The supplied `https://www.instantdb.com/llm-rules/AGENTS.md` returned HTTP 403 from this sandbox, so no InstantDB creation command is being guessed or run from this plan. Once official authenticated instructions are available, use them and record the resulting dev app ID without recording the admin token.
+
+If a separate app cannot be created, stop at parse-only output. Do not write the import into the production app as a substitute.
+
+### 4.2 Safe credential handoff into the sandbox
+
+Do not paste secrets into chat. Put them in an ignored file inside the project, or inject them into the sandbox environment through the host’s secret mechanism.
+
+For this repository, the practical local path is:
+
+`repos/james-personal/gleamstack/worker/.dev.vars`
+
+The root ignore rules already cover `.dev.vars*`. The file should contain only local values, for example:
+
+```text
+INSTANT_ADMIN_TOKEN=the-dev-app-admin-token
+INSTANT_APP_ID=the-dev-app-id
+```
+
+Important current-code detail: `worker/src/parse_recipe.ts` currently hard-codes the Instant app ID and reads `INSTANT_ADMIN_TOKEN` from `process.env`. Before using a second app, make the app ID a runtime configuration value in the one-off script/worker path. Do not assume adding `INSTANT_APP_ID` to the file changes current behavior automatically.
+
+The current worker retrieves the Gemini key from the first InstantDB settings row. Therefore the dev app also needs the required settings record/key, or the import code must be given an explicitly approved environment-based Gemini configuration. Do not put a Gemini key in tracked files or print it in logs.
+
+For Wrangler deployment access, use an authenticated `wrangler login` session inside the sandbox, or inject the Cloudflare API/account credentials through the sandbox’s secret mechanism. Do not commit them or paste them into the conversation. Tell the agent only that the credentials are ready; the agent can check presence without printing values.
+
+### 4.3 Development run
+
+1. Create/configure the separate dev InstantDB app.
+2. Put the dev admin token and app ID into the ignored sandbox secret path.
+3. Run the parser-only smoke command against five recipe links.
+4. Review the JSONL shape and multi-recipe output.
+5. Run the complete 230-link recipe folder.
+6. Review every non-success, low-content recipe, duplicate candidate, and source URL.
+7. Run the explicit write step against dev.
+8. Re-run selected failures and confirm resume/idempotency behavior.
+
+## Milestone 5 — Parser release and production import
+
+This is the second release, after the current product has already been released in Milestone 1.
+
+### 5.1 Deploy the minimal parser change
+
+Deploy the worker/app change that adds the explicit all-recipes mode and page-text fallback. Keep the existing single-recipe UI behavior unchanged. Run the normal build/tests and a production worker canary first.
+
+### 5.2 Production canary
+
+Run 5–10 carefully selected recipe-folder URLs:
+
+- a known-good JSON-LD recipe;
+- a page with multiple JSON-LD recipes;
+- a Guardian page representative of the dominant domain;
+- a page with no JSON-LD;
+- a likely blocked or malformed page.
+
+Confirm that the production result file contains all recipes, source URLs, warnings, and errors before enabling writes.
+
+### 5.3 Production full run
+
+Run the same one-off runner against the same input file and `recipe` folder:
+
+- use low concurrency;
+- checkpoint every URL;
+- stop if failure/rate-limit behavior materially differs from dev;
+- write only after the parse report is approved;
+- preserve a copy of the final result/report outside the application database;
+- verify that rerunning completed records does not duplicate recipes.
+
+The production import is complete when every URL has a terminal result and every failure has either been retried successfully or manually classified.
+
+## Milestone 6 — Post-release feature work
+
+Only after the current product release and production bookmark import are accepted should we return to new product features.
+
+The next likely slice is shopping-list ↔ planner integration, covering:
+
+- plan-link persistence;
+- all meal extraction and stable recipe references;
 - explicit add-ingredients behavior;
-- stable `RecipeSlug` resolution;
 - missing/name-only recipe handling;
 - ingredient provenance and duplicate behavior;
-- model tests in `app/test/integration/shopping_list_test.gleam`;
-- manual verification against the released app.
+- model tests in `app/test/integration/shopping_list_test.gleam`.
 
-Other TODOs—offline support, bookmark UI, ratings/notes, navigation cleanup, and shared layout—remain separate decisions rather than being pulled into the release.
+Offline support, ratings/notes, navigation cleanup, and a bookmark-management UI remain separate follow-up decisions.
 
-## Final release checklist
+## Release and import checklist
 
-### Default verification
+### Before current-product release
 
-- `gleam format --check src test` passes in both packages.
-- App Gleam tests pass without date-sensitive snapshot churn.
-- Worker Gleam tests pass.
-- Worker Bun unit tests pass without credentials or external network.
-- Vite production build passes.
-- Worker Gleam build passes.
-- `git diff --check` passes.
+- app deterministic snapshots pass;
+- worker default tests pass without live services;
+- app/worker formatting and builds pass;
+- current UI flows smoke-test locally;
+- actual release-path SPA routes are checked, with no code change unless reproduced;
+- current production app/worker configuration is confirmed;
+- Wrangler authentication is ready;
+- legacy Triplit credential is audited/revoked if still active.
 
-### Import verification
+### Before development writes
 
-- Bookmark input parser tests pass.
-- Representative sample has a terminal per-URL result.
-- Multiple JSON-LD scripts and arrays are parsed independently.
-- Malformed pages do not abort the whole batch.
-- Results are checkpointed and resumable.
-- Dev writes are idempotent and reviewed.
-- Production canary passes before the full run.
+- separate InstantDB dev app exists;
+- dev app ID and admin token are present only in ignored sandbox configuration;
+- Gemini settings/configuration is available to the dev worker;
+- five-link parser-only smoke run is understandable;
+- full 230-link run has terminal per-URL results;
+- write mode is explicit and resumable.
 
-### Runtime verification
+### Before production writes
 
-- Local Wrangler starts without Cloudflare login.
-- The actual release path is checked for direct SPA routes; routing code changes only if reproduced.
-- API invalid-input behavior remains correct.
-- One known-good production URL import succeeds.
-- Existing recipe, planner, shopping-list, settings, and import flows smoke-test successfully.
+- parser change is deployed;
+- production canary has been reviewed;
+- result format includes all recipes from multi-recipe pages;
+- source URLs and slug collision behavior are acceptable;
+- production write credentials are available without being committed;
+- final runner command and input file are recorded.
 
 ## Risks and mitigations
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---:|---:|---|
-| Multiple JSON-LD blocks are concatenated into invalid JSON | High | High | Parse each script independently and add multi-script fixtures first. |
-| One page contains multiple recipes but the current UI expects one | High | Medium | Add a complete batch response; keep legacy UI behavior explicit and report discarded/extra recipes. |
-| 200 requests trigger bot checks or rate limits | High | High | Low concurrency, timeouts, retry policy, `Retry-After`, checkpointing, and canary runs. |
-| AI fallback costs or fails on pages without JSON-LD | Medium | High | Measure the sample first; separate JSON-LD and AI outcomes; cap/retry deliberately. |
-| Duplicate slugs or source URLs create duplicate recipes | High | High | Stable source/title identity, idempotent writes, dry-run review, and resume-safe transactions. |
-| Dev and production behave differently | Medium | High | Same parser version/input, dev full run, production canary, and per-URL reports. |
-| Local Wrangler route behavior is not production behavior | Medium | Medium | Reproduce on the actual release path before changing `index.mjs`. |
-| Legacy Triplit credential remains usable | Unknown | High | Audit and revoke/rotate it before release; do not reuse the legacy script. |
-| Scope drifts into multi-user/auth work | Low after review | High | Keep single-user assumptions explicit and defer auth/ownership. |
+| Multiple JSON-LD blocks currently become invalid concatenated JSON | High | High | Parse each script independently and return all distinct recipes. |
+| LLM receives too much boilerplate or exceeds context | Medium | High | Strip obvious non-content, cap/log text length, and inspect failures before adding heavier extraction. |
+| A page contains several recipes but the old UI expects one | High | Medium | Keep default endpoint behavior unchanged; use explicit `all=true` for the runner. |
+| Guardian and other domains rate-limit the loop | High | High | Low concurrency, timeout, Retry-After, retries, and checkpointing. |
+| Production data is polluted by a bad dev run | High | High | Require a separate dev InstantDB app and parse-only output before writes. |
+| Runner is interrupted after partial completion | Medium | Medium | JSONL checkpoint after every URL and resume by normalized URL. |
+| Re-running creates duplicates | Medium | High | Stable source/title identity and idempotent write behavior. |
+| Local Wrangler route issue is not a production issue | Medium | Low | Reproduce before changing routing; treat the observation as non-blocking if production works. |
+| Credentials are exposed in the sandbox or logs | Medium | High | Ignored `.dev.vars`, secret injection, presence-only checks, and redacted logs. |
+| InstantDB app creation instructions are inaccessible from the sandbox | Current blocker | Medium | Do not guess commands; user creates the dev app or provides authenticated official CLI/API access. |
 
-## Decisions no longer required for this plan
+## Explicitly out of scope until after import/release
 
-The following are intentionally removed from the implementation scope because the app is staying single-user:
-
-- user authentication;
-- per-user ownership fields and permission redesign;
-- multi-user sharing;
-- worker-owned versus BYO Gemini key architecture;
-- a global settings migration for multi-user isolation.
-
-The existing single-user configuration still needs to be documented well enough to run dev and production imports, but it is not being redesigned here.
-
-## Out of scope until after release
-
-- Shopping-list/planner feature implementation.
-- A bookmark-management UI.
+- Multi-user auth, ownership, sharing, or permission redesign.
+- A general-purpose bookmark management UI.
+- A reusable hosted batch-import product.
 - Offline support or moving away from InstantDB.
-- Ratings and cooking notes.
-- Navigation/layout refactors.
-- Multi-user authentication or sharing.
-- General ingredient normalization and unit aggregation.
-- Public deployment communication beyond the release smoke test.
+- Shopping-list/planner feature changes.
+- Ratings, cooking notes, navigation/layout refactors.
+- General ingredient normalization.
 
-## Recommended first implementation commit after approval
+## Recommended implementation commits
 
-Create one focused commit titled something like **`stabilize parser test baseline`** containing only:
+1. **`stabilize parser test baseline`**
+   - fixed-date app snapshots;
+   - offline worker tests/fixtures;
+   - formatting fixes;
+   - default verification commands.
+2. **`release current mealstack product`**
+   - deployment/configuration only; no bookmark parser change.
+3. **`add all-recipes worker mode`**
+   - independent JSON-LD extraction;
+   - page-text multi-recipe fallback;
+   - tests preserving the existing one-recipe mode.
+4. **`add one-off favourites import runner`**
+   - parse the supplied Netscape HTML;
+   - filter the `recipe` folder;
+   - loop/resume/report/write behavior.
+5. **`run production favourites import`**
+   - operational result/report and data changes, reviewed separately.
 
-- fixed-date planner snapshot tests;
-- offline worker fixtures and test seams;
-- independent JSON-LD test loading;
-- existing formatting fixes;
-- default verification commands and setup documentation.
-
-The next commit should be the bookmark input reader and dry-run reporter. Only after the sample report is reviewed should the multiple-recipe parser and production write path be expanded.
+Shopping-list work begins only after these are accepted.
