@@ -23,9 +23,14 @@ serve-worker:
 [working-directory: './worker']
 test-worker:
     bun install
-    bun test test/
+    bun run test:unit
     gleam test
     gleam build
+
+[working-directory: './worker']
+test-worker-integration:
+    bun install
+    bun run test:integration
 
 [parallel]
 dev-full: build-app build-worker serve-worker 

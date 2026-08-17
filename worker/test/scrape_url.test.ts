@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { extractJsonLd as extractJsonLdRaw } from "../src/scrape_url";
+import { extractJsonLdRecipes } from "../src/scrape_url";
 import type { Recipe } from "../../common/types.ts";
 
 const extractJsonLd = async (html: string) =>
-	(await extractJsonLdRaw(html)) as Recipe | null;
+	((await extractJsonLdRecipes(html))[0] ?? null) as Recipe | null;
 
 describe("extractJsonLd", () => {
 	describe("serves parsing", () => {
@@ -163,8 +163,7 @@ describe("extractJsonLd", () => {
       `;
 
 			const result = await extractJsonLd(html);
-			const ingredients = JSON.parse(result?.ingredients || "[]");
-			expect(ingredients).toEqual(["200g flour", "2 eggs", "100g sugar"]);
+			expect(result?.ingredients).toEqual(["200g flour", "2 eggs", "100g sugar"]);
 		});
 
 		it("should parse method steps array", async () => {
@@ -180,11 +179,10 @@ describe("extractJsonLd", () => {
       `;
 
 			const result = await extractJsonLd(html);
-			const steps = JSON.parse(result?.method_steps || "[]");
-			expect(steps).toEqual([
-				"Mix dry ingredients",
-				"Add wet ingredients",
-				"Bake",
+			expect(result?.method_steps).toEqual([
+				{ step_text: "Mix dry ingredients" },
+				{ step_text: "Add wet ingredients" },
+				{ step_text: "Bake" },
 			]);
 		});
 	});

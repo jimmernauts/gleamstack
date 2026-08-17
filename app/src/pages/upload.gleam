@@ -25,7 +25,7 @@ pub type UploadMsg {
   UserSubmittedFile
   UserUpdatedUrl(url: String)
   UserSubmittedUrlToScrape
-  ScrapeUrlResponseReceived(Result(String, ParseToRecipeError))
+  ScrapeUrlResponseReceived(Result(dynamic.Dynamic, ParseToRecipeError))
   UserUpdatedText(text: String)
   UserSubmittedText
   ParseRecipeResponseReceived(Result(types.Recipe, ParseToRecipeError))
@@ -151,32 +151,31 @@ pub fn upload_update(
       }
     })
     ScrapeUrlResponseReceived(Ok(scraped_json)) -> {
-      #(UploadModel(..model, status: UrlSubmitting), {
-        use dispatch <- effect.from
-        do_submit_text(scraped_json, fn(response) {
-          case response {
-            Ok(recipe_data) -> {
-              let decoded =
-                recipe_data
-                |> decode.run(codecs.decode_recipe_no_json())
-              case decoded {
-                Ok(recipe) -> dispatch(ParseRecipeResponseReceived(Ok(recipe)))
-                Error(errors) -> {
-                  echo "Could not decode recipe from scraped content."
-                  echo errors
-                  dispatch(
-                    ParseRecipeResponseReceived(
-                      Error(Other("Response could not be decoded")),
-                    ),
-                  )
-                }
-              }
-            }
-            Error(inner_error) ->
-              dispatch(ParseRecipeResponseReceived(Error(inner_error)))
-          }
+      let decoder = {
+        use recipes <- decode.field("recipes", decode.list(codecs.decode_recipe_no_json()))
+        decode.success(recipes)
+      }
+      case decode.run(scraped_json, decoder) {
+        Ok([recipe, ..]) -> #(model, {
+          use dispatch <- effect.from
+          dispatch(ParseRecipeResponseReceived(Ok(recipe)))
         })
-      })
+        Ok([]) -> #(model, {
+          use dispatch <- effect.from
+          dispatch(ParseRecipeResponseReceived(Error(Other("No recipes found"))))
+        })
+        Error(errors) -> {
+          echo errors
+          #(model, {
+            use dispatch <- effect.from
+            dispatch(
+              ParseRecipeResponseReceived(
+                Error(Other("Response could not be decoded")),
+              ),
+            )
+          })
+        }
+      }
     }
     ScrapeUrlResponseReceived(Error(error)) -> {
       let error_message = case error {
@@ -289,7 +288,7 @@ fn do_submit_text(
 @external(javascript, ".././upload.ts", "do_scrape_url")
 fn do_scrape_url(
   url: String,
-  cb: fn(Result(String, ParseToRecipeError)) -> Nil,
+  cb: fn(Result(dynamic.Dynamic, ParseToRecipeError)) -> Nil,
 ) -> Nil
 
 //--VIEW---------------------------------------------------------------

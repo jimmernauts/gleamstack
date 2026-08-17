@@ -147,19 +147,17 @@ fn decode_image_from_json(
 
 pub fn scrape_url_page(target: String, req: Request) -> Promise(Response) {
   echo "Scraping URL: " <> target
-  do_fetch_jsonld(target, conversation.to_js_request(req))
+  do_fetch_recipes(target, conversation.to_js_request(req))
   |> promise.map(fn(data) {
     case data {
-      Ok(data) -> {
+      Ok(data) ->
         data
         |> json.to_string
         |> glen.json(status.ok)
         |> glen.set_header("Access-Control-Allow-Origin", "*")
-      }
-      Error(error) -> {
+      Error(error) ->
         error
         |> glen.text(status.internal_server_error)
-      }
     }
   })
 }
@@ -171,11 +169,11 @@ pub fn not_found(_req: Request) -> Promise(Response) {
   |> promise.resolve
 }
 
-@external(javascript, "./scrape_url.ts", "do_fetch_jsonld")
-fn do_fetch_jsonld(
+@external(javascript, "./scrape_url.ts", "do_fetch_recipes")
+fn do_fetch_recipes(
   url: String,
   request: conversation.JsRequest,
-) -> Promise(Result(Json, String))
+ ) -> Promise(Result(Json, String))
 
 @external(javascript, "./parse_recipe.ts", "do_parse_recipe_text")
 fn do_parse_recipe_text(text: String) -> Promise(Result(Json, dynamic.Dynamic))

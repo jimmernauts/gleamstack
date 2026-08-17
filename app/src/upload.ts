@@ -4,7 +4,7 @@ import { Ok, Error as GError } from "./gleam.mjs";
 
 type dispatchFunction = (
     result:
-        | Ok<string, never>
+        | Ok<unknown, never>
         | GError<never, { UrlError: { message: string } }>
         | GError<never, { FileReadError: { message: string } }>
         | GError<never, { Other: { message: string } }>,
@@ -187,12 +187,16 @@ export async function do_scrape_url(
     url: string,
     cb: dispatchFunction,
 ): Promise<void> {
-    const response = await fetch(
-        `./api/scrape_url?target=${url}`,
-    );
-    const body = await response.text();
     try {
-        cb(new Ok(body));
+        const endpoint = new URL("./api/scrape_url", window.location.href);
+        endpoint.searchParams.set("target", url);
+        const response = await fetch(endpoint);
+
+        if (!response.ok) {
+            throw new Error(`Worker returned ${response.status}: ${await response.text()}`);
+        }
+
+        cb(new Ok(await response.json()));
     } catch (error) {
         cb(
             new GError({

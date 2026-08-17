@@ -1,185 +1,297 @@
 import { type Result, Ok, Error as GError } from "./gleam.mjs";
-import type { Ingredient, MethodStep, Recipe } from "../../common/types.ts";
-import api, { type NodeObject } from "jsonld";
+import type { Recipe } from "../../common/types.ts";
+import { parseHTML } from "linkedom";
 import { kebabCase } from "change-case";
 import durationParse from "iso8601-duration";
-import { do_parse_recipe_text } from "./parse_recipe.ts";
+import { do_parse_recipe_texts } from "./parse_recipe.ts";
 
-export async function do_fetch_jsonld(
-	url: string,
-	request: Request,
-): Promise<Result<Recipe, string>> {
-	// Fetch URL content
-	const logs: string[] = [];
-	const log = (msg: string) => {
-		console.log(msg);
-		logs.push(msg);
-	};
+type JsonObject = Record<string, any>;
 
-	try {
-        log(`Fetching ${url}`);
-		const response = await fetch(url, request);
-		log(`Response status: ${response.status}`);
-		const html = await response.text();
-        log(`HTML length: ${html.length}`);
-		// Extract JSON-LD data
-		const jsonLd = await extractJsonLd(html, log);
-		if (jsonLd) {
-			return new Ok(jsonLd);
-		}
-		log("No JSON-LD found, trying to parse recipe text...");
-		const recipe = await do_parse_recipe_text(html, log);
-		if (recipe) {
-			return new Ok(recipe);
-		}
-		return new GError(`URL Error: No recipe data found on the page. Logs: ${logs.join("; ")}`);
-	} catch (e: any) {
-		return new GError(`Exception during scrape: ${e.message}. Logs: ${logs.join("; ")}`);
-	}
-}
-
-const documentLoader = async (url: string) => {
-	// schema.org/ often returns HTML even with correct headers, so we explicitly fetch the JSON context
-	if (url === "https://schema.org/" || url === "http://schema.org/" || url === "https://schema.org" || url === "http://schema.org") {
-		url = "https://schema.org/docs/jsonldcontext.json";
-	}
-
-	try {
-		const response = await fetch(url, {
-			headers: {
-				Accept: "application/ld+json, application/json",
-			},
-		});
-
-		if (!response.ok) {
-			throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
-		}
-
-		const data = await response.json();
-
-		return {
-			contextUrl: null,
-			document: data,
-			documentUrl: url,
-		};
-	} catch (error) {
-		console.error(`Error loading document ${url}:`, error);
-		throw error;
-	}
+export type ScrapeRecipe = Omit<Recipe, "ingredients" | "method_steps"> & {
+  ingredients: unknown[];
+  method_steps: { step_text: string }[];
 };
 
-export async function extractJsonLd(
-	html: string,
-    log: (msg: string) => void = console.log,
-): Promise<Recipe | NodeObject | null> {
-	let jsonLdContent = "";
+export type ScrapeResult = {
+  source_url: string;
+  recipes: ScrapeRecipe[];
+  warnings: string[];
+  status: "ok" | "multiple_recipes" | "no_recipe";
+};
 
-	await new HTMLRewriter()
-		.on('script[type="application/ld+json"]', {
-			async text(text) {
-				if (text.text) {
-					jsonLdContent += text.text;
-				}
-			},
-		})
-		.transform(new Response(html))
-		.text();
+export async function do_fetch_recipes(
+  url: string,
+  request: Request,
+): Promise<Result<ScrapeResult, string>> {
+  const logs: string[] = [];
+  const log = (msg: string) => {
+    console.log(msg);
+    logs.push(msg);
+  };
 
-	if (!jsonLdContent) {
-        log("No jsonLdContent found via HTMLRewriter");
-		return null;
-	}
-	log(`Found JSON-LD content length: ${jsonLdContent.length}`);
-	
-	let parsed: NodeObject | null = null;
-	
-	try {
-		const frameObject = {
-			"@context": "https://schema.org/",
-			"@type": "Recipe",
-			"@explicit": true,
-			cookTime: {},
-			prepTime: {},
-			recipeYield: {},
-			cookingMethod: {},
-			datePublished: {},
-			author: {},
-			description: {},
-			name: {},
-			title: {},
-			recipeIngredient: {},
-			recipeCategory: {},
-			recipeCuisine: {},
-			recipeInstructions: {},
-			url: { "@explicit": true, id: {} },
-		};
-		const { frame } = api;
-        log("Starting JSON-LD frame");
-		parsed = await frame(JSON.parse(jsonLdContent), frameObject, {
-			documentLoader: documentLoader,
-		} as any) as unknown as NodeObject;
-		log("JSON-LD frame completed");
-        // log(`Parsed: ${JSON.stringify(parsed)}`);
-	} catch (error: any) {
-		log(`Failed to parse JSON-LD: ${error.message}`);
-		return null;
-	}
+  try {
+    log(`Fetching ${url}`);
+    const response = await fetch(url, request);
+    log(`Response status: ${response.status}`);
+    const html = await response.text();
+    log(`HTML length: ${html.length}`);
 
-	if (!parsed) {
-        log("Parsed object is null");
-		return null;
-	}
-	const parsedIngredients = parsed?.recipeIngredient
-		? (parsed.recipeIngredient as Ingredient[])
-		: ([] as Ingredient[]);
-	const parsedMethodSteps = parsed?.recipeInstructions
-		? (parsed.recipeInstructions as MethodStep[])
-		: ([] as MethodStep[]);
-	const dateString = new Date().toISOString().replace(":", "").replace("-", "");
-	const parsedTitle: string = (() => {
-		return (
-			(parsed?.name as string) ??
-			(parsed?.title as string) ??
-			`Imported Recipe-${dateString}`
-		);
-	})();
-	console.log(`${parsed.name} ${parsed.title}`);
-	const recipeForImport: Recipe = {
-		slug: kebabCase(parsedTitle || ""),
-		title: parsedTitle,
-		cook_time: parsed?.cookTime
-			? durationParse.toSeconds(
-					durationParse.parse(parsed?.cookTime as string),
-				) / 60
-			: 0,
-		prep_time: parsed?.prepTime
-			? durationParse.toSeconds(
-					durationParse.parse(parsed?.prepTime as string),
-				) / 60
-			: 0,
-		serves: (() => {
-			if (Array.isArray(parsed?.recipeYield)) {
-				return Number(parsed.recipeYield[0]) || 0;
-			}
-			if (typeof parsed?.recipeYield === "number") {
-				return parsed.recipeYield;
-			}
-			if (typeof parsed?.recipeYield === "string") {
-				return Number(parsed.recipeYield) || 0;
-			}
-			return 0;
-		})(),
-		ingredients: JSON.stringify(parsedIngredients),
-		method_steps: JSON.stringify(parsedMethodSteps),
-	};
-	if (
-		recipeForImport.ingredients === "[]" &&
-		recipeForImport.method_steps === "[]"
-	) {
-		console.log(
-			"There was JSON-LD, and we parsed it, but we couldn't get a recipe with ingrdients and method. Returning the raw parsed JSON-LD",
-		);
-		return parsed;
-	}
-	return recipeForImport;
+    if (!response.ok) {
+      return new GError(
+        `URL Error: ${response.status} while fetching ${url}. Logs: ${logs.join("; ")}`,
+      );
+    }
+
+    const jsonLdRecipes = extractJsonLdRecipes(html, log, url);
+    if (jsonLdRecipes.length > 0) {
+      return new Ok(makeScrapeResult(url, jsonLdRecipes, logs));
+    }
+
+    log("No usable JSON-LD found, extracting page text for multi-recipe parsing...");
+    const pageText = extractPageText(html);
+    const parsed = await do_parse_recipe_texts(pageText, log);
+
+    if (parsed instanceof Ok) {
+      const recipes = normalizeAiRecipes(parsed[0], url);
+      return new Ok(makeScrapeResult(url, recipes, logs));
+    }
+
+    return new GError(
+      `URL Error: No recipe data found on the page. Logs: ${logs.join("; ")}`,
+    );
+  } catch (error: any) {
+    return new GError(
+      `Exception during scrape: ${error.message}. Logs: ${logs.join("; ")}`,
+    );
+  }
+}
+
+function makeScrapeResult(
+  sourceUrl: string,
+  recipes: ScrapeRecipe[],
+  warnings: string[] = [],
+): ScrapeResult {
+  return {
+    source_url: sourceUrl,
+    recipes,
+    warnings,
+    status:
+      recipes.length > 1
+        ? "multiple_recipes"
+        : recipes.length === 1
+          ? "ok"
+          : "no_recipe",
+  };
+}
+
+export function extractJsonLdRecipes(
+  html: string,
+  log: (msg: string) => void = console.log,
+  sourceUrl = "",
+): ScrapeRecipe[] {
+  const { document } = parseHTML(html);
+  const scripts = Array.from(
+    document.querySelectorAll('script[type="application/ld+json"]'),
+  );
+  const recipes: ScrapeRecipe[] = [];
+
+  for (const [index, script] of scripts.entries()) {
+    const content = script.textContent?.trim() ?? "";
+    if (!content) continue;
+
+    try {
+      const parsed = JSON.parse(content);
+      const nodes = collectRecipeNodes(parsed);
+      for (const node of nodes) {
+        const recipe = normalizeJsonLdRecipe(node, sourceUrl);
+        if (recipe) recipes.push(recipe);
+      }
+    } catch (error: any) {
+      log(`Failed to parse JSON-LD script ${index + 1}: ${error.message}`);
+    }
+  }
+
+  const uniqueRecipes = dedupeRecipes(recipes);
+  log(`Found ${uniqueRecipes.length} recipe(s) in JSON-LD`);
+  return uniqueRecipes;
+}
+
+function collectRecipeNodes(
+  value: unknown,
+  results: JsonObject[] = [],
+  visited = new Set<object>(),
+): JsonObject[] {
+  if (Array.isArray(value)) {
+    for (const item of value) collectRecipeNodes(item, results, visited);
+    return results;
+  }
+
+  if (!value || typeof value !== "object") return results;
+
+  const object = value as JsonObject;
+  if (visited.has(object)) return results;
+  visited.add(object);
+
+  if (isRecipeType(object["@type"])) results.push(object);
+
+  for (const child of Object.values(object)) {
+    collectRecipeNodes(child, results, visited);
+  }
+
+  return results;
+}
+
+function isRecipeType(type: unknown): boolean {
+  const types = Array.isArray(type) ? type : [type];
+  return types.some(
+    (value) =>
+      typeof value === "string" &&
+      (value === "Recipe" || value.endsWith("/Recipe") || value.endsWith("#Recipe")),
+  );
+}
+
+function normalizeJsonLdRecipe(
+  node: JsonObject,
+  sourceUrl: string,
+): ScrapeRecipe | null {
+  const title =
+    stringValue(node.name) ??
+    stringValue(node.title) ??
+    `Imported Recipe-${new Date().toISOString().replace(/[:.]/g, "")}`;
+
+  const methodSteps = toArray(node.recipeInstructions)
+    .map((step) => {
+      const stepText = stringValue(step);
+      return stepText ? { step_text: stepText } : null;
+    })
+    .filter((step): step is { step_text: string } => step !== null);
+
+  return {
+    slug: kebabCase(title),
+    title,
+    cook_time: durationMinutes(node.cookTime),
+    prep_time: durationMinutes(node.prepTime),
+    serves: parseServes(node.recipeYield),
+    author: stringValue(node.author),
+    source: stringValue(node.url) ?? sourceUrl,
+    ingredients: toArray(node.recipeIngredient),
+    method_steps: methodSteps,
+  };
+}
+
+function normalizeAiRecipes(value: unknown, sourceUrl: string): ScrapeRecipe[] {
+  if (!Array.isArray(value)) return [];
+
+  const recipes = value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const object = item as JsonObject;
+    const title = stringValue(object.title) ?? stringValue(object.name);
+    if (!title) return [];
+
+    return [
+      {
+        slug: stringValue(object.slug) ?? kebabCase(title),
+        title,
+        cook_time: numberValue(object.cook_time),
+        prep_time: numberValue(object.prep_time),
+        serves: numberValue(object.serves),
+        author: stringValue(object.author),
+        source: stringValue(object.source) ?? sourceUrl,
+        ingredients: toArrayValue(object.ingredients),
+        method_steps: normalizeMethodSteps(object.method_steps),
+      } satisfies ScrapeRecipe,
+    ];
+  });
+
+  return dedupeRecipes(recipes);
+}
+
+function dedupeRecipes(recipes: ScrapeRecipe[]): ScrapeRecipe[] {
+  const seen = new Set<string>();
+  return recipes.filter((recipe) => {
+    const key = `${recipe.slug}|${recipe.source ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function extractPageText(html: string): string {
+  const { document } = parseHTML(html);
+  for (const selector of ["script", "style", "noscript", "nav", "header", "footer", "svg"]) {
+    for (const element of Array.from(document.querySelectorAll(selector))) {
+      element.remove();
+    }
+  }
+
+  return (document.body?.textContent ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120_000);
+}
+
+function toArray(value: unknown): unknown[] {
+  if (value === undefined || value === null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function toArrayValue(value: unknown): unknown[] {
+  if (typeof value !== "string") return toArray(value);
+  try {
+    return toArray(JSON.parse(value));
+  } catch {
+    return [value];
+  }
+}
+
+function normalizeMethodSteps(value: unknown): { step_text: string }[] {
+  return toArrayValue(value)
+    .map((step) => {
+      const text = stringValue(step);
+      return text ? { step_text: text } : null;
+    })
+    .filter((step): step is { step_text: string } => step !== null);
+}
+
+function stringValue(value: unknown): string | undefined {
+  if (typeof value === "string") return value.trim() || undefined;
+  if (typeof value === "number") return String(value);
+  if (Array.isArray(value)) return stringValue(value[0]);
+  if (!value || typeof value !== "object") return undefined;
+
+  const object = value as JsonObject;
+  return (
+    stringValue(object.name) ??
+    stringValue(object.text) ??
+    stringValue(object["@value"]) ??
+    stringValue(object["@id"]) ??
+    stringValue(object.url)
+  );
+}
+
+function numberValue(value: unknown): number {
+  const number = Number(Array.isArray(value) ? value[0] : value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function parseServes(value: unknown): number {
+  if (typeof value === "number") return value;
+  const text = stringValue(value);
+  if (!text) return 0;
+  const match = text.match(/\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : 0;
+}
+
+function durationMinutes(value: unknown): number {
+  if (typeof value === "number") return value;
+  const text = stringValue(value);
+  if (!text) return 0;
+
+  try {
+    return durationParse.toSeconds(durationParse.parse(text)) / 60;
+  } catch {
+    const match = text.match(/^PT(?:(\d+)H)?(?:(\d+)M)?/i);
+    if (!match) return 0;
+    return Number(match[1] ?? 0) * 60 + Number(match[2] ?? 0);
+  }
 }

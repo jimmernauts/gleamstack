@@ -3,7 +3,8 @@
     "version": "0.0.1",
     "type": "module",
     "scripts": {
-        "test": "gleam test"
+        "test:unit": "bun test test/parse_recipe.test.ts test/scrape_url.test.ts",
+        "test:integration": "bun test test/integration/bookmark_integration.test.ts test/integration/parse_recipe.integration.test.ts"
     },
     "dependencies": {
         "@google/genai": "^1.34.0",
