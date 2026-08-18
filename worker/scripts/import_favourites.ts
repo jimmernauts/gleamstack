@@ -77,6 +77,29 @@ type CheckpointRecord = {
 
 type AdminDb = any;
 
+export function formatAdminError(error: unknown): string {
+    if (error && typeof error === "object") {
+        const value = error as {
+            status?: unknown;
+            message?: unknown;
+            body?: unknown;
+        };
+        const details = {
+            ...(value.status !== undefined ? { status: value.status } : {}),
+            ...(value.message !== undefined ? { message: value.message } : {}),
+            ...(value.body !== undefined ? { body: value.body } : {}),
+        };
+        if (Object.keys(details).length > 0) {
+            try {
+                return JSON.stringify(details);
+            } catch {
+                // Fall through to the safe string conversion below.
+            }
+        }
+    }
+    return error instanceof Error ? error.message : String(error);
+}
+
 const REPO_ROOT = resolve(import.meta.dir, "../..");
 const DEFAULT_BOOKMARK_FILE = resolve(
     REPO_ROOT,
@@ -360,7 +383,7 @@ async function writeRecipes(
                 recipe_key: recipeKey,
                 entity_id: "",
                 status: "failure",
-                error: error instanceof Error ? error.message : String(error),
+                error: formatAdminError(error),
             });
             continue;
         }
@@ -386,7 +409,7 @@ async function writeRecipes(
                 recipe_key: recipeKey,
                 entity_id: entityId,
                 status: "failure",
-                error: error instanceof Error ? error.message : String(error),
+                error: formatAdminError(error),
             });
         }
     }
@@ -404,6 +427,30 @@ async function writeRecipes(
                   : "partial",
         writes: writeResults,
     };
+}
+
+async function verifyAdminAccess(db: AdminDb, appId: string): Promise<void> {
+    try {
+        const result = await db.query({
+            recipes: {
+                $: {
+                    fields: ["id"],
+                    limit: 1,
+                },
+            },
+        });
+        console.log(
+            JSON.stringify({
+                event: "admin_preflight",
+                app_id: appId,
+                recipe_count: result.recipes?.length ?? 0,
+            }),
+        );
+    } catch (error) {
+        throw new Error(
+            `InstantDB admin preflight failed for app ${appId}: ${formatAdminError(error)}`,
+        );
+    }
 }
 
 function validateRecipes(recipes: ScrapeRecipe[], sourceUrl: string): string[] {
@@ -537,6 +584,19 @@ async function processBookmark(
     );
     await writer.append(written);
     checkpoint.set(normalizedUrl, written);
+    const failedWrites = (written.writes ?? []).filter(
+        (write) => write.status === "failure",
+    );
+    if (failedWrites.length > 0) {
+        console.error(
+            JSON.stringify({
+                event: "write_failures",
+                app_id: options.appId,
+                url: bookmark.url,
+                failures: failedWrites,
+            }),
+        );
+    }
     console.log(
         `[${written.write_status}] ${bookmark.url}: ${written.writes?.length ?? 0} recipe transaction(s)`,
     );
@@ -683,8 +743,10 @@ async function main(): Promise<void> {
         if (!appId) throw new Error("--write requires --app-id or INSTANT_APP_ID");
         if (!adminToken) throw new Error("--write requires INSTANT_ADMIN_TOKEN");
         options.appId = appId;
-        db = init({ appId, adminToken, schema });
+        const adminDb = init({ appId, adminToken, schema });
+        db = adminDb;
         console.log(`Write mode enabled for InstantDB app ${appId}`);
+        await verifyAdminAccess(adminDb, appId);
     }
 
     console.log(
@@ -713,7 +775,7 @@ function sleep(milliseconds: number): Promise<void> {
 
 if (import.meta.main) {
     await main().catch((error) => {
-        console.error(error instanceof Error ? error.message : String(error));
+        console.error(formatAdminError(error));
         process.exitCode = 1;
     });
 }

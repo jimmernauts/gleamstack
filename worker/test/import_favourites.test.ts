@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
     extractRecipeBookmarks,
+    formatAdminError,
     scrapeRecipeToFrontendRecipe,
     stableRecipeId,
 } from "../scripts/import_favourites.ts";
@@ -21,6 +22,21 @@ describe("favourites importer", () => {
         expect(selected[9].url).toBe(
             "https://www.theguardian.com/food/2023/sep/02/vegan-sabzi-polo-herbed-rice-saffron-pistachios-recipe-meera-sodha",
         );
+    });
+
+    it("includes status and response body in Admin API errors", () => {
+        const error = JSON.parse(
+            formatAdminError({
+                status: 403,
+                message: "Forbidden",
+                body: { type: "unauthorized", message: "Invalid token" },
+            }),
+        );
+        expect(error).toEqual({
+            status: 403,
+            message: "Forbidden",
+            body: { type: "unauthorized", message: "Invalid token" },
+        });
     });
 
     it("maps scraper arrays into the frontend's persisted JSON shape", () => {
