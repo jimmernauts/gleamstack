@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "test:unit": "bun test test/parse_recipe.test.ts test/scrape_url.test.ts",
-        "test:integration": "bun test test/integration/bookmark_integration.test.ts test/integration/parse_recipe.integration.test.ts"
+        "test:integration": "bun run test:integration:uat",
+        "test:integration:uat": "bun --env-file=.dev.vars test test/integration/bookmark_integration.test.ts test/integration/parse_recipe.integration.test.ts"
     },
     "dependencies": {
         "@google/genai": "^1.34.0",

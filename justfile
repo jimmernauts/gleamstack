@@ -30,7 +30,7 @@ test-worker:
 [working-directory: './worker']
 test-worker-integration:
     bun install
-    bun run test:integration
+    bun run test:integration:uat
 
 [parallel]
 dev-full: build-app build-worker serve-worker 

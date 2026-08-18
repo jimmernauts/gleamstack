@@ -69,6 +69,26 @@ The server will typically start on `http://localhost:3000` (or the port defined 
 
 For a more production-like environment (simulating Cloudflare Workers), use Wrangler from the root project or configured scripts.
 
+### UAT integration tests
+
+Credentialed integration tests use the `mealstack-dev` InstantDB app. They reject the production worker URL. Keep `worker/.dev.vars` at mode `600` with the dev app ID and admin token.
+
+Start the local UAT worker in one terminal:
+
+```bash
+cd worker
+gleam build
+bun run server.ts
+```
+
+Run the five bookmark checks in another terminal:
+
+```bash
+cd worker
+MEALSTACK_WORKER_URL=http://127.0.0.1:3000 bun run test:integration:uat
+```
+
+The local server loads `worker/.dev.vars` automatically.
 ### Testing
 
 Run the Gleam test suite:

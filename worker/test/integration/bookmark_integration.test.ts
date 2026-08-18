@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { requireUatEnvironment } from "./uat_env.ts";
 
 type BookmarkCase = {
     name: string;
@@ -14,12 +15,7 @@ type ScrapePayload = {
     status?: string;
 };
 
-const workerBaseUrl = process.env.MEALSTACK_WORKER_URL;
-if (!workerBaseUrl) {
-    throw new Error(
-        "MEALSTACK_WORKER_URL is required for bookmark integration tests",
-    );
-}
+const workerBaseUrl = requireUatEnvironment();
 
 const bookmarks: BookmarkCase[] = [
     {
@@ -50,12 +46,23 @@ const bookmarks: BookmarkCase[] = [
     },
 ];
 
-async function scrapeAll(url: string): Promise<{ response: Response; payload: ScrapePayload }> {
+async function scrapeAll(
+    url: string,
+ ): Promise<{ response: Response; payload: ScrapePayload }> {
     const endpoint = new URL("/api/scrape_url", workerBaseUrl);
     endpoint.searchParams.set("target", url);
-
     const response = await fetch(endpoint);
-    const payload = (await response.json()) as ScrapePayload;
+    const body = await response.text();
+
+    let payload: ScrapePayload;
+    try {
+        payload = JSON.parse(body) as ScrapePayload;
+    } catch {
+        throw new Error(
+            `UAT worker returned non-JSON (${response.status}): ${body.slice(0, 500)}`,
+        );
+    }
+
     return { response, payload };
 }
 
