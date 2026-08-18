@@ -31,7 +31,17 @@ export async function do_fetch_recipes(
 
   try {
     log(`Fetching ${url}`);
-    const response = await fetch(url, request);
+    const outboundHeaders = new Headers({
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language":
+        request.headers.get("accept-language") ?? "en-US,en;q=0.9",
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/131.0 Safari/537.36",
+    });
+    const response = await fetch(url, {
+      headers: outboundHeaders,
+      redirect: "follow",
+    });
     log(`Response status: ${response.status}`);
     const html = await response.text();
     log(`HTML length: ${html.length}`);

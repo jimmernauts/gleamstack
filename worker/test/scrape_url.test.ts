@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { extractJsonLdRecipes } from "../src/scrape_url";
+import { do_fetch_recipes, extractJsonLdRecipes } from "../src/scrape_url";
 import type { Recipe } from "../../common/types.ts";
+import { Ok } from "../src/gleam.mjs";
 
 const extractJsonLd = async (html: string) =>
 	((await extractJsonLdRecipes(html))[0] ?? null) as Recipe | null;
@@ -225,4 +226,49 @@ describe("extractJsonLd", () => {
 			expect(result?.slug).toMatch(/^imported-recipe-/);
 		});
 	});
+
+describe("fetching pages", () => {
+    it("does not forward inbound local headers to the source page", async () => {
+        const originalFetch = globalThis.fetch;
+        let capturedInit: RequestInit | undefined;
+        const html = `
+            <script type="application/ld+json">
+                {"@type":"Recipe","name":"Test Recipe"}
+            </script>
+        `;
+
+        globalThis.fetch = (async (_input, init) => {
+            capturedInit = init;
+            return new Response(html, {
+                status: 200,
+                headers: { "content-type": "text/html" },
+            });
+        }) as typeof fetch;
+
+        try {
+            const request = new Request(
+                "http://127.0.0.1:3000/api/scrape_url?target=source",
+                {
+                    headers: {
+                        "accept-language": "fr-FR",
+                        "x-forwarded-host": "127.0.0.1:3000",
+                    },
+                },
+            );
+            const result = await do_fetch_recipes(
+                "https://example.com/recipe",
+                request,
+            );
+
+            expect(result).toBeInstanceOf(Ok);
+            const headers = new Headers(capturedInit?.headers);
+            expect(headers.get("accept-language")).toBe("fr-FR");
+            expect(headers.get("x-forwarded-host")).toBeNull();
+            expect(headers.get("host")).toBeNull();
+            expect(headers.get("user-agent")).toContain("Mozilla");
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+});
 });

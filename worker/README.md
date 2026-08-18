@@ -89,6 +89,8 @@ MEALSTACK_WORKER_URL=http://127.0.0.1:3000 bun run test:integration:uat
 ```
 
 The local server loads `worker/.dev.vars` automatically.
+
+If the bookmark tests fail with `Unable to connect` or `ERR_TLS_CERT_ALTNAME_INVALID` while the parse test passes, the local Bun worker cannot reach the source sites. Check the machine's HTTPS proxy and certificate configuration (`env | grep -i proxy`); the request has not reached the scraper/parser in that case.
 ### Testing
 
 Run the Gleam test suite:
