@@ -115,7 +115,31 @@ bun --env-file=worker/.dev.vars worker/scripts/import_favourites.ts \
   --write
 ```
 
-Do not put the admin token in source control or shell history; use a protected environment file instead. The importer uses stable source-URL/slug IDs so resuming the same checkpoint updates the same entities rather than duplicating them. It preserves the worker's recipe data and only reshapes ingredient/instruction arrays into the JSON object shape used by the frontend save path.
+Do not put the admin token in source control or shell history; use a protected environment file instead. The importer indexes existing recipes by canonical source/slug identity before writing, reuses a matching entity, and uses a stable source-URL/slug ID when no match exists. It preserves the worker's recipe data and only reshapes ingredient/instruction arrays into the JSON object shape used by the frontend save path.
+
+### Duplicate report and cleanup
+
+`scripts/cleanup_recipe_duplicates.ts` is read-only by default. It reports duplicate groups and writes a reviewable JSON report without deleting anything:
+
+```bash
+bun --env-file=/secure/mealstack-production.env \
+  worker/scripts/cleanup_recipe_duplicates.ts \
+  --app-id eeaf3b82-5b5d-40c4-a29a-b68988377c3c \
+  --report plans/favourites_duplicate_report.json
+```
+
+After reviewing the report, delete only source-URL duplicates with an explicit confirmation:
+
+```bash
+bun --env-file=/secure/mealstack-production.env \
+  worker/scripts/cleanup_recipe_duplicates.ts \
+  --app-id eeaf3b82-5b5d-40c4-a29a-b68988377c3c \
+  --report plans/favourites_duplicate_report.json \
+  --delete \
+  --confirm DELETE_DUPLICATES
+```
+
+Title/slug-only groups are reported but skipped by default; `--include-low-confidence` is required to delete them.
 ### Testing
 
 Run the Gleam test suite:

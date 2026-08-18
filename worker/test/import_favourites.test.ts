@@ -3,8 +3,10 @@ import {
     extractRecipeBookmarks,
     formatAdminError,
     scrapeRecipeToFrontendRecipe,
+    selectExistingRecipe,
     stableRecipeId,
 } from "../scripts/import_favourites.ts";
+import { findDuplicateGroups } from "../scripts/cleanup_recipe_duplicates.ts";
 import type { ScrapeRecipe } from "../src/scrape_url.ts";
 // @ts-ignore
 import bookmarks from "../../plans/favourites_17_08_2026.html" with { type: "text" };
@@ -90,4 +92,48 @@ describe("favourites importer", () => {
         );
         expect(first).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     });
+
+    it("prefers the existing stable entity when matching duplicates", () => {
+        const stableId = stableRecipeId(
+            "https://example.com/recipe",
+            "test-recipe",
+        );
+        const selected = selectExistingRecipe(
+            "https://example.com/recipe",
+            {
+                slug: "test-recipe",
+                title: "Test Recipe",
+                cook_time: 0,
+                prep_time: 0,
+                serves: 0,
+            },
+            [{ id: "random-id" }, { id: stableId }],
+        );
+        expect(selected?.id).toBe(stableId);
+    });
+
+    it("groups duplicate source URLs after removing tracking parameters", () => {
+        const groups = findDuplicateGroups([
+            {
+                id: "old-id",
+                slug: "test-recipe",
+                title: "Test Recipe",
+                source: "https://example.com/recipe/?utm_source=newsletter",
+                ingredients: "{}",
+                method_steps: "{}",
+            },
+            {
+                id: "new-id",
+                slug: "test-recipe",
+                title: "Test Recipe",
+                source: "https://example.com/recipe",
+                ingredients: '{"0":{"name":"flour"}}',
+                method_steps: '{"0":{"step_text":"Mix"}}',
+            },
+        ]);
+        expect(groups).toHaveLength(1);
+        expect(groups[0].confidence).toBe("source");
+        expect(groups[0].delete_ids).toHaveLength(1);
+    });
+
 });

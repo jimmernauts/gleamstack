@@ -23,3 +23,4 @@ fly_pg
 .dev.vars*
 .DS_STORE
 /plans/favourites_import_*.jsonl
+/plans/favourites_duplicate_report*.json

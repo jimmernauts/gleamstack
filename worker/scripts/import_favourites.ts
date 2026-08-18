@@ -1,12 +1,16 @@
 import { init } from "@instantdb/admin";
-import { createHash } from "node:crypto";
 import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import schema from "../../app/src/instant.schema.ts";
 import {
+    recipeIdentityAliases,
+    stableRecipeId,
+} from "../../common/recipe_dedupe.ts";
+import {
     toRecipePersistenceFields,
     type RecipePersistenceFields,
 } from "../../common/recipe_persistence.ts";
+export { stableRecipeId };
 import type { Recipe } from "../../common/types.ts";
 import type { ScrapeRecipe, ScrapeResult } from "../src/scrape_url.ts";
 
@@ -50,6 +54,8 @@ type RecipeWriteResult = {
     recipe_key: string;
     entity_id: string;
     status: "success" | "skipped" | "failure";
+    action?: "created" | "reused";
+    existing_match_count?: number;
     tx_id?: string;
     error?: string;
 };
@@ -77,6 +83,14 @@ type CheckpointRecord = {
 
 type AdminDb = any;
 
+type ExistingRecipe = {
+    id: string;
+    slug?: string;
+    title?: string;
+    source?: string;
+};
+type ExistingRecipeIndex = Map<string, ExistingRecipe[]>;
+
 export function formatAdminError(error: unknown): string {
     if (error && typeof error === "object") {
         const value = error as {
@@ -98,6 +112,28 @@ export function formatAdminError(error: unknown): string {
         }
     }
     return error instanceof Error ? error.message : String(error);
+}
+
+function addExistingRecipe(
+    index: ExistingRecipeIndex,
+    recipe: ExistingRecipe,
+ ): void {
+    for (const identity of recipeIdentityAliases(recipe)) {
+        const recipes = index.get(identity.key) ?? [];
+        if (!recipes.some((existing) => existing.id === recipe.id)) {
+            recipes.push(recipe);
+        }
+        index.set(identity.key, recipes);
+    }
+}
+
+export function selectExistingRecipe(
+    sourceUrl: string,
+    recipe: Recipe,
+    candidates: ExistingRecipe[],
+ ): ExistingRecipe | undefined {
+    const stableId = stableRecipeId(sourceUrl, recipe.slug);
+    return candidates.find((candidate) => candidate.id === stableId) ?? candidates[0];
 }
 
 const REPO_ROOT = resolve(import.meta.dir, "../..");
@@ -168,13 +204,6 @@ function decodeHtml(value: string): string {
         .replace(/&gt;/g, ">");
 }
 
-export function stableRecipeId(sourceUrl: string, slug: string): string {
-    const hex = createHash("sha256")
-        .update(`${sourceUrl}\n${slug}`)
-        .digest("hex")
-        .slice(0, 32);
-    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-${(8 | Number.parseInt(hex[16], 16) % 4).toString(16)}${hex.slice(17, 20)}-${hex.slice(20)}`;
-}
 
 export function scrapeRecipeToFrontendRecipe(
     scrapeRecipe: ScrapeRecipe,
@@ -370,6 +399,7 @@ async function writeRecipes(
     record: CheckpointRecord,
     previousWrites: RecipeWriteResult[],
     writeAppId: string,
+    existingRecipes: ExistingRecipeIndex,
  ): Promise<CheckpointRecord> {
     const writes = new Map(previousWrites.map((write) => [write.recipe_key, write]));
 
@@ -389,10 +419,21 @@ async function writeRecipes(
         }
 
         const recipeKey = `${record.url}#${recipe.slug}`;
-        const entityId = stableRecipeId(record.url, recipe.slug);
+        const identities = recipeIdentityAliases(recipe, record.url);
+        const candidates = [
+            ...new Map(
+                identities.flatMap((identity) =>
+                    (existingRecipes.get(identity.key) ?? []).map((candidate) => [
+                        candidate.id,
+                        candidate,
+                    ]),
+                ),
+            ).values(),
+        ];
+        const existing = selectExistingRecipe(record.url, recipe, candidates);
+        const entityId = existing?.id ?? stableRecipeId(record.url, recipe.slug);
         const previous = writes.get(recipeKey);
         if (previous?.status === "success") continue;
-
         try {
             const fields: RecipePersistenceFields = toRecipePersistenceFields(recipe);
             const transaction = await db.transact([
@@ -402,8 +443,20 @@ async function writeRecipes(
                 recipe_key: recipeKey,
                 entity_id: entityId,
                 status: "success",
+                action: existing ? "reused" : "created",
+                ...(candidates.length > 0
+                    ? { existing_match_count: candidates.length }
+                    : {}),
                 tx_id: transaction?.["tx-id"],
             });
+            if (!existing) {
+                addExistingRecipe(existingRecipes, {
+                    id: entityId,
+                    slug: recipe.slug,
+                    title: recipe.title,
+                    source: recipe.source,
+                });
+            }
         } catch (error) {
             writes.set(recipeKey, {
                 recipe_key: recipeKey,
@@ -451,6 +504,36 @@ async function verifyAdminAccess(db: AdminDb, appId: string): Promise<void> {
             `InstantDB admin preflight failed for app ${appId}: ${formatAdminError(error)}`,
         );
     }
+}
+
+async function loadExistingRecipeIndex(
+    db: AdminDb,
+ ): Promise<{ index: ExistingRecipeIndex; total: number }> {
+    const index: ExistingRecipeIndex = new Map();
+    let total = 0;
+    for (let offset = 0; ; offset += 100) {
+        const result = await db.query({
+            recipes: {
+                $: {
+                    fields: ["id", "slug", "title", "source"],
+                    limit: 100,
+                    offset,
+                },
+            },
+        });
+        const page = (result.recipes ?? []) as ExistingRecipe[];
+        for (const recipe of page) addExistingRecipe(index, recipe);
+        total += page.length;
+        if (page.length < 100) break;
+    }
+    console.log(
+        JSON.stringify({
+            event: "existing_recipe_index",
+            total_recipes: total,
+            identity_keys: index.size,
+        }),
+    );
+    return { index, total };
 }
 
 function validateRecipes(recipes: ScrapeRecipe[], sourceUrl: string): string[] {
@@ -508,8 +591,9 @@ async function processBookmark(
     options: Options,
     checkpoint: Map<string, CheckpointRecord>,
     writer: CheckpointWriter,
-    db?: AdminDb,
-): Promise<void> {
+    db: AdminDb | undefined,
+    existingRecipes: ExistingRecipeIndex,
+ ): Promise<void> {
     const normalizedUrl = bookmark.url;
     const previous = checkpoint.get(normalizedUrl);
 
@@ -581,6 +665,7 @@ async function processBookmark(
         record,
         previousWrites,
         options.appId!,
+        existingRecipes,
     );
     await writer.append(written);
     checkpoint.set(normalizedUrl, written);
@@ -736,6 +821,7 @@ async function main(): Promise<void> {
     await mkdir(dirname(options.checkpoint), { recursive: true });
     const writer = new CheckpointWriter(options.checkpoint);
     let db: AdminDb | undefined;
+    let existingRecipes: ExistingRecipeIndex = new Map();
 
     if (options.write) {
         const appId = options.appId ?? process.env.INSTANT_APP_ID;
@@ -747,6 +833,7 @@ async function main(): Promise<void> {
         db = adminDb;
         console.log(`Write mode enabled for InstantDB app ${appId}`);
         await verifyAdminAccess(adminDb, appId);
+        existingRecipes = (await loadExistingRecipeIndex(adminDb)).index;
     }
 
     console.log(
@@ -763,7 +850,14 @@ async function main(): Promise<void> {
     );
 
     await mapWithConcurrency(bookmarks, options.concurrency, async (bookmark) => {
-        await processBookmark(bookmark, options, checkpoint, writer, db);
+        await processBookmark(
+            bookmark,
+            options,
+            checkpoint,
+            writer,
+            db,
+            existingRecipes,
+        );
     });
     await writer.flush();
     console.log(JSON.stringify({ event: "batch_finished", selected: bookmarks.length }));
