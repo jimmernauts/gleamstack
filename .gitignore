@@ -22,3 +22,4 @@ fly_pg
 .wrangler
 .dev.vars*
 .DS_STORE
+/plans/favourites_import_*.jsonl

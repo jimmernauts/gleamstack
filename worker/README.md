@@ -91,6 +91,31 @@ MEALSTACK_WORKER_URL=http://127.0.0.1:3000 bun run test:integration:uat
 The local server loads `worker/.dev.vars` automatically.
 
 If the bookmark tests fail with `Unable to connect` or `ERR_TLS_CERT_ALTNAME_INVALID` while the parse test passes, the local Bun worker cannot reach the source sites. Check the machine's HTTPS proxy and certificate configuration (`env | grep -i proxy`); the request has not reached the scraper/parser in that case.
+### One-off favourites importer
+
+`scripts/import_favourites.ts` is a disposable operational importer. It reads the `recipe` folder, processes a bounded batch, calls `/api/scrape_url?all=true`, and appends one JSONL checkpoint record per URL. It is parse-only unless `--write` is supplied.
+
+Run a parse-only batch from the repository root:
+
+```bash
+bun worker/scripts/import_favourites.ts \
+  --offset 0 \
+  --limit 10 \
+  --checkpoint plans/favourites_import_batch_000.jsonl
+```
+
+After reviewing the checkpoint, write the same successful responses to a selected InstantDB app:
+
+```bash
+bun --env-file=worker/.dev.vars worker/scripts/import_favourites.ts \
+  --offset 0 \
+  --limit 10 \
+  --checkpoint plans/favourites_import_batch_000.jsonl \
+  --app-id 4304e120-9a5c-45e4-ba7a-4aaa0b7f282a \
+  --write
+```
+
+Do not put the admin token in source control or shell history; use a protected environment file instead. The importer uses stable source-URL/slug IDs so resuming the same checkpoint updates the same entities rather than duplicating them. It preserves the worker's recipe data and only reshapes ingredient/instruction arrays into the JSON object shape used by the frontend save path.
 ### Testing
 
 Run the Gleam test suite:

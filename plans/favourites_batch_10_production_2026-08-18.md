@@ -11,7 +11,7 @@
 - Requests: 10
 - HTTP 200: 7
 - HTTP 500: 3
-- Recipes returned: 9
+- Recipes returned: 10
 - Multiple-recipe responses: 1
 - AI fallback successes: 1
 
