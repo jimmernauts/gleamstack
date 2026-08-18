@@ -963,7 +963,7 @@ pub fn view_shopping_list_detail(
 }
 
 fn view_plan_preview(
-  shopping_list: ShoppingList,
+  _shopping_list: ShoppingList,
   recipes: List(types.Recipe),
   preview: types.PlanWeek,
   linked_plan_open: Bool,

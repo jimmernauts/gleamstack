@@ -2,12 +2,12 @@ import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import components/typeahead_2
 import gleam/bool
-import gleam/dict.{type Dict}
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/int
-import gleam/javascript/promise.{type Promise}
-import gleam/json.{type Json}
+import gleam/javascript/promise
+import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair

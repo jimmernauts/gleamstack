@@ -135,7 +135,6 @@ pub fn shopping_list_workflow_tests() {
       let initial_route = ViewShoppingList(today)
 
       let monday = date.floor(today, date.Monday)
-      let end_date = date.add(monday, 6, date.Days)
       let plan_week =
         dict.from_list([
           #(

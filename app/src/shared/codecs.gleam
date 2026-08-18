@@ -400,7 +400,7 @@ pub fn decode_plan_week(jsdata: Dynamic) -> types.PlanWeek {
           int.compare(date.to_rata_die(a.date), date.to_rata_die(b.date))
         })
       case sorted {
-        [first, ..] -> {
+        [_first, ..] -> {
           sorted
           |> list.map(fn(x: types.PlanDay) { #(x.date, x) })
           |> dict.from_list
