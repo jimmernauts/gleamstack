@@ -363,7 +363,7 @@ pub fn planner_integration_tests() {
     }),
     it("should snapshot planner view with empty week", fn() {
       // Arrange
-      let start_date = date.floor(date.today(), date.Monday)
+      let start_date = date.from_calendar_date(2026, date.Jan, 12)
       let initial_route = ViewPlanner(start_date)
 
       // Act
@@ -383,7 +383,7 @@ pub fn planner_integration_tests() {
     }),
     it("should snapshot planner view with planned meals", fn() {
       // Arrange
-      let start_date = date.floor(date.today(), date.Monday)
+      let start_date = date.from_calendar_date(2026, date.Jan, 12)
       let initial_route = ViewPlanner(start_date)
 
       let monday = start_date
