@@ -115,7 +115,7 @@ pub fn decode_recipe_with_inner_json() -> decode.Decoder(Recipe) {
     "ingredients",
     option.None,
     decode.optional(json_string_decoder(
-      decode_ingredients(),
+      decode_ingredients_json(),
       dict.from_list([]),
     )),
   )
@@ -123,7 +123,7 @@ pub fn decode_recipe_with_inner_json() -> decode.Decoder(Recipe) {
     "method_steps",
     option.None,
     decode.optional(json_string_decoder(
-      decode_method_steps(),
+      decode_method_steps_json(),
       dict.from_list([]),
     )),
   )
@@ -218,7 +218,7 @@ fn decode_tags() -> decode.Decoder(Dict(Int, Tag)) {
 }
 
 fn decode_ingredients_array() -> decode.Decoder(Dict(Int, Ingredient)) {
-  let list_decoder = decode.list(ingredient_decoder())
+  let list_decoder = decode.list(decode_ingredient_value())
   list_decoder
   |> decode.map(list.index_map(_, fn(v, i) { #(i, v) }))
   |> decode.map(dict.from_list)
@@ -259,27 +259,58 @@ pub fn ingredient_decoder() -> decode.Decoder(Ingredient) {
   ))
 }
 
+fn decode_ingredient_value() -> decode.Decoder(Ingredient) {
+  decode.one_of(ingredient_decoder(), or: [
+    decode.string
+    |> decode.map(fn(name) {
+      Ingredient(
+        name: option.Some(name),
+        ismain: option.Some(False),
+        quantity: option.None,
+        units: option.None,
+        category: option.None,
+      )
+    }),
+  ])
+}
+
 fn decode_ingredients() -> decode.Decoder(Dict(Int, Ingredient)) {
   decode.dict(decode_stringed_int(), ingredient_decoder())
 }
 
+fn decode_ingredients_json() -> decode.Decoder(Dict(Int, Ingredient)) {
+  decode.one_of(decode_ingredients(), or: [decode_ingredients_array()])
+}
+
 fn decode_method_steps_array() -> decode.Decoder(Dict(Int, MethodStep)) {
-  let method_step_decoder = {
-    use step_text <- decode.field("step_text", decode.string)
-    decode.success(MethodStep(step_text:))
-  }
-  let list_decoder = decode.list(method_step_decoder)
+  let list_decoder = decode.list(decode_method_step_value())
   list_decoder
   |> decode.map(list.index_map(_, fn(v, i) { #(i, v) }))
   |> decode.map(dict.from_list)
 }
 
-fn decode_method_steps() -> decode.Decoder(Dict(Int, MethodStep)) {
-  let method_step_decoder = {
+fn decode_method_step_value() -> decode.Decoder(MethodStep) {
+  let standard_decoder = {
     use step_text <- decode.field("step_text", decode.string)
     decode.success(MethodStep(step_text:))
   }
-  decode.dict(decode_stringed_int(), method_step_decoder)
+  let how_to_decoder = {
+    use step_text <- decode.field("text", decode.string)
+    decode.success(MethodStep(step_text:))
+  }
+  decode.one_of(standard_decoder, or: [
+    how_to_decoder,
+    decode.string
+      |> decode.map(fn(step_text) { MethodStep(step_text:) }),
+  ])
+}
+
+fn decode_method_steps() -> decode.Decoder(Dict(Int, MethodStep)) {
+  decode.dict(decode_stringed_int(), decode_method_step_value())
+}
+
+fn decode_method_steps_json() -> decode.Decoder(Dict(Int, MethodStep)) {
+  decode.one_of(decode_method_steps(), or: [decode_method_steps_array()])
 }
 
 pub fn decode_tag_option() -> decode.Decoder(TagOption) {
