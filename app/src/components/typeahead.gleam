@@ -214,7 +214,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 //-VIEW--------------------------------------------------------
 
-fn search_result(model: Model, result_value: String, index: Int) -> Element(Msg) {
+fn search_result(
+  model: Model,
+  result_value: String,
+  index: Int,
+) -> Element(Msg) {
   li(
     [
       attribute("role", "option"),
@@ -352,7 +356,9 @@ pub fn decode_stringed_bool(
   })
 }
 
-pub fn decode_stringed_int(d: Dynamic) -> Result(Int, List(decode.DecodeError)) {
+pub fn decode_stringed_int(
+  d: Dynamic,
+) -> Result(Int, List(decode.DecodeError)) {
   decode.run(d, decode.string)
   |> result.map(int.parse)
   |> result.try(

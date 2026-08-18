@@ -152,7 +152,10 @@ pub fn upload_update(
     })
     ScrapeUrlResponseReceived(Ok(scraped_json)) -> {
       let decoder = {
-        use recipes <- decode.field("recipes", decode.list(codecs.decode_recipe_no_json()))
+        use recipes <- decode.field(
+          "recipes",
+          decode.list(codecs.decode_recipe_no_json()),
+        )
         decode.success(recipes)
       }
       case decode.run(scraped_json, decoder) {
@@ -162,7 +165,9 @@ pub fn upload_update(
         })
         Ok([]) -> #(model, {
           use dispatch <- effect.from
-          dispatch(ParseRecipeResponseReceived(Error(Other("No recipes found"))))
+          dispatch(
+            ParseRecipeResponseReceived(Error(Other("No recipes found"))),
+          )
         })
         Error(errors) -> {
           echo errors

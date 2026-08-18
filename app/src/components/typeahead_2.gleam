@@ -396,7 +396,9 @@ pub fn decode_stringed_bool(
   })
 }
 
-pub fn decode_stringed_int(d: Dynamic) -> Result(Int, List(decode.DecodeError)) {
+pub fn decode_stringed_int(
+  d: Dynamic,
+) -> Result(Int, List(decode.DecodeError)) {
   decode.run(d, decode.string)
   |> result.map(int.parse)
   |> result.try(
