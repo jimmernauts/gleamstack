@@ -68,6 +68,10 @@ export async function getAvailableTagOptions(
 export function buildTagInstructions(options: AllowedTagOptions): string {
   return [
     "Metadata tags: suggest at most one value for each of Cuisine, Style, and Label.",
+    "Only assign a tag when the recipe provides clear, direct evidence for it.",
+    "If uncertain, leave the tag blank; an empty tag result is better than a weak guess.",
+    "Cuisine and Style must be clearly supported by the title, ingredients, or method.",
+    "Label is especially subjective: assign it only when the recipe itself makes the use case unmistakable, never based on how someone might personally use it.",
     "Use only an exact value from the existing options below. Never invent, paraphrase, or normalize a value.",
     ...TAG_NAMES.map((name) =>
       `- ${name}: ${options[name].length > 0 ? options[name].join(", ") : "(no existing values; return no tag)"}`,

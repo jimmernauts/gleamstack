@@ -27,6 +27,7 @@ type RecipeEntity = {
 
 type BackfillRecord = {
     version: 1;
+    prompt_version: number;
     kind: "tag_backfill";
     recipe_id: string;
     title: string;
@@ -45,6 +46,8 @@ type Options = {
     offset: number;
     limit: number;
     concurrency: number;
+    delayMs: number;
+    maxRetries: number;
     report: string;
     write: boolean;
 };
@@ -56,9 +59,65 @@ const DEFAULT_REPORT = resolve(
 );
 const TAG_NAMES: TagName[] = ["Cuisine", "Style", "Label"];
 const PAGE_SIZE = 100;
+const PROMPT_VERSION = 2;
+const DEFAULT_REQUEST_DELAY_MS = 13_000;
+const DEFAULT_MAX_RETRIES = 4;
+const MAX_RETRY_DELAY_MS = 5 * 60_000;
 
 function formatError(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
+}
+
+function serializedError(error: unknown): string {
+    const formatted = formatError(error);
+    try {
+        return `${formatted} ${JSON.stringify(error)}`;
+    } catch {
+        return formatted;
+    }
+}
+
+export function isRateLimitError(error: unknown): boolean {
+    return /\b429\b|RESOURCE_EXHAUSTED|rate.?limit|quota exceeded/i.test(
+        serializedError(error),
+    );
+}
+
+export function retryDelayMs(error: unknown, attempt: number): number {
+    const match = serializedError(error).match(
+        /retryDelay["']?\s*[:=]\s*["']?([\d.]+)\s*s/i,
+    );
+    if (match) {
+        return Math.min(Math.ceil(Number(match[1]) * 1_000), MAX_RETRY_DELAY_MS);
+    }
+    return Math.min(5_000 * 2 ** attempt, MAX_RETRY_DELAY_MS);
+}
+
+function sleep(milliseconds: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+class RequestLimiter {
+    private nextRequestAt = 0;
+    private queue = Promise.resolve();
+
+    constructor(private readonly minDelayMs: number) {}
+
+    async wait(): Promise<void> {
+        let release!: () => void;
+        const previous = this.queue;
+        this.queue = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        await previous;
+        try {
+            const delay = this.nextRequestAt - Date.now();
+            if (delay > 0) await sleep(delay);
+            this.nextRequestAt = Date.now() + this.minDelayMs;
+        } finally {
+            release();
+        }
+    }
 }
 
 function parseJsonValue(value: unknown): unknown {
@@ -176,25 +235,43 @@ async function suggestTags(
     existing: Tags,
     missing: TagName[],
     options: AllowedTagOptions,
-): Promise<Tags> {
+    limiter: RequestLimiter,
+    maxRetries: number,
+ ): Promise<Tags> {
     const prompt = [
         "Suggest metadata tags for this existing recipe.",
         "Preserve every existing tag exactly and return suggestions only for the missing categories.",
+        "Be conservative: if a category is not clearly supported by the recipe, leave it blank. An empty result is better than a guess.",
+        "Label is especially subjective; only assign it when the recipe itself makes that use unmistakable, not based on personal preference or a possible use case.",
         "Use only exact values from the existing options. Never invent, paraphrase, or normalize a value.",
         `Missing categories: ${missing.join(", ")}`,
         buildTagInstructions(options),
         recipeText(recipe, existing, missing),
     ].join("\n\n");
-    const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-            responseMimeType: "application/json",
-            responseSchema: tagSuggestionsSchema,
-        },
-    });
-    if (!response.text) throw new Error("No tag response received");
+    let response: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+        await limiter.wait();
+        try {
+            response = await ai.models.generateContent({
+                model: "gemini-3-flash-preview",
+                contents: prompt,
+                config: {
+                    thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+                    responseMimeType: "application/json",
+                    responseSchema: tagSuggestionsSchema,
+                },
+            });
+            break;
+        } catch (error) {
+            if (!isRateLimitError(error) || attempt === maxRetries) throw error;
+            const delay = retryDelayMs(error, attempt);
+            console.warn(
+                `[rate-limit] ${recipe.id}: retry ${attempt + 1}/${maxRetries} in ${Math.ceil(delay / 1_000)}s`,
+            );
+            await sleep(delay);
+        }
+    }
+    if (!response?.text) throw new Error("No tag response received");
     const normalized = normalizeTags(JSON.parse(response.text), options);
     const allowedMissing = new Set(missing);
     return Object.fromEntries(
@@ -270,9 +347,10 @@ async function processRecipe(
     tagOptions: AllowedTagOptions,
     ai: GoogleGenAI,
     db: AdminDb,
+    limiter: RequestLimiter,
     previous: BackfillRecord | undefined,
     writer: ReportWriter,
-): Promise<void> {
+ ): Promise<void> {
     if (previous?.status === "written" || previous?.status === "skipped") {
         console.log(`[skip] ${recipe.id}: already ${previous.status}`);
         return;
@@ -282,6 +360,7 @@ async function processRecipe(
     const missing = missingCategories(existingTags);
     const base: BackfillRecord = {
         version: 1,
+        prompt_version: PROMPT_VERSION,
         kind: "tag_backfill",
         recipe_id: recipe.id,
         title: recipe.title ?? "",
@@ -300,9 +379,20 @@ async function processRecipe(
     }
 
     try {
-        const suggested = previous?.status === "planned"
-            ? previous.suggested_tags
-            : await suggestTags(ai, recipe, existingTags, missing, tagOptions);
+        const previousSuggestions =
+            previous?.prompt_version === PROMPT_VERSION && previous.status === "planned"
+                ? previous.suggested_tags
+                : undefined;
+        const suggested = previousSuggestions ??
+            await suggestTags(
+                ai,
+                recipe,
+                existingTags,
+                missing,
+                tagOptions,
+                limiter,
+                options.maxRetries,
+            );
         const merged = mergeTags(existingTags, suggested);
         const record: BackfillRecord = {
             ...base,
@@ -332,6 +422,8 @@ function parseOptions(argv: string[]): Options {
         offset: 0,
         limit: 100_000,
         concurrency: 1,
+        delayMs: DEFAULT_REQUEST_DELAY_MS,
+        maxRetries: DEFAULT_MAX_RETRIES,
         report: DEFAULT_REPORT,
         write: false,
     };
@@ -348,6 +440,8 @@ Options:
   --offset N           Zero-based recipe offset (default: 0)
   --limit N            Number of recipes (default: all)
   --concurrency N      Gemini concurrency (default: 1)
+  --delay-ms N         Minimum delay between requests (default: 13000)
+  --max-retries N      Rate-limit retries per recipe (default: 4)
   --report PATH        JSONL report path
   --write              Update only the tags field`);
                 process.exit(0);
@@ -362,6 +456,12 @@ Options:
                 break;
             case "--concurrency":
                 options.concurrency = parseIntOption(argv, ++index, argument, 1);
+                break;
+            case "--delay-ms":
+                options.delayMs = parseIntOption(argv, ++index, argument, 0);
+                break;
+            case "--max-retries":
+                options.maxRetries = parseIntOption(argv, ++index, argument, 0);
                 break;
             case "--report":
                 options.report = resolve(requireValue(argv, ++index, argument));
@@ -428,6 +528,7 @@ async function main(): Promise<void> {
     const previous = await loadReport(options.report);
     await mkdir(dirname(options.report), { recursive: true });
     const writer = new ReportWriter(options.report);
+    const requestLimiter = new RequestLimiter(options.delayMs);
 
     console.log(
         JSON.stringify({
@@ -438,13 +539,24 @@ async function main(): Promise<void> {
             offset: options.offset,
             limit: options.limit,
             write: options.write,
+            request_delay_ms: options.delayMs,
+            max_retries: options.maxRetries,
             report: options.report,
             tag_options: tagOptions,
         }),
     );
 
     await mapWithConcurrency(recipes, options.concurrency, (recipe) =>
-        processRecipe(recipe, options, tagOptions, ai, db, previous.get(recipe.id), writer),
+        processRecipe(
+            recipe,
+            options,
+            tagOptions,
+            ai,
+            db,
+            requestLimiter,
+            previous.get(recipe.id),
+            writer,
+        ),
     );
     await writer.flush();
     console.log(JSON.stringify({ event: "tag_backfill_finished", selected: recipes.length }));

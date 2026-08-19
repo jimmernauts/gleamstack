@@ -163,6 +163,9 @@ bun worker/scripts/tag_existing_recipes.ts \
 ```
 
 Only the `tags` field is updated. Existing tags are preserved, and suggestions are discarded if they are not exact values from the current `tag_options`.
+The prompt is intentionally conservative and leaves uncertain tags blank, especially `Label`. Requests are spaced by 13 seconds by default for the Gemini free-tier limit; 429 responses use Gemini's requested retry delay and exponential fallback retries. Use `--delay-ms` and `--max-retries` only when appropriate for the account's quota.
+
+The prompt version invalidates old planned suggestions. Use a new report path when regenerating an earlier over-eager dry run. Already-written tags are treated as existing and are not removed automatically.
 ### Testing
 
 Run the Gleam test suite:

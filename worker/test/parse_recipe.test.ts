@@ -32,6 +32,8 @@ describe("parse_recipe", () => {
         expect(instructions).toContain("Style: Salad");
         expect(instructions).toContain("Label: Light");
         expect(instructions).toContain("Use only an exact value");
+        expect(instructions).toContain("leave the tag blank");
+        expect(instructions).toContain("Label is especially subjective");
     });
 
     it("filters metadata to exact existing values and emits frontend tag objects", () => {

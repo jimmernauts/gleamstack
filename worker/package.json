@@ -3,7 +3,7 @@
     "version": "0.0.1",
     "type": "module",
     "scripts": {
-        "test:unit": "bun test test/parse_recipe.test.ts test/scrape_url.test.ts test/import_favourites.test.ts",
+        "test:unit": "bun test test/parse_recipe.test.ts test/scrape_url.test.ts test/import_favourites.test.ts test/tag_existing_recipes.test.ts",
         "test:integration": "bun run test:integration:uat",
         "test:integration:uat": "bun --env-file=.dev.vars test test/integration/bookmark_integration.test.ts test/integration/parse_recipe.integration.test.ts"
     },
