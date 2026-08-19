@@ -141,6 +141,28 @@ bun --env-file=/secure/mealstack-production.env \
 ```
 
 Title/slug-only groups are reported but skipped by default; `--include-low-confidence` is required to delete them.
+### Existing recipe tag backfill
+
+`scripts/tag_existing_recipes.ts` suggests missing Cuisine, Style, and Label tags for existing recipes. It preserves current tags and is dry-run by default. Export the production `INSTANT_ADMIN_TOKEN` before running; no token is stored in the command or repository.
+
+Generate a reviewable report for all recipes:
+
+```bash
+bun worker/scripts/tag_existing_recipes.ts \
+  --app-id eeaf3b82-5b5d-40c4-a29a-b68988377c3c \
+  --report plans/favourites_tag_backfill.jsonl
+```
+
+After reviewing the JSONL, apply the recorded suggestions without re-running Gemini:
+
+```bash
+bun worker/scripts/tag_existing_recipes.ts \
+  --app-id eeaf3b82-5b5d-40c4-a29a-b68988377c3c \
+  --report plans/favourites_tag_backfill.jsonl \
+  --write
+```
+
+Only the `tags` field is updated. Existing tags are preserved, and suggestions are discarded if they are not exact values from the current `tag_options`.
 ### Testing
 
 Run the Gleam test suite:

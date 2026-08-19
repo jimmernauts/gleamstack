@@ -38,7 +38,7 @@ function parseTagValues(value: unknown): string[] {
     : [];
 }
 
-async function getAvailableTagOptions(
+export async function getAvailableTagOptions(
   log: (msg: string) => void,
  ): Promise<AllowedTagOptions> {
   log("Retrieving existing tag options from Instant DB...");
@@ -79,10 +79,18 @@ export function normalizeTags(
   value: unknown,
   options: AllowedTagOptions,
  ): Record<string, { name: TagName; value: string }> {
-  const candidates = Array.isArray(value)
-    ? value
-    : value && typeof value === "object"
-      ? Object.values(value)
+  const parsedValue = (() => {
+    if (typeof value !== "string") return value;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  })();
+  const candidates = Array.isArray(parsedValue)
+    ? parsedValue
+    : parsedValue && typeof parsedValue === "object"
+      ? Object.values(parsedValue)
       : [];
   const tags: Record<string, { name: TagName; value: string }> = {};
   const seenNames = new Set<TagName>();
@@ -115,7 +123,7 @@ function normalizeParsedRecipe(
   return { ...recipe, tags: normalizeTags(recipe.tags, options) };
 }
 
-async function getGeminiClient(
+export async function getGeminiClient(
   log: (msg: string) => void,
 ): Promise<GoogleGenAI> {
   log("Retrieving settings from Instant DB...");
@@ -295,6 +303,19 @@ export async function do_parse_recipe_image(
   }
 }
 
+export const tagSuggestionsSchema = {
+  type: "ARRAY",
+  description: "At most one tag for each category, using only existing options",
+  items: {
+    type: "OBJECT",
+    properties: {
+      name: { type: "STRING" },
+      value: { type: "STRING" },
+    },
+    required: ["name", "value"],
+  },
+};
+
 export const recipeSchema = {
   description: "Recipe data extraction schema",
   type: "OBJECT",
@@ -334,18 +355,7 @@ export const recipeSchema = {
         required: ["step_text"],
       },
     },
-    tags: {
-      type: "ARRAY",
-      description: "At most one tag for each category, using only existing options",
-      items: {
-        type: "OBJECT",
-        properties: {
-          name: { type: "STRING" },
-          value: { type: "STRING" },
-        },
-        required: ["name", "value"],
-      },
-    },
+    tags: tagSuggestionsSchema,
   },
   required: [
     "title",

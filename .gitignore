@@ -24,3 +24,4 @@ fly_pg
 .DS_STORE
 /plans/favourites_import_*.jsonl
 /plans/favourites_duplicate_report*.json
+/plans/favourites_tag_backfill*.jsonl
