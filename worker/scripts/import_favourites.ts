@@ -234,6 +234,7 @@ export function scrapeRecipeToFrontendRecipe(
         serves: scrapeRecipe.serves,
         ...(scrapeRecipe.author ? { author: scrapeRecipe.author } : {}),
         source: scrapeRecipe.source || sourceUrl,
+        ...(scrapeRecipe.tags ? { tags: scrapeRecipe.tags } : {}),
         ingredients: JSON.stringify(ingredients),
         method_steps: JSON.stringify(methodSteps),
     };

@@ -38,6 +38,7 @@ Parses a unstructured recipe text into a structured JSON format.
   ```
 - **Response:** Structured recipe JSON.
 
+The parser response includes a `tags` object. It can contain at most one `Cuisine`, `Style`, and `Label` entry, and each value is filtered against the existing `tag_options` values in InstantDB.
 ### `POST /api/parse_recipe_image`
 
 Parses a recipe from an image (base64 encoded or publicly accessible URL, depending on implementation details not fully exposed here but general usage implies image data).

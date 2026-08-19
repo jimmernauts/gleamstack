@@ -207,6 +207,7 @@ function normalizeAiRecipes(value: unknown, sourceUrl: string): ScrapeRecipe[] {
         serves: numberValue(object.serves),
         author: stringValue(object.author),
         source: stringValue(object.source) ?? sourceUrl,
+        tags: normalizeAiTags(object.tags),
         ingredients: toArrayValue(object.ingredients),
         method_steps: normalizeMethodSteps(object.method_steps),
       } satisfies ScrapeRecipe,
@@ -252,6 +253,12 @@ function toArrayValue(value: unknown): unknown[] {
   } catch {
     return [value];
   }
+}
+
+function normalizeAiTags(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "string") return value;
+  return JSON.stringify(value);
 }
 
 function normalizeMethodSteps(value: unknown): { step_text: string }[] {

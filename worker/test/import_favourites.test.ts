@@ -49,6 +49,9 @@ describe("favourites importer", () => {
             prep_time: 10,
             serves: 4,
             source: "https://example.com/recipe",
+            tags: JSON.stringify({
+                "0": { name: "Cuisine", value: "Italian" },
+            }),
             ingredients: [
                 "1 cup flour",
                 { name: "Egg", quantity: "2", units: "", isMain: true },
@@ -80,6 +83,10 @@ describe("favourites importer", () => {
         expect(JSON.parse(recipe.method_steps ?? "{}")).toEqual({
             "0": { step_text: "Mix everything" },
         });
+        expect(JSON.parse(recipe.tags ?? "{}")).toEqual({
+            "0": { name: "Cuisine", value: "Italian" },
+        });
+
     });
 
     it("derives a stable entity ID for resume-safe upserts", () => {
