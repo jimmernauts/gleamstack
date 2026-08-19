@@ -83,12 +83,26 @@ export function isRateLimitError(error: unknown): boolean {
     );
 }
 
+export function isDailyQuotaExceeded(error: unknown): boolean {
+    return /GenerateRequestsPerDay|RequestsPerDay|PerDayPerProject|daily (?:quota|limit)/i.test(
+        serializedError(error),
+    );
+}
+
+class DailyQuotaExceededError extends Error {
+    constructor(public readonly cause: unknown) {
+        super(`Gemini daily quota exhausted: ${formatError(cause)}`);
+        this.name = "DailyQuotaExceededError";
+    }
+}
+
 export function retryDelayMs(error: unknown, attempt: number): number {
     const match = serializedError(error).match(
         /retryDelay["']?\s*[:=]\s*["']?([\d.]+)\s*s/i,
     );
-    if (match) {
-        return Math.min(Math.ceil(Number(match[1]) * 1_000), MAX_RETRY_DELAY_MS);
+    const requestedDelay = match ? Math.ceil(Number(match[1]) * 1_000) : 0;
+    if (requestedDelay > 0) {
+        return Math.min(requestedDelay, MAX_RETRY_DELAY_MS);
     }
     return Math.min(5_000 * 2 ** attempt, MAX_RETRY_DELAY_MS);
 }
@@ -237,7 +251,7 @@ async function suggestTags(
     options: AllowedTagOptions,
     limiter: RequestLimiter,
     maxRetries: number,
- ): Promise<Tags> {
+): Promise<Tags> {
     const prompt = [
         "Suggest metadata tags for this existing recipe.",
         "Preserve every existing tag exactly and return suggestions only for the missing categories.",
@@ -263,6 +277,9 @@ async function suggestTags(
             });
             break;
         } catch (error) {
+            if (isDailyQuotaExceeded(error)) {
+                throw new DailyQuotaExceededError(error);
+            }
             if (!isRateLimitError(error) || attempt === maxRetries) throw error;
             const delay = retryDelayMs(error, attempt);
             console.warn(
@@ -413,6 +430,10 @@ async function processRecipe(
     } catch (error) {
         const record: BackfillRecord = { ...base, status: "failure", error: formatError(error) };
         await writer.append(record);
+        if (error instanceof DailyQuotaExceededError) {
+            console.error(`[quota-exhausted] ${recipe.id}: stopping the batch`);
+            throw error;
+        }
         console.error(`[failure] ${recipe.id}: ${record.error}`);
     }
 }
@@ -501,11 +522,17 @@ async function mapWithConcurrency<T>(
     callback: (value: T) => Promise<void>,
 ): Promise<void> {
     let next = 0;
+    let stopped = false;
     const worker = async () => {
-        while (true) {
+        while (!stopped) {
             const index = next++;
             if (index >= values.length) return;
-            await callback(values[index]);
+            try {
+                await callback(values[index]);
+            } catch (error) {
+                stopped = true;
+                throw error;
+            }
         }
     };
     await Promise.all(
@@ -546,19 +573,22 @@ async function main(): Promise<void> {
         }),
     );
 
-    await mapWithConcurrency(recipes, options.concurrency, (recipe) =>
-        processRecipe(
-            recipe,
-            options,
-            tagOptions,
-            ai,
-            db,
-            requestLimiter,
-            previous.get(recipe.id),
-            writer,
-        ),
-    );
-    await writer.flush();
+    try {
+        await mapWithConcurrency(recipes, options.concurrency, (recipe) =>
+            processRecipe(
+                recipe,
+                options,
+                tagOptions,
+                ai,
+                db,
+                requestLimiter,
+                previous.get(recipe.id),
+                writer,
+            ),
+        );
+    } finally {
+        await writer.flush();
+    }
     console.log(JSON.stringify({ event: "tag_backfill_finished", selected: recipes.length }));
 }
 
