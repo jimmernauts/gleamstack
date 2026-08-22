@@ -1,0 +1,95 @@
+{
+  "topic": "Mealstack offline-first InstantDB replacement landscape",
+  "brief": "Produce a decision-oriented, evidence-led assessment of replacements for Mealstack's browser-based InstantDB use: a small Gleam-to-JavaScript PWA with simple flat recipe and planning entities, full durable local data, offline reads and writes, cross-device convergence including deletes and concurrent changes, and user-controlled cloud backup/bootstrap. Coverage should begin with InstantDB's shutdown and migration materials, distinguish local-first systems from cloud-cache systems and backup object storage from a sync coordinator, assess browser/iOS persistence, cloud integration, operations/security/licensing/continuity, and reduce the broad product landscape to 4–6 distinct viable architectures. Facts must be cited to current primary sources and clearly separated from inference, with explicit caveats for multi-user sharing and concurrent editing.",
+  "recencyFilter": "year",
+  "cycles": [
+    {
+      "id": 1,
+      "purpose": "Establish the migration baseline: InstantDB shutdown announcement, any official migration/self-hosting/export guidance, and implications for Mealstack's current browser core plus worker/admin usage.",
+      "queries": [
+        "site:instantdb.com/essays instant team joins OpenAI shutdown migration self hosting 2026",
+        "site:instantdb.com InstantDB migration self-host export restore docs 2025",
+        "instantdb github self-hosting migration shutdown OpenAI 2026",
+        "@instantdb/core @instantdb/admin schema export migration documentation 2025"
+      ],
+      "outputFile": "summaries/instantdb-transition-baseline.md"
+    },
+    {
+      "id": 2,
+      "purpose": "Evaluate IndexedDB-first and document-database alternatives: Dexie with bespoke sync or Dexie Cloud, PouchDB+CouchDB, RxDB, and Fireproof, focusing on local authority, browser persistence, replication/conflict semantics, self-hosting, and object-storage backup fit.",
+      "queries": [
+        "Dexie Cloud sync conflict resolution IndexedDB offline docs pricing license 2026",
+        "PouchDB CouchDB replication conflicts tombstones IndexedDB offline PWA 2026",
+        "RxDB replication IndexedDB OPFS storage sync GraphQL CouchDB license 2026",
+        "Fireproof database browser IndexedDB CRDT cloud sync S3 license GitHub 2026"
+      ],
+      "outputFile": "summaries/indexeddb-document-sync-options.md"
+    },
+    {
+      "id": 3,
+      "purpose": "Evaluate CRDT/local-first frameworks: Automerge Repo, Yjs, TinyBase mergeable/synchronization stores, Jazz/cojson, LiveStore, Evolu, and maintenance status of vlcn/cr-sqlite; identify where they require a custom relay/backend and their practical fit for flat records and Gleam FFI.",
+      "queries": [
+        "Automerge Repo browser IndexedDB sync server storage adapter CRDT docs 2026",
+        "Yjs IndexedDB provider offline persistence websocket sync deletion tombstone docs 2026",
+        "TinyBase mergeable store synchronizer IndexedDB cloud sync docs 2026",
+        "Jazz cojson LiveStore Evolu vlcn cr-sqlite browser sync offline GitHub 2026"
+      ],
+      "outputFile": "summaries/crdt-local-first-frameworks.md"
+    },
+    {
+      "id": 4,
+      "purpose": "Evaluate managed or server-coordinated sync products: Triplit, ElectricSQL/PGlite, PowerSync, Rocicorp Zero, and Replicache, including current availability, browser data authority, offline support, concurrent-write model, self-hosting/hosted boundaries, and continuity risk.",
+      "queries": [
+        "Triplit offline sync IndexedDB self host conflict resolution license 2026",
+        "ElectricSQL PGlite browser offline sync Postgres local first docs license 2026",
+        "PowerSync web IndexedDB offline sync self-host pricing conflict resolution 2026",
+        "Rocicorp Zero Replicache status pricing self host offline sync 2026"
+      ],
+      "outputFile": "summaries/coordinated-sync-products.md"
+    },
+    {
+      "id": 5,
+      "purpose": "Establish comparison baselines and test whether mainstream stacks meet the user-controlled storage requirement: Firestore and Supabase offline capabilities, persistence constraints, conflict behavior, exports, and vendor/cloud dependence.",
+      "queries": [
+        "Firebase Firestore web offline persistence IndexedDB Safari conflict resolution export 2026",
+        "Supabase offline first browser IndexedDB local persistence sync conflicts docs 2026",
+        "Firestore pricing export backup self hosted alternatives 2026",
+        "Supabase pricing database backups browser PWA offline 2026"
+      ],
+      "outputFile": "summaries/mainstream-offline-baselines.md"
+    },
+    {
+      "id": 6,
+      "purpose": "Research a deliberately small bespoke local database plus immutable operation-log/snapshot design, including LWW versus field merge versus CRDT/event logs, bootstrap, deletes/compaction, integrity, encryption, device identity, schema evolution, and safe sync retry/idempotency patterns.",
+      "queries": [
+        "offline first immutable operation log snapshot manifest tombstone compaction checksum browser IndexedDB 2026",
+        "local first sync protocol last write wins field level merge CRDT append only log design 2025",
+        "IndexedDB browser SQLite WASM OPFS durable local database PWA Safari iOS 2026",
+        "event sourcing object storage snapshots incremental logs restore corruption detection encryption 2026"
+      ],
+      "outputFile": "summaries/bespoke-local-oplog-architecture.md"
+    },
+    {
+      "id": 7,
+      "purpose": "Assess user-controlled cloud stores as backup/bootstrap and as possible sync substrates: Google Drive appDataFolder and OAuth/changes/revisions; S3/Tigris/R2 consistency, versioning, lifecycle, CORS and presigned access; distinguish native adapters from custom coordination and establish browser credential safety.",
+      "queries": [
+        "Google Drive API appDataFolder changes API revisions OAuth browser PWA offline sync 2026",
+        "Amazon S3 browser presigned URL versioning consistency lifecycle CORS object lock docs 2026",
+        "Cloudflare R2 S3 API presigned URL CORS versioning lifecycle docs 2026",
+        "Tigris object storage S3 browser presigned URL CORS versioning documentation 2026"
+      ],
+      "outputFile": "summaries/user-controlled-cloud-storage.md"
+    },
+    {
+      "id": 8,
+      "purpose": "Assess a bespoke Cloudflare Worker coordination architecture using Durable Objects and/or D1 with R2/Tigris snapshots, and independently verify web-platform durability/sync limitations affecting every shortlist option: storage persistence/eviction, IndexedDB/OPFS compatibility, Background Sync, and foreground fallback.",
+      "queries": [
+        "Cloudflare Durable Objects sync coordination WebSocket D1 R2 architecture docs 2026",
+        "Cloudflare Workers D1 R2 presigned URL browser sync Durable Objects pricing limits 2026",
+        "MDN navigator.storage.persist storage eviction IndexedDB OPFS Safari iOS background sync 2026",
+        "web platform Background Sync API browser compatibility PWA Safari 2026"
+      ],
+      "outputFile": "summaries/cloudflare-and-web-platform-constraints.md"
+    }
+  ]
+}

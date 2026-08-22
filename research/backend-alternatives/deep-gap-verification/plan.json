@@ -1,0 +1,95 @@
+{
+  "topic": "Mealstack local-first backend gap verification",
+  "brief": "Verify decision-grade, first-party current evidence as of 2026-08-22 for local-first backend finalists and deliberately small bespoke sync designs for a single-household Gleam browser PWA. Coverage must distinguish documented facts from inference, test licenses, operational continuity, browser/offline persistence, sync/conflict/delete semantics, backup and restore, Cloudflare/object-store or Google Drive feasibility, and iOS PWA constraints; it must support a 4–6 architecture shortlist, exclusions for every named option, risk register, contradictions, and falsifiable proofs of concept rather than a universal recommendation.",
+  "recencyFilter": "year",
+  "cycles": [
+    {
+      "id": 1,
+      "purpose": "Verify Triplit and Dexie Cloud/plain Dexie as integrated or minimally bespoke finalists: current releases, licenses and commercial boundaries, browser/full-data sync, authority/conflict/delete behavior, Cloudflare/auth/export, and continuity/pricing evidence.",
+      "queries": [
+        "Triplit official documentation self host AGPL browser IndexedDB Cloudflare auth conflict deletes export 2026",
+        "site:github.com/aspen-cloud/triplit releases license AGPL commit 2026",
+        "Dexie Cloud official pricing limits sync conflict delete authority export self hosted 2026",
+        "Dexie.js official license IndexedDB cloud sync full database local data 2026"
+      ],
+      "outputFile": "summaries/triplit-dexie-cloud.md"
+    },
+    {
+      "id": 2,
+      "purpose": "Verify RxDB, PouchDB/CouchDB, and PowerSync Web against the required offline/full-dataset model, free versus paid or hosted boundaries, persistence and replication semantics, Cloudflare feasibility, operational health, and backup/export.",
+      "queries": [
+        "RxDB official plugins license pricing IndexedDB replication conflict deleted documents Cloudflare 2026",
+        "site:github.com/pubkey/rxdb releases license premium plugins 2026",
+        "PouchDB CouchDB official documentation replication conflicts deleted compaction CORS authentication backup 2026",
+        "PowerSync web official docs IndexedDB offline self host license pricing backend upload 2026"
+      ],
+      "outputFile": "summaries/rxdb-pouchdb-powersync.md"
+    },
+    {
+      "id": 3,
+      "purpose": "Assess newer CRDT/event frameworks Jazz/cojson, LiveStore, Evolu, and Fireproof using primary production/stability statements, releases, licensing, browser persistence, relay/self-hosting/E2EE, export, and storage/deployment adapters—not popularity signals.",
+      "queries": [
+        "Jazz cojson official docs browser persistence sync server self host E2EE license production 2026",
+        "LiveStore official docs browser IndexedDB sync server license stability export 2026",
+        "Evolu official documentation local first browser sync self host license backup 2026",
+        "Fireproof official docs browser persistence sync cloud self host S3 license production 2026"
+      ],
+      "outputFile": "summaries/crdt-event-frameworks-a.md"
+    },
+    {
+      "id": 4,
+      "purpose": "Assess TinyBase, Automerge Repo, and vlcn/cr-sqlite for a browser CRUD PWA: persistence and transport adapters, E2EE/self-hosting/license, export/backup, current health and stability, and whether each is practical rather than merely technically possible.",
+      "queries": [
+        "TinyBase official docs persistence synchronizer cloud license IndexedDB 2026",
+        "Automerge Repo official docs browser IndexedDB network adapters self host E2EE export license 2026",
+        "site:github.com/automerge/automerge-repo releases 2026 browser storage adapters",
+        "vlcn cr-sqlite official docs web wasm sync browser license stability 2026"
+      ],
+      "outputFile": "summaries/crdt-event-frameworks-b.md"
+    },
+    {
+      "id": 5,
+      "purpose": "Resolve Replicache independently from Zero through current Rocicorp primary material: availability, supported status, licensing, pricing, local persistence, offline mutation behavior, and BYOB push/pull endpoints after Zero GA.",
+      "queries": [
+        "site:replicache.dev Replicache documentation BYOB push pull offline mutations IndexedDB 2026",
+        "site:rocicorp.dev Replicache Zero GA availability support licensing 2026",
+        "site:github.com/rocicorp/replicache releases license 2026",
+        "Replicache pricing licensing official 2026"
+      ],
+      "outputFile": "summaries/replicache-status.md"
+    },
+    {
+      "id": 6,
+      "purpose": "Establish whether a plain Dexie/IndexedDB transactional outbox plus immutable operations/snapshots on a Cloudflare Worker and R2 or Tigris can be correct and economical without a conventional database; verify object-store consistency, conditional-write, integrity, versioning/lifecycle, and request-cost evidence.",
+      "queries": [
+        "Cloudflare R2 official docs consistency conditional writes ETag checksums versioning lifecycle pricing operations 2026",
+        "Cloudflare Workers Durable Objects official docs transaction sequence coordination storage 2026",
+        "Tigris object storage official docs S3 consistency conditional writes ETag checksums versioning lifecycle pricing 2026",
+        "R2 versus Tigris object per operation packed segments request cost S3 API official 2026"
+      ],
+      "outputFile": "summaries/dexie-object-store-bespoke-sync.md"
+    },
+    {
+      "id": 7,
+      "purpose": "Test Google Drive as a deliberately low-frequency bespoke sync and backup transport: appDataFolder versus visible drive.file folders, GIS browser OAuth/token renewal constraints, Changes API/files/revisions/quotas, and immutable operation-file feasibility while separating platform sync semantics from application-managed merging.",
+      "queries": [
+        "Google Drive API official appDataFolder drive.file visible app folder changes API revisions quotas 2026",
+        "Google Identity Services web OAuth token model renewal user gesture browser 2026",
+        "Google Drive API official upload list quota changes feed page tokens file revisions 2026",
+        "Google Drive API appDataFolder backup sync application implemented merge tombstones 2026"
+      ],
+      "outputFile": "summaries/dexie-google-drive-bespoke-sync.md"
+    },
+    {
+      "id": 8,
+      "purpose": "Close browser and PWA constraints with primary WebKit/MDN/standards compatibility evidence: iOS installed-PWA IndexedDB/OPFS durability and eviction, persistent storage, background/service-worker limitations, cross-tab behavior, foreground recovery, and IndexedDB versus SQLite-Wasm/OPFS proportionality for this dataset.",
+      "queries": [
+        "WebKit official installed web apps iOS IndexedDB storage eviction OPFS service worker 2026",
+        "MDN navigator.storage.persist IndexedDB OPFS storage quotas eviction Background Sync periodic background sync 2026",
+        "Can I use Background Sync Periodic Background Sync iOS Safari 2026",
+        "SQLite Wasm OPFS official docs browser persistence WebKit iOS PWA 2026"
+      ],
+      "outputFile": "summaries/web-pwa-storage-risks.md"
+    }
+  ]
+}
