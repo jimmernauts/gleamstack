@@ -1,0 +1,1 @@
+Search attempts for cycle 5 failed at the required web_search stage. Auto/Exa returned HTTP 429 free-MCP rate-limit errors for all four queries. Gemini was unavailable because no API key or browser login was configured; Perplexity had no API key. No URLs were returned by a successful search, so no fetching was performed.
