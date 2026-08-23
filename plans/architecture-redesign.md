@@ -13,11 +13,15 @@ Build the replacement in two stages:
 
 This order keeps SQL and feature-parity work separate from distributed sync behaviour. It also avoids building a general query-subscription layer before remote changes make one useful.
 
+Keep the current free `workers.dev` deployment. Native Cloudflare Workers Access is now configured there, so the app can remain owner-only without buying a custom domain or adding an application authentication library.
+
 The migration will be one coordinated change while the production app is not being used. There will be no InstantDB/Turso dual-write period.
 
 ## Assumptions agreed during review
 
 - Gleamstack is a private, single-user application.
+- Native Cloudflare Workers Access is working on the existing `workers.dev` hostname; no purchased custom domain is required.
+- The deployment will remain within the Cloudflare Workers and Access free tiers and their normal limits.
 - Turso’s documented last-push-wins behaviour is acceptable for this use case.
 - The production app will not be used while the migration is in progress.
 - We will perform one complete migration rather than maintain two backends in parallel.
@@ -55,37 +59,37 @@ At the time of this review, the official package metadata reports a pre-release 
 
 A configured remote URL can bootstrap an empty local database from Turso Cloud. The official material reviewed does not clearly document converting an already-populated local-only browser database into a synced database. The spike must test that transition before the staged plan depends on it.
 
-### Schema migrations
+### Schema migrations with dbmate
 
-The official sources do **not** document a migration runner for `@tursodatabase/sync-wasm` or a browser API that discovers and applies SQL migration files.
+Use [dbmate](https://github.com/amacneil/dbmate/blob/main/README.md) as the canonical migration workflow. Its documented format is plain SQL in `[version]_[description].sql` files, divided by `-- migrate:up` and `-- migrate:down`. Migrations are atomic by default, and applied numeric versions are recorded in `schema_migrations`.
 
-Related Turso features do not fill that gap:
+dbmate directly supports ordinary filesystem SQLite through `sqlite:` and `sqlite3:` URLs. Its official documentation does not list Turso’s `turso://` or libSQL’s `libsql://` protocols, and it does not provide a browser/WASM entry point or OPFS access ([dbmate README](https://github.com/amacneil/dbmate/blob/main/README.md), [Turso authentication URLs](https://docs.turso.tech/sdk/authentication)). The plan should not claim dbmate itself runs inside the browser or connects directly to Turso Cloud.
 
-- Turso documents external migrations through tools such as Drizzle, but that is a separate tool-driven workflow ([Turso Drizzle guide](https://docs.turso.tech/sdk/ts/orm/drizzle)).
-- Multi-DB Schemas and their migration jobs concern parent and child cloud databases, are marked deprecated, and do not describe browser sync databases ([Multi-DB Schemas](https://docs.turso.tech/features/multi-db-schemas), [Platform API reference](https://docs.turso.tech/sdk/http/reference)).
-- Embedded Replicas are a different client model whose writes normally go to a remote primary ([Embedded Replicas](https://docs.turso.tech/features/embedded-replicas/introduction)).
-- Turso Cloud treats SQLite `PRAGMA user_version` as read-only and recommends a `_schema_version` table instead ([Cloud limitations](https://docs.turso.tech/cloud/limitations)).
+Use one set of dbmate files and version numbers for every database target:
 
-Gleamstack should therefore own a small migration runner. This is an application design choice, not a Turso-provided framework:
+1. Create migrations with `dbmate new` and review the up and down SQL.
+2. Run `dbmate up` or `dbmate migrate` against ordinary local SQLite files used by scripts and tests.
+3. In the browser, use a minimal compatibility adapter to read each pending `migrate:up` block, execute it through sync-wasm, and insert the same version into `schema_migrations` before repository queries begin.
+4. For Turso Cloud, use a host-side script with the official `turso db shell` or `.read` command to execute the same up SQL and record the same version ([Turso database shell](https://docs.turso.tech/cli/db/shell), [shell commands](https://docs.turso.tech/sql-reference/cli/shell-commands)).
+5. Compare local and cloud `schema_migrations` before enabling sync, and fail clearly on an unknown or newer version.
 
-1. Keep ordered, immutable SQL migration files in the repository.
-2. Track the applied migration ID, checksum, and timestamp in `_schema_version`.
-3. Run pending migrations in order before repository queries begin.
-4. Apply each migration in a transaction where SQLite permits it.
-5. Apply the same migration set to the Turso Cloud database before enabling sync against it.
-6. Fail startup clearly rather than opening a database with an unknown or newer schema.
+The small OPFS and Turso adapters remain application-owned because dbmate cannot execute in those environments. They implement dbmate compatibility rather than introduce a second migration format. Turso’s guidance to use a metadata table instead of read-only `PRAGMA user_version` is consistent with dbmate’s `schema_migrations` table ([Cloud limitations](https://docs.turso.tech/cloud/limitations)).
 
-Because production will be unused during one coordinated migration, Gleamstack does not need a long-lived mixed-schema rollout. The spike still needs to verify how the selected sync-wasm release handles DDL and an existing OPFS database before the production procedure is fixed.
+Because production will be unused during one coordinated migration, Gleamstack does not need a long-lived mixed-schema rollout. Schema rollout remains an explicit out-of-band step; the reviewed Turso sync documentation does not establish OPFS DDL as the cloud migration mechanism.
 
-### Cloudflare Access and browser credentials
+### Cloudflare Workers Access and browser credentials
 
-Cloudflare Access can protect a self-hosted application by public hostname and, where needed, by path. Access policies decide which identities may reach the application ([Self-hosted applications](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/), [Access policies](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/)). Protecting the Gleamstack hostname therefore gates both the SPA and its same-origin `/api/db-config` route.
+Cloudflare’s Workers-specific Access integration can protect a Worker’s `workers.dev` hostname directly and can apply to all traffic associated with that Worker ([Access for Workers](https://developers.cloudflare.com/workers/configuration/cloudflare-access/)). This is different from the generic self-hosted-application flow that begins with an active custom domain. The owner has confirmed that the `workers.dev` Access policy is working, so no domain purchase is part of this plan.
 
-The Worker should also validate the Access assertion supplied in `Cf-Access-Jwt-Assertion`. Cloudflare’s guidance requires validation of the token signature, issuer, and application audience using the Access certificate endpoint ([Validate Access tokens](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/)). This gives the configuration route an explicit origin-side identity check rather than relying only on routing assumptions.
+Keep Access configured for **all traffic** and allow only the owner identity. The gate runs before the Worker handles the request, covering the SPA, static assets, and `/api/db-config`; Gleamstack does not need a second login system or an application-owned Access-JWT verifier. If application code later needs the admitted identity for logging, use the validated Access information exposed to the Worker rather than reimplementing authentication.
 
-After successful validation, `/api/db-config` may return the Turso URL and a database token to the app. Runtime delivery prevents that token from being copied into the public Vite bundle or returned to an anonymous request. It does **not** make the token secret from the authenticated browser: the owner and any JavaScript running in that page can inspect it. Cloudflare Access protects who receives the credential; it does not turn a browser credential into a server-only secret.
+Cloudflare lists an Access free tier for teams under 50 users, which is sufficient for one owner. This is separate from the Workers Free runtime quotas; both remain subject to their published limits ([Access pricing](https://www.cloudflare.com/sase/products/access/), [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)). No `cloudflare-auth`, Tailflare, Basic Auth middleware, or Tailscale hosting layer is needed for the agreed deployment.
 
-This is acceptable for the agreed private, single-user design, provided the exact token scope and rotation procedure are recorded during the spike. A future multi-user application would need a different database and credential boundary.
+After Access admits the owner, `/api/db-config` may return the Turso URL and a database-scoped, expiring token to the app. Runtime delivery prevents that token from being copied into public Vite assets or returned to an unauthenticated request. It does **not** make the token secret from the authenticated browser: the owner and JavaScript running in the page can inspect it.
+
+For the first version, provision one database-scoped token, store it as a Worker secret, and return it only from the Access-gated endpoint. Do not place a broader Turso organisation token in the Worker or build an automatic token-minting service unless the spike demonstrates a need. sync-wasm accepts an asynchronous `authToken` provider, so the app can re-fetch runtime configuration after the stored token is rotated ([sync-wasm source](https://github.com/tursodatabase/turso/blob/main/bindings/javascript/sync/packages/wasm/promise-default.ts)).
+
+Use the narrowest token scope and a practical finite expiry compatible with browser sync, and document manual rotation and revocation ([Turso token controls](https://docs.turso.tech/sdk/authorization/tokens), [Token revocation](https://docs.turso.tech/api-reference/tokens/revoke)). This is acceptable for the private, single-user design. A future multi-user application would need a different database credential boundary.
 
 ## Proposed target architecture
 
@@ -111,28 +115,28 @@ There is no cloud connection, browser database token, push/pull loop, or general
 ### Stage 2 — cloud sync and protected configuration
 
 ```text
-Cloudflare Access
-        |
-        v
-SPA + /api/db-config
-        |
-        v
-Worker validates Access JWT
-        |
-        v
-browser receives DB config
+Workers Access
+on workers.dev
+      |
+      v
+SPA + static assets
++ /api/db-config
+      |
+      v
+browser receives
+scoped DB config
 
 Local OPFS database
-        |
-   push() / pull()
-        |
-        v
-    Turso Cloud
-        |
-pull() changed = true
-        |
-        v
- refresh active queries
+      |
+ push() / pull()
+      |
+      v
+  Turso Cloud
+      |
+pull() changed
+      |
+      v
+refresh active queries
 ```
 
 The existing Worker continues to own scraping and AI parsing, with the Gemini key stored as a Worker secret.
@@ -143,11 +147,12 @@ The existing Worker continues to own scraping and AI parsing, with the Gemini ke
 |---|---|
 | Interactive reads and writes | Browser-local Turso database from the first feature slice |
 | Local UI updates | The converted feature directly updates or re-queries its screen |
-| Schema changes | Gleamstack migration runner plus checked-in SQL and `_schema_version` |
+| Schema changes | Canonical dbmate SQL; dbmate CLI for filesystem SQLite; compatible adapters for OPFS and Turso Cloud |
 | Cross-device sync | Later sync coordinator in `app/src/db.ts` calling `push()` and `pull()` |
 | UI updates after remote pulls | Later refresh/invalidation helper, triggered when `pull()` returns `true` |
-| Owner access | Cloudflare Access policy plus JWT validation in the Worker |
-| Browser database configuration | Same-origin `/api/db-config`; visible to the authenticated browser |
+| Owner access | Native Workers Access on `workers.dev`, configured for all traffic and the owner identity |
+| Browser database configuration | Access-gated same-origin `/api/db-config`; scoped token visible to the owner’s browser |
+| Turso browser token | Database-scoped token stored as a Worker secret; finite expiry and documented manual rotation/revocation |
 | Gemini key | Cloudflare Worker secret; never copied into the browser database |
 | Scraping and AI parsing | Existing Cloudflare Worker endpoints |
 | Imports, cleanup, and backfills | Server-side Turso client or CLI |
@@ -185,9 +190,11 @@ pull() returns false
 
 The first implementation may refresh all active feature queries because the data set and number of screens are small. Table-level dependency tracking is unnecessary unless measurement later justifies it.
 
-### 4. Own ordered schema migrations
+### 4. Use dbmate as the migration source of truth
 
-Use `_schema_version`, checked-in SQL, and a small runner rather than assuming sync-wasm supplies migrations. Run migrations before feature queries in every local database. Before cloud sync is enabled, bring the Turso Cloud database to the identical schema and prove that local and cloud schema versions match.
+Keep ordered dbmate SQL files and the standard `schema_migrations` version table. Use dbmate itself for filesystem SQLite. Keep the browser and Turso adapters deliberately small: select pending dbmate up blocks, execute them transactionally where supported, and record the same numeric versions.
+
+Run migrations before feature queries in every local database. Before cloud sync is enabled, apply the identical dbmate up blocks to Turso Cloud out of band and prove that local and cloud version sets match.
 
 The initial schema should preserve current behaviour rather than combine the backend change with data-model redesign:
 
@@ -197,15 +204,15 @@ The initial schema should preserve current behaviour rather than combine the bac
 | `tag_options` | Stable ID, unique name, options as JSON text |
 | `plan_days` | Stable ID, unique date, lunch and dinner values |
 | `shopping_lists` | Stable ID, unique date, status, items, recipe links, and plan bounds |
-| `_schema_version` | Applied migration ID, checksum, and timestamp |
+| `schema_migrations` | dbmate-compatible applied numeric migration versions |
 
 The current `serverCreatedAt` ordering becomes an explicit `created_at` column. Unique date constraints make plan-day and shopping-list writes predictable.
 
-### 5. Use Cloudflare Access for owner-only delivery
+### 5. Use native Workers Access for owner-only delivery
 
-Protect the production hostname with Cloudflare Access. Have `/api/db-config` validate the Access JWT before returning the Turso URL and token. Do not put a privileged token in `VITE_` variables or built JavaScript.
+Keep Access enabled for all traffic on the existing `workers.dev` Worker and restrict the policy to the owner. This protects assets and API routes without a purchased domain or application authentication code.
 
-Describe this as protected runtime delivery, not secret client storage. The authenticated owner can inspect the token in browser developer tools, which is expected in this architecture.
+Have `/api/db-config` return the Turso URL and a database-scoped, expiring token stored as a Worker secret only after Access admission. Do not put the token in `VITE_` variables or built JavaScript, and do not store a broader organisation token in the Worker merely to mint short-lived credentials. The authenticated owner can inspect the runtime token in browser developer tools, which is expected in this architecture.
 
 ### 6. Move the Gemini key to the Worker
 
@@ -226,7 +233,7 @@ The production app will remain unused during the work. The migration procedure i
 1. Take and verify a complete InstantDB export.
 2. Stop making production changes.
 3. Build and test the Turso version against disposable local and cloud databases.
-4. Apply the checked-in migrations to the production Turso database.
+4. Apply the checked-in dbmate up migrations to the production Turso database through the verified host-side Turso CLI adapter.
 5. Import the verified export once.
 6. Deploy the Turso-backed app and run the acceptance checks.
 7. Archive the export, take the first Turso backup, and remove InstantDB credentials.
@@ -245,13 +252,13 @@ These are review milestones, not implementation tasks. Detailed tasks will be cr
 
 ### 1. Validate the selected Turso release
 
-**Work.** In a small deployed harness, pin `@tursodatabase/sync-wasm`; prove named OPFS persistence, migration startup, CRUD, reload, offline use, required headers, supported browsers, and one-tab behaviour. Separately prove cloud bootstrap, push/pull, conflict behaviour, Access protection, JWT validation, and the transition from populated local-only data to sync.
+**Work.** In a small deployed harness, pin `@tursodatabase/sync-wasm`; prove named OPFS persistence, dbmate-compatible migration startup, CRUD, reload, offline use, required headers, supported browsers, and one-tab behaviour. Separately verify the configured all-traffic Workers Access policy, cloud bootstrap, push/pull, conflict behaviour, runtime token delivery, and the transition from populated local-only data to sync.
 
 **Ready when.** The exact release and both local and sync paths are understood, and any unsupported transition has a documented fallback.
 
 ### 2. Establish migrations and repository foundations
 
-**Work.** Write the initial schema migration and `_schema_version` runner; add SQL query and write helpers behind `app/src/db.ts`; add representative fixtures and migration tests; write an idempotent InstantDB-export importer.
+**Work.** Add dbmate and write the initial migration; add the minimal dbmate-compatible OPFS and Turso adapters; add SQL query and write helpers behind `app/src/db.ts`; add representative fixtures and migration tests; write an idempotent InstantDB-export importer.
 
 **Ready when.** Clean, already-current, and older disposable databases all reach the expected schema, and fixture import counts match.
 
@@ -281,13 +288,13 @@ These are review milestones, not implementation tasks. Detailed tasks will be cr
 
 ### 7. Add cloud sync and remote refresh
 
-**Work.** Apply the same migrations to a development Turso database; add Access-protected runtime configuration and Worker JWT validation; connect the local database; add push, pull, retry, and sync status; add active-query refresh only when pull reports changes; test two profiles and reconnect behaviour.
+**Work.** Apply the same dbmate up migrations to a development Turso database; add runtime configuration behind the existing all-traffic Workers Access gate; connect the local database; add push, pull, retry, token refresh, and sync status; add active-query refresh only when pull reports changes; test two profiles and reconnect behaviour.
 
 **Ready when.** Local changes reach Turso Cloud, remote changes refresh active screens, and anonymous configuration requests are rejected.
 
 ### 8. Convert tools and rehearse the cutover
 
-**Work.** Port import, cleanup, and backfill scripts; remove remaining InstantDB package and CI references; rehearse the complete export, migration, import, deploy, comparison, browser, sync, Access, Worker, backup, and restore procedure.
+**Work.** Port import, cleanup, and backfill scripts; remove remaining InstantDB package and CI references; rehearse the complete export, dbmate migration, import, deploy, comparison, browser, sync, Access, Worker, backup, and restore procedure.
 
 **Ready when.** The rehearsal completes without unexplained differences or hidden InstantDB dependencies.
 
@@ -306,7 +313,7 @@ The spike is a short validation in the real app and deployment path, not a gener
 1. Pin the exact `@tursodatabase/sync-wasm` release and record it.
 2. Open a named local path such as `gleamstack-spike.db` without cloud configuration.
 3. Add the required COOP and COEP headers to Vite development and Cloudflare responses.
-4. Run two ordered migrations and confirm `_schema_version` on clean, current, and older local databases.
+4. Create two dbmate migrations, apply their up blocks through the OPFS adapter, and confirm `schema_migrations` on clean, current, and older local databases.
 5. Insert, list, edit, and delete rows through the proposed repository boundary.
 6. Reload the page and restart the browser; confirm rows remain in OPFS.
 7. Disable the network and confirm existing data can still be read and edited.
@@ -314,17 +321,18 @@ The spike is a short validation in the real app and deployment path, not a gener
 
 ### Sync and access checks
 
-1. Create a disposable Turso Cloud database, apply the same migration set, and create a database token.
-2. Protect the deployed spike and `/api/db-config` with Cloudflare Access.
-3. Validate the Access JWT in the Worker; confirm an anonymous request is rejected and an allowed owner request succeeds.
-4. Confirm no Turso token appears in built assets, then confirm the authenticated browser can inspect the runtime token as expected.
-5. Reopen the populated local-only database with remote configuration and prove its data can be synchronised. If the selected release does not support that transition safely, document and test a controlled local export/import fallback.
-6. Disable the network, edit locally, reconnect, call `push()`, and confirm the edit reaches Turso Cloud.
-7. Open a second browser profile, call `pull()`, and confirm the edit appears there.
-8. Confirm `pull()` returns `true` for applied changes and `false` when there is nothing new.
-9. Make conflicting edits in two profiles, push them in sequence, and record the last-push-wins result.
-10. Run the checks on every browser and device Gleamstack needs to support.
-11. Record startup time, package behaviour, token lifecycle, and any required Vite upgrade.
+1. Create a disposable Turso Cloud database, apply the same dbmate up blocks with the host-side Turso CLI adapter, confirm `schema_migrations`, and create a database-scoped, expiring token.
+2. Confirm Workers Access remains configured for all traffic on `workers.dev` and allows only the owner identity.
+3. Confirm unauthenticated requests for the SPA, a static asset, and `/api/db-config` are stopped by Access; confirm the admitted owner reaches each route.
+4. Confirm no Turso token appears in built assets or unauthenticated responses, then confirm the authenticated browser can inspect the runtime token as expected.
+5. Rotate the database-scoped Worker secret, re-fetch `/api/db-config` through the asynchronous token provider, and exercise expiry and revocation without rebuilding the frontend.
+6. Reopen the populated local-only database with remote configuration and prove its data can be synchronised. If the selected release does not support that transition safely, document and test a controlled local export/import fallback.
+7. Disable the network, edit locally, reconnect, call `push()`, and confirm the edit reaches Turso Cloud.
+8. Open a second browser profile, call `pull()`, and confirm the edit appears there.
+9. Confirm `pull()` returns `true` for applied changes and `false` when there is nothing new.
+10. Make conflicting edits in two profiles, push them in sequence, and record the last-push-wins result.
+11. Run the checks on every browser and device Gleamstack needs to support.
+12. Record startup time, package behaviour, token lifecycle, Free-plan limits, and any required Vite upgrade.
 
 ## Feature conversion order
 
@@ -345,7 +353,7 @@ Recipes exercise the repository, JSON fields, ordering, and writes. Planner and 
 | Area | Check |
 |---|---|
 | Export | Counts and hashes match the final InstantDB snapshot |
-| Schema | Clean, old, and current databases reach the expected `_schema_version`; local and cloud schemas match before sync |
+| Schema | dbmate handles filesystem SQLite; OPFS and Turso adapters apply the same up blocks; all targets report the same `schema_migrations` versions before sync |
 | Import | IDs, recipe ordering, optional fields, and JSON values are preserved |
 | Local persistence | Data remains after reload and browser restart |
 | Local feature parity | Every screen reads and writes correctly before cloud sync is enabled |
@@ -353,8 +361,8 @@ Recipes exercise the repository, JSON fields, ordering, and writes. Planner and 
 | Reconnect | Pending local changes push successfully after reconnecting |
 | Pull | A second profile receives cloud changes; a changed pull refreshes active screens and an empty pull does not |
 | Last-push-wins | The recorded two-profile conflict matches the accepted single-user behaviour |
-| Access | Anonymous SPA/configuration requests are rejected and the Worker validates an allowed Access JWT |
-| Browser token | No token is embedded in public assets; its visibility to the authenticated owner is documented |
+| Access | All-traffic Workers Access rejects unauthenticated SPA, asset, and configuration requests; the allowed owner reaches each route |
+| Browser token | No token is embedded in public assets or unauthenticated responses; owner visibility, expiry, refresh, and revocation are documented |
 | One-tab behaviour | The app handles or clearly explains a second active tab |
 | Worker | Scraping and AI parsing work with the Gemini key stored as a Worker secret |
 | Migration | All current journeys work with InstantDB removed and no dual-write period |
@@ -364,10 +372,11 @@ Recipes exercise the repository, JSON fields, ordering, and writes. Planner and 
 
 | Topic | Planned handling |
 |---|---|
-| Migration mechanism | App-owned ordered SQL plus `_schema_version`; do not assume a sync-wasm migration API |
+| Migration mechanism | Canonical dbmate files and `schema_migrations`; dbmate CLI for filesystem SQLite; minimal compatible adapters for OPFS and Turso Cloud |
 | Local UI updates | Direct feature update or re-query during local-only conversion |
 | Remote UI updates | Add a shared refresh helper only with cloud pull |
-| Browser token | Deliver after Access authentication and Worker JWT validation; do not embed it in Vite assets; acknowledge owner visibility |
+| Owner authentication | Existing all-traffic Workers Access policy on `workers.dev`; no custom domain or application login layer |
+| Browser token | Store one database-scoped token as a Worker secret; deliver after Access admission; use finite expiry and manual rotation; do not embed it in Vite assets or unauthenticated responses |
 | Explicit sync | Add later and centralise push, pull, retry, and status in `app/src/db.ts` |
 | Last-push-wins | Accept it for this single-user app and record the two-profile result |
 | Multiple tabs | Begin with one active tab unless the spike proves a supported alternative |
@@ -380,9 +389,8 @@ Recipes exercise the repository, JSON fields, ordering, and writes. Planner and 
 
 1. Is one active Gleamstack tab acceptable for the first Turso version?
 2. Which browsers and devices must the spike cover?
-3. Does approval include Cloudflare Access as the owner-access mechanism?
-4. Should the Gemini key become one server-owned Worker secret?
-5. How long should the archived InstantDB export be retained?
+3. Should the Gemini key become one server-owned Worker secret?
+4. How long should the archived InstantDB export be retained?
 
 ## Out of scope for this review draft
 
@@ -404,6 +412,10 @@ After approval, create tasks for the first authorised milestone rather than pre-
 
 ## Primary official references
 
+### dbmate
+
+- [dbmate README](https://github.com/amacneil/dbmate/blob/main/README.md)
+
 ### Turso and libSQL
 
 - [sync-wasm package source](https://github.com/tursodatabase/turso/tree/main/bindings/javascript/sync/packages/wasm)
@@ -411,14 +423,18 @@ After approval, create tasks for the first authorised milestone rather than pre-
 - [Sync usage](https://docs.turso.tech/sync/usage)
 - [Sync conflict resolution](https://docs.turso.tech/sync/conflict-resolution)
 - [Turso Cloud limitations](https://docs.turso.tech/cloud/limitations)
-- [Turso Drizzle guide](https://docs.turso.tech/sdk/ts/orm/drizzle)
-- [Multi-DB Schemas](https://docs.turso.tech/features/multi-db-schemas)
-- [Embedded Replicas](https://docs.turso.tech/features/embedded-replicas/introduction)
+- [Turso authentication URLs](https://docs.turso.tech/sdk/authentication)
+- [Turso database shell](https://docs.turso.tech/cli/db/shell)
+- [Turso shell commands](https://docs.turso.tech/sql-reference/cli/shell-commands)
+- [Turso token controls](https://docs.turso.tech/sdk/authorization/tokens)
+- [Turso token revocation](https://docs.turso.tech/api-reference/tokens/revoke)
 - [Migrate to Turso](https://docs.turso.tech/cloud/migrate-to-turso)
 - [SDK authorisation](https://docs.turso.tech/sdk/authorization)
 
-### Cloudflare Access
+### Cloudflare Workers Access
 
-- [Self-hosted Access applications](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/)
-- [Access policies](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/)
-- [Validate Access tokens](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/)
+- [Access for Workers](https://developers.cloudflare.com/workers/configuration/cloudflare-access/)
+- [One-click Access for Workers](https://developers.cloudflare.com/changelog/post/2025-10-03-one-click-access-for-workers/)
+- [Access pricing](https://www.cloudflare.com/sase/products/access/)
+- [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+- [workers.dev routing](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/)
