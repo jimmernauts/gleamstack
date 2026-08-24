@@ -44,6 +44,7 @@ export default defineConfig({
 					return "assets/[name]-[hash].js";
 				},
 			},
+			preserveEntrySignatures: "exports-only",
 		},
 	},
 });
