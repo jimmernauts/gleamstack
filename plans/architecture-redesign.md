@@ -8,10 +8,10 @@ Replace InstantDB with **Turso Cloud plus a browser-local Turso database running
 
 Build the replacement in two stages:
 
-1. Convert each feature as a complete **local-only vertical slice** backed by the browser database in OPFS. After a local write, that feature will directly update or re-query its current screen.
-2. After every feature works locally, add Turso Cloud bootstrap, explicit `push()` and `pull()`, sync status and retry, and a shared refresh mechanism for changes received by `pull()`.
+1. Convert each feature as a vertical slice against the browser-local Turso database in OPFS. After a local write, that feature directly updates or re-queries its current screen.
+2. Add explicit `push()` and `pull()`, sync status and retry, and a shared refresh for changes received by `pull()`.
 
-This order keeps SQL and feature-parity work separate from distributed sync behaviour. It also avoids building a general query-subscription layer before remote changes make one useful.
+The browser never runs schema migrations. It holds a replica bootstrapped from the already-migrated Turso Cloud database, and if its schema version does not match the version the build expects, it discards the local copy and re-bootstraps a fresh one. This keeps feature work separate from distributed-sync behaviour and avoids a general query-subscription layer before remote changes make one useful.
 
 Keep the current free `workers.dev` deployment. Native Cloudflare Workers Access is now configured there, so the app can remain owner-only without buying a custom domain or adding an application authentication library.
 
@@ -57,25 +57,27 @@ The current Turso repository and documentation establish the following:
 
 At the time of this review, the official package metadata reports a pre-release version and the package README does not consistently describe the same package. The implementation should pin and test the exact release used rather than rely on unversioned example behaviour.
 
-A configured remote URL can bootstrap an empty local database from Turso Cloud. The official material reviewed does not clearly document converting an already-populated local-only browser database into a synced database. The spike must test that transition before the staged plan depends on it.
+A configured remote URL bootstraps a local database from Turso Cloud, and a normal sync replicates the full database with remote changes arriving as physical pages ([Sync usage](https://docs.turso.tech/sync/usage)). The reviewed material does not clearly document converting an already-populated local-only database into a synced one in place. The plan avoids depending on that: on a schema change it discards the local copy and re-bootstraps from the cloud (below). A short test should still confirm fresh-bootstrap and reset behaviour.
 
 ### Schema migrations with dbmate
 
-Use [dbmate](https://github.com/amacneil/dbmate/blob/main/README.md) as the canonical migration workflow. Its documented format is plain SQL in `[version]_[description].sql` files, divided by `-- migrate:up` and `-- migrate:down`. Migrations are atomic by default, and applied numeric versions are recorded in `schema_migrations`.
+Use [dbmate](https://github.com/amacneil/dbmate/blob/main/README.md) to write and apply migrations. Its documented format is plain SQL in `[version]_[description].sql` files split by `-- migrate:up` and `-- migrate:down`, applied atomically, with applied versions recorded in a `schema_migrations` table. dbmate connects to ordinary filesystem SQLite through `sqlite:` URLs; its documentation lists no `turso://` or `libsql://` driver and no browser/OPFS entry point, so it does not run in the browser or connect directly to Turso Cloud ([dbmate README](https://github.com/amacneil/dbmate/blob/main/README.md), [Turso authentication URLs](https://docs.turso.tech/sdk/authentication)).
 
-dbmate directly supports ordinary filesystem SQLite through `sqlite:` and `sqlite3:` URLs. Its official documentation does not list Turso’s `turso://` or libSQL’s `libsql://` protocols, and it does not provide a browser/WASM entry point or OPFS access ([dbmate README](https://github.com/amacneil/dbmate/blob/main/README.md), [Turso authentication URLs](https://docs.turso.tech/sdk/authentication)). The plan should not claim dbmate itself runs inside the browser or connects directly to Turso Cloud.
+**The cloud owns the schema; the browser never runs migration DDL.** This is the simpler model the review proposed, and it is a good fit. The flow is:
 
-Use one set of dbmate files and version numbers for every database target:
+1. Author a migration and apply it to a development Turso database — dbmate against a local SQLite file for authoring and tests, then the same up SQL against the Turso database with the official `turso db shell` or `.read` command ([Turso database shell](https://docs.turso.tech/cli/db/shell), [shell commands](https://docs.turso.tech/sql-reference/cli/shell-commands)).
+2. Verify the change, then apply the same up SQL to the production Turso Cloud database.
+3. The frontend build carries an expected schema version. On startup the app compares it to the version recorded in the local database. If the local database is missing, older, or otherwise mismatched, the app discards the local OPFS database and re-bootstraps a fresh replica — schema and data — from Turso Cloud.
 
-1. Create migrations with `dbmate new` and review the up and down SQL.
-2. Run `dbmate up` or `dbmate migrate` against ordinary local SQLite files used by scripts and tests.
-3. In the browser, use a minimal compatibility adapter to read each pending `migrate:up` block, execute it through sync-wasm, and insert the same version into `schema_migrations` before repository queries begin.
-4. For Turso Cloud, use a host-side script with the official `turso db shell` or `.read` command to execute the same up SQL and record the same version ([Turso database shell](https://docs.turso.tech/cli/db/shell), [shell commands](https://docs.turso.tech/sql-reference/cli/shell-commands)).
-5. Compare local and cloud `schema_migrations` before enabling sync, and fail clearly on an unknown or newer version.
+On a schema change this discards any unsynced local edits. For a single-user app that is acceptable, and it removes the need for a browser-side migration engine.
 
-The small OPFS and Turso adapters remain application-owned because dbmate cannot execute in those environments. They implement dbmate compatibility rather than introduce a second migration format. Turso’s guidance to use a metadata table instead of read-only `PRAGMA user_version` is consistent with dbmate’s `schema_migrations` table ([Cloud limitations](https://docs.turso.tech/cloud/limitations)).
+This rests on documented behaviour:
 
-Because production will be unused during one coordinated migration, Gleamstack does not need a long-lived mixed-schema rollout. Schema rollout remains an explicit out-of-band step; the reviewed Turso sync documentation does not establish OPFS DDL as the cloud migration mechanism.
+- A normal sync bootstrap replicates the **full** cloud database, and remote changes arrive as physical pages, so a fresh local replica reflects the current cloud schema ([Sync usage](https://docs.turso.tech/sync/usage)).
+- The app reads the schema version from dbmate’s `schema_migrations` table, which lives in the database and syncs to the client like any other data. `PRAGMA user_version` is not used because it is read-only on Turso Cloud ([Cloud limitations](https://docs.turso.tech/cloud/limitations)).
+- No documented sync-wasm feature auto-detects an application schema mismatch or resets the local database, so the startup check and reset are **application code** — the piece the review correctly identified as needing to be written.
+
+Two details need a short test rather than assumption: that a fresh bootstrap against a migrated cloud database yields the expected schema locally, and the exact supported way to reset the local database (close the connection, then remove the OPFS entry with `removeEntry`) so a clean re-bootstrap occurs. The reviewed sync docs do not document merging incremental DDL into an already-initialised local database, which is why the plan resets and re-pulls instead of migrating in place.
 
 ### Cloudflare Workers Access and browser credentials
 
@@ -85,11 +87,14 @@ Keep Access configured for **all traffic** and allow only the owner identity. Th
 
 Cloudflare lists an Access free tier for teams under 50 users, which is sufficient for one owner. This is separate from the Workers Free runtime quotas; both remain subject to their published limits ([Access pricing](https://www.cloudflare.com/sase/products/access/), [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)). No `cloudflare-auth`, Tailflare, Basic Auth middleware, or Tailscale hosting layer is needed for the agreed deployment.
 
-After Access admits the owner, `/api/db-config` may return the Turso URL and a database-scoped, expiring token to the app. Runtime delivery prevents that token from being copied into public Vite assets or returned to an unauthenticated request. It does **not** make the token secret from the authenticated browser: the owner and JavaScript running in the page can inspect it.
+After Access admits the owner, `/api/db-config` returns the Turso URL and token to the page. It is worth being exact about what this does and does not achieve, because with Access covering the whole site the difference is smaller than it first looks:
 
-For the first version, provision one database-scoped token, store it as a Worker secret, and return it only from the Access-gated endpoint. Do not place a broader Turso organisation token in the Worker or build an automatic token-minting service unless the spike demonstrates a need. sync-wasm accepts an asynchronous `authToken` provider, so the app can re-fetch runtime configuration after the stored token is rotated ([sync-wasm source](https://github.com/tursodatabase/turso/blob/main/bindings/javascript/sync/packages/wasm/promise-default.ts)).
+- **Embedding at build time** (a `VITE_`-prefixed variable) writes the token as a literal string into the compiled JavaScript — the static files in `app/dist` that Vite builds and Cloudflare serves. The token then lives in the build output, deploy history, and any cache of those files, and changing it needs a rebuild and redeploy.
+- **Returning it from `/api/db-config`** keeps the token in a Worker secret and hands it to the page at load time. It is not in the build output, and it rotates by changing the secret without rebuilding the front end.
 
-Use the narrowest token scope and a practical finite expiry compatible with browser sync, and document manual rotation and revocation ([Turso token controls](https://docs.turso.tech/sdk/authorization/tokens), [Token revocation](https://docs.turso.tech/api-reference/tokens/revoke)). This is acceptable for the private, single-user design. A future multi-user application would need a different database credential boundary.
+Both end up **equally visible to the authenticated owner’s browser**: once the page holds the token, the owner and any script on the page can read it. Direct browser sync makes that unavoidable, so runtime delivery is not about hiding the token from the owner. Its real value is keeping the credential out of static build artifacts and allowing rotation without a rebuild. Because Access already gates every request, an unauthenticated visitor receives neither the bundle nor the API response, so the confidentiality gap between the two is small; the operational difference is the reason to prefer runtime delivery.
+
+For the first version, provision one database-scoped token, store it as a Worker secret, and return it only from the Access-gated endpoint. Do not put a broader Turso organisation token in the Worker or build an automatic token-minting service unless a need appears. sync-wasm accepts an asynchronous `authToken` provider, so the page can re-fetch configuration after the secret is rotated ([sync-wasm source](https://github.com/tursodatabase/turso/blob/main/bindings/javascript/sync/packages/wasm/promise-default.ts)). Use the narrowest scope and a finite expiry, and document rotation and revocation ([Turso token controls](https://docs.turso.tech/sdk/authorization/tokens), [Token revocation](https://docs.turso.tech/api-reference/tokens/revoke)). A future multi-user app would need a different credential boundary.
 
 ## Proposed target architecture
 
@@ -110,7 +115,7 @@ direct screen update
 or feature re-query
 ```
 
-There is no cloud connection, browser database token, push/pull loop, or general subscription registry in this stage.
+In this stage the browser bootstraps its replica once from a development Turso database and then works locally. The Access-gated `/api/db-config` delivery, the ongoing push/pull loop, and refresh-on-pull come in Stage 2.
 
 ### Stage 2 — cloud sync and protected configuration
 
@@ -147,7 +152,7 @@ The existing Worker continues to own scraping and AI parsing, with the Gemini ke
 |---|---|
 | Interactive reads and writes | Browser-local Turso database from the first feature slice |
 | Local UI updates | The converted feature directly updates or re-queries its screen |
-| Schema changes | Canonical dbmate SQL; dbmate CLI for filesystem SQLite; compatible adapters for OPFS and Turso Cloud |
+| Schema changes | dbmate applies SQL to dev and Turso Cloud; the browser re-bootstraps from the cloud on a version mismatch |
 | Cross-device sync | Later sync coordinator in `app/src/db.ts` calling `push()` and `pull()` |
 | UI updates after remote pulls | Later refresh/invalidation helper, triggered when `pull()` returns `true` |
 | Owner access | Native Workers Access on `workers.dev`, configured for all traffic and the owner identity |
@@ -190,11 +195,11 @@ pull() returns false
 
 The first implementation may refresh all active feature queries because the data set and number of screens are small. Table-level dependency tracking is unnecessary unless measurement later justifies it.
 
-### 4. Use dbmate as the migration source of truth
+### 4. Let the cloud own the schema; dbmate applies it
 
-Keep ordered dbmate SQL files and the standard `schema_migrations` version table. Use dbmate itself for filesystem SQLite. Keep the browser and Turso adapters deliberately small: select pending dbmate up blocks, execute them transactionally where supported, and record the same numeric versions.
+dbmate owns the migration SQL. Author and test each migration with dbmate against a local SQLite file, then apply the same up SQL to the development and production Turso databases with `turso db shell`. The browser never executes migration DDL.
 
-Run migrations before feature queries in every local database. Before cloud sync is enabled, apply the identical dbmate up blocks to Turso Cloud out of band and prove that local and cloud version sets match.
+Instead, the frontend build carries an expected schema version. On startup the app reads the version recorded in the local database and, if it is missing or does not match, discards the local OPFS database and re-bootstraps a fresh replica from the already-migrated Turso Cloud database. The cloud is the single source of truth for schema; the browser only ever receives a schema it did not build.
 
 The initial schema should preserve current behaviour rather than combine the backend change with data-model redesign:
 
@@ -204,7 +209,7 @@ The initial schema should preserve current behaviour rather than combine the bac
 | `tag_options` | Stable ID, unique name, options as JSON text |
 | `plan_days` | Stable ID, unique date, lunch and dinner values |
 | `shopping_lists` | Stable ID, unique date, status, items, recipe links, and plan bounds |
-| `schema_migrations` | dbmate-compatible applied numeric migration versions |
+| `schema_migrations` | dbmate’s applied-version table; syncs to the client, which compares it to the build’s expected version |
 
 The current `serverCreatedAt` ordering becomes an explicit `created_at` column. Unique date constraints make plan-day and shopping-list writes predictable.
 
@@ -250,23 +255,23 @@ These are review milestones, not implementation tasks. Detailed tasks will be cr
 
 **Ready when.** The export, validation report, and test restore are complete.
 
-### 1. Validate the selected Turso release
+### 1. Prove Turso works in the real deployment
 
-**Work.** In a small deployed harness, pin `@tursodatabase/sync-wasm`; prove named OPFS persistence, dbmate-compatible migration startup, CRUD, reload, offline use, required headers, supported browsers, and one-tab behaviour. Separately verify the configured all-traffic Workers Access policy, cloud bootstrap, push/pull, conflict behaviour, runtime token delivery, and the transition from populated local-only data to sync.
+**Work.** Add a pinned `@tursodatabase/sync-wasm` to a throwaway page deployed the way the real app is — on `workers.dev`, behind Access, with the COOP/COEP headers — and confirm the essentials listed under *What the spike must prove* below.
 
-**Ready when.** The exact release and both local and sync paths are understood, and any unsupported transition has a documented fallback.
+**Ready when.** The essentials work on your main browser, and anything that does not is written down with a fallback.
 
 ### 2. Establish migrations and repository foundations
 
-**Work.** Add dbmate and write the initial migration; add the minimal dbmate-compatible OPFS and Turso adapters; add SQL query and write helpers behind `app/src/db.ts`; add representative fixtures and migration tests; write an idempotent InstantDB-export importer.
+**Work.** Add dbmate and write the initial migration; apply it to the development Turso database with `turso db shell`; add the startup schema-version check that discards and re-bootstraps the local database on a mismatch; add SQL query and write helpers behind `app/src/db.ts`; add fixtures and tests; write an idempotent InstantDB-export importer.
 
-**Ready when.** Clean, already-current, and older disposable databases all reach the expected schema, and fixture import counts match.
+**Ready when.** A stale local database is detected and re-bootstrapped to the expected schema, and the exported fixture imports with matching counts.
 
 ### 3. Convert recipes locally
 
 **Work.** Convert recipe list, detail, save, and delete as one OPFS-only slice; preserve existing FFI shapes; directly re-query recipe screens after writes; add integration coverage.
 
-**Ready when.** Recipe journeys work after reload with no InstantDB and no cloud connection.
+**Ready when.** Recipe journeys work from the local replica after reload, with InstantDB removed.
 
 ### 4. Convert tags and planner locally
 
@@ -282,13 +287,13 @@ These are review milestones, not implementation tasks. Detailed tasks will be cr
 
 ### 6. Pass the local-only parity gate
 
-**Work.** Exercise every current user journey offline and after browser restart; finish local test fixtures; confirm migrations run before all queries; confirm there is still no sync-only query registry.
+**Work.** Exercise every current user journey offline and after browser restart; finish local test fixtures; confirm the schema-version check runs before any query; confirm there is still no sync-only query registry.
 
 **Ready when.** The app is functionally complete against local OPFS alone.
 
 ### 7. Add cloud sync and remote refresh
 
-**Work.** Apply the same dbmate up migrations to a development Turso database; add runtime configuration behind the existing all-traffic Workers Access gate; connect the local database; add push, pull, retry, token refresh, and sync status; add active-query refresh only when pull reports changes; test two profiles and reconnect behaviour.
+**Work.** Point the app at the Access-gated `/api/db-config` for its Turso URL and token; connect the local replica; add push, pull, retry, token refresh, and sync status; refresh active queries only when a pull reports changes; test two profiles and reconnect behaviour.
 
 **Ready when.** Local changes reach Turso Cloud, remote changes refresh active screens, and anonymous configuration requests are rejected.
 
@@ -304,35 +309,18 @@ These are review milestones, not implementation tasks. Detailed tasks will be cr
 
 **Ready when.** Production journeys and sync checks pass, recovery artifacts exist, and the repositories are clean.
 
-## Exact work for the Turso spike
+## What the spike must prove
 
-The spike is a short validation in the real app and deployment path, not a general research exercise.
+The spike is a throwaway page deployed like the real app, not a research exercise. Keep it short — it only needs to answer the questions the documentation leaves open:
 
-### Local database checks
+- A named OPFS database persists across reload and browser restart, with COOP/COEP set.
+- A fresh local database bootstraps its schema and data from a dbmate-migrated Turso Cloud database.
+- Discarding the local OPFS database triggers a clean re-bootstrap from the cloud.
+- Offline edits stay local, then `push()` sends them and `pull()` brings remote changes down (`true` when something changed, `false` when not).
+- The Turso token is delivered from `/api/db-config` behind Access, is absent from the built assets, and rotates by changing the Worker secret without a rebuild.
+- One deliberate two-profile conflicting edit shows the last-push-wins result.
 
-1. Pin the exact `@tursodatabase/sync-wasm` release and record it.
-2. Open a named local path such as `gleamstack-spike.db` without cloud configuration.
-3. Add the required COOP and COEP headers to Vite development and Cloudflare responses.
-4. Create two dbmate migrations, apply their up blocks through the OPFS adapter, and confirm `schema_migrations` on clean, current, and older local databases.
-5. Insert, list, edit, and delete rows through the proposed repository boundary.
-6. Reload the page and restart the browser; confirm rows remain in OPFS.
-7. Disable the network and confirm existing data can still be read and edited.
-8. Open a second tab and record the actual behaviour; decide whether to show a one-active-tab message.
-
-### Sync and access checks
-
-1. Create a disposable Turso Cloud database, apply the same dbmate up blocks with the host-side Turso CLI adapter, confirm `schema_migrations`, and create a database-scoped, expiring token.
-2. Confirm Workers Access remains configured for all traffic on `workers.dev` and allows only the owner identity.
-3. Confirm unauthenticated requests for the SPA, a static asset, and `/api/db-config` are stopped by Access; confirm the admitted owner reaches each route.
-4. Confirm no Turso token appears in built assets or unauthenticated responses, then confirm the authenticated browser can inspect the runtime token as expected.
-5. Rotate the database-scoped Worker secret, re-fetch `/api/db-config` through the asynchronous token provider, and exercise expiry and revocation without rebuilding the frontend.
-6. Reopen the populated local-only database with remote configuration and prove its data can be synchronised. If the selected release does not support that transition safely, document and test a controlled local export/import fallback.
-7. Disable the network, edit locally, reconnect, call `push()`, and confirm the edit reaches Turso Cloud.
-8. Open a second browser profile, call `pull()`, and confirm the edit appears there.
-9. Confirm `pull()` returns `true` for applied changes and `false` when there is nothing new.
-10. Make conflicting edits in two profiles, push them in sequence, and record the last-push-wins result.
-11. Run the checks on every browser and device Gleamstack needs to support.
-12. Record startup time, package behaviour, token lifecycle, Free-plan limits, and any required Vite upgrade.
+Record the pinned `sync-wasm` version, one-tab behaviour, and any required Vite change. Anything the spike cannot make work is written down with a fallback before wider conversion begins.
 
 ## Feature conversion order
 
@@ -353,7 +341,7 @@ Recipes exercise the repository, JSON fields, ordering, and writes. Planner and 
 | Area | Check |
 |---|---|
 | Export | Counts and hashes match the final InstantDB snapshot |
-| Schema | dbmate handles filesystem SQLite; OPFS and Turso adapters apply the same up blocks; all targets report the same `schema_migrations` versions before sync |
+| Schema | Migrations apply to dev and cloud via dbmate/`turso db shell`; a stale local database is detected and re-bootstrapped from the cloud; the browser runs no migration DDL |
 | Import | IDs, recipe ordering, optional fields, and JSON values are preserved |
 | Local persistence | Data remains after reload and browser restart |
 | Local feature parity | Every screen reads and writes correctly before cloud sync is enabled |
@@ -372,7 +360,7 @@ Recipes exercise the repository, JSON fields, ordering, and writes. Planner and 
 
 | Topic | Planned handling |
 |---|---|
-| Migration mechanism | Canonical dbmate files and `schema_migrations`; dbmate CLI for filesystem SQLite; minimal compatible adapters for OPFS and Turso Cloud |
+| Migration mechanism | dbmate for dev/cloud SQL; cloud owns the schema; the browser re-bootstraps from the cloud on a version mismatch and runs no DDL |
 | Local UI updates | Direct feature update or re-query during local-only conversion |
 | Remote UI updates | Add a shared refresh helper only with cloud pull |
 | Owner authentication | Existing all-traffic Workers Access policy on `workers.dev`; no custom domain or application login layer |
