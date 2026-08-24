@@ -1,0 +1,30 @@
+{
+  "exported_at": "2026-08-24T14:45:07.337Z",
+  "collection": "shopping_lists",
+  "count": 3,
+  "records": [
+    {
+      "linked_recipes": "[{\"recipe_slug\":\"cauliflower-cheese-risotto\"}]",
+      "date": 739598,
+      "id": "54583162-641b-4c09-898d-348d403d1ff6",
+      "status": "Completed",
+      "items": "[{\"ingredient\":{\"name\":\"\",\"quantity\":\"\",\"units\":\"\",\"ismain\":\"False\",\"category\":{\"name\":\"\"}},\"source_type\":\"manual\",\"checked\":false}]"
+    },
+    {
+      "date": 739625,
+      "id": "27a5e746-65d2-4f83-b169-50baabef9a92",
+      "items": "[]",
+      "linked_recipes": "[]",
+      "status": "Completed"
+    },
+    {
+      "linked_plan_end": 739629,
+      "id": "0d760a19-0a27-4f78-8d3c-5d78853e2423",
+      "date": 739627,
+      "status": "Active",
+      "linked_plan_start": 739621,
+      "linked_recipes": "[{\"recipe_name\":\"restes\"},{\"recipe_name\":\"veggie lasagne\"},{\"recipe_name\":\"quiche\"},{\"recipe_name\":\"boulettes\"},{\"recipe_name\":\"poisson, riz, broccoli\"},{\"recipe_name\":\"poke bowl\"},{\"recipe_name\":\"chez ML\"},{\"recipe_name\":\"soupe potiron cheesey toast\"},{\"recipe_name\":\"crevettes pastis linguine\"},{\"recipe_name\":\"boudins spaetzles courgettes\"},{\"recipe_name\":\"cordons bleus boucher\"},{\"recipe_name\":\"chilli con carne\"}]",
+      "items": "[{\"ingredient\":{\"name\":\"parsley\",\"quantity\":\"\",\"units\":\"\",\"ismain\":\"False\",\"category\":{\"name\":\"\"}},\"source_type\":\"manual\",\"checked\":false}]"
+    }
+  ]
+}

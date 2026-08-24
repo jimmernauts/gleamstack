@@ -1,0 +1,22 @@
+{
+  "exported_at": "2026-08-24T14:45:07.337Z",
+  "collection": "tag_options",
+  "count": 3,
+  "records": [
+    {
+      "options": "[\"Mediterranean\",\"French\",\"Italian\",\"Chinese\",\"Thai\",\"Australian\",\"Japanese\",\"International\"]",
+      "id": "b235f0dc-f7a8-4f37-a579-3200384693dc",
+      "name": "Cuisine"
+    },
+    {
+      "id": "0d5be3af-5afa-4ba4-be2a-7282bbef3671",
+      "options": "[\"Veggie\",\"Meat & Sides\",\"Soups / Noodles / Stir Fry\",\"Salad\",\"Slow Cooker\",\"Oven Bake\",\"BBQ\",\"Bakery\"]",
+      "name": "Style"
+    },
+    {
+      "name": "Label",
+      "id": "3cb8c65a-1fd8-4fe5-afd9-b5c8fdc3227d",
+      "options": "[\"Go-to\",\"Weeknight\",\"Fancy\",\"Light\",\"Substantial\"]"
+    }
+  ]
+}

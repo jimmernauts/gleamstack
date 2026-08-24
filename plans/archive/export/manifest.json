@@ -1,0 +1,29 @@
+{
+  "exported_at": "2026-08-24T14:45:07.337Z",
+  "app_id": "eeaf3b82-5b5d-40c4-a29a-b68988377c3c",
+  "collections": {
+    "recipes": {
+      "count": 65,
+      "sha256": "4abe6a10fe537f3866beddc460aaecd5aa58d7ea910021765e02c6beb7b8c999"
+    },
+    "tag_options": {
+      "count": 3,
+      "sha256": "7179efa5bf6ce5dfbe920c93b7fb606f030b89681ee9b1cc5d1f82b919fe0be4"
+    },
+    "plan": {
+      "count": 196,
+      "sha256": "e7d27187628088586bada5a18fe5bc654ae113b1dbe68856a82f2179c5608f56"
+    },
+    "settings": {
+      "count": 1,
+      "sha256": "71dccda0d453dd37988eacc26a599b86d8eb555ab1e3b3cf7919038e5302a36e",
+      "sensitive": true
+    },
+    "shopping_lists": {
+      "count": 3,
+      "sha256": "a783e95ae9be5ffa3aec94de747ae89392cc5abbd9cba839298ad57463d993a5"
+    }
+  },
+  "total_records": 268,
+  "validation_errors": []
+}
