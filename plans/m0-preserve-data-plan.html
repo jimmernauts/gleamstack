@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M0: Preserve Data and Pause Production Use — Implementation Plan</title>
+  <style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0;background:#f8fafc;color:#111827;line-height:1.6}main{max-width:860px;margin:0 auto;padding:48px 24px}.document-body{background:#fff;border:1px solid #d0d5dd;border-radius:16px;padding:24px}.document-body:focus{outline:2px solid #2454d6;outline-offset:2px}.document-body h1,.document-body h2,.document-body h3{line-height:1.2}.document-body pre{white-space:pre-wrap;background:#0f172a;color:#e2e8f0;border-radius:12px;padding:16px;overflow-x:auto;font-size:13px}.document-body code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.9em;background:#f1f5f9;padding:2px 5px;border-radius:4px}.document-body pre code{background:none;padding:0}.document-body table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}.document-body th,.document-body td{border:1px solid #e5e7eb;padding:8px 12px;text-align:left}.document-body th{background:#f8fafc;font-weight:600}.document-body tr:hover td{background:#fafbfc}.status-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600}.status-done{background:#ecfdf3;color:#067647;border:1px solid #abefc6}.status-pending{background:#fef3f2;color:#b42318;border:1px solid #fecdca}.status-info{background:#eff8ff;color:#175cd3;border:1px solid #b2ddff}</style>
+</head>
+<body>
+  <main id="content">
+    <h1>M0: Preserve Data and Pause Production Use</h1>
+    <article class="document-body" contenteditable="true">
+
+<h1>M0: Preserve data and pause production use — Implementation plan</h1>
+
+<p><span class="status-badge status-done">SCRIPTS TESTED</span> <span class="status-badge status-pending">PRODUCTION EXPORT PENDING</span></p>
+
+<h2>Goal</h2>
+
+<p>Export all production InstantDB data, verify the export independently, and confirm nothing will change after the final export. This creates the recovery artifact referenced throughout the architecture redesign.</p>
+
+<h2>Entity groups to export</h2>
+
+<table>
+<thead><tr><th>#</th><th>Collection</th><th>Key fields</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><code>recipes</code></td><td>id, slug, title, cook_time, prep_time, serves, author, source, ingredients, method_steps, tags, shortlisted</td><td>JSON text in ingredients/method_steps/tags</td></tr>
+<tr><td>2</td><td><code>tag_options</code></td><td>id, name, options</td><td>options is JSON array</td></tr>
+<tr><td>3</td><td><code>plan</code></td><td>id, date, lunch, dinner, planned_meals</td><td>date is numeric timestamp</td></tr>
+<tr><td>4</td><td><code>settings</code></td><td>id, api_key</td><td><strong>Gemini key — exclude from fixtures</strong></td></tr>
+<tr><td>5</td><td><code>shopping_lists</code></td><td>id, date, status, items, linked_recipes, linked_plan_start, linked_plan_end</td><td>items/linked_recipes are JSON</td></tr>
+</tbody>
+</table>
+
+<h2>Implementation steps</h2>
+
+<h3>Step 1: Export script</h3>
+
+<p><strong>File:</strong> <code>worker/scripts/export_instantdb.ts</code></p>
+
+<p><strong>Approach:</strong></p>
+<ul>
+<li>Uses <code>@instantdb/admin</code> (already a worker dependency) with <code>INSTANT_APP_ID</code> and <code>INSTANT_ADMIN_TOKEN</code> from environment.</li>
+<li>Queries each of the five collections with <code>db.query({ collection: {} })</code>.</li>
+<li>Retains the InstantDB <code>id</code> for each record.</li>
+<li>Writes each collection to a separate JSON file under <code>plans/archive/export/</code>.</li>
+<li>Settings file is gitignored (contains the Gemini key). Only its hash appears in the manifest.</li>
+</ul>
+
+<p><strong>Output format per file:</strong></p>
+<pre><code>{
+  "exported_at": "2026-08-24T...",
+  "collection": "recipes",
+  "count": 42,
+  "records": [ { "id": "...", ...fields } ]
+}</code></pre>
+
+<h3>Step 2: Validation manifest</h3>
+
+<p><strong>File produced:</strong> <code>plans/archive/export/manifest.json</code></p>
+
+<p><strong>Contents:</strong></p>
+<ul>
+<li>Record count per collection.</li>
+<li>SHA-256 hash of each exported JSON file.</li>
+<li>Total record count across all collections.</li>
+<li>Explicit note: <code>settings.json</code> contains the Gemini key and is gitignored.</li>
+</ul>
+
+<p><strong>Verification checks applied during export:</strong></p>
+<ul>
+<li>Every record has a non-empty <code>id</code>.</li>
+<li>No duplicate IDs within a collection.</li>
+<li>recipes: every record has a non-empty <code>slug</code>.</li>
+<li>plan: every record has a numeric <code>date</code>.</li>
+<li>shopping_lists: every record has a numeric <code>date</code> and a <code>status</code> string.</li>
+<li>tag_options: every record has a <code>name</code>.</li>
+</ul>
+
+<h3>Step 3: SQLite test restore</h3>
+
+<p><strong>File:</strong> <code>worker/scripts/verify_export_sqlite.ts</code></p>
+
+<p><strong>Approach:</strong></p>
+<ul>
+<li>Uses <code>better-sqlite3</code> (dev dependency) to create a temporary SQLite database.</li>
+<li>Creates tables matching the architecture doc's initial schema.</li>
+<li>Inserts all records from the export JSON files (settings excluded — sensitive).</li>
+<li>Verifies row counts match manifest, UNIQUE constraints pass, and JSON fields round-trip correctly.</li>
+<li>Checks SHA-256 hashes of source files against the manifest.</li>
+<li>Deletes the temporary database file.</li>
+<li>Prints PASS/FAIL summary.</li>
+</ul>
+
+<p><strong>Target schema:</strong></p>
+<pre><code>CREATE TABLE recipes (
+  id TEXT PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  cook_time INTEGER,
+  prep_time INTEGER,
+  serves INTEGER,
+  author TEXT,
+  source TEXT,
+  ingredients TEXT,
+  method_steps TEXT,
+  tags TEXT,
+  shortlisted INTEGER DEFAULT 0,
+  created_at TEXT,
+  updated_at TEXT
+);
+
+CREATE TABLE tag_options (
+  id TEXT PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  options TEXT
+);
+
+CREATE TABLE plan_days (
+  id TEXT PRIMARY KEY,
+  date INTEGER UNIQUE NOT NULL,
+  lunch TEXT,
+  dinner TEXT
+);
+
+CREATE TABLE shopping_lists (
+  id TEXT PRIMARY KEY,
+  date INTEGER UNIQUE NOT NULL,
+  status TEXT NOT NULL,
+  items TEXT,
+  linked_recipes TEXT,
+  linked_plan_start INTEGER,
+  linked_plan_end INTEGER
+);</code></pre>
+
+<h3>Step 4: Confirm production will not change</h3>
+
+<p>After the final export:</p>
+<ol>
+<li>Record the export timestamp in the manifest.</li>
+<li>Note that the production app will not be used going forward (per architecture doc assumption).</li>
+<li>Before migration (M9), re-run the export and compare <code>manifest.json</code> hashes to confirm no drift.</li>
+</ol>
+
+<p>InstantDB has no server-side write-disable mechanism. The confirmation is procedural: the owner agrees not to use the app after the final export. A re-export before migration will detect any changes by hash comparison.</p>
+
+<h2>File layout</h2>
+
+<pre><code>plans/archive/export/
+  README.md              ← committed (workflow docs)
+  recipes.json           ← committed after production export
+  tag_options.json       ← committed after production export
+  plan.json              ← committed after production export
+  settings.json          ← gitignored (contains Gemini key)
+  shopping_lists.json    ← committed after production export
+  manifest.json          ← committed (hashes, counts, no secrets)
+
+worker/scripts/
+  export_instantdb.ts    ← the export script
+  verify_export_sqlite.ts ← the SQLite verification script</code></pre>
+
+<h2>How to run</h2>
+
+<h3>Export</h3>
+<pre><code># With production credentials:
+INSTANT_APP_ID=eeaf3b82-5b5d-40c4-a29a-b68988377c3c \
+INSTANT_ADMIN_TOKEN=&lt;production-token&gt; \
+npx tsx worker/scripts/export_instantdb.ts</code></pre>
+
+<h3>Verify</h3>
+<pre><code>npx tsx worker/scripts/verify_export_sqlite.ts</code></pre>
+
+<h3>Re-export to check for drift</h3>
+<pre><code># Save old manifest
+cp plans/archive/export/manifest.json plans/archive/export/manifest-previous.json
+
+# Re-export with same credentials
+npx tsx worker/scripts/export_instantdb.ts
+
+# Compare (ignore exported_at timestamp)
+diff plans/archive/export/manifest-previous.json plans/archive/export/manifest.json</code></pre>
+
+<h2>Prerequisites</h2>
+
+<table>
+<thead><tr><th>Requirement</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>@instantdb/admin</code> in worker dependencies</td><td><span class="status-badge status-done">Available</span></td></tr>
+<tr><td><code>better-sqlite3</code> dev dependency</td><td><span class="status-badge status-done">Installed</span></td></tr>
+<tr><td><code>INSTANT_APP_ID</code> = <code>eeaf3b82-5b5d-40c4-a29a-b68988377c3c</code></td><td><span class="status-badge status-info">Production value</span></td></tr>
+<tr><td>Valid <code>INSTANT_ADMIN_TOKEN</code> for production</td><td><span class="status-badge status-pending">Needed at runtime</span></td></tr>
+<tr><td>Network access to InstantDB API</td><td><span class="status-badge status-pending">Needed at runtime</span></td></tr>
+</tbody>
+</table>
+
+<h2>Acceptance criteria</h2>
+
+<table>
+<thead><tr><th>#</th><th>Criterion</th><th>Task step</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Export script produces JSON for all five entity groups with IDs</td><td>s-7927</td></tr>
+<tr><td>2</td><td>Manifest shows record counts and SHA-256 hashes; settings excluded from commit</td><td>s-7928</td></tr>
+<tr><td>3</td><td>SQLite restore inserts all records without constraint violations; counts match</td><td>s-7929</td></tr>
+<tr><td>4</td><td>Owner confirms production will not change; re-export can verify via hash comparison</td><td>s-7930</td></tr>
+</tbody>
+</table>
+
+<h2>Risks and mitigations</h2>
+
+<table>
+<thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+<tbody>
+<tr><td>Admin token expired or revoked</td><td>Script tests with a simple query before full export</td></tr>
+<tr><td>InstantDB <code>serverCreatedAt</code> not accessible via admin SDK</td><td>Fall back to export without timestamps; document the gap</td></tr>
+<tr><td>Large JSON fields exceed reasonable file size</td><td>Unlikely given single-user app; monitor file sizes</td></tr>
+<tr><td>Settings file accidentally committed</td><td>Gitignore rule + manifest clearly labels it sensitive</td></tr>
+</tbody>
+</table>
+
+<h2>Test results (dev instance)</h2>
+
+<p>Both scripts were tested against the dev InstantDB instance (<code>4304e120-9a5c-45e4-ba7a-4aaa0b7f282a</code>):</p>
+
+<pre><code>=== InstantDB Export ===
+Testing connection...  ✓ Connection OK
+  Exporting recipes...     → 1 records
+  Exporting tag_options... → 0 records
+  Exporting plan...        → 0 records
+  Exporting settings...    → 1 records
+  Exporting shopping_lists... → 0 records
+✓ All validation checks passed.
+
+=== Export Verification (SQLite restore) ===
+✓ Created temporary SQLite database with schema
+Collection          | Expected | Inserted | Status
+--------------------|----------|----------|-------
+recipes             | 1        | 1        | PASS
+tag_options         | 0        | 0        | PASS
+plan → plan_days    | 0        | 0        | PASS
+shopping_lists      | 0        | 0        | PASS
+settings (excluded) | 1        | —        | SKIP
+JSON round-trip: PASS
+Hash checks: 4/4 passed
+✓ VERIFICATION PASSED</code></pre>
+
+<h2>Commits</h2>
+
+<table>
+<thead><tr><th>SHA</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>b6ac7a2</code></td><td>Detailed implementation plan (this document's source)</td></tr>
+<tr><td><code>0960f51</code></td><td>Export and verification scripts, better-sqlite3, gitignore</td></tr>
+<tr><td><code>ac7f31a</code></td><td>Export README with production confirmation procedure</td></tr>
+</tbody>
+</table>
+
+<h2>What remains</h2>
+
+<p>Run the export and verification with <strong>production</strong> credentials, commit the resulting JSON files (except <code>settings.json</code>), and confirm the owner will not use the app further. This is a runtime action requiring the production admin token.</p>
+
+    </article>
+  </main>
+  <script type="application/json" id="artifact-manifest">
+{"schema":"html-artifact-document-v1","title":"M0: Preserve Data and Pause Production Use — Implementation Plan","template":"document","input":"repos/james-personal/gleamstack/plans/m0-preserve-data-plan.md","exports":["review-markdown"]}
+  </script>
+  <script type="text/markdown" id="artifact-review-markdown">
+# Annotations: M0 Preserve Data Plan
+
+_No annotations yet._
+
+  </script>
+<style>
+  mark.ann-hl{background:rgba(255,213,0,.35);border-bottom:2px solid rgba(255,180,0,.7);cursor:pointer;border-radius:2px;padding:0 1px}
+  mark.ann-hl.ann-active{background:rgba(255,180,0,.55);outline:2px solid #e67e00;outline-offset:1px}
+  #ann-toolbar{position:fixed;display:none;align-items:center;background:#111827;color:white;border-radius:8px;padding:6px 8px;z-index:10000;box-shadow:0 8px 24px rgba(0,0,0,.24);gap:6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+  #ann-toolbar button,#ann-popover button,#ann-panel button{font-family:inherit;cursor:pointer}
+  #ann-toolbar button{background:rgba(255,255,255,.12);border:0;color:white;border-radius:6px;padding:4px 9px;font-size:12px}
+  #ann-toggle{position:fixed;right:24px;bottom:24px;z-index:9999;width:50px;height:50px;border-radius:999px;border:0;background:#111827;color:white;font-size:22px;box-shadow:0 8px 24px rgba(0,0,0,.24);cursor:pointer}
+  #ann-badge{position:absolute;right:-3px;top:-3px;display:none;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 4px;border-radius:999px;background:#ef4444;color:white;font-size:11px;font-weight:800;border:2px solid white}
+  #ann-panel{position:fixed;right:0;top:0;bottom:0;width:340px;max-width:calc(100vw - 32px);z-index:9998;background:white;border-left:1px solid #d0d5dd;box-shadow:-12px 0 32px rgba(16,24,40,.16);transform:translateX(100%);transition:transform .18s ease;display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827}
+  #ann-panel.ann-open{transform:translateX(0)}
+  #ann-panel header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e5e7eb;background:#f8fafc}
+  #ann-panel h2{margin:0;font-size:15px;letter-spacing:0}
+  #ann-close-btn{border:0;background:transparent;font-size:22px;line-height:1;color:#667085}
+  #ann-actions{display:grid;grid-template-columns:1fr;gap:8px;padding:12px 12px 8px;border-bottom:1px solid #e5e7eb}
+  #ann-actions button,#ann-save-file-btn,#ann-enable-autosave{border:1px solid #d0d5dd;background:white;border-radius:8px;padding:7px 8px;font-size:12px;color:#344054}
+  #ann-actions button:hover{background:#f2f4f7}
+  #ann-enable-autosave{background:#ecfdf3;border-color:#abefc6;color:#067647}
+  #ann-save-file-btn{background:#2454d6;border-color:#2454d6;color:white}
+  #ann-save-status{color:#667085;font-size:11px;line-height:1.35;min-height:15px}
+  #ann-list{flex:1;overflow:auto;padding:10px}
+  .ann-empty{color:#667085;font-size:13px;line-height:1.5;margin:0;padding:8px}
+  .ann-card{border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin-bottom:8px;background:white;cursor:pointer}
+  .ann-card:hover,.ann-card.ann-active{border-color:#f59e0b;background:#fffbeb}
+  .ann-card-quote{font-size:12px;color:#667085;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+  .ann-card-comment{font-size:13px;line-height:1.45;color:#111827}
+  .ann-card-actions{display:flex;gap:12px;margin-top:8px}
+  .ann-card-actions button{border:0;background:transparent;padding:0;color:#667085;font-size:12px}
+  #ann-export-out{display:none;margin:0 10px 10px;padding:8px;border:1px solid #d0d5dd;border-radius:8px;min-height:90px;font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  #ann-popover{position:fixed;display:none;z-index:10001;width:290px;background:white;border:1px solid #d0d5dd;border-radius:12px;padding:12px;box-shadow:0 16px 40px rgba(16,24,40,.22);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+  #ann-popover textarea{width:100%;min-height:82px;resize:vertical;box-sizing:border-box;border:1px solid #d0d5dd;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;line-height:1.45}
+  #ann-popover-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+  #ann-popover-actions button{border:1px solid #d0d5dd;border-radius:8px;padding:6px 12px;background:white}
+  #ann-save-btn{background:#111827!important;color:white;border-color:#111827!important}
+</style>
+<div id="ann-toolbar"><span style="font-size:11px;opacity:.72">Selected</span><button id="ann-btn-add">Annotate</button></div>
+<div id="ann-popover">
+  <div style="font-size:12px;font-weight:700;color:#344054;margin-bottom:6px">Add annotation</div>
+  <textarea id="ann-textarea" placeholder="Comment on the selected text"></textarea>
+  <div id="ann-popover-actions"><button id="ann-cancel-btn">Cancel</button><button id="ann-save-btn">Save</button></div>
+</div>
+<button id="ann-toggle" title="Toggle annotation panel">💬<span id="ann-badge"></span></button>
+<aside id="ann-panel" aria-label="Annotations">
+  <header><h2>Annotations</h2><button id="ann-close-btn" title="Close">×</button></header>
+  <div id="ann-actions">
+    <button id="ann-enable-autosave">Enable autosave</button>
+    <button id="ann-copy-md">Copy Markdown</button>
+    <button id="ann-clear-all">Clear all</button>
+    <button id="ann-save-file-btn">Save annotated file</button>
+    <div id="ann-save-status" aria-live="polite"></div>
+  </div>
+  <div id="ann-list"><p class="ann-empty">Select text in the document and click Annotate.</p></div>
+  <textarea id="ann-export-out" readonly></textarea>
+</aside>
+<script>
+(function(){
+  'use strict';
+  const markdownEl = document.getElementById('artifact-review-markdown');
+  const root = () => document.getElementById('content') || document.querySelector('main,[role="main"]') || document.body;
+  const DB_NAME = 'html-artifact-file-handles';
+  const STORE_NAME = 'handles';
+  const PICKER_ID = 'html-artifact-autosave';
+  const handleKey = () => [location.pathname || document.title, document.title].join('|');
+  function titleFileName(){return (document.title.replace(/[^a-z0-9]+/gi,'-').toLowerCase()||'artifact')+'.html';}
+  function sourceFileName(){try{const base=decodeURIComponent((location.pathname||'').split('/').pop()||'');if(/\.html?$/i.test(base))return base;}catch(_){}return titleFileName();}
+  function annotatedFileName(){return sourceFileName().replace(/\.html?$/i,'')+'-annotated.html';}
+  let fileHandle = null;
+  let pendingRange = null;
+  let saveCallback = null;
+  let autosaveTimer = null;
+  function setStatus(message){document.getElementById('ann-save-status').textContent = message || '';}
+  function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function shortText(s){s=String(s||'').replace(/\s+/g,' ').trim();return s.length>88?s.slice(0,88)+'…':s;}
+  function annotationMarks(){return Array.from(document.querySelectorAll('mark.ann-hl[data-ann-id]'));}
+  function annotations(){const groups=new Map();annotationMarks().forEach(mark=>{const id=mark.dataset.annId;if(!id)return;let ann=groups.get(id);if(!ann){ann={id,comment:mark.dataset.annComment||'',created_at:mark.dataset.annCreatedAt||'',parts:[]};groups.set(id,ann);}ann.parts.push(mark);});return Array.from(groups.values());}
+  function setAnnotationData(ann){ann.parts.forEach(mark=>{mark.dataset.annComment=ann.comment;});}
+  function buildMarkdown(){const anns=annotations();if(!anns.length)return '# Annotations: '+document.title+'\n\n_No annotations yet._\n';let md='# Annotations: '+document.title+'\n\n';anns.forEach((ann,i)=>{const quote=ann.parts.map(p=>p.textContent).join('').replace(/\s+/g,' ').trim();md+=`## ${i+1}. "${shortText(quote)}"\n\n${ann.comment}\n\n`;});return md;}
+  function updateReviewMarkdown(){if(markdownEl)markdownEl.textContent='\n'+buildMarkdown()+'\n  ';}
+  function persistChange(){updateReviewMarkdown();queueAutosave();}
+  function sync(){renderList();}
+  function renderList(){const list=document.getElementById('ann-list');const anns=annotations();if(!anns.length){list.innerHTML='<p class="ann-empty">Select text in the document and click Annotate.</p>';document.getElementById('ann-badge').style.display='none';return;}document.getElementById('ann-badge').style.display='flex';document.getElementById('ann-badge').textContent=anns.length;list.innerHTML=anns.map(ann=>{const quote=ann.parts.map(p=>p.textContent).join('').replace(/\s+/g,' ').trim();return `<div class="ann-card" data-ann-card="${ann.id}"><div class="ann-card-quote">"${escapeHtml(shortText(quote))}"</div><div class="ann-card-comment">${escapeHtml(ann.comment)}</div><div class="ann-card-actions"><button onclick="htmlArtifactAnnotations.edit('${ann.id}')">Edit</button><button onclick="htmlArtifactAnnotations.delete('${ann.id}')">Delete</button></div></div>`;}).join('');}
+  function focusAnnotation(id){annotationMarks().forEach(m=>m.classList.remove('ann-active'));document.querySelectorAll('.ann-card').forEach(c=>c.classList.remove('ann-active'));const marks=annotationMarks().filter(m=>m.dataset.annId===id);if(marks[0]){marks.forEach(m=>m.classList.add('ann-active'));marks[0].scrollIntoView({behavior:'smooth',block:'center'});}const card=document.querySelector(`.ann-card[data-ann-card="${id}"]`);if(card)card.classList.add('ann-active');}
+  function removeHighlight(id){const marks=annotationMarks().filter(m=>m.dataset.annId===id);marks.forEach(mark=>{const parent=mark.parentNode;while(mark.firstChild)parent.insertBefore(mark.firstChild,mark);parent.removeChild(mark);parent.normalize();});renderList();}
+  function generateId(){return 'ann-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+  function wrapRange(range,id,comment){const treeWalker=document.createTreeWalker(range.commonAncestorContainer,NodeFilter.SHOW_TEXT,{acceptNode(node){return range.intersectsNode(node)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;}});const textNodes=[];while(treeWalker.nextNode())textNodes.push(treeWalker.currentNode);if(!textNodes.length)return;textNodes.forEach(textNode=>{const nodeRange=document.createRange();nodeRange.selectNodeContents(textNode);if(textNode===range.startContainer)nodeRange.setStart(textNode,range.startOffset);if(textNode===range.endContainer)nodeRange.setEnd(textNode,range.endOffset);if(nodeRange.toString().trim()==='')return;const mark=document.createElement('mark');mark.className='ann-hl';mark.dataset.annId=id;mark.dataset.annComment=comment;mark.dataset.annCreatedAt=new Date().toISOString();mark.addEventListener('click',()=>focusAnnotation(id));nodeRange.surroundContents(mark);});}
+  function showPopover(range,existingComment,onSave){pendingRange=range;const rect=range.getBoundingClientRect();const popover=document.getElementById('ann-popover');const textarea=document.getElementById('ann-textarea');textarea.value=existingComment||'';popover.style.display='block';popover.style.top=Math.min(rect.bottom+8,window.innerHeight-200)+'px';popover.style.left=Math.min(rect.left,window.innerWidth-310)+'px';textarea.focus();saveCallback=onSave;}
+  function hidePopover(){document.getElementById('ann-popover').style.display='none';pendingRange=null;saveCallback=null;}
+  document.getElementById('ann-btn-add').addEventListener('click',()=>{const sel=window.getSelection();if(!sel.rangeCount)return;const range=sel.getRangeAt(0).cloneRange();document.getElementById('ann-toolbar').style.display='none';showPopover(range,'',comment=>{const id=generateId();wrapRange(range,id,comment);sel.removeAllRanges();renderList();persistChange();});});
+  document.getElementById('ann-save-btn').addEventListener('click',()=>{const comment=document.getElementById('ann-textarea').value.trim();if(saveCallback)saveCallback(comment);hidePopover();});
+  document.getElementById('ann-cancel-btn').addEventListener('click',hidePopover);
+  document.addEventListener('selectionchange',()=>{const sel=window.getSelection();const toolbar=document.getElementById('ann-toolbar');if(!sel||sel.isCollapsed||!sel.toString().trim()){toolbar.style.display='none';return;}const range=sel.getRangeAt(0);const container=root();if(!container.contains(range.commonAncestorContainer)){toolbar.style.display='none';return;}const rect=range.getBoundingClientRect();toolbar.style.display='flex';toolbar.style.top=(rect.top-40)+'px';toolbar.style.left=rect.left+'px';});
+  document.getElementById('ann-toggle').addEventListener('click',()=>{document.getElementById('ann-panel').classList.toggle('ann-open');});
+  document.getElementById('ann-close-btn').addEventListener('click',()=>{document.getElementById('ann-panel').classList.remove('ann-open');});
+  document.getElementById('ann-copy-md').addEventListener('click',()=>{navigator.clipboard.writeText(buildMarkdown()).then(()=>setStatus('Copied.')).catch(()=>setStatus('Copy failed.'));});
+  function clearAnnotations(){if(!confirm('Remove all annotations?'))return;annotations().forEach(ann=>removeHighlight(ann.id));persistChange();}
+  function idbAvailable(){try{return typeof indexedDB!=='undefined';}catch(_){return false;}}
+  function openHandleDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>req.result.createObjectStore(STORE_NAME);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+  async function handleStore(mode,key,value){const db=await openHandleDb();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE_NAME,mode);const store=tx.objectStore(STORE_NAME);let req;if(mode==='readonly')req=store.get(key);else req=store.put(value,key);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);tx.oncomplete=()=>db.close();tx.onerror=()=>reject(tx.error);});}
+  async function rememberHandle(handle){if(idbAvailable())await handleStore('readwrite',handleKey(),handle);}
+  async function restoreHandle(){try{fileHandle=await handleStore('readonly',handleKey());if(fileHandle)setStatus('Save target remembered. Autosave will run after write permission is available.');}catch(_){}}
+  async function hasWritePermission(handle){if(!handle)return false;if(!handle.queryPermission)return true;return await handle.queryPermission({mode:'readwrite'})==='granted';}
+  async function ensureWritePermission(handle){if(!handle)return false;if(!handle.queryPermission||!handle.requestPermission)return true;const opts={mode:'readwrite'};if(await handle.queryPermission(opts)==='granted')return true;return await handle.requestPermission(opts)==='granted';}
+  async function pickHandle(){if(!('showSaveFilePicker' in window))return null;return await window.showSaveFilePicker({id:PICKER_ID,suggestedName:sourceFileName(),types:[{description:'HTML file',accept:{'text/html':['.html']}}]});}
+  async function writeWithHandle(handle,html){const writable=await handle.createWritable();await writable.write(html);await writable.close();}
+  function cleanSerializedHtml(){updateReviewMarkdown();return '<!DOCTYPE html>\n'+document.documentElement.outerHTML;}
+  function queueAutosave(){if(autosaveTimer)clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosaveToHandle,650);}
+  async function autosaveToHandle(){autosaveTimer=null;if(!fileHandle)return;try{if(!await hasWritePermission(fileHandle)){setStatus('Autosave paused. Click Enable autosave to grant write permission.');return;}await writeWithHandle(fileHandle,cleanSerializedHtml());setStatus('Autosaved.');}catch(error){console.warn('[ann] autosave failed',error);setStatus('Autosave failed. Use Save annotated file.');}}
+  async function enableAutosave(){try{let handle=fileHandle;if(!(handle&&await ensureWritePermission(handle))){handle=await pickHandle();}if(!(handle&&await ensureWritePermission(handle))){setStatus('Autosave unavailable. Use Save annotated file.');return;}fileHandle=handle;await rememberHandle(handle);setStatus('Autosave enabled.');await autosaveToHandle();}catch(error){if(error&&error.name==='AbortError'){setStatus('Autosave setup cancelled.');return;}console.warn('[ann] autosave setup failed',error);setStatus('Autosave setup failed. Use Save annotated file.');}}
+  function downloadHtml(html){const blob=new Blob([html],{type:'text/html'});const url=URL.createObjectURL(blob);const link=Object.assign(document.createElement('a'),{href:url,download:annotatedFileName()});document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);}
+  async function saveHtml(){const html=cleanSerializedHtml();try{let handle=fileHandle;if(handle&&await ensureWritePermission(handle)){await rememberHandle(handle);fileHandle=handle;await writeWithHandle(handle,html);setStatus('Saved to remembered file. Autosave enabled.');return;}handle=await pickHandle();if(handle&&await ensureWritePermission(handle)){await rememberHandle(handle);fileHandle=handle;await writeWithHandle(handle,html);setStatus('Saved. Future annotation changes will autosave.');return;}}catch(error){if(error&&error.name==='AbortError'){setStatus('Save cancelled.');return;}console.warn('[ann] file save failed; falling back to download',error);}downloadHtml(html);setStatus('Downloaded annotated copy. In-place save is unavailable or permission was denied.');}
+  document.getElementById('ann-enable-autosave').addEventListener('click',enableAutosave);
+  document.getElementById('ann-clear-all').addEventListener('click',clearAnnotations);
+  document.getElementById('ann-save-file-btn').addEventListener('click',saveHtml);
+  window.htmlArtifactAnnotations={focus:focusAnnotation,delete:id=>{removeHighlight(id);persistChange();},clearAll:clearAnnotations,edit:id=>{const ann=annotations().find(a=>a.id===id);if(!ann||!ann.parts[0])return;const range=document.createRange();range.setStartBefore(ann.parts[0]);range.setEndAfter(ann.parts[ann.parts.length-1]);showPopover(range,ann.comment,comment=>{ann.comment=comment;setAnnotationData(ann);persistChange();focusAnnotation(id);});},markdown:()=>buildMarkdown(),save:saveHtml,enableAutosave:enableAutosave,fileName:sourceFileName};
+  function restore(){sync();restoreHandle();}
+  document.readyState==='loading'?document.addEventListener('DOMContentLoaded',restore):restore();
+})();
+</script>
+
+</body>
+</html>
