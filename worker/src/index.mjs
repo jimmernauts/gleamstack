@@ -1,21 +1,12 @@
 import * as glen from '../glen/glen.mjs';
 import * as mealstack_worker from './mealstack_worker.mjs';
 
-// COOP/COEP headers required for SharedArrayBuffer (Turso sync-wasm OPFS)
-// For worker-created responses (JSON etc), simple wrap is fine.
+// COOP/COEP headers for worker-generated responses (/api/ routes)
 function addCrossOriginHeaders(response) {
-  const headers = new Headers(response.headers);
-  headers.set('Cross-Origin-Opener-Policy', 'same-origin');
-  headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
-  // Strip encoding metadata — when we pass response.body through,
-  // the runtime may have already decoded it, causing a mismatch.
-  headers.delete('Content-Encoding');
-  headers.delete('Content-Length');
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  const res = new Response(response.body, response);
+  res.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  res.headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+  return res;
 }
 
 export default {
@@ -69,19 +60,10 @@ export default {
     }
 
     // Existing Gleam worker API routes
-    if (url.pathname.startsWith('/api/')) {
-      console.log(request);
-      const req = glen.convert_request(request);
-      const response = await mealstack_worker.handle_req(req);
-      const res = glen.convert_response(response);
-      return addCrossOriginHeaders(res);
-    }
-
-    // Serve static assets via the ASSETS binding (so COOP/COEP headers apply to all responses)
-    // Request identity encoding to avoid compressed-body-passthrough corruption
-    const assetReq = new Request(request.url, request);
-    assetReq.headers.set('Accept-Encoding', 'identity');
-    const assetResponse = await env.ASSETS.fetch(assetReq);
-    return addCrossOriginHeaders(assetResponse);
+    console.log(request);
+    const req = glen.convert_request(request);
+    const response = await mealstack_worker.handle_req(req);
+    const res = glen.convert_response(response);
+    return addCrossOriginHeaders(res);
   },
 };

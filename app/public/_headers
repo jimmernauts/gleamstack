@@ -1,0 +1,4 @@
+# Apply COOP/COEP to all responses (required for SharedArrayBuffer / sync-wasm OPFS)
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp

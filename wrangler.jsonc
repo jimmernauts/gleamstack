@@ -4,7 +4,6 @@
     "main": "./worker/build/dev/javascript/mealstack_worker/index.mjs",
     "assets": {
         "directory": "./app/dist",
-        "binding": "ASSETS",
         "not_found_handling": "single-page-application"
     },
     "workers_dev": true,
