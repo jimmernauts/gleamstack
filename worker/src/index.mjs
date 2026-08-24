@@ -59,12 +59,17 @@ export default {
       }
     }
 
-    // Existing Gleam worker routes
-    console.log(request);
-    const req = glen.convert_request(request);
-    const response = await mealstack_worker.handle_req(req);
-    const res = glen.convert_response(response);
+    // Existing Gleam worker API routes
+    if (url.pathname.startsWith('/api/')) {
+      console.log(request);
+      const req = glen.convert_request(request);
+      const response = await mealstack_worker.handle_req(req);
+      const res = glen.convert_response(response);
+      return addCrossOriginHeaders(res);
+    }
 
-    return addCrossOriginHeaders(res);
+    // Serve static assets via the ASSETS binding (so COOP/COEP headers apply to all responses)
+    const assetResponse = await env.ASSETS.fetch(request);
+    return addCrossOriginHeaders(assetResponse);
   },
 };
