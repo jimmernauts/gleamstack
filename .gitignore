@@ -27,3 +27,7 @@ fly_pg
 /plans/favourites_tag_backfill*.jsonl
 /plans/archive/export/settings.json
 /plans/archive/export/.verify-temp*
+
+# Runtime state (libsql/turso)
+auth
+auth-wal
