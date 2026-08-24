@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Turso Spike — Gleamstack</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #111827; padding: 24px; line-height: 1.5; }
+    h1 { font-size: 20px; margin-bottom: 8px; }
+    .subtitle { color: #667085; font-size: 14px; margin-bottom: 24px; }
+    .section { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .section h2 { font-size: 15px; margin-bottom: 12px; }
+    button { font-family: inherit; font-size: 13px; padding: 8px 14px; border-radius: 8px; border: 1px solid #d0d5dd; background: white; cursor: pointer; margin-right: 8px; margin-bottom: 8px; }
+    button:hover { background: #f2f4f7; }
+    button:active { background: #e5e7eb; }
+    button.primary { background: #111827; color: white; border-color: #111827; }
+    button.danger { background: #fef3f2; color: #b42318; border-color: #fecdca; }
+    #log { background: #0f172a; color: #e2e8f0; border-radius: 12px; padding: 16px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.6; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+    .status { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .status-pass { background: #ecfdf3; color: #067647; }
+    .status-fail { background: #fef3f2; color: #b42318; }
+    .status-pending { background: #f5f5f5; color: #667085; }
+    #config-display { font-size: 12px; color: #667085; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Turso Spike</h1>
+  <p class="subtitle">Throwaway page to prove sync-wasm works on this workers.dev deployment.</p>
+
+  <div class="section">
+    <h2>1. Configuration</h2>
+    <button onclick="fetchConfig()" class="primary">Fetch /api/db-config</button>
+    <button onclick="checkHeaders()">Check COOP/COEP</button>
+    <button onclick="checkSharedArrayBuffer()">Check SharedArrayBuffer</button>
+    <div id="config-display"></div>
+  </div>
+
+  <div class="section">
+    <h2>2. Connection &amp; Persistence</h2>
+    <button onclick="connectDb()" class="primary">Connect to OPFS DB</button>
+    <button onclick="testPersistence()">Write + Read</button>
+    <button onclick="testAfterReload()">Read after reload</button>
+  </div>
+
+  <div class="section">
+    <h2>3. Bootstrap &amp; Reset</h2>
+    <button onclick="checkSchema()">Check schema_migrations</button>
+    <button onclick="resetOpfs()" class="danger">Reset OPFS DB</button>
+    <button onclick="connectDb()">Re-bootstrap</button>
+  </div>
+
+  <div class="section">
+    <h2>4. Push / Pull</h2>
+    <button onclick="testPush()" class="primary">Write + Push</button>
+    <button onclick="testPull()">Pull</button>
+    <button onclick="listItems()">List all items</button>
+  </div>
+
+  <div class="section">
+    <h2>5. Conflict (use two profiles)</h2>
+    <button onclick="writeConflict()">Write conflict row</button>
+    <button onclick="testPush()">Push</button>
+    <button onclick="testPull()">Pull</button>
+    <button onclick="readConflict()">Read conflict row</button>
+  </div>
+
+  <div class="section">
+    <h2>Log</h2>
+    <button onclick="clearLog()" class="danger">Clear</button>
+    <div id="log"></div>
+  </div>
+
+  <script type="module">
+    // --- Logging ---
+    const logEl = document.getElementById('log');
+    function log(msg, type = 'info') {
+      const prefix = type === 'pass' ? '✓ ' : type === 'fail' ? '✗ ' : type === 'warn' ? '⚠ ' : '  ';
+      logEl.textContent += `${new Date().toLocaleTimeString()} ${prefix}${msg}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    window.clearLog = () => { logEl.textContent = ''; };
+
+    // --- State ---
+    let dbConfig = null;
+    let db = null;
+
+    // --- 1. Configuration ---
+    window.fetchConfig = async function() {
+      try {
+        const res = await fetch('/api/db-config');
+        dbConfig = await res.json();
+        const display = document.getElementById('config-display');
+        display.textContent = `URL: ${dbConfig.url || '(not set)'} | Token: ${dbConfig.token ? '***' + dbConfig.token.slice(-6) : '(not set)'}`;
+        log(`Config fetched. URL=${dbConfig.url ? 'present' : 'missing'}, token=${dbConfig.token ? 'present' : 'missing'}`, dbConfig.url && dbConfig.token ? 'pass' : 'fail');
+      } catch (e) {
+        log(`Failed to fetch config: ${e.message}`, 'fail');
+      }
+    };
+
+    window.checkHeaders = function() {
+      // Can't directly read response headers from same-origin fetch of this page,
+      // but we can check if SharedArrayBuffer is available as a proxy
+      const coop = performance.getEntriesByType('navigation')[0]?.serverTiming;
+      log('COOP/COEP: check SharedArrayBuffer availability as proxy (below)', 'info');
+      log(`Document crossOriginIsolated: ${self.crossOriginIsolated}`, self.crossOriginIsolated ? 'pass' : 'fail');
+    };
+
+    window.checkSharedArrayBuffer = function() {
+      try {
+        const sab = new SharedArrayBuffer(8);
+        log(`SharedArrayBuffer: available (created ${sab.byteLength} bytes)`, 'pass');
+      } catch (e) {
+        log(`SharedArrayBuffer: NOT available — ${e.message}`, 'fail');
+      }
+    };
+
+    // --- 2. Connection & Persistence ---
+    window.connectDb = async function() {
+      if (!dbConfig) {
+        log('Fetch config first!', 'warn');
+        return;
+      }
+
+      try {
+        // Dynamic import of sync-wasm
+        const { connect } = await import('/spike-assets/turso-client.js');
+
+        log('Connecting to OPFS database "spike-local"...');
+        db = await connect({
+          url: dbConfig.url,
+          authToken: dbConfig.token,
+          localPath: 'spike-local',
+        });
+
+        log('Connected. Running initial pull (bootstrap)...');
+        const pulled = await db.pull();
+        log(`Pull result: changed=${pulled}`, 'pass');
+
+        // Check if tables exist
+        const tables = await db.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
+        log(`Tables: ${tables.rows.map(r => r[0] || r.name).join(', ')}`, 'pass');
+      } catch (e) {
+        log(`Connection failed: ${e.message}\n${e.stack || ''}`, 'fail');
+      }
+    };
+
+    window.testPersistence = async function() {
+      if (!db) { log('Connect first!', 'warn'); return; }
+      try {
+        const id = 'persist-' + Date.now();
+        await db.execute({ sql: "INSERT OR REPLACE INTO spike_items (id, title, value) VALUES (?, ?, ?)", args: [id, 'Persistence test', new Date().toISOString()] });
+        const result = await db.execute({ sql: "SELECT * FROM spike_items WHERE id = ?", args: [id] });
+        log(`Write+Read: ${JSON.stringify(result.rows[0])}`, result.rows.length === 1 ? 'pass' : 'fail');
+        // Store the ID so we can check after reload
+        localStorage.setItem('spike-last-id', id);
+      } catch (e) {
+        log(`Persistence test failed: ${e.message}`, 'fail');
+      }
+    };
+
+    window.testAfterReload = async function() {
+      if (!db) { log('Connect first!', 'warn'); return; }
+      const lastId = localStorage.getItem('spike-last-id');
+      if (!lastId) { log('No previous write found. Write first, then reload.', 'warn'); return; }
+      try {
+        const result = await db.execute({ sql: "SELECT * FROM spike_items WHERE id = ?", args: [lastId] });
+        log(`Read after reload (id=${lastId}): ${result.rows.length === 1 ? JSON.stringify(result.rows[0]) : 'NOT FOUND'}`, result.rows.length === 1 ? 'pass' : 'fail');
+      } catch (e) {
+        log(`Read after reload failed: ${e.message}`, 'fail');
+      }
+    };
+
+    // --- 3. Bootstrap & Reset ---
+    window.checkSchema = async function() {
+      if (!db) { log('Connect first!', 'warn'); return; }
+      try {
+        const result = await db.execute("SELECT * FROM schema_migrations");
+        log(`schema_migrations: ${JSON.stringify(result.rows)}`, result.rows.length > 0 ? 'pass' : 'warn');
+      } catch (e) {
+        log(`schema_migrations check failed: ${e.message}`, 'fail');
+      }
+    };
+
+    window.resetOpfs = async function() {
+      try {
+        // Close existing connection
+        if (db) {
+          try { await db.close(); } catch(_) {}
+          db = null;
+        }
+        // Remove the OPFS database
+        const root = await navigator.storage.getDirectory();
+        await root.removeEntry('spike-local', { recursive: true });
+        log('OPFS database "spike-local" deleted. Click Connect to re-bootstrap.', 'pass');
+      } catch (e) {
+        if (e.name === 'NotFoundError') {
+          log('OPFS database already absent.', 'warn');
+        } else {
+          log(`Reset failed: ${e.message}`, 'fail');
+        }
+      }
+    };
+
+    // --- 4. Push / Pull ---
+    window.testPush = async function() {
+      if (!db) { log('Connect first!', 'warn'); return; }
+      try {
+        const id = 'push-' + Date.now();
+        await db.execute({ sql: "INSERT OR REPLACE INTO spike_items (id, title, value) VALUES (?, ?, ?)", args: [id, 'Push test', new Date().toISOString()] });
+        log(`Wrote locally: id=${id}`);
+        const result = await db.push();
+        log(`Push result: ${JSON.stringify(result)}`, 'pass');
+      } catch (e) {
+        log(`Push failed: ${e.message}`, 'fail');
+      }
+    };
+
+    window.testPull = async function() {
+      if (!db) { log('Connect first!', 'warn'); return; }
+      try {
+        const result = await db.pull();
+        log(`Pull result: changed=${result}`, 'pass');
+      } catch (e) {
+        log(`Pull failed: ${e.message}`, 'fail');
+      }
+    };
+
+    window.listItems = async function() {
+      if (!db) { log('Connect first!', 'warn'); return; }
+      try {
+        const result = await db.execute("SELECT id, title, value, updated_at FROM spike_items ORDER BY updated_at DESC LIMIT 10");
+        log(`Items (${result.rows.length}):`);
+        for (const row of result.rows) {
+          log(`  ${JSON.stringify(row)}`);
+        }
+      } catch (e) {
+        log(`List failed: ${e.message}`, 'fail');
+      }
+    };
+
+    // --- 5. Conflict ---
+    window.writeConflict = async function() {
+      if (!db) { log('Connect first!', 'warn'); return; }
+      try {
+        await db.execute({ sql: "INSERT OR REPLACE INTO spike_items (id, title, value, updated_at) VALUES (?, ?, ?, ?)", args: ['conflict-row', 'Conflict test', `Written by profile at ${new Date().toISOString()}`, new Date().toISOString()] });
+        log('Wrote conflict-row locally. Push from both profiles, then pull to see last-push-wins.', 'info');
+      } catch (e) {
+        log(`Conflict write failed: ${e.message}`, 'fail');
+      }
+    };
+
+    window.readConflict = async function() {
+      if (!db) { log('Connect first!', 'warn'); return; }
+      try {
+        const result = await db.execute({ sql: "SELECT * FROM spike_items WHERE id = 'conflict-row'", args: [] });
+        log(`conflict-row: ${result.rows.length ? JSON.stringify(result.rows[0]) : 'NOT FOUND'}`, result.rows.length ? 'pass' : 'warn');
+      } catch (e) {
+        log(`Conflict read failed: ${e.message}`, 'fail');
+      }
+    };
+
+    // Auto-check environment on load
+    log('Spike page loaded.');
+    log(`crossOriginIsolated: ${self.crossOriginIsolated}`, self.crossOriginIsolated ? 'pass' : 'fail');
+    try { new SharedArrayBuffer(8); log('SharedArrayBuffer: available', 'pass'); }
+    catch(e) { log('SharedArrayBuffer: NOT available', 'fail'); }
+  </script>
+</body>
+</html>

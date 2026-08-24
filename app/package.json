@@ -14,6 +14,7 @@
         "@chouquette/gleam": "^1.14.0",
         "@dragdroptouch/drag-drop-touch": "^2.0.3",
         "@instantdb/core": "^0.21.30",
+        "@tursodatabase/sync-wasm": "^0.7.2",
         "change-case": "^5.4.4",
         "dotenv": "^16.6.1",
         "iso8601-duration": "^2.1.3",
