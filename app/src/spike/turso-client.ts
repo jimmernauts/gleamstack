@@ -9,7 +9,7 @@ export async function connect({ url, authToken, localPath }) {
   const db = await tursoConnect({
     url,
     authToken,
-    localPath,
+    path: localPath,
   });
   return db;
 }
