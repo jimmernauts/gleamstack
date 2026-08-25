@@ -1,5 +1,5 @@
-import * as glen from '../glen/glen.mjs';
-import * as mealstack_worker from './mealstack_worker.mjs';
+import * as glen from '../build/dev/javascript/glen/glen.mjs';
+import * as mealstack_worker from '../build/dev/javascript/mealstack_worker/mealstack_worker.mjs';
 
 // COOP/COEP headers for worker-generated responses (/api/ routes)
 function addCrossOriginHeaders(response) {
