@@ -169,3 +169,17 @@ export async function closeDb(): Promise<void> {
     dbReady = null;
   }
 }
+
+/**
+ * Override the database singleton for testing.
+ * Pass null to reset to normal production behaviour.
+ */
+export function setDbForTesting(db: any): void {
+  if (db) {
+    dbInstance = db;
+    dbReady = Promise.resolve(db);
+  } else {
+    dbInstance = null;
+    dbReady = null;
+  }
+}

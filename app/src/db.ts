@@ -4,8 +4,9 @@
  * Replaces the InstantDB adapter. Keeps the same exported function signatures
  * so the Gleam FFI layer doesn't need changes during the migration.
  *
- * Subscriptions are stubbed as one-shot queries for M2. M3–M5 will convert
- * each feature slice to use direct re-query after writes.
+ * Recipe subscriptions use a callback registry: subscribers register on
+ * subscribe and are re-notified after every local write (save/delete).
+ * Other features (plan, shopping lists) remain as one-shot stubs until M4/M5.
  */
 
 import { getDb } from "./turso";
@@ -32,6 +33,46 @@ export async function do_get_tagoptions() {
 
 // --- RECIPES ---
 
+// Subscriber registry: callbacks re-fired after writes
+const recipeSummarySubscribers = new Set<(result: unknown) => void>();
+const recipeSlugSubscribers = new Map<string, Set<(result: unknown) => void>>();
+
+const RECIPE_SUMMARY_COLS =
+  "id, slug, title, cook_time, prep_time, serves, author, source, tags, shortlisted";
+
+async function queryRecipeSummaries(): Promise<unknown> {
+  const db = await getDb();
+  const stmt = await db.prepare(
+    `SELECT ${RECIPE_SUMMARY_COLS} FROM recipes ORDER BY created_at DESC`
+  );
+  const rows = await stmt.all();
+  return { data: { recipes: rows } };
+}
+
+async function queryRecipeBySlug(slug: string): Promise<unknown> {
+  const db = await getDb();
+  const stmt = await db.prepare("SELECT * FROM recipes WHERE slug = ?");
+  const rows = await stmt.all(slug);
+  return { data: { recipes: rows } };
+}
+
+async function notifyRecipeSummarySubscribers(): Promise<void> {
+  if (recipeSummarySubscribers.size === 0) return;
+  const result = await queryRecipeSummaries();
+  for (const cb of recipeSummarySubscribers) {
+    cb(result);
+  }
+}
+
+async function notifyRecipeSlugSubscribers(slug: string): Promise<void> {
+  const subs = recipeSlugSubscribers.get(slug);
+  if (!subs || subs.size === 0) return;
+  const result = await queryRecipeBySlug(slug);
+  for (const cb of subs) {
+    cb(result);
+  }
+}
+
 export async function do_get_recipes() {
   const db = await getDb();
   const stmt = await db.prepare("SELECT * FROM recipes ORDER BY created_at DESC");
@@ -41,30 +82,35 @@ export async function do_get_recipes() {
 export function do_subscribe_to_recipe_summaries(
   dispatch: (result: unknown) => void
 ): () => void {
-  // M2 stub: one-shot query, no live updates (M3 converts this)
+  recipeSummarySubscribers.add(dispatch);
   (async () => {
-    const db = await getDb();
-    const stmt = await db.prepare(
-      "SELECT id, slug, title, cook_time, prep_time, serves, author, source, tags, shortlisted FROM recipes ORDER BY created_at DESC"
-    );
-    const rows = await stmt.all();
-    dispatch({ data: { recipes: rows } });
+    const result = await queryRecipeSummaries();
+    dispatch(result);
   })();
-  return () => {}; // no-op unsubscribe
+  return () => {
+    recipeSummarySubscribers.delete(dispatch);
+  };
 }
 
 export function do_subscribe_to_one_recipe_by_slug(
   slug: string,
   dispatch: (result: unknown) => void
 ): () => void {
-  // M2 stub: one-shot query (M3 converts this)
+  if (!recipeSlugSubscribers.has(slug)) {
+    recipeSlugSubscribers.set(slug, new Set());
+  }
+  recipeSlugSubscribers.get(slug)!.add(dispatch);
   (async () => {
-    const db = await getDb();
-    const stmt = await db.prepare("SELECT * FROM recipes WHERE slug = ?");
-    const rows = await stmt.all(slug);
-    dispatch({ data: { recipes: rows } });
+    const result = await queryRecipeBySlug(slug);
+    dispatch(result);
   })();
-  return () => {};
+  return () => {
+    const subs = recipeSlugSubscribers.get(slug);
+    if (subs) {
+      subs.delete(dispatch);
+      if (subs.size === 0) recipeSlugSubscribers.delete(slug);
+    }
+  };
 }
 
 export async function do_get_one_recipe_by_slug(slug: string) {
@@ -103,13 +149,27 @@ export async function do_save_recipe(recipe: Recipe) {
     now  // updated_at
   );
 
+  // Re-notify subscribers
+  notifyRecipeSummarySubscribers();
+  notifyRecipeSlugSubscribers(recipe.slug);
+
   return { id };
 }
 
 export async function do_delete_recipe(id: string) {
   const db = await getDb();
+
+  // Look up slug before delete so we can notify slug subscribers
+  const lookupStmt = await db.prepare("SELECT slug FROM recipes WHERE id = ?");
+  const row = await lookupStmt.get(id);
+  const slug: string | null = row?.slug ?? null;
+
   const stmt = await db.prepare("DELETE FROM recipes WHERE id = ?");
-  return await stmt.run(id);
+  await stmt.run(id);
+
+  // Re-notify subscribers
+  notifyRecipeSummarySubscribers();
+  if (slug) notifyRecipeSlugSubscribers(slug);
 }
 
 // --- PLAN ---
