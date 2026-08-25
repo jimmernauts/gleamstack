@@ -1,308 +1,239 @@
-import { id, init } from "@instantdb/core";
-import type { PlanDay, Recipe, ShoppingList } from "../../common/types.ts";
-import schema from "./instant.schema.ts";
-// not sure how to fix these import type errors at write time
-import { JsPlanDay } from "./shared/types.mjs"
+/**
+ * Database repository — SQL query and write helpers.
+ *
+ * Replaces the InstantDB adapter. Keeps the same exported function signatures
+ * so the Gleam FFI layer doesn't need changes during the migration.
+ *
+ * Subscriptions are stubbed as one-shot queries for M2. M3–M5 will convert
+ * each feature slice to use direct re-query after writes.
+ */
+
+import { getDb } from "./turso";
+import type { Recipe, ShoppingList } from "../../common/types.ts";
 import { Option$isSome, Option$Some$0 } from "../gleam_stdlib/gleam/option.mjs";
 
-const db = init({
-    appId: "eeaf3b82-5b5d-40c4-a29a-b68988377c3c",
-    schema,
-});
+// --- Helpers ---
 
-// TAG OPTIONS
-
-export async function do_get_tagoptions() {
-    const query = { tag_options: {} };
-    const result = await db.queryOnce(query);
-    return result.data.tag_options;
+function generateId(): string {
+  return crypto.randomUUID();
 }
 
-// RECIPES
+// --- TAG OPTIONS ---
+
+export async function do_get_tagoptions() {
+  const db = await getDb();
+  const stmt = await db.prepare("SELECT id, name, options FROM tag_options");
+  const rows = await stmt.all();
+  return rows.map((r: any) => ({
+    ...r,
+    options: r.options ? JSON.parse(r.options) : [],
+  }));
+}
+
+// --- RECIPES ---
 
 export async function do_get_recipes() {
-    const query = { recipes: {} };
-    const result = await db.queryOnce(query);
-    return result.data.recipes;
+  const db = await getDb();
+  const stmt = await db.prepare("SELECT * FROM recipes ORDER BY created_at DESC");
+  return await stmt.all();
 }
 
 export function do_subscribe_to_recipe_summaries(
-    dispatch: (result: unknown) => void,
+  dispatch: (result: unknown) => void
 ): () => void {
-    const query = {
-        recipes: {
-            $: {
-                fields: [
-                    "slug" as const,
-                    "title" as const,
-                    "cook_time" as const,
-                    "prep_time" as const,
-                    "serves" as const,
-                    "author" as const,
-                    "source" as const,
-                    "tags" as const,
-                    "shortlisted" as const,
-                ],
-                order: {
-                    serverCreatedAt: "desc" as const,
-                },
-            },
-        },
-    };
-    const result = db.subscribeQuery(query, dispatch);
-    return result;
+  // M2 stub: one-shot query, no live updates (M3 converts this)
+  (async () => {
+    const db = await getDb();
+    const stmt = await db.prepare(
+      "SELECT id, slug, title, cook_time, prep_time, serves, author, source, tags, shortlisted FROM recipes ORDER BY created_at DESC"
+    );
+    const rows = await stmt.all();
+    dispatch({ data: { recipes: rows } });
+  })();
+  return () => {}; // no-op unsubscribe
 }
 
 export function do_subscribe_to_one_recipe_by_slug(
-    slug: string,
-    dispatch: (result: unknown) => void,
+  slug: string,
+  dispatch: (result: unknown) => void
 ): () => void {
-    const query = {
-        recipes: {
-            $: {
-                where: {
-                    slug: slug,
-                },
-            },
-        },
-    };
-    const result = db.subscribeQuery(query, dispatch);
-    return result;
+  // M2 stub: one-shot query (M3 converts this)
+  (async () => {
+    const db = await getDb();
+    const stmt = await db.prepare("SELECT * FROM recipes WHERE slug = ?");
+    const rows = await stmt.all(slug);
+    dispatch({ data: { recipes: rows } });
+  })();
+  return () => {};
 }
 
 export async function do_get_one_recipe_by_slug(slug: string) {
-    const query = {
-        recipes: {
-            $: {
-                where: {
-                    slug: slug,
-                },
-            },
-        },
-    };
-    const result = await db.queryOnce(query);
-    return result.data.recipes;
+  const db = await getDb();
+  const stmt = await db.prepare("SELECT * FROM recipes WHERE slug = ?");
+  return await stmt.all(slug);
 }
 
 export async function do_save_recipe(recipe: Recipe) {
-    // upsert
-    //https://stackoverflow.com/questions/11704267/in-javascript-how-to-conditionally-add-a-member-to-an-object
-    const obj: Recipe = {
-        ...(recipe.id !== "" ? { id: recipe.id } : {}),
-        slug: recipe.slug,
-        title: recipe.title,
-        cook_time: recipe.cook_time,
-        prep_time: recipe.prep_time,
-        serves: recipe.serves,
-        ...(recipe.author !== "" ? { author: recipe.author } : {}),
-        ...(recipe.source !== "" ? { source: recipe.source } : {}),
-        ...(recipe.tags !== "null" && recipe.tags !== "{}"
-            ? { tags: recipe.tags }
-            : {}),
-        ...(recipe.ingredients !== "null" && recipe.ingredients !== "{}"
-            ? { ingredients: recipe.ingredients }
-            : {}),
-        ...(recipe.method_steps !== "null" && recipe.method_steps !== "{}"
-            ? { method_steps: recipe.method_steps }
-            : {}),
-        ...(recipe.shortlisted !== false
-            ? { shortlisted: recipe.shortlisted }
-            : {}),
-    };
-    const id_to_use = recipe.id || id();
-    console.log("do_save_recipe upsert: ", obj);
-    const result = await db.transact(
-        db.tx.recipes[id_to_use].update({
-            slug: obj.slug,
-            title: obj.title,
-            cook_time: obj.cook_time,
-            prep_time: obj.prep_time,
-            serves: obj.serves,
-            author: obj.author,
-            source: obj.source,
-            tags: obj.tags,
-            ingredients: obj.ingredients,
-            method_steps: obj.method_steps,
-            shortlisted: obj.shortlisted,
-        }),
-    );
-    return result;
+  const db = await getDb();
+  const id = recipe.id || generateId();
+  const now = new Date().toISOString();
+
+  const stmt = await db.prepare(`
+    INSERT OR REPLACE INTO recipes
+      (id, slug, title, cook_time, prep_time, serves, author, source, tags, ingredients, method_steps, shortlisted, created_at, updated_at)
+    VALUES
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM recipes WHERE id = ?), ?), ?)
+  `);
+
+  await stmt.run(
+    id,
+    recipe.slug,
+    recipe.title,
+    recipe.cook_time,
+    recipe.prep_time,
+    recipe.serves,
+    recipe.author || null,
+    recipe.source || null,
+    recipe.tags && recipe.tags !== "null" && recipe.tags !== "{}" ? recipe.tags : null,
+    recipe.ingredients && recipe.ingredients !== "null" && recipe.ingredients !== "{}" ? recipe.ingredients : null,
+    recipe.method_steps && recipe.method_steps !== "null" && recipe.method_steps !== "{}" ? recipe.method_steps : null,
+    recipe.shortlisted ? 1 : 0,
+    id, // for COALESCE subquery
+    now, // created_at fallback
+    now  // updated_at
+  );
+
+  return { id };
 }
 
 export async function do_delete_recipe(id: string) {
-    const result = await db.transact(db.tx.recipes[id].delete());
-    return result;
+  const db = await getDb();
+  const stmt = await db.prepare("DELETE FROM recipes WHERE id = ?");
+  return await stmt.run(id);
 }
 
-// PLAN
+// --- PLAN ---
 
-export async function do_get_plan(
-    startDate: number,
-    endDate: number,
-): Promise<
-    {
-        id: string;
-        date: number;
-        planned_meals?: string | undefined;
-        lunch?: string | undefined;
-        dinner?: string | undefined;
-    }[]
-> {
-    const query = {
-        plan: {
-            $: {
-                where: {
-                    and: [
-                        { date: { $gte: startDate } },
-                        { date: { $lte: endDate } },
-                    ],
-                },
-            },
-        },
-    };
-    const result = await db.queryOnce(query);
-    return result.data.plan;
+export async function do_get_plan(startDate: number, endDate: number) {
+  const db = await getDb();
+  const stmt = await db.prepare(
+    "SELECT id, date, lunch, dinner FROM plan_days WHERE date >= ? AND date <= ? ORDER BY date"
+  );
+  return await stmt.all(startDate, endDate);
 }
 
 export function do_subscribe_to_plan(
-    dispatch: (result: unknown) => void,
-    startDate: number,
-    endDate: number,
+  dispatch: (result: unknown) => void,
+  startDate: number,
+  endDate: number
 ): () => void {
-    const query = {
-        plan: {
-            $: {
-                where: {
-                    and: [
-                        { date: { $gte: startDate } },
-                        { date: { $lte: endDate } },
-                    ],
-                },
-            },
-        },
-    };
-    const logAndDispatch = (result: unknown) => {
-        console.log(result);
-        dispatch(result);
-    }
-    const result = db.subscribeQuery(query, dispatch);
-    return result;
+  // M2 stub: one-shot query (M4 converts this)
+  (async () => {
+    const rows = await do_get_plan(startDate, endDate);
+    dispatch({ data: { plan: rows } });
+  })();
+  return () => {};
 }
 
-export async function do_save_plan(plan: JsPlanDay[]): Promise<void> {
-    console.log("Saving plan days:", plan);
-    for (const day of plan) {
-        const plan_day_to_update = await do_get_plan(day.date, day.date);
-        const id_to_update =
-            plan_day_to_update.length > 0 ? plan_day_to_update[0].id : id();
-        const record_to_insert = {
-            date: day.date,
-            ...(Option$isSome(day.lunch) ? { lunch: Option$Some$0(day.lunch) } : { lunch: null }),
-            ...(Option$isSome(day.dinner) ? { dinner: Option$Some$0(day.dinner) } : { dinner: null }),
-        }
-        await db.transact(
-            db.tx.plan[id_to_update].update(record_to_insert),
-        );
-    }
+export async function do_save_plan(plan: any[]): Promise<void> {
+  const db = await getDb();
 
-    return;
+  for (const day of plan) {
+    const lunch = Option$isSome(day.lunch) ? Option$Some$0(day.lunch) : null;
+    const dinner = Option$isSome(day.dinner) ? Option$Some$0(day.dinner) : null;
+
+    // Find existing by date, or create new
+    const findStmt = await db.prepare("SELECT id FROM plan_days WHERE date = ?");
+    const existing = await findStmt.get(day.date);
+    const id = existing?.id || generateId();
+
+    const stmt = await db.prepare(`
+      INSERT OR REPLACE INTO plan_days (id, date, lunch, dinner)
+      VALUES (?, ?, ?, ?)
+    `);
+    await stmt.run(id, day.date, lunch, dinner);
+  }
 }
 
-// SETTINGS
+// --- SETTINGS ---
+// Gemini key moved to Worker secret. These stubs maintain the FFI interface
+// until the settings UI is removed in M5.
 
 export async function do_retrieve_settings() {
-    const query = {
-        settings: {
-            $: {
-                limit: 1,
-            },
-        },
-    };
-    const result = await db.queryOnce(query);
-    return result.data.settings[0].api_key;
+  console.warn("[db] Settings removed — Gemini key is now a Worker secret");
+  return "";
 }
 
-export async function do_save_settings(api_key: string) {
-    console.log("saving settings...", api_key);
-    // TODO: make this dynamic
-    const result = await db.transact(
-        db.tx.settings["59b9c881-bd5a-494d-97cc-7f7c50ccb362"].update({
-            api_key: api_key,
-        }),
+export async function do_save_settings(_api_key: string) {
+  console.warn("[db] Settings removed — Gemini key is now a Worker secret");
+  return {};
+}
+
+// --- SHOPPING LIST ---
+
+export function do_subscribe_to_shopping_list_summaries(
+  dispatch: (result: unknown) => void
+) {
+  // M2 stub: one-shot query (M5 converts this)
+  (async () => {
+    const db = await getDb();
+    const stmt = await db.prepare(
+      "SELECT id, date, status FROM shopping_lists ORDER BY date DESC"
     );
-    console.log(result);
-    return result;
-}
-
-// SHOPPING LIST
-
-export function do_subscribe_to_shopping_list_summaries(dispatch: (result: unknown) => void) {
-    const query = {
-        shopping_lists: {
-            $: {
-                fields: [
-                    "id" as const,
-                    "date" as const,
-                    "status" as const,
-                ],
-            },
-        },
-    };
-    const result = db.subscribeQuery(query,dispatch);
-    return result;
+    const rows = await stmt.all();
+    dispatch({ data: { shopping_lists: rows } });
+  })();
+  return () => {};
 }
 
 export async function do_get_shopping_list(date: number) {
-    const query = {
-        shopping_lists: {
-            $: {
-                where: {
-                    date: date,
-                },
-            },
-        },
-    };
-    const result = await db.queryOnce(query);
-    return result.data.shopping_lists[0];
+  const db = await getDb();
+  const stmt = await db.prepare("SELECT * FROM shopping_lists WHERE date = ?");
+  return await stmt.get(date);
 }
 
 export async function do_save_shopping_list(listTuple: any) {
-    // Gleam passes a tuple: [date, status, items, linked_recipes, linked_plan_start, linked_plan_end]
-    const [date, status, items, linked_recipes, linked_plan_start, linked_plan_end] = listTuple;    
-    const list_to_update = await do_get_shopping_list(date);
-    const id_to_update = list_to_update ? list_to_update.id : id();
-    const result = await db.transact(
-        db.tx.shopping_lists[id_to_update].update({
-            date: date,
-            items: items,
-            status: status,
-            linked_recipes: linked_recipes,
-            linked_plan_start: linked_plan_start === 0 ? undefined : linked_plan_start,
-            linked_plan_end: linked_plan_end === 0 ? undefined : linked_plan_end,
-        }),
-    );
+  const [date, status, items, linked_recipes, linked_plan_start, linked_plan_end] = listTuple;
+  const db = await getDb();
 
-    return result;
+  // Find existing by date, or create new
+  const findStmt = await db.prepare("SELECT id FROM shopping_lists WHERE date = ?");
+  const existing = await findStmt.get(date);
+  const id = existing?.id || generateId();
+
+  const stmt = await db.prepare(`
+    INSERT OR REPLACE INTO shopping_lists
+      (id, date, status, items, linked_recipes, linked_plan_start, linked_plan_end)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  await stmt.run(
+    id,
+    date,
+    status,
+    items,
+    linked_recipes,
+    linked_plan_start || null,
+    linked_plan_end || null
+  );
+
+  return { id };
 }
 
-export function do_subscribe_to_one_shoppinglist_by_date(date: number, dispatch: (result: unknown) => void) {
-    const query = {
-        shopping_lists: {
-            $: {
-                where: {
-                    date: date,
-                },
-            },
-        },
-    };
-    
-    const result = db.subscribeQuery(query, (result: any) => {
-        dispatch(result);
-    });
-    return result;
+export function do_subscribe_to_one_shoppinglist_by_date(
+  date: number,
+  dispatch: (result: unknown) => void
+) {
+  // M2 stub: one-shot query (M5 converts this)
+  (async () => {
+    const row = await do_get_shopping_list(date);
+    dispatch({ data: { shopping_lists: row ? [row] : [] } });
+  })();
+  return () => {};
 }
 
 export async function do_delete_shopping_list(id: string) {
-    const result = await db.transact(db.tx.shopping_lists[id].delete());
-    return result;
+  const db = await getDb();
+  const stmt = await db.prepare("DELETE FROM shopping_lists WHERE id = ?");
+  return await stmt.run(id);
 }
