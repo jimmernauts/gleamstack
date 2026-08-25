@@ -33,18 +33,5 @@ export default defineConfig({
 	],
 	build: {
 		target: "esnext",
-		rollupOptions: {
-			input: {
-				main: path.resolve(__dirname, "index.html"),
-				"spike-assets/turso-client": path.resolve(__dirname, "src/spike/turso-client.ts"),
-			},
-			output: {
-				entryFileNames: (chunkInfo) => {
-					if (chunkInfo.name === "spike-assets/turso-client") return "spike-assets/turso-client.js";
-					return "assets/[name]-[hash].js";
-				},
-			},
-			preserveEntrySignatures: "exports-only",
-		},
 	},
 });
