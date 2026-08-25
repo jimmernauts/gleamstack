@@ -21,10 +21,16 @@ export default {
       });
     }
 
-    console.log(request);
-    const req = glen.convert_request(request);
-    const response = await mealstack_worker.handle_req(req);
-    const res = glen.convert_response(response);
-    return res;
+    // API routes handled by Gleam worker
+    if (url.pathname.startsWith('/api/')) {
+      console.log(request);
+      const req = glen.convert_request(request);
+      const response = await mealstack_worker.handle_req(req);
+      return glen.convert_response(response);
+    }
+
+    // All other routes: serve from static assets (SPA fallback)
+    // The assets binding respects not_found_handling: single-page-application
+    return env.ASSETS.fetch(request);
   },
 };
