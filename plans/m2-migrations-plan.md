@@ -16,32 +16,38 @@ Set up the database layer that all later milestones build on: migration files, t
 | `_headers` COOP/COEP in `app/public/` | Already in place from M1 |
 | No settings table needed | Gemini key lives as Worker secret; skip `settings` entity |
 
-**No structural changes to the M2 task steps are needed.** The plan proceeds as scoped.
+## Local development approach
 
-## File layout (new paths)
+Per [Turso's local development docs](https://docs.turso.tech/local-development#local-turso-database):
+
+- Use `@tursodatabase/database` for local dev and testing — in-process, file-based, no server needed, fully SQLite-compatible.
+- No dbmate. We keep plain SQL migration files and apply them directly.
+- For production: apply the same SQL to Turso Cloud via `turso db shell`.
+- For sync testing (M7+): use the local sync server (`tursodb --sync-server`).
+
+## File layout
 
 ```
 db/
   migrations/
-    001_initial_schema.sql          -- dbmate format: -- migrate:up / -- migrate:down
-  schema.sql                        -- dbmate dump (reference, generated)
+    001_initial_schema.sql          -- plain SQL (up section + schema_migrations insert)
+    001_initial_schema.down.sql     -- rollback SQL
 app/src/
   turso.ts                          -- connect/bootstrap/schema-check/reset
   db.ts                             -- repository: query and write helpers (replaces InstantDB)
-  db.test.ts                        -- unit tests for helpers against better-sqlite3
+  db.test.ts                        -- tests using @tursodatabase/database
 worker/scripts/
   import_instantdb_export.ts        -- reads plans/archive/export/*.json → SQL inserts
-  verify_export_sqlite.ts           -- (exists) validate export into local SQLite
+  apply_migrations.ts               -- applies migration files to a local or remote database
 ```
 
 ## Step-by-step plan
 
-### s-7939: Add dbmate and write initial migration
+### s-7939: Write initial migration
 
-1. Create `db/migrations/001_initial_schema.sql` using dbmate format:
+1. Create `db/migrations/001_initial_schema.sql`:
 
 ```sql
--- migrate:up
 CREATE TABLE recipes (
   id TEXT PRIMARY KEY,
   slug TEXT UNIQUE NOT NULL,
@@ -82,60 +88,72 @@ CREATE TABLE shopping_lists (
   linked_plan_end INTEGER
 );
 
--- migrate:down
+CREATE TABLE schema_migrations (
+  version TEXT PRIMARY KEY
+);
+
+INSERT INTO schema_migrations (version) VALUES ('001_initial_schema');
+```
+
+2. Create `db/migrations/001_initial_schema.down.sql`:
+
+```sql
+DROP TABLE IF EXISTS schema_migrations;
 DROP TABLE IF EXISTS shopping_lists;
 DROP TABLE IF EXISTS plan_days;
 DROP TABLE IF EXISTS tag_options;
 DROP TABLE IF EXISTS recipes;
 ```
 
-2. Add a `.dbmaterc` or `DATABASE_URL` convention:
-```yaml
-# .dbmaterc (project root)
-db/migrations
-schema-file: db/schema.sql
-```
-   DATABASE_URL: `sqlite:db/dev.sqlite3` for local authoring (gitignored).
+3. Add `db/local.db` to `.gitignore`.
 
-3. Add `db/dev.sqlite3` to `.gitignore`.
-
-4. Test locally: `dbmate up` creates the local SQLite, `dbmate dump` generates `db/schema.sql`.
+4. Write `scripts/apply_migrations.ts` — a small script that:
+   - Opens a local Turso database file (via `@tursodatabase/database`)
+   - Reads `schema_migrations` to see what's applied
+   - Applies any unapplied `.sql` files in order
+   - Works for both local dev and generating SQL for cloud application
 
 ### s-7940: Apply migration to dev Turso database via turso db shell
 
-This step runs on the host (sandbox cannot reach Turso API). Provide a script:
+Host-side step (sandbox can't reach Turso API):
 
 1. Create `scripts/apply-migration-to-turso.sh`:
    - Reads `db/migrations/001_initial_schema.sql`
-   - Extracts the `-- migrate:up` section
-   - Pipes it to `turso db shell gleamstack-dev` (or uses `.read`)
-   - Also inserts into `schema_migrations`: `INSERT INTO schema_migrations (version) VALUES ('001_initial_schema');`
+   - Pipes it to `turso db shell gleamstack-dev`
 
-2. The dev database is `gleamstack-dev` (not the spike one from M1).
+2. The dev database is `gleamstack-dev` (created fresh, not the spike from M1).
 
 ### s-7941: Implement startup schema-version check with reset/re-bootstrap
 
 Create `app/src/turso.ts`:
 
 ```typescript
+import { connect } from "@tursodatabase/sync-wasm";
+
 // Expected version baked into the build
 const EXPECTED_SCHEMA_VERSION = "001_initial_schema";
 
-export async function initDatabase(): Promise<Database> {
+export async function initDatabase() {
   const config = await fetchDbConfig();   // calls /api/db-config
   
-  let db = await connect(config);
+  let db = await connect({
+    path: config.path,
+    url: config.url,
+    authToken: config.authToken,
+  });
   
   const version = await getLocalSchemaVersion(db);
   
   if (version !== EXPECTED_SCHEMA_VERSION) {
-    // Schema mismatch: discard and re-bootstrap
     await db.close();
     await resetOpfsDatabase(config.path);
-    db = await connect(config);
+    db = await connect({
+      path: config.path,
+      url: config.url,
+      authToken: config.authToken,
+    });
     await db.pull();  // full bootstrap from cloud
     
-    // Verify
     const newVersion = await getLocalSchemaVersion(db);
     if (newVersion !== EXPECTED_SCHEMA_VERSION) {
       throw new Error(`Schema bootstrap failed: got ${newVersion}, expected ${EXPECTED_SCHEMA_VERSION}`);
@@ -145,7 +163,7 @@ export async function initDatabase(): Promise<Database> {
   return db;
 }
 
-async function getLocalSchemaVersion(db: Database): Promise<string | null> {
+async function getLocalSchemaVersion(db: any): Promise<string | null> {
   try {
     const stmt = await db.prepare(
       "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1"
@@ -159,13 +177,12 @@ async function getLocalSchemaVersion(db: Database): Promise<string | null> {
 
 async function resetOpfsDatabase(path: string): Promise<void> {
   const root = await navigator.storage.getDirectory();
-  // sync-wasm stores files under the path name
   await root.removeEntry(path, { recursive: true });
 }
 ```
 
 Key decisions:
-- Version comparison is simple string equality on the latest migration name.
+- Version comparison: string equality on the latest migration name.
 - On mismatch: close → removeEntry → reconnect → pull → verify.
 - If verify fails, throw (app shows error state, user must reload).
 - One-tab lock failure on `connect()` → show "already open in another tab" message.
@@ -183,8 +200,7 @@ export async function do_get_recipes() {
   const stmt = await db.prepare(
     "SELECT * FROM recipes ORDER BY created_at DESC"
   );
-  const rows = await stmt.all();
-  return rows;
+  return await stmt.all();
 }
 ```
 
@@ -200,14 +216,14 @@ Key helpers to implement (matching current db.ts exports):
 
 ### s-7943: Add fixtures, migration tests, and InstantDB-export importer
 
-1. **Fixtures**: Create `db/fixtures/` with sample JSON files matching the export format (subset of real data or hand-crafted).
+1. **Fixtures**: Create `db/fixtures/` with sample JSON matching the export format.
 
-2. **Migration tests** (using `better-sqlite3` in Node/Bun):
-   - Apply migration SQL to an in-memory SQLite database
+2. **Migration tests** (using `@tursodatabase/database`):
+   - Apply migration SQL to a local database
    - Insert fixture data
    - Verify constraints (unique slug, unique date, etc.)
    - Verify `schema_migrations` row exists
-   - Run the down migration and confirm tables are gone
+   - Apply down migration and confirm tables are gone
 
 3. **Importer** (`worker/scripts/import_instantdb_export.ts`):
    - Reads each `plans/archive/export/*.json`
@@ -215,26 +231,25 @@ Key helpers to implement (matching current db.ts exports):
    - Handles JSON serialization for array/object fields
    - Reports counts per table
    - Idempotent (uses INSERT OR REPLACE with stable IDs)
-   - Can target local SQLite (for testing) or pipe SQL to stdout for `turso db shell`
+   - Can target local database (for testing) or pipe SQL for `turso db shell`
 
-4. **Test the importer** against the local dbmate database:
-   - Run dbmate up → run importer → query counts → verify.
+4. **Test the importer**: apply migrations → run importer → query counts → verify.
 
 ## Sandbox vs. host boundary
 
 | Action | Where |
 |---|---|
 | Write migration SQL, helpers, tests, importer | Sandbox |
-| `dbmate up` against local SQLite | Sandbox (if dbmate installed) or script |
+| Run `apply_migrations.ts` against local `.db` file | Sandbox |
 | `turso db create gleamstack-dev` | Host |
-| `turso db shell gleamstack-dev < ...` | Host |
-| Run unit tests (better-sqlite3 / bun:sqlite) | Sandbox |
+| `turso db shell gleamstack-dev < migration.sql` | Host |
+| Run tests (`@tursodatabase/database` in-process) | Sandbox |
 | Deploy | Host |
 
 ## Definition of done
 
 - [ ] `db/migrations/001_initial_schema.sql` committed and valid
-- [ ] `dbmate up` succeeds against local SQLite (or equivalent test)
+- [ ] Migration applies cleanly to local `@tursodatabase/database`
 - [ ] `scripts/apply-migration-to-turso.sh` ready for host execution
 - [ ] `app/src/turso.ts` with `initDatabase()`, schema-version check, and OPFS reset
 - [ ] `app/src/db.ts` has SQL-based helpers matching current signatures
