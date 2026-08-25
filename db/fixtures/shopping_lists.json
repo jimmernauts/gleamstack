@@ -1,0 +1,22 @@
+{
+  "collection": "shopping_lists",
+  "count": 2,
+  "records": [
+    {
+      "id": "shop-001",
+      "date": 739598,
+      "status": "Completed",
+      "items": "[{\"ingredient\":{\"name\":\"flour\",\"quantity\":\"200g\"},\"checked\":true}]",
+      "linked_recipes": "[{\"recipe_slug\":\"simple-pasta\"}]"
+    },
+    {
+      "id": "shop-002",
+      "date": 739625,
+      "status": "Active",
+      "items": "[]",
+      "linked_recipes": "[]",
+      "linked_plan_start": 739620,
+      "linked_plan_end": 739626
+    }
+  ]
+}

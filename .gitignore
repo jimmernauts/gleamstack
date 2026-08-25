@@ -35,5 +35,5 @@ auth-wal
 # Local development databases
 db/local.db
 db/local.db-*
-db/test.db
-db/test.db-*
+db/test*.db
+db/test*.db-*

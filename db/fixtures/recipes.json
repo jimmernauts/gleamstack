@@ -1,0 +1,32 @@
+{
+  "collection": "recipes",
+  "count": 2,
+  "records": [
+    {
+      "id": "test-recipe-001",
+      "slug": "pink-potato-salad",
+      "title": "Pink potato salad",
+      "cook_time": 10,
+      "prep_time": 10,
+      "serves": 4,
+      "shortlisted": false,
+      "ingredients": "{\"0\":{\"units\":\"g\",\"quantity\":\"600\",\"name\":\"Baby potato\"},\"1\":{\"units\":\"pc\",\"quantity\":\"1\",\"name\":\"Red Cabbage\"}}",
+      "method_steps": "{\"0\":{\"step_text\":\"Boil the potatoes.\"},\"1\":{\"step_text\":\"Mix the dressing.\"}}",
+      "tags": "{\"0\":{\"name\":\"Cuisine\",\"value\":\"Australian\"},\"1\":{\"name\":\"Style\",\"value\":\"Salad\"}}"
+    },
+    {
+      "id": "test-recipe-002",
+      "slug": "simple-pasta",
+      "title": "Simple Pasta",
+      "cook_time": 8,
+      "prep_time": 10,
+      "serves": 2,
+      "author": "Test Author",
+      "source": "Test Book",
+      "shortlisted": true,
+      "ingredients": "{\"0\":{\"name\":\"spaghetti\",\"quantity\":\"200g\",\"units\":\"\"}}",
+      "method_steps": "{\"0\":{\"step_text\":\"Cook pasta.\"},\"1\":{\"step_text\":\"Add sauce.\"}}",
+      "tags": "{\"0\":{\"name\":\"Style\",\"value\":\"Weeknight\"}}"
+    }
+  ]
+}

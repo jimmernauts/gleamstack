@@ -1,0 +1,21 @@
+{
+  "collection": "tag_options",
+  "count": 3,
+  "records": [
+    {
+      "id": "tag-cuisine",
+      "name": "Cuisine",
+      "options": "[\"Mediterranean\",\"French\",\"Italian\",\"Chinese\",\"Thai\",\"Australian\"]"
+    },
+    {
+      "id": "tag-style",
+      "name": "Style",
+      "options": "[\"Veggie\",\"Meat & Sides\",\"Salad\",\"Slow Cooker\"]"
+    },
+    {
+      "id": "tag-label",
+      "name": "Label",
+      "options": "[\"Go-to\",\"Weeknight\",\"Fancy\",\"Light\"]"
+    }
+  ]
+}

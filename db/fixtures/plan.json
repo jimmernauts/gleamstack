@@ -1,0 +1,22 @@
+{
+  "collection": "plan",
+  "count": 3,
+  "records": [
+    {
+      "id": "plan-001",
+      "date": 739507,
+      "lunch": "{\"recipe\":{\"recipe_name\":\"Rice stuffed chicken\"},\"complete\":false}",
+      "dinner": "{\"recipe\":{\"recipe_name\":\"Carbo\"},\"complete\":false}",
+      "planned_meals": "\"[]\""
+    },
+    {
+      "id": "plan-002",
+      "date": 739508,
+      "dinner": "{\"recipe\":{\"recipe_name\":\"Veggie Lasagna\"},\"complete\":false}"
+    },
+    {
+      "id": "plan-003",
+      "date": 739509
+    }
+  ]
+}
