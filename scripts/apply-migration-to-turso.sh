@@ -9,8 +9,25 @@
 #   ./scripts/apply-migration-to-turso.sh gleamstack-dev db/migrations/001_initial_schema.sql
 #
 # Requires: turso CLI authenticated (turso auth login)
+#   Install: brew install tursodatabase/tap/turso
+#   Or:      curl -sSfL https://get.tur.so/install.sh | bash
+#
+# Alternative without CLI: use scripts/apply-migration-to-turso.mjs
 
 set -euo pipefail
+
+# Check turso CLI is available
+if ! command -v turso &> /dev/null; then
+  echo "Error: 'turso' CLI not found."
+  echo ""
+  echo "Install it:"
+  echo "  brew install tursodatabase/tap/turso"
+  echo "  # or: curl -sSfL https://get.tur.so/install.sh | bash"
+  echo ""
+  echo "Or use the Node-based alternative (no CLI needed):"
+  echo "  node --experimental-sqlite scripts/apply-migration-to-turso.mjs <db-url> <auth-token> [migration-file]"
+  exit 1
+fi
 
 DB_NAME="${1:?Usage: $0 <db-name> [migration-file]}"
 MIGRATION_FILE="${2:-db/migrations/001_initial_schema.sql}"
