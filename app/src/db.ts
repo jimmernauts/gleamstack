@@ -6,7 +6,7 @@
  *
  * Recipe and plan subscriptions use callback registries: subscribers register
  * on subscribe and are re-notified after every local write (save/delete).
- * All writes push to Turso Cloud. Shopping lists remain as one-shot stubs until M5.
+ * All writes push to Turso Cloud for persistence across page reloads.
  */
 
 import { getDb } from "./turso";
