@@ -4,9 +4,9 @@
  * Replaces the InstantDB adapter. Keeps the same exported function signatures
  * so the Gleam FFI layer doesn't need changes during the migration.
  *
- * Recipe subscriptions use a callback registry: subscribers register on
- * subscribe and are re-notified after every local write (save/delete).
- * Other features (plan, shopping lists) remain as one-shot stubs until M4/M5.
+ * Recipe and plan subscriptions use callback registries: subscribers register
+ * on subscribe and are re-notified after every local write (save/delete).
+ * All writes push to Turso Cloud. Shopping lists remain as one-shot stubs until M5.
  */
 
 import { getDb } from "./turso";
@@ -176,6 +176,33 @@ export async function do_delete_recipe(id: string) {
 
 // --- PLAN ---
 
+// Subscriber registry for plan: keyed by "startDate-endDate"
+const planSubscribers = new Map<string, Set<(result: unknown) => void>>();
+
+function planKey(startDate: number, endDate: number): string {
+  return `${startDate}-${endDate}`;
+}
+
+async function queryPlan(startDate: number, endDate: number): Promise<unknown> {
+  const db = await getDb();
+  const stmt = await db.prepare(
+    "SELECT id, date, lunch, dinner FROM plan_days WHERE date >= ? AND date <= ? ORDER BY date"
+  );
+  const rows = await stmt.all(startDate, endDate);
+  return { data: { plan: rows } };
+}
+
+async function notifyPlanSubscribers(): Promise<void> {
+  for (const [key, subs] of planSubscribers) {
+    if (subs.size === 0) continue;
+    const [start, end] = key.split("-").map(Number);
+    const result = await queryPlan(start, end);
+    for (const cb of subs) {
+      cb(result);
+    }
+  }
+}
+
 export async function do_get_plan(startDate: number, endDate: number) {
   const db = await getDb();
   const stmt = await db.prepare(
@@ -189,12 +216,22 @@ export function do_subscribe_to_plan(
   startDate: number,
   endDate: number
 ): () => void {
-  // M2 stub: one-shot query (M4 converts this)
+  const key = planKey(startDate, endDate);
+  if (!planSubscribers.has(key)) {
+    planSubscribers.set(key, new Set());
+  }
+  planSubscribers.get(key)!.add(dispatch);
   (async () => {
-    const rows = await do_get_plan(startDate, endDate);
-    dispatch({ data: { plan: rows } });
+    const result = await queryPlan(startDate, endDate);
+    dispatch(result);
   })();
-  return () => {};
+  return () => {
+    const subs = planSubscribers.get(key);
+    if (subs) {
+      subs.delete(dispatch);
+      if (subs.size === 0) planSubscribers.delete(key);
+    }
+  };
 }
 
 export async function do_save_plan(plan: any[]): Promise<void> {
@@ -215,6 +252,10 @@ export async function do_save_plan(plan: any[]): Promise<void> {
     `);
     await stmt.run(id, day.date, lunch, dinner);
   }
+
+  // Push to cloud, then re-notify subscribers
+  await db.push();
+  notifyPlanSubscribers();
 }
 
 // --- SETTINGS ---
