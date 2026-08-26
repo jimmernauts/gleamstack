@@ -274,19 +274,54 @@ export async function do_save_settings(_api_key: string) {
 
 // --- SHOPPING LIST ---
 
+// Subscriber registries for shopping lists
+const shoppingListSummarySubscribers = new Set<(result: unknown) => void>();
+const shoppingListDateSubscribers = new Map<number, Set<(result: unknown) => void>>();
+
+async function queryShoppingListSummaries(): Promise<unknown> {
+  const db = await getDb();
+  const stmt = await db.prepare(
+    "SELECT id, date, status FROM shopping_lists ORDER BY date DESC"
+  );
+  const rows = await stmt.all();
+  return { data: { shopping_lists: rows } };
+}
+
+async function queryShoppingListByDate(date: number): Promise<unknown> {
+  const db = await getDb();
+  const stmt = await db.prepare("SELECT * FROM shopping_lists WHERE date = ?");
+  const row = await stmt.get(date);
+  return { data: { shopping_lists: row ? [row] : [] } };
+}
+
+async function notifyShoppingListSummarySubscribers(): Promise<void> {
+  if (shoppingListSummarySubscribers.size === 0) return;
+  const result = await queryShoppingListSummaries();
+  for (const cb of shoppingListSummarySubscribers) {
+    cb(result);
+  }
+}
+
+async function notifyShoppingListDateSubscribers(date: number): Promise<void> {
+  const subs = shoppingListDateSubscribers.get(date);
+  if (!subs || subs.size === 0) return;
+  const result = await queryShoppingListByDate(date);
+  for (const cb of subs) {
+    cb(result);
+  }
+}
+
 export function do_subscribe_to_shopping_list_summaries(
   dispatch: (result: unknown) => void
 ) {
-  // M2 stub: one-shot query (M5 converts this)
+  shoppingListSummarySubscribers.add(dispatch);
   (async () => {
-    const db = await getDb();
-    const stmt = await db.prepare(
-      "SELECT id, date, status FROM shopping_lists ORDER BY date DESC"
-    );
-    const rows = await stmt.all();
-    dispatch({ data: { shopping_lists: rows } });
+    const result = await queryShoppingListSummaries();
+    dispatch(result);
   })();
-  return () => {};
+  return () => {
+    shoppingListSummarySubscribers.delete(dispatch);
+  };
 }
 
 export async function do_get_shopping_list(date: number) {
@@ -320,6 +355,11 @@ export async function do_save_shopping_list(listTuple: any) {
     linked_plan_end || null
   );
 
+  // Push to cloud, then re-notify subscribers
+  await db.push();
+  notifyShoppingListSummarySubscribers();
+  notifyShoppingListDateSubscribers(date);
+
   return { id };
 }
 
@@ -327,16 +367,36 @@ export function do_subscribe_to_one_shoppinglist_by_date(
   date: number,
   dispatch: (result: unknown) => void
 ) {
-  // M2 stub: one-shot query (M5 converts this)
+  if (!shoppingListDateSubscribers.has(date)) {
+    shoppingListDateSubscribers.set(date, new Set());
+  }
+  shoppingListDateSubscribers.get(date)!.add(dispatch);
   (async () => {
-    const row = await do_get_shopping_list(date);
-    dispatch({ data: { shopping_lists: row ? [row] : [] } });
+    const result = await queryShoppingListByDate(date);
+    dispatch(result);
   })();
-  return () => {};
+  return () => {
+    const subs = shoppingListDateSubscribers.get(date);
+    if (subs) {
+      subs.delete(dispatch);
+      if (subs.size === 0) shoppingListDateSubscribers.delete(date);
+    }
+  };
 }
 
 export async function do_delete_shopping_list(id: string) {
   const db = await getDb();
+
+  // Look up date before delete so we can notify date subscribers
+  const lookupStmt = await db.prepare("SELECT date FROM shopping_lists WHERE id = ?");
+  const row = await lookupStmt.get(id);
+  const date: number | null = row?.date ?? null;
+
   const stmt = await db.prepare("DELETE FROM shopping_lists WHERE id = ?");
-  return await stmt.run(id);
+  await stmt.run(id);
+
+  // Push to cloud, then re-notify subscribers
+  await db.push();
+  notifyShoppingListSummarySubscribers();
+  if (date) notifyShoppingListDateSubscribers(date);
 }
