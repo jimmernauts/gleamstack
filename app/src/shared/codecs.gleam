@@ -10,6 +10,14 @@ import gleam/result
 import gleam/string
 import lib/utils
 import rada/date
+
+/// Decode a boolean that may arrive as a bool (true/false) or an int (0/1)
+/// from SQLite, which stores booleans as integers.
+fn decode_bool_or_int() -> decode.Decoder(Bool) {
+  decode.one_of(decode.bool, [
+    decode.int |> decode.map(fn(n) { n != 0 }),
+  ])
+}
 import shared/types.{
   type Ingredient, type IngredientCategory, type MethodStep, type Recipe,
   type Tag, type TagOption, Ingredient, IngredientCategory, MethodStep, Recipe,
@@ -130,7 +138,7 @@ pub fn decode_recipe_with_inner_json() -> decode.Decoder(Recipe) {
   use shortlisted <- decode.optional_field(
     "shortlisted",
     option.None,
-    decode.optional(decode.bool),
+    decode.optional(decode_bool_or_int()),
   )
   decode.success(Recipe(
     id:,
@@ -190,7 +198,7 @@ pub fn decode_recipe_no_json() -> decode.Decoder(Recipe) {
   use shortlisted <- decode.optional_field(
     "shortlisted",
     option.None,
-    decode.optional(decode.bool),
+    decode.optional(decode_bool_or_int()),
   )
   decode.success(Recipe(
     id:,
