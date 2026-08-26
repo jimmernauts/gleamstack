@@ -8,7 +8,7 @@ This is a monorepo containing a Gleam frontend application and Cloudflare Worker
 
 - **Frontend:** Gleam with Lustre framework (Elm-inspired MVU architecture) compiling to JavaScript
 - **Backend:** Cloudflare Worker with Gleam and TypeScript
-- **Database:** InstantDB for real-time client-side persistence
+- **Database:** Turso (libSQL) — browser-local OPFS replica with cloud sync via push/pull
 - **Build Tools:** Vite, TailwindCSS v4 with fluid type scaling
 - **Package Manager:** Bun (not npm)
 
