@@ -41,6 +41,9 @@ function createTestDb() {
     exec(query: string) {
       raw.exec(query);
     },
+    push() {
+      // no-op in tests — no cloud to push to
+    },
     close() {
       raw.close();
     },

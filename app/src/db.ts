@@ -149,7 +149,8 @@ export async function do_save_recipe(recipe: Recipe) {
     now  // updated_at
   );
 
-  // Re-notify subscribers
+  // Push to cloud, then re-notify subscribers
+  await db.push();
   notifyRecipeSummarySubscribers();
   notifyRecipeSlugSubscribers(recipe.slug);
 
@@ -167,7 +168,8 @@ export async function do_delete_recipe(id: string) {
   const stmt = await db.prepare("DELETE FROM recipes WHERE id = ?");
   await stmt.run(id);
 
-  // Re-notify subscribers
+  // Push to cloud, then re-notify subscribers
+  await db.push();
   notifyRecipeSummarySubscribers();
   if (slug) notifyRecipeSlugSubscribers(slug);
 }
