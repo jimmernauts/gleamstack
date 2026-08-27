@@ -27,7 +27,8 @@ Everything below runs from the sandbox except the two user steps marked **[user]
 | # | What | Who |
 |---|---|---|
 | P1 | Production Turso DB created: `turso db create <prod-name> --tursodb` in `eu-west-1` (CLI or dashboard — no turso CLI in the sandbox) | **[user]** |
-| P2 | Prod DB URL + auth token handed over (used once for import + Worker secrets; do **not** add to `.dev.vars`) | **[user]** |
+| P2a | Long-lived prod DB token set **directly as Worker secrets** (`TURSO_URL`, `TURSO_AUTH_TOKEN`) via wrangler/dashboard — write-only, never transits the sandbox | **[user]** |
+| P2b | Short-lived migration token for Phase 2 + Phase 4 backup (`turso db tokens create <prod-db> --expiration 2d`) + the DB URL (URL is not secret — the app receives it from `/api/db-config`) | **[user]** |
 | P3 | Production InstantDB admin token for app `eeaf3b82-5b5d-40c4-a29a-b68988377c3c` (for the unused-check; it was removed from `.dev.vars`) | **[user]** |
 | P4 | `CLOUDFLARE_API_TOKEN` usable by wrangler | present in sandbox ✓ |
 | P5 | `GEMINI_API_KEY` value for the Worker secret | **[user]** (or confirm already set: `wrangler secret list`) |
@@ -61,7 +62,9 @@ were paused in M0.
 
 ## Phase 3 — Deploy and smoke-check (s-7984)
 
-1. Set Worker secrets: `wrangler secret put TURSO_URL / TURSO_AUTH_TOKEN / GEMINI_API_KEY`.
+1. Confirm Worker secrets exist by name: `wrangler secret list` must show `TURSO_URL`,
+   `TURSO_AUTH_TOKEN`, `GEMINI_API_KEY` (user sets the Turso pair directly, P2a; values are
+   write-only so presence + working smoke checks are the verification).
 2. Build fresh assets: `cd app && rm -rf dist && npx vite build`.
 3. `npx wrangler deploy` (worker name `mealstack`).
 4. Smoke checks against the deployed URL, per `.agent/workflows/e2e-verification.md`:
