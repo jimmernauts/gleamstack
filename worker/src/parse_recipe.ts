@@ -1,5 +1,5 @@
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
-import { createClient } from "@libsql/client/web";
+import { connect } from "@tursodatabase/serverless";
 import { type Result, Ok, Error as GError } from "./gleam.mjs";
 
 // Worker env is exposed by index.mjs via globalThis.__workerEnv
@@ -43,12 +43,12 @@ export async function getAvailableTagOptions(
   const options = emptyTagOptions();
   try {
     const env = getWorkerEnv();
-    const client = createClient({
+    const conn = connect({
       url: env.TURSO_URL,
       authToken: env.TURSO_AUTH_TOKEN,
     });
-    const result = await client.execute("SELECT name, options FROM tag_options");
-    for (const row of result.rows) {
+    const rows = await conn.all("SELECT name, options FROM tag_options");
+    for (const row of rows) {
       const rawName = typeof row.name === "string" ? row.name.trim() : "";
       const name = TAG_NAMES.find(
         (candidate) => candidate.toLowerCase() === rawName.toLowerCase(),
