@@ -40,8 +40,6 @@ for i in $(seq 1 15); do
 done
 ```
 
-Confirm: no `Initialized DB with Admin Token` in wrangler output. If you see it, the lazy-import in `worker/src/index.mjs` isn't working and the InstantDB admin SDK will make workerd unresponsive.
-
 ## Verify with agent-browser
 
 Close any stale browser sessions first:
@@ -137,12 +135,14 @@ agent-browser screenshot /tmp/gleamstack-e2e.png
 Query Turso Cloud via HTTP to confirm push() worked:
 
 ```bash
+# Derive endpoint and token from .dev.vars (region/URL can change — never hardcode)
 TOKEN=$(grep TURSO_AUTH_TOKEN .dev.vars | cut -d= -f2)
+TURSO_HTTP=$(grep TURSO_URL .dev.vars | cut -d= -f2 | sed -E 's,^(turso|libsql)://,https://,')
 curl --noproxy '*' -s --max-time 10 \
-  "https://gleamstack-dev-jimmernauts.aws-ap-northeast-1.turso.io/v3/pipeline" \
+  "$TURSO_HTTP/v3/pipeline" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"requests":[{"type":"execute","stmt":{"sql":"SELECT slug, title FROM recipes"}}]}'
+  -d '{"requests":[{"type":"execute","stmt":{"sql":"SELECT slug, title FROM recipes"}},{"type":"close"}]}'
 ```
 
 ## Troubleshooting
@@ -153,8 +153,7 @@ curl --noproxy '*' -s --max-time 10 \
 | workerd accepts TCP but never responds | Old wrangler parent respawning stale workerd children | Find and kill the wrangler parent node process (check `PPid` in `/proc/<pid>/status`) |
 | curl returns empty but wrangler says "Ready" | Sandbox proxy interfering; use `--noproxy '*'` with curl | Always use `curl --noproxy '*'` inside the sandbox |
 | Recipes don't show despite data in DB | Gleam decoder type mismatch (e.g. bool vs int) | Check `codecs.gleam` — SQLite returns integers for booleans |
-| `Initialized DB with Admin Token: false` in wrangler output | Worker top-level import runs InstantDB init | Ensure `worker/src/index.mjs` uses lazy import for Gleam handler |
-| Page loads but OPFS files are 0 bytes | Turso Cloud schema not applied | Run `turso db shell <dbname> < db/migrations/001_initial_schema.sql` |
+| Page loads but OPFS files are 0 bytes | Turso Cloud schema not applied | `turso db shell <dbname> < db/migrations/001_initial_schema.sql` from the host, or from the sandbox POST the migration statements to `$TURSO_HTTP/v3/pipeline` (same auth as "Verify cloud data directly") |
 | COOP/COEP headers ignored in host browser | Accessing via IP instead of localhost | Use `http://localhost:<port>` — browsers require trustworthy origin for COOP/COEP |
 
 ## Notes on agent-browser form interaction
