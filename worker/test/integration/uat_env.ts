@@ -1,18 +1,30 @@
-const MEALSTACK_DEV_APP_ID = "4304e120-9a5c-45e4-ba7a-4aaa0b7f282a";
 const PRODUCTION_WORKER_HOST = "mealstack.jimmernauts.workers.dev";
 
 export function requireUatEnvironment(): URL {
-    if (process.env.INSTANT_APP_ID !== MEALSTACK_DEV_APP_ID) {
+    if (!process.env.TURSO_URL) {
         throw new Error(
-            "UAT tests require INSTANT_APP_ID for the mealstack-dev InstantDB app",
+            "UAT tests require TURSO_URL (set in worker/.dev.vars)",
         );
     }
 
-    if (!process.env.INSTANT_ADMIN_TOKEN) {
+    if (!process.env.TURSO_AUTH_TOKEN) {
         throw new Error(
-            "UAT tests require INSTANT_ADMIN_TOKEN from worker/.dev.vars",
+            "UAT tests require TURSO_AUTH_TOKEN (set in worker/.dev.vars)",
         );
     }
+
+    if (!process.env.GEMINI_API_KEY) {
+        throw new Error(
+            "UAT tests require GEMINI_API_KEY (set in worker/.dev.vars)",
+        );
+    }
+
+    // Expose env for parse_recipe.ts (mirrors what index.mjs does at runtime)
+    globalThis.__workerEnv = {
+        TURSO_URL: process.env.TURSO_URL,
+        TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN,
+        GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    };
 
     const workerUrl = new URL(
         process.env.MEALSTACK_WORKER_URL ?? "http://127.0.0.1:3000",

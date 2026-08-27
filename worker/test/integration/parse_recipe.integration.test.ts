@@ -9,7 +9,7 @@ requireUatEnvironment();
 
 describe("parse recipe integration", () => {
     it(
-        "parses the repository recipe fixture through InstantDB and Gemini",
+        "parses the repository recipe fixture through Turso and Gemini",
         async () => {
             const result = await do_parse_recipe_text(recipeText);
             expect(result).toBeInstanceOf(Ok);

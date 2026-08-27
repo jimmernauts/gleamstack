@@ -1,17 +1,15 @@
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
-import { init } from "@instantdb/admin";
+import { createClient } from "@libsql/client/web";
 import { type Result, Ok, Error as GError } from "./gleam.mjs";
 
-const APP_ID =
-  process.env.INSTANT_APP_ID || "eeaf3b82-5b5d-40c4-a29a-b68988377c3c";
+// Worker env is exposed by index.mjs via globalThis.__workerEnv
+declare const globalThis: { __workerEnv?: Record<string, string> };
 
-// Initialize Instant DB Admin
-const db = init({
-  appId: APP_ID,
-  adminToken: process.env.INSTANT_ADMIN_TOKEN || "",
-});
-
-console.log(`Initialized DB with Admin Token: ${!!process.env.INSTANT_ADMIN_TOKEN}`);
+function getWorkerEnv(): Record<string, string> {
+  const env = globalThis.__workerEnv;
+  if (!env) throw new Error("Worker env not available (globalThis.__workerEnv not set)");
+  return env;
+}
 
 const TAG_NAMES = ["Cuisine", "Style", "Label"] as const;
 type TagName = (typeof TAG_NAMES)[number];
@@ -41,19 +39,24 @@ function parseTagValues(value: unknown): string[] {
 export async function getAvailableTagOptions(
   log: (msg: string) => void,
  ): Promise<AllowedTagOptions> {
-  log("Retrieving existing tag options from Instant DB...");
+  log("Retrieving existing tag options from Turso...");
   const options = emptyTagOptions();
   try {
-    const result = await db.query({ tag_options: {} });
-    for (const record of (result.tag_options ?? []) as TagOptionRecord[]) {
-      const rawName = typeof record.name === "string" ? record.name.trim() : "";
+    const env = getWorkerEnv();
+    const client = createClient({
+      url: env.TURSO_URL,
+      authToken: env.TURSO_AUTH_TOKEN,
+    });
+    const result = await client.execute("SELECT name, options FROM tag_options");
+    for (const row of result.rows) {
+      const rawName = typeof row.name === "string" ? row.name.trim() : "";
       const name = TAG_NAMES.find(
         (candidate) => candidate.toLowerCase() === rawName.toLowerCase(),
       );
       if (!name) continue;
       options[name] = [
         ...new Set(
-          parseTagValues(record.options)
+          parseTagValues(row.options)
             .map((value) => value.trim())
             .filter(Boolean),
         ),
@@ -130,13 +133,11 @@ function normalizeParsedRecipe(
 export async function getGeminiClient(
   log: (msg: string) => void,
 ): Promise<GoogleGenAI> {
-  log("Retrieving settings from Instant DB...");
-  const settingsHelper = await db.query({ settings: { $: { limit: 1 } } });
-  const settings = settingsHelper.settings?.[0];
-
-  const apiKey = settings?.api_key;
+  log("Retrieving Gemini API key from Worker env...");
+  const env = getWorkerEnv();
+  const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("No valid Gemini API key available");
+    throw new Error("No GEMINI_API_KEY configured in Worker secrets");
   }
 
   log("Initializing Gemini...");

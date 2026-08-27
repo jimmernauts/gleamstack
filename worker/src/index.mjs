@@ -1,5 +1,4 @@
-// Lazy-import the Gleam worker to avoid module-level side effects
-// (parse_recipe.ts initialises InstantDB admin at import time)
+// Lazy-import the Gleam worker to avoid running module-level code at startup.
 let glen, mealstack_worker;
 async function getGleamWorker() {
   if (!glen) {
@@ -31,8 +30,9 @@ export default {
 
     // API routes handled by Gleam worker (lazy-loaded)
     if (url.pathname.startsWith('/api/')) {
+      // Expose env to parse_recipe.ts (it needs TURSO_URL, TURSO_AUTH_TOKEN, GEMINI_API_KEY)
+      globalThis.__workerEnv = env;
       const { glen, mealstack_worker } = await getGleamWorker();
-      console.log(request);
       const req = glen.convert_request(request);
       const response = await mealstack_worker.handle_req(req);
       return glen.convert_response(response);
