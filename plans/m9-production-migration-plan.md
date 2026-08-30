@@ -81,18 +81,19 @@ were paused in M0.
 
 Only after Phase 3 passes:
 
-1. First Turso backup: scripted full dump of all tables via `/v3/pipeline` into
-   `plans/archive/turso-backup-<date>/` (JSON per table + manifest with row counts
-   and hashes), committed. Simple restore = replay through `import_to_turso.mjs`-style
-   batches; document that in the backup README.
-2. Archive: confirm `plans/archive/export/` is complete and committed; tag the repo
-   `pre-instantdb-retirement`.
-3. Retire InstantDB **[user]** (dashboard actions):
+> Amended 2026-08-30: the originally planned "first Turso backup" and repo tag are
+> dropped. Turso Cloud does continuous point-in-time recovery automatically (restore
+> window depends on plan tier), and the committed `plans/archive/export/` covers
+> provider-independent recovery up to cutover. A tag protects nothing the export and
+> git history don't already cover.
+
+1. Archive: confirm `plans/archive/export/` is complete and committed.
+2. Retire InstantDB **[user]** (dashboard actions):
    - delete/rotate the admin tokens for prod (`eeaf3b82-…`) and dev (`4304e120-…`) apps,
-   - delete both apps once the tag + backup exist.
-4. Scrub: verify no `INSTANT_*` values remain in `.dev.vars`, CI, or Worker secrets
+   - delete both apps.
+3. Scrub: verify no `INSTANT_*` values remain in `.dev.vars`, CI, or Worker secrets
    (`wrangler secret list`).
-5. Close out: mark t-7980 done with evidence links; update `AGENTS.md`/onboarding doc
+4. Close out: mark t-7980 done with evidence links; update `AGENTS.md`/onboarding doc
    if any InstantDB mention survives.
 
 ## Rollback posture
@@ -100,8 +101,8 @@ Only after Phase 3 passes:
 - Phases 1–2 touch only the new, empty prod Turso DB — abort at any point costs nothing.
 - Phase 3 replaces the deployed Worker; the InstantDB-era build is redeployable from git
   until Phase 4 deletes the InstantDB apps.
-- Phase 4 step 3 is the **only irreversible action** and is gated on: smoke checks passed,
-  backup committed, repo tagged.
+- Phase 4 step 2 is the **only irreversible action** and is gated on: smoke checks
+  passed and the archived export committed.
 
 ## Task-step mapping
 
