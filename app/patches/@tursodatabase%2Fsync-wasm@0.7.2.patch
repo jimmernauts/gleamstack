@@ -1,0 +1,80 @@
+diff --git a/dist/promise-bundle.js b/dist/promise-bundle.js
+index 48484c331f1efa6256eaf05271d9c6512885058b..eb70a5452d320c417ba18e3f621f16a4dbd0a445 100644
+--- a/dist/promise-bundle.js
++++ b/dist/promise-bundle.js
+@@ -170,6 +170,7 @@ class Database extends DatabasePromise {
+                     registerFileAtWorker(this.#worker, `${this.name}-wal-revert`),
+                     registerFileAtWorker(this.#worker, `${this.name}-info`),
+                     registerFileAtWorker(this.#worker, `${this.name}-changes`),
++                    registerFileAtWorker(this.#worker, `${this.name}-log`),
+                 ]);
+             }
+             await run(this.#runner, this.#engine.connect(), this.execLock);
+@@ -325,6 +326,7 @@ class Database extends DatabasePromise {
+                     unregisterFileAtWorker(this.#worker, `${this.name}-wal-revert`),
+                     unregisterFileAtWorker(this.#worker, `${this.name}-info`),
+                     unregisterFileAtWorker(this.#worker, `${this.name}-changes`),
++                    unregisterFileAtWorker(this.#worker, `${this.name}-log`),
+                 ]);
+             }
+             this.#engine.close();
+diff --git a/dist/promise-default.js b/dist/promise-default.js
+index f6ad7d79f78f0cd27cc7812d34edbb69b11d454e..f7834e2730eb3c3bfdfa6c9e618452b988fd8277 100644
+--- a/dist/promise-default.js
++++ b/dist/promise-default.js
+@@ -170,6 +170,7 @@ class Database extends DatabasePromise {
+                     registerFileAtWorker(this.#worker, `${this.name}-wal-revert`),
+                     registerFileAtWorker(this.#worker, `${this.name}-info`),
+                     registerFileAtWorker(this.#worker, `${this.name}-changes`),
++                    registerFileAtWorker(this.#worker, `${this.name}-log`),
+                 ]);
+             }
+             await run(this.#runner, this.#engine.connect(), this.execLock);
+@@ -325,6 +326,7 @@ class Database extends DatabasePromise {
+                     unregisterFileAtWorker(this.#worker, `${this.name}-wal-revert`),
+                     unregisterFileAtWorker(this.#worker, `${this.name}-info`),
+                     unregisterFileAtWorker(this.#worker, `${this.name}-changes`),
++                    unregisterFileAtWorker(this.#worker, `${this.name}-log`),
+                 ]);
+             }
+             this.#engine.close();
+diff --git a/dist/promise-turbopack-hack.js b/dist/promise-turbopack-hack.js
+index d2ad3ea9b913007068c69e9b6bafe6a6eea3bf4e..4428b151815124522b0e8b91e8bc7a87d6cd1ae0 100644
+--- a/dist/promise-turbopack-hack.js
++++ b/dist/promise-turbopack-hack.js
+@@ -170,6 +170,7 @@ class Database extends DatabasePromise {
+                     registerFileAtWorker(this.#worker, `${this.name}-wal-revert`),
+                     registerFileAtWorker(this.#worker, `${this.name}-info`),
+                     registerFileAtWorker(this.#worker, `${this.name}-changes`),
++                    registerFileAtWorker(this.#worker, `${this.name}-log`),
+                 ]);
+             }
+             await run(this.#runner, this.#engine.connect(), this.execLock);
+@@ -325,6 +326,7 @@ class Database extends DatabasePromise {
+                     unregisterFileAtWorker(this.#worker, `${this.name}-wal-revert`),
+                     unregisterFileAtWorker(this.#worker, `${this.name}-info`),
+                     unregisterFileAtWorker(this.#worker, `${this.name}-changes`),
++                    unregisterFileAtWorker(this.#worker, `${this.name}-log`),
+                 ]);
+             }
+             this.#engine.close();
+diff --git a/dist/promise-vite-dev-hack.js b/dist/promise-vite-dev-hack.js
+index cd27c7875cf863c846b33d101ab5a8d6e3d8f2ea..f61c6a412917f6477575ff612f98456a1f9b83bb 100644
+--- a/dist/promise-vite-dev-hack.js
++++ b/dist/promise-vite-dev-hack.js
+@@ -170,6 +170,7 @@ class Database extends DatabasePromise {
+                     registerFileAtWorker(this.#worker, `${this.name}-wal-revert`),
+                     registerFileAtWorker(this.#worker, `${this.name}-info`),
+                     registerFileAtWorker(this.#worker, `${this.name}-changes`),
++                    registerFileAtWorker(this.#worker, `${this.name}-log`),
+                 ]);
+             }
+             await run(this.#runner, this.#engine.connect(), this.execLock);
+@@ -325,6 +326,7 @@ class Database extends DatabasePromise {
+                     unregisterFileAtWorker(this.#worker, `${this.name}-wal-revert`),
+                     unregisterFileAtWorker(this.#worker, `${this.name}-info`),
+                     unregisterFileAtWorker(this.#worker, `${this.name}-changes`),
++                    unregisterFileAtWorker(this.#worker, `${this.name}-log`),
+                 ]);
+             }
+             this.#engine.close();
