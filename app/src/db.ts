@@ -19,6 +19,19 @@ function generateId(): string {
   return crypto.randomUUID();
 }
 
+/**
+ * Best-effort pull of remote changes, called before every write so a device
+ * sees the latest remote state before mutating (last-push-wins on conflict).
+ * Failures are non-fatal: offline writes must still succeed.
+ */
+async function pullLatest(db: any): Promise<void> {
+  try {
+    await db.pull();
+  } catch (err) {
+    console.warn("[db] Pull before write failed (continuing offline):", err);
+  }
+}
+
 // --- TAG OPTIONS ---
 
 export async function do_get_tagoptions() {
@@ -121,6 +134,7 @@ export async function do_get_one_recipe_by_slug(slug: string) {
 
 export async function do_save_recipe(recipe: Recipe) {
   const db = await getDb();
+  await pullLatest(db);
   const id = recipe.id || generateId();
   const now = new Date().toISOString();
 
@@ -159,6 +173,7 @@ export async function do_save_recipe(recipe: Recipe) {
 
 export async function do_delete_recipe(id: string) {
   const db = await getDb();
+  await pullLatest(db);
 
   // Look up slug before delete so we can notify slug subscribers
   const lookupStmt = await db.prepare("SELECT slug FROM recipes WHERE id = ?");
@@ -236,6 +251,7 @@ export function do_subscribe_to_plan(
 
 export async function do_save_plan(plan: any[]): Promise<void> {
   const db = await getDb();
+  await pullLatest(db);
 
   for (const day of plan) {
     const lunch = Option$isSome(day.lunch) ? Option$Some$0(day.lunch) : null;
@@ -333,6 +349,7 @@ export async function do_get_shopping_list(date: number) {
 export async function do_save_shopping_list(listTuple: any) {
   const [date, status, items, linked_recipes, linked_plan_start, linked_plan_end] = listTuple;
   const db = await getDb();
+  await pullLatest(db);
 
   // Find existing by date, or create new
   const findStmt = await db.prepare("SELECT id FROM shopping_lists WHERE date = ?");
@@ -386,6 +403,7 @@ export function do_subscribe_to_one_shoppinglist_by_date(
 
 export async function do_delete_shopping_list(id: string) {
   const db = await getDb();
+  await pullLatest(db);
 
   // Look up date before delete so we can notify date subscribers
   const lookupStmt = await db.prepare("SELECT date FROM shopping_lists WHERE id = ?");

@@ -69,6 +69,16 @@ async function initDatabase(): Promise<any> {
     console.log("[turso] Re-bootstrap complete.");
   }
 
+  // Bring an existing replica current on startup. Fresh replicas already
+  // bootstrap-pulled during connect; for returning devices this fetches
+  // remote changes made since the last visit. Best-effort: offline must
+  // not block the app.
+  try {
+    await db.pull();
+  } catch (err) {
+    console.warn("[turso] Startup pull failed (continuing offline):", err);
+  }
+
   dbInstance = db;
   return db;
 }
