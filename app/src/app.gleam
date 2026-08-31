@@ -14,6 +14,7 @@ import lustre/attribute.{class, href}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{a, nav, section, span}
+import lustre/event
 import modem
 import pages/planner
 import pages/recipe_detail
@@ -49,6 +50,7 @@ fn init(_flags) -> #(Model, Effect(Msg)) {
     Model(
       current_route: result.unwrap(initial_route, Home),
       current_recipe: None,
+      write_error: None,
       recipes: initial_recipe_list,
       planner: planner.PlannerModel(
         plan_week: dict.new(),
@@ -101,6 +103,7 @@ pub type Model {
     settings: settings.SettingsModel,
     upload: upload.UploadModel,
     shoppinglist: shoppinglist.ShoppingListModel,
+    write_error: Option(String),
   )
 }
 
@@ -130,6 +133,7 @@ pub type Msg {
   Upload(upload.UploadMsg)
   ShoppingList(shoppinglist.ShoppingListMsg)
   DbSubscriptionOpened(String, fn() -> Nil)
+  DismissWriteError
 }
 
 // ROUTER ----------------------------------------------------------------------
@@ -445,6 +449,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             new_recipe,
             model.recipes,
           ),
+          write_error: None,
         ),
         effect.batch([
           {
@@ -456,8 +461,16 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       )
     }
     RecipeDetail(recipe_detail.DbDeletedRecipe(_id)) -> #(
-      Model(..model, current_recipe: None),
+      Model(..model, current_recipe: None, write_error: None),
       modem.push("/recipes", None, None),
+    )
+    RecipeDetail(recipe_detail.DbWriteFailed(message)) -> #(
+      Model(..model, write_error: Some(message)),
+      effect.none(),
+    )
+    DismissWriteError -> #(
+      Model(..model, write_error: None),
+      effect.none(),
     )
     RecipeDetail(detail_msg) -> {
       let #(child_model, child_effect) =
@@ -715,7 +728,32 @@ fn view(model: Model) -> Element(Msg) {
     ViewUpload(url: _url) ->
       element.map(upload.view_upload(model.upload), Upload)
   }
-  view_base(page)
+  view_base(element.fragment([view_write_error(model.write_error), page]))
+}
+
+/// Fixed banner shown when a database write fails. Writes used to fail
+/// silently; this makes them impossible to miss without disturbing layout.
+pub fn view_write_error(err: Option(String)) -> Element(Msg) {
+  case err {
+    None -> element.none()
+    Some(message) ->
+      html.div(
+        [
+          class(
+            "fixed top-2 left-1/2 -translate-x-1/2 z-50 max-w-xl rounded-md", 
+          ),
+          class("bg-red-700 text-white px-4 py-3 shadow-lg flex items-center gap-3"),
+          attribute.attribute("role", "alert"),
+        ],
+        [
+          span([], [text(message)]),
+          html.button(
+            [class("font-bold underline cursor-pointer"), event.on_click(DismissWriteError)],
+            [text("Dismiss")],
+          ),
+        ],
+      )
+  }
 }
 
 fn view_base(children: Element(Msg)) -> Element(Msg) {

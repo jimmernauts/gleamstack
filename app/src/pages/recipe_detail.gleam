@@ -2,6 +2,7 @@ import components/nav_footer.{nav_footer}
 import components/page_title.{page_title}
 import gleam/dict
 import gleam/int
+import gleam/javascript/promise.{type Promise}
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -54,6 +55,7 @@ pub type RecipeDetailMsg {
   UserRemovedMethodStepAtIndex(Int)
   UserSavedUpdatedRecipe(Recipe)
   DbSavedUpdatedRecipe(Recipe)
+  DbWriteFailed(String)
   UserDeletedRecipe(Recipe)
   DbDeletedRecipe(String)
 }
@@ -103,15 +105,21 @@ fn save_recipe(recipe: Recipe) -> Effect(RecipeDetailMsg) {
       shortlisted: option.unwrap(recipe.shortlisted, False),
     )
   use dispatch <- effect.from
-  do_save_recipe(js_recipe)
-  DbSavedUpdatedRecipe(recipe) |> dispatch
+  do_save_recipe_checked(js_recipe)
+  |> promise.map(fn(err) {
+    case err {
+      "" -> DbSavedUpdatedRecipe(recipe) |> dispatch
+      msg -> DbWriteFailed("Recipe did not save: " <> msg) |> dispatch
+    }
+  })
+  Nil
 }
 
-@external(javascript, "../db.ts", "do_save_recipe")
-fn do_save_recipe(recipe: JsRecipe) -> Nil
+@external(javascript, "../db.ts", "do_save_recipe_checked")
+fn do_save_recipe_checked(recipe: JsRecipe) -> Promise(String)
 
-@external(javascript, "../db.ts", "do_delete_recipe")
-fn do_delete_recipe(id: String) -> Nil
+@external(javascript, "../db.ts", "do_delete_recipe_checked")
+fn do_delete_recipe_checked(id: String) -> Promise(String)
 
 //-UPDATE------------------------------------------------------------
 
@@ -466,18 +474,26 @@ pub fn detail_update(
     }
     //DbSavedUpdatedRecipe is handled in the layer above in mealstack_client.gleam
     DbSavedUpdatedRecipe(recipe) -> #(Some(recipe), effect.none())
-    UserDeletedRecipe(recipe) -> #(None, {
+    UserDeletedRecipe(recipe) -> #(model, {
       use dispatch <- effect.from
       case recipe.id {
         None -> DbDeletedRecipe("") |> dispatch
         Some(id) -> {
-          do_delete_recipe(id)
-          DbDeletedRecipe(id) |> dispatch
+          do_delete_recipe_checked(id)
+          |> promise.map(fn(err) {
+            case err {
+              "" -> DbDeletedRecipe(id) |> dispatch
+              msg -> DbWriteFailed("Recipe did not delete: " <> msg) |> dispatch
+            }
+          })
+          Nil
         }
       }
     })
     //DbDeletedRecipe is handled in the layer above in mealstack_client.gleam
     DbDeletedRecipe(_id) -> #(None, effect.none())
+    //DbWriteFailed is handled in the layer above (global error banner)
+    DbWriteFailed(_msg) -> #(model, effect.none())
   }
 }
 

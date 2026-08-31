@@ -78,7 +78,7 @@ pub fn list_update(
       let decoder = {
         use data <- decode.subfield(
           ["data", "recipes"],
-          decode.list(decode_recipe_with_inner_json()),
+          codecs.decode_lenient_list(decode_recipe_with_inner_json()),
         )
         decode.success(data)
       }
@@ -88,7 +88,10 @@ pub fn list_update(
           use dispatch <- effect.from
           DbRetrievedRecipes(recipes) |> dispatch
         }
-        Error(_) -> effect.none()
+        Error(e) -> {
+          echo #("recipe list decode failed", e)
+          effect.none()
+        }
       }
 
       #(model, try_effect)

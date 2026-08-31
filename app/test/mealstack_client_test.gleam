@@ -1,5 +1,9 @@
 import gleam/dict
 import gleam/json
+import app
+import gleam/list
+import gleam/string
+import lustre/element
 import gleam/option.{None, Some}
 import lib/utils
 import shared/codecs
@@ -106,4 +110,62 @@ pub fn production_recipe_json_fields_test() {
 
   json.parse(payload, codecs.decode_recipe_with_inner_json())
   |> expect.to_equal(Ok(expected))
+}
+
+pub fn null_numeric_fields_decode_test() {
+  // NULL cook_time/prep_time/serves are legal in the schema (INTEGER, nullable)
+  // and must decode as 0 rather than failing the whole row.
+  let payload =
+    "{\"id\":\"recipe-2\",\"title\":\"Null numerics\",\"slug\":\"null-numerics\",\"cook_time\":null,\"prep_time\":null,\"serves\":null}"
+
+  json.parse(payload, codecs.decode_recipe_with_inner_json())
+  |> expect.to_equal(
+    Ok(Recipe(
+      id: Some("recipe-2"),
+      title: "Null numerics",
+      slug: "null-numerics",
+      cook_time: 0,
+      prep_time: 0,
+      serves: 0,
+      author: None,
+      source: None,
+      tags: None,
+      ingredients: None,
+      method_steps: None,
+      shortlisted: None,
+    )),
+  )
+}
+
+pub fn lenient_list_drops_bad_rows_test() {
+  // One malformed row (title: null) must not blank the whole list.
+  let payload =
+    "[{\"id\":\"good\",\"title\":\"Good\",\"slug\":\"good\",\"cook_time\":1,\"prep_time\":2,\"serves\":3},{\"title\":null,\"slug\":\"bad\"}]"
+
+  let assert Ok(recipes) =
+    json.parse(payload, codecs.decode_lenient_list(codecs.decode_recipe_with_inner_json()))
+
+  recipes
+  |> list.map(fn(r) { r.slug })
+  |> expect.to_equal(["good"])
+}
+
+pub fn lenient_list_still_rejects_non_lists_test() {
+  json.parse("{\"not\":\"a list\"}", codecs.decode_lenient_list(codecs.decode_recipe_with_inner_json()))
+  |> expect.to_be_error
+}
+
+pub fn write_error_banner_test() {
+  // Failed writes must be visible: banner renders the message and a dismiss button.
+  let banner =
+    app.view_write_error(Some("Recipe did not save: boom"))
+    |> element.to_readable_string
+
+  banner |> string.contains("Recipe did not save: boom") |> expect.to_be_true
+  banner |> string.contains("Dismiss") |> expect.to_be_true
+  banner |> string.contains("role=\"alert\"") |> expect.to_be_true
+
+  app.view_write_error(None)
+  |> element.to_readable_string
+  |> expect.to_equal("")
 }

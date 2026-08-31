@@ -32,6 +32,19 @@ async function pullLatest(db: any): Promise<void> {
   }
 }
 
+/**
+ * Push local changes to the cloud, tolerating failure: an offline device
+ * has still committed locally and will sync on a later push. Failures are
+ * loud in the console but never fail the write that triggered them.
+ */
+async function pushBestEffort(db: any, what: string): Promise<void> {
+  try {
+    await db.push();
+  } catch (err) {
+    console.warn(`[db] Push failed after ${what} (saved locally, sync pending):`, err);
+  }
+}
+
 // --- TAG OPTIONS ---
 
 export async function do_get_tagoptions() {
@@ -163,12 +176,35 @@ export async function do_save_recipe(recipe: Recipe) {
     now  // updated_at
   );
 
-  // Push to cloud, then re-notify subscribers
-  await db.push();
+  // Verify the row actually persisted locally — the experimental sync-wasm
+  // client has been observed to swallow write failures silently.
+  const verifyStmt = await db.prepare("SELECT count(*) AS n FROM recipes WHERE id = ?");
+  const verifyRow = await verifyStmt.get(id);
+  if (!verifyRow || Number(verifyRow.n) !== 1) {
+    throw new Error(`Save did not persist (recipe ${recipe.slug || id} missing after write)`);
+  }
+
+  // Push to cloud is best-effort: an offline device still saved locally.
+  await pushBestEffort(db, `recipe ${recipe.slug || id}`);
   notifyRecipeSummarySubscribers();
   notifyRecipeSlugSubscribers(recipe.slug);
 
   return { id };
+}
+
+/**
+ * Checked variant for the Gleam UI: resolves to "" on success or a
+ * human-readable error message on failure. Never rejects, so the FFI
+ * side needs no rescue plumbing.
+ */
+export async function do_save_recipe_checked(recipe: Recipe): Promise<string> {
+  try {
+    await do_save_recipe(recipe);
+    return "";
+  } catch (err) {
+    console.error("[db] Save recipe failed:", err);
+    return err instanceof Error ? err.message : String(err);
+  }
 }
 
 export async function do_delete_recipe(id: string) {
@@ -183,10 +219,27 @@ export async function do_delete_recipe(id: string) {
   const stmt = await db.prepare("DELETE FROM recipes WHERE id = ?");
   await stmt.run(id);
 
-  // Push to cloud, then re-notify subscribers
-  await db.push();
+  // Verify the row is actually gone locally (see do_save_recipe).
+  const verifyStmt = await db.prepare("SELECT count(*) AS n FROM recipes WHERE id = ?");
+  const verifyRow = await verifyStmt.get(id);
+  if (verifyRow && Number(verifyRow.n) !== 0) {
+    throw new Error(`Delete did not persist (recipe ${slug || id} still present)`);
+  }
+
+  await pushBestEffort(db, `delete recipe ${slug || id}`);
   notifyRecipeSummarySubscribers();
   if (slug) notifyRecipeSlugSubscribers(slug);
+}
+
+/** Checked variant for the Gleam UI — see do_save_recipe_checked. */
+export async function do_delete_recipe_checked(id: string): Promise<string> {
+  try {
+    await do_delete_recipe(id);
+    return "";
+  } catch (err) {
+    console.error("[db] Delete recipe failed:", err);
+    return err instanceof Error ? err.message : String(err);
+  }
 }
 
 // --- PLAN ---
@@ -269,8 +322,8 @@ export async function do_save_plan(plan: any[]): Promise<void> {
     await stmt.run(id, day.date, lunch, dinner);
   }
 
-  // Push to cloud, then re-notify subscribers
-  await db.push();
+  // Push to cloud (best-effort), then re-notify subscribers
+  await pushBestEffort(db, "save plan");
   notifyPlanSubscribers();
 }
 
@@ -372,8 +425,8 @@ export async function do_save_shopping_list(listTuple: any) {
     linked_plan_end || null
   );
 
-  // Push to cloud, then re-notify subscribers
-  await db.push();
+  // Push to cloud (best-effort), then re-notify subscribers
+  await pushBestEffort(db, "save shopping list");
   notifyShoppingListSummarySubscribers();
   notifyShoppingListDateSubscribers(date);
 
@@ -413,8 +466,8 @@ export async function do_delete_shopping_list(id: string) {
   const stmt = await db.prepare("DELETE FROM shopping_lists WHERE id = ?");
   await stmt.run(id);
 
-  // Push to cloud, then re-notify subscribers
-  await db.push();
+  // Push to cloud (best-effort), then re-notify subscribers
+  await pushBestEffort(db, "delete shopping list");
   notifyShoppingListSummarySubscribers();
   if (date) notifyShoppingListDateSubscribers(date);
 }

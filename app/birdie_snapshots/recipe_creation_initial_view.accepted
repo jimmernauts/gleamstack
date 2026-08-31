@@ -1,8 +1,6 @@
 ---
 version: 1.5.3
 title: recipe_creation_initial_view
-file: ./test/integration/recipe_creation_test.gleam
-test_name: recipe_creation_workflow_tests
 ---
 <main class="h-env-screen grid ml-2 mr-2 gap-2
       2xl:grid-cols-[[start]_1fr_[full-start]_3fr_[main-start]_90%_[main-end]_3fr_[full-end]_1fr_[end]]
@@ -11,6 +9,7 @@ test_name: recipe_creation_workflow_tests
       md:grid-cols-[[start_full-start]_1fr_[main-start]_95%_[main-end]_1fr_[full-end_end]]
       grid-cols-[[start_full-start_main-start]_100%_[main-end_full-end_end]]
       text-ecru-white-950 font-transitional text-lg">
+
   <form class="h-env-screen grid grid-cols-12 col-start-[main-start] grid-rows-[auto_1fr_auto] grid-named-3x12 gap-y-2" id="create_recipe_form">
     <textarea class="field-sizing-content mt-4 mr-2 [grid-area:header] col-span-full md:col-span-11laceholder:underline-blue underline-blue min-h-[56px] max-h-[140px] overflow-hidden px-0 pb-2 input-base input-focus resize-none font-bold italic text-ecru-white-950 bg-ecru-white-100 text-7xl" id="page-title-input" name="title" title="recipe title">
       New Recipe
