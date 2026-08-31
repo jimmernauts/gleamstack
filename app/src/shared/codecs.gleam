@@ -25,14 +25,16 @@ fn decode_bool_or_int() -> decode.Decoder(Bool) {
 fn decode_int_null_as_zero() -> decode.Decoder(Int) {
   decode.one_of(decode.int, [
     decode.optional(decode.int)
-      |> decode.map(option.unwrap(_, 0)),
+    |> decode.map(option.unwrap(_, 0)),
   ])
 }
 
 /// Decode a list leniently: rows that fail the inner decoder are dropped
 /// (and reported) instead of failing the entire list. One malformed row
 /// must never blank a whole screen.
-pub fn decode_lenient_list(inner: decode.Decoder(a)) -> decode.Decoder(List(a)) {
+pub fn decode_lenient_list(
+  inner: decode.Decoder(a),
+) -> decode.Decoder(List(a)) {
   decode.list(decode.dynamic)
   |> decode.map(fn(rows) {
     list.filter_map(rows, fn(row) {
@@ -46,6 +48,7 @@ pub fn decode_lenient_list(inner: decode.Decoder(a)) -> decode.Decoder(List(a)) 
     })
   })
 }
+
 import shared/types.{
   type Ingredient, type IngredientCategory, type MethodStep, type Recipe,
   type Tag, type TagOption, Ingredient, IngredientCategory, MethodStep, Recipe,

@@ -35,7 +35,7 @@ pub type PlannerMsg {
   UserToggledMealComplete(Date, Meal, Bool)
   UserFetchedPlan(Date)
   DbRetrievedPlan(types.PlanWeek, Date)
-  DbSubscribedPlan(Dynamic)
+  DbSubscribedPlan(Date, Dynamic)
   DbSavedPlan(Date)
 
   UserClickedEditMeal(types.PlanDay, Meal)
@@ -225,7 +225,7 @@ pub fn planner_update(
     }
     // DbSubscriptionOpened is handled in the layer above in app.gleam
     DbSubscriptionOpened(_key, _callback) -> #(model, effect.none())
-    DbSubscribedPlan(jsdata) -> {
+    DbSubscribedPlan(subscription_start_date, jsdata) -> {
       let decoder = {
         use data <- decode.subfield(
           ["data", "plan"],
@@ -235,19 +235,22 @@ pub fn planner_update(
       }
       let try_decode = decode.run(jsdata, decoder)
       let try_effect = case try_decode {
-        Ok([]) -> effect.none()
+        Ok([]) -> {
+          use dispatch <- effect.from
+          dispatch(DbRetrievedPlan(dict.new(), subscription_start_date))
+        }
         Ok(plan_days) -> {
           let sorted =
             list.sort(plan_days, fn(a, b) {
               int.compare(date.to_rata_die(a.date), date.to_rata_die(b.date))
             })
           case sorted {
-            [first, ..] -> {
+            [_first, ..] -> {
               use dispatch <- effect.from
               sorted
               |> list.map(fn(x: types.PlanDay) { #(x.date, x) })
               |> dict.from_list
-              |> DbRetrievedPlan(first.date)
+              |> DbRetrievedPlan(subscription_start_date)
               |> dispatch
             }
             [] -> effect.none()
@@ -344,8 +347,7 @@ pub fn subscribe_to_plan(start_date: Date) -> Effect(PlannerMsg) {
   use dispatch <- effect.from
   db.do_subscribe_to_plan(
     fn(data) {
-      data
-      |> DbSubscribedPlan
+      DbSubscribedPlan(start_date, data)
       |> dispatch
     },
     date.to_rata_die(start_date),

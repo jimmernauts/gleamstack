@@ -1,11 +1,11 @@
+import app
 import gleam/dict
 import gleam/json
-import app
 import gleam/list
-import gleam/string
-import lustre/element
 import gleam/option.{None, Some}
+import gleam/string
 import lib/utils
+import lustre/element
 import shared/codecs
 import shared/types.{Ingredient, MethodStep, Recipe}
 import startest.{describe, it}
@@ -143,7 +143,10 @@ pub fn lenient_list_drops_bad_rows_test() {
     "[{\"id\":\"good\",\"title\":\"Good\",\"slug\":\"good\",\"cook_time\":1,\"prep_time\":2,\"serves\":3},{\"title\":null,\"slug\":\"bad\"}]"
 
   let assert Ok(recipes) =
-    json.parse(payload, codecs.decode_lenient_list(codecs.decode_recipe_with_inner_json()))
+    json.parse(
+      payload,
+      codecs.decode_lenient_list(codecs.decode_recipe_with_inner_json()),
+    )
 
   recipes
   |> list.map(fn(r) { r.slug })
@@ -151,7 +154,10 @@ pub fn lenient_list_drops_bad_rows_test() {
 }
 
 pub fn lenient_list_still_rejects_non_lists_test() {
-  json.parse("{\"not\":\"a list\"}", codecs.decode_lenient_list(codecs.decode_recipe_with_inner_json()))
+  json.parse(
+    "{\"not\":\"a list\"}",
+    codecs.decode_lenient_list(codecs.decode_recipe_with_inner_json()),
+  )
   |> expect.to_be_error
 }
 

@@ -271,16 +271,16 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       ),
       effect.none(),
     )
-    OnRouteChange(ViewPlanner(start_date)) -> #(
-      Model(..model, current_route: ViewPlanner(start_date)),
-      effect.batch([
-        effect.map(
-          planner.subscribe_to_plan(date.floor(start_date, date.Monday)),
-          Planner,
-        ),
-        effect.map(planner.enable_drag_drop_touch(), Planner),
-      ]),
-    )
+    OnRouteChange(ViewPlanner(start_date)) -> {
+      let week_start = date.floor(start_date, date.Monday)
+      #(
+        Model(..model, current_route: ViewPlanner(start_date)),
+        effect.batch([
+          effect.map(planner.subscribe_to_plan(week_start), Planner),
+          effect.map(planner.enable_drag_drop_touch(), Planner),
+        ]),
+      )
+    }
     OnRouteChange(ViewSettings) -> #(
       Model(..model, current_route: ViewSettings),
       effect.map(settings.retrieve_settings(), Settings),
@@ -468,10 +468,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(..model, write_error: Some(message)),
       effect.none(),
     )
-    DismissWriteError -> #(
-      Model(..model, write_error: None),
-      effect.none(),
-    )
+    DismissWriteError -> #(Model(..model, write_error: None), effect.none())
     RecipeDetail(detail_msg) -> {
       let #(child_model, child_effect) =
         recipe_detail.detail_update(model.current_recipe, detail_msg)
@@ -495,31 +492,53 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       )
     }
     Planner(planner.DbRetrievedPlan(plan_week, start_date)) -> {
-      #(
-        Model(
-          ..model,
-          current_route: ViewPlanner(start_date),
-          planner: planner.PlannerModel(
-            ..model.planner,
-            plan_week: plan_week,
-            editing: model.planner.editing,
-            dragging: model.planner.dragging,
+      let is_active_week = case model.current_route {
+        ViewPlanner(current_start_date) ->
+          date.floor(current_start_date, date.Monday)
+          == date.floor(start_date, date.Monday)
+        _ -> False
+      }
+      case is_active_week {
+        True -> #(
+          Model(
+            ..model,
+            planner: planner.PlannerModel(
+              ..model.planner,
+              plan_week: plan_week,
+              editing: model.planner.editing,
+              dragging: model.planner.dragging,
+            ),
           ),
-        ),
-        effect.none(),
-      )
+          effect.none(),
+        )
+        False -> #(model, effect.none())
+      }
     }
-    Planner(planner.DbSubscriptionOpened(key, callback)) -> #(
-      Model(
-        ..model,
-        db_subscriptions: dict.upsert(
-          in: model.db_subscriptions,
-          update: date.to_iso_string(key),
-          with: fn(_) { callback },
-        ),
-      ),
-      effect.none(),
-    )
+    Planner(planner.DbSubscriptionOpened(key, callback)) -> {
+      let is_active_week = case model.current_route {
+        ViewPlanner(current_start_date) ->
+          date.floor(current_start_date, date.Monday)
+          == date.floor(key, date.Monday)
+        _ -> False
+      }
+      case is_active_week {
+        True -> #(
+          Model(
+            ..model,
+            db_subscriptions: dict.upsert(
+              in: model.db_subscriptions,
+              update: date.to_iso_string(date.floor(key, date.Monday)),
+              with: fn(_) { callback },
+            ),
+          ),
+          effect.none(),
+        )
+        False -> {
+          let _ = callback()
+          #(model, effect.none())
+        }
+      }
+    }
     Planner(planner_msg) -> {
       let #(child_model, child_effect) =
         planner.planner_update(model.planner, planner_msg)
@@ -614,26 +633,30 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       }
     }
     ViewPlanner(start_date) -> {
-      case
-        msg,
-        dict.get(model.db_subscriptions, date.to_iso_string(start_date))
-      {
-        OnRouteChange(ViewPlanner(_start_date)), _ -> #(step1.0, step1.1)
-        OnRouteChange(_), Ok(_) -> #(
+      let current_week = date.floor(start_date, date.Monday)
+      let subscription_key = date.to_iso_string(current_week)
+      let cleanup_subscription = fn() {
+        let _ =
+          dict.get(model.db_subscriptions, subscription_key)
+          |> result.map(fn(callback) { callback() })
+        #(
           Model(
             ..step1.0,
             db_subscriptions: dict.drop(model.db_subscriptions, [
-              date.to_iso_string(start_date),
+              subscription_key,
             ]),
           ),
-          {
-            let _ =
-              dict.get(model.db_subscriptions, date.to_iso_string(start_date))
-              |> result.map(fn(a) { a() })
-            step1.1
-          },
+          step1.1,
         )
-        _, _ -> #(step1.0, step1.1)
+      }
+      case msg {
+        OnRouteChange(ViewPlanner(next_start_date)) ->
+          case date.floor(next_start_date, date.Monday) == current_week {
+            True -> #(step1.0, step1.1)
+            False -> cleanup_subscription()
+          }
+        OnRouteChange(_) -> cleanup_subscription()
+        _ -> #(step1.0, step1.1)
       }
     }
     ViewShoppingList(date) -> {
@@ -740,15 +763,20 @@ pub fn view_write_error(err: Option(String)) -> Element(Msg) {
       html.div(
         [
           class(
-            "fixed top-2 left-1/2 -translate-x-1/2 z-50 max-w-xl rounded-md", 
+            "fixed top-2 left-1/2 -translate-x-1/2 z-50 max-w-xl rounded-md",
           ),
-          class("bg-red-700 text-white px-4 py-3 shadow-lg flex items-center gap-3"),
+          class(
+            "bg-red-700 text-white px-4 py-3 shadow-lg flex items-center gap-3",
+          ),
           attribute.attribute("role", "alert"),
         ],
         [
           span([], [text(message)]),
           html.button(
-            [class("font-bold underline cursor-pointer"), event.on_click(DismissWriteError)],
+            [
+              class("font-bold underline cursor-pointer"),
+              event.on_click(DismissWriteError),
+            ],
             [text("Dismiss")],
           ),
         ],

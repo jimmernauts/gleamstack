@@ -2,7 +2,7 @@ import app.{OnRouteChange, Planner, ViewPlanner}
 import birdie
 import gleam/dict
 import pages/planner.{
-  DbRetrievedPlan, Dinner, Lunch, UserDragStart, UserDrop,
+  DbRetrievedPlan, DbSubscriptionOpened, Dinner, Lunch, UserDragStart, UserDrop,
   UserToggledMealComplete, UserUpdatedMealTitle,
 }
 
@@ -128,6 +128,90 @@ pub fn planner_integration_tests() {
           planner.plan_week
           |> dict.size
           |> expect.to_equal(3)
+        }
+      }
+    }),
+    it("should ignore plan data from a previous week", fn() {
+      let selected_week = date.from_calendar_date(2026, date.Jan, 19)
+      let previous_week = date.add(selected_week, -1, date.Weeks)
+      let current_plan =
+        dict.from_list([
+          #(
+            selected_week,
+            types.PlanDay(
+              date: selected_week,
+              lunch: Some(types.PlannedMeal(
+                recipe: types.RecipeName("This week's meal"),
+                complete: False,
+              )),
+              dinner: None,
+            ),
+          ),
+        ])
+      let previous_plan =
+        dict.from_list([
+          #(
+            previous_week,
+            types.PlanDay(
+              date: previous_week,
+              lunch: Some(types.PlannedMeal(
+                recipe: types.RecipeName("Last week's meal"),
+                complete: False,
+              )),
+              dinner: None,
+            ),
+          ),
+        ])
+      let simulation =
+        simulate.application(
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
+        )
+        |> simulate.start(Nil)
+        |> simulate.message(OnRouteChange(ViewPlanner(selected_week)))
+        |> simulate.message(
+          Planner(DbRetrievedPlan(current_plan, selected_week)),
+        )
+        |> simulate.message(
+          Planner(DbRetrievedPlan(previous_plan, previous_week)),
+        )
+      let model = simulate.model(simulation)
+      case model {
+        app.Model(current_route: route, planner: planner, ..) -> {
+          route |> expect.to_equal(ViewPlanner(selected_week))
+          let day =
+            planner.plan_week
+            |> dict.get(selected_week)
+            |> expect.to_be_ok
+          let meal = day.lunch |> expect.to_be_some
+          meal.recipe
+          |> expect.to_equal(types.RecipeName("This week's meal"))
+        }
+      }
+    }),
+    it("should unsubscribe from the previous planner week", fn() {
+      let previous_week = date.from_calendar_date(2026, date.Jan, 12)
+      let selected_week = date.add(previous_week, 1, date.Weeks)
+      let simulation =
+        simulate.application(
+          init: app.public_init,
+          update: app.public_update,
+          view: app.public_view,
+        )
+        |> simulate.start(Nil)
+        |> simulate.message(OnRouteChange(ViewPlanner(previous_week)))
+        |> simulate.message(
+          Planner(DbSubscriptionOpened(previous_week, fn() { Nil })),
+        )
+        |> simulate.message(OnRouteChange(ViewPlanner(selected_week)))
+      let model = simulate.model(simulation)
+      case model {
+        app.Model(current_route: route, db_subscriptions: subscriptions, ..) -> {
+          route |> expect.to_equal(ViewPlanner(selected_week))
+          subscriptions
+          |> dict.get(date.to_iso_string(previous_week))
+          |> expect.to_be_error
         }
       }
     }),
