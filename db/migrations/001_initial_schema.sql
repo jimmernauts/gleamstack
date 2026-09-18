@@ -1,5 +1,5 @@
 -- Initial schema for Gleamstack (Turso/SQLite)
--- Matches the InstantDB entity groups: recipes, tag_options, plan, shopping_lists
+-- Application data groups: recipes, tag_options, plan, shopping_lists
 -- No settings table — Gemini key lives as a Worker secret
 
 CREATE TABLE IF NOT EXISTS recipes (

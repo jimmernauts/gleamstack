@@ -12,7 +12,6 @@ build
 build/*
 notebooks/*
 !notebooks/claude.py
-!notebooks/post_recipes.ts
 node_modules
 node_modules/**
 app/cloudflare

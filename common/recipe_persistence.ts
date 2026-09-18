@@ -18,8 +18,8 @@ export type RecipePersistenceFields = Pick<
 
 /**
  * Keep the fields and omission rules used by the frontend recipe save path.
- * This is deliberately a pure mapper so the one-off admin importer can use
- * the same persistence shape without importing the browser InstantDB client.
+ * This pure mapper is shared by the browser save path and any server-side
+ * import tooling without coupling either side to the database client.
  */
 export function toRecipePersistenceFields(
     recipe: Recipe,

@@ -1,33 +1,41 @@
 # Mealstack
 
-A recipe management and meal planning application built with Gleam.
+A recipe management and meal-planning application built with Gleam.
 
 ## Technology Stack
 
-- **Frontend**: [Gleam](https://gleam.run/) (compiles to JavaScript) with [Lustre](https://github.com/lustre-labs/lustre) framework
-- **Backend**: Gleam deployed on Cloudflare Workers
-- **Database**: [InstantDB](https://instantdb.com/) (real-time, client-side database)
-- **Styling**: [TailwindCSS v4](https://tailwindcss.com/)
-- **Build Tool**: [Vite](https://vitejs.dev/)
-- **Runtime**: [Bun](https://bun.sh/)
-- **Task Runner**: [Just](https://github.com/casey/just)
+- **Frontend:** [Gleam](https://gleam.run/) with the [Lustre](https://github.com/lustre-labs/lustre) framework, compiled to JavaScript
+- **Backend:** Gleam and TypeScript on Cloudflare Workers
+- **Database:** Turso Cloud (libSQL), with a browser-local OPFS replica and bidirectional push/pull sync
+- **Styling:** Tailwind CSS v4
+- **Build tool:** Vite
+- **Runtime and package manager:** Bun
+- **Task runner:** Just
 
 ## Features
 
-- **Recipe Management**: Create, edit, and organize recipes with tags.
-- **Recipe Import**: Scrape recipes from URLs or parse them from text/images using AI.
-- **Meal Planning**: Drag-and-drop weekly meal planner.
-- **Shopping List**: Generate shopping lists automatically from your meal plan.
-- **PWA Support**: Installable as a Progressive Web App.
+- **Recipe management:** Create, edit, delete, and organize recipes with tags.
+- **Recipe import:** Scrape recipe pages or parse recipe text and images with Gemini.
+- **Meal planning:** Use the drag-and-drop weekly planner.
+- **Shopping lists:** Maintain lists associated with planned meals.
+- **Offline-first browser storage:** The app keeps a local SQLite replica in OPFS and synchronizes changes with Turso when connectivity is available.
+- **PWA support:** Install the app as a Progressive Web App.
+
+## Architecture
+
+The browser talks to a local SQLite replica through the Turso sync WASM client. Reads and writes remain available locally; writes are pushed to Turso and remote changes are pulled into the replica. The Cloudflare Worker provides the database configuration to authenticated clients and handles scraping and Gemini-backed parsing. Production access is protected by Cloudflare Access.
+
+This is currently a private, single-user application. Sync uses last-push-wins semantics; it is not a multi-user collaboration system.
 
 ## Project Structure
 
-```bash
+```text
 gleamstack/
-├── app/             # Frontend application (Gleam + Lustre + Vite)
-├── worker/          # Backend worker (Gleam + Cloudflare Workers)
-├── common/          # Shared Gleam code
-└── justfile         # Task runner configuration
+├── app/             # Frontend Gleam/Lustre application and Vite build
+├── worker/          # Cloudflare Worker and parsing endpoints
+├── common/          # Shared TypeScript types and persistence helpers
+├── db/              # Turso schema migrations and local migration tests
+└── justfile         # Task runner
 ```
 
 ## Getting Started
@@ -36,66 +44,52 @@ gleamstack/
 
 - [Gleam](https://gleam.run/getting-started/installing/)
 - [Bun](https://bun.sh/)
-- [Just](https://github.com/casey/just) (optional, but recommended)
+- [Just](https://github.com/casey/just/) (recommended)
 
 ### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/jimmernauts/gleamstack.git
-   cd gleamstack
-   ```
+Clone the repository, then install the frontend and Worker dependencies:
 
-2. Install dependencies:
-   ```bash
-   bun install
-   ```
+```bash
+git clone https://github.com/jimmernauts/gleamstack.git
+cd gleamstack
+(cd app && bun install)
+(cd worker && bun install)
+```
 
-3. Configure environment variables:
-   ```bash
-   cp app/.env.example app/.env
-   # Edit app/.env with your InstantDB App ID
-   ```
+### Local configuration
+
+Create the ignored file `worker/.dev.vars` for local Worker and integration-test credentials:
+
+```text
+TURSO_URL=libsql://your-development-database.turso.io
+TURSO_AUTH_TOKEN=your-development-database-token
+GEMINI_API_KEY=your-gemini-key
+```
+
+Never commit this file or put production credentials in the repository. Production values are configured as Cloudflare Worker secrets.
 
 ### Development
 
-We use `just` to manage development commands.
+Run commands from the repository root:
 
-**Start the specific service:**
 ```bash
-# Start the frontend dev server
-just dev
+just dev       # Frontend development server
+just dev-full  # Frontend, Worker, and Wrangler development stack
 ```
 
-**Run the full stack:**
+### Testing
+
 ```bash
-# Builds app & worker, and serves the worker
-just dev-full
+just test-app               # Frontend tests, formatting, and build
+just test-worker            # Worker unit tests and Gleam checks
+just test-worker-integration # Credentialed UAT tests; requires worker/.dev.vars
 ```
 
-**Run tests:**
+### Deployment
+
 ```bash
-just test-app    # Run frontend tests
-just test-worker # Run backend tests
+just deploy
 ```
 
-If you don't have `just` installed, you can look at the `justfile` to see the underlying `bun` and `gleam` commands.
-
-## Architecture Highlights
-
-- **InstantDB Integration**: The app uses InstantDB for real-time data sync and offline capabilities.
-- **Gleam on the Edge**: The backend worker runs Gleam encoded as JavaScript on Cloudflare Workers, handling scraping and AI tasks.
-- **Modern Styling**: TailwindCSS v4 with fluid type scaling.
-
-## Testing
-
-The project uses a combination of Gleam's built-in testing harness, Startest, and Birdie for snapshot testing.
-
-- **Unit Tests**: Business logic and pure functions.
-- **Snapshot Tests**: Component rendering and integration.
-
-Run all tests from the root:
-```bash
-just test-app
-just test-worker
-```
+Deployment runs the application and Worker checks before deploying with Wrangler. The production Worker is `mealstack` and serves the built frontend through its assets binding.

@@ -1,13 +1,12 @@
 /**
- * Import InstantDB export JSON files into a Turso Cloud database.
+ * Import the archived migration export JSON files into a Turso Cloud database.
  *
- * Cloud counterpart of db/scripts/import_instantdb_export.mjs (which targets
- * a local SQLite file). Same field mappings, same idempotency (INSERT OR
- * REPLACE with stable IDs), same deliberate omission of the settings
- * collection (Gemini key lives as a Worker secret).
- *
+ * This cloud import utility preserves the field mappings and idempotent
+ * INSERT OR REPLACE behavior used during the production migration. It
+ * deliberately omits the settings collection because the Gemini key lives as
+ * a Worker secret.
  * Usage:
- *   set -a && source .dev.vars && set +a   # TURSO_URL + TURSO_AUTH_TOKEN
+ *   set -a && source worker/.dev.vars && set +a   # TURSO_URL + TURSO_AUTH_TOKEN
  *   bun worker/scripts/import_to_turso.mjs [export-dir]
  *
  * Defaults:

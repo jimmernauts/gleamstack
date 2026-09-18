@@ -9,8 +9,8 @@ Decisions (agreed 2026-08-28):
 - **Export freshness:** verify against production InstantDB directly; reuse the
   Aug 24 export if production is confirmed unchanged.
 - **InstantDB:** not needed any more — credentials removed and apps deleted the
-  same day, no read-only safety window. Recovery artifacts are the archived
-  export plus the first Turso backup.
+  same day, no read-only safety window. Recovery uses the archived export plus
+  Turso Cloud point-in-time recovery.
 
 Everything below runs from the sandbox except the two user steps marked **[user]**.
 

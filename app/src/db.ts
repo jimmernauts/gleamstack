@@ -1,8 +1,8 @@
 /**
- * Database repository — SQL query and write helpers.
+ * Database repository — Turso SQL query and write helpers.
  *
- * Replaces the InstantDB adapter. Keeps the same exported function signatures
- * so the Gleam FFI layer doesn't need changes during the migration.
+ * The browser uses a local OPFS replica and synchronizes it with Turso.
+ * These exported functions keep the Gleam FFI boundary focused on app data.
  *
  * Recipe and plan subscriptions use callback registries: subscribers register
  * on subscribe and are re-notified after every local write (save/delete).

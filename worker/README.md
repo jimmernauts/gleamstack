@@ -1,80 +1,70 @@
-# mealstack_worker
+# Mealstack Worker
 
-This is the backend worker service for the Mealstack application. It is primarily responsible for scraping recipe websites and parsing recipe data from various formats (text, images) using AI.
+The backend service for Mealstack. It runs on Cloudflare Workers and provides recipe scraping, Gemini-backed recipe parsing, and the authenticated Turso database configuration used by the browser client.
 
 ## Technology Stack
 
-- **Language:** [Gleam](https://gleam.run/) (compiles to JavaScript)
-- **Runtime:** [Bun](https://bun.sh/)
-- **Web Server:** [Glen](https://github.com/glen-framework/glen)
-- **Deployment:** Cloudflare Workers (via Wrangler)
+- **Application code:** Gleam with TypeScript FFI
+- **Runtime:** Cloudflare Workers
+- **Local tooling:** Bun and Wrangler
+- **Database client:** `@tursodatabase/serverless`
+- **AI client:** `@google/genai`
 
-## Capabilities
+## API endpoints
 
-The worker exposes an API to:
-1.  **Scrape Recipes:** Extract structured data (JSON-LD) from a recipe website URL.
-2.  **Parse Text:** Convert unstructured text (e.g., pasted recipe) into a structured format using AI.
-3.  **Parse Images:** Extract and structure recipe information from an image using AI.
+### `GET /api/db-config`
 
-## API Endpoints
+Returns the Turso URL and configured client auth token to an authenticated browser client. Production access is protected by Cloudflare Access. The endpoint returns `503` when the Turso Worker secrets are not configured.
 
-### `GET /api/scrape_url`
+### `GET /api/scrape_url?target=<url>`
 
-Scrapes valid JSON-LD recipe data from a given URL.
-
-- **Query Parameters:**
-    - `target`: The URL of the recipe page to scrape.
-- **Response:** JSON object containing the scraped data.
+Fetches a recipe page, extracts structured recipe data, and returns every recipe found on the page. The parser handles JSON-LD first and falls back to page-text parsing when needed.
 
 ### `POST /api/parse_recipe_text`
 
-Parses a unstructured recipe text into a structured JSON format.
+Parses unstructured recipe text into the application recipe shape using Gemini.
 
-- **Body:** JSON object
-  ```json
-  {
-    "text": "1 cup flour, 2 eggs... Mix them together..."
-  }
-  ```
-- **Response:** Structured recipe JSON.
+Example body:
 
-The parser response includes a `tags` object. It can contain at most one `Cuisine`, `Style`, and `Label` entry, and each value is filtered against the existing `tag_options` values in InstantDB.
-### `POST /api/parse_recipe_image`
-
-Parses a recipe from an image (base64 encoded or publicly accessible URL, depending on implementation details not fully exposed here but general usage implies image data).
-
-- **Body:** JSON object
-  ```json
-  {
-    "image": "<base64_image_data_or_url>"
-  }
-  ```
-- **Response:** Structured recipe JSON.
-
-## Development
-
-### Prerequisites
-
-- [Bun](https://bun.sh/)
-- [Gleam](https://gleam.run/)
-
-### Running Locally
-
-You can run a local development server using the bundled `server.ts` script. This bypasses Wrangler and runs directly on Bun, which is useful for quick debugging.
-
-```bash
-bun run server.ts
+```json
+{
+  "text": "1 cup flour, 2 eggs... Mix them together..."
+}
 ```
 
-The server will typically start on `http://localhost:3000` (or the port defined in `server.ts`/environment).
+### `POST /api/parse_recipe_image`
 
-For a more production-like environment (simulating Cloudflare Workers), use Wrangler from the root project or configured scripts.
+Extracts a recipe from a base64-encoded image data URL using Gemini.
 
-### UAT integration tests
+Example body:
 
-Credentialed integration tests use the `mealstack-dev` InstantDB app. They reject the production worker URL. Keep `worker/.dev.vars` at mode `600` with the dev app ID and admin token.
+```json
+{
+  "image": "data:image/jpeg;base64,..."
+}
+```
 
-Start the local UAT worker in one terminal:
+## Configuration
+
+For local development and credentialed integration tests, create the ignored file `worker/.dev.vars`:
+
+```text
+TURSO_URL=libsql://your-development-database.turso.io
+TURSO_AUTH_TOKEN=your-development-database-token
+GEMINI_API_KEY=your-gemini-key
+```
+
+The application schema is owned by the SQL migrations in `db/migrations/`. The Worker reads Turso credentials from its runtime environment; do not hard-code credentials or commit `.dev.vars`.
+
+## Running locally
+
+From the repository root:
+
+```bash
+just dev-full
+```
+
+To work on the Worker alone:
 
 ```bash
 cd worker
@@ -82,103 +72,41 @@ gleam build
 bun run server.ts
 ```
 
-Run the five bookmark checks in another terminal:
+The local server normally listens on `http://localhost:3000`.
+
+## Testing
+
+Run the standard Worker checks:
+
+```bash
+just test-worker
+```
+
+This runs the unit tests, Gleam tests, and a Gleam build. The TypeScript unit-test script can also be run directly:
 
 ```bash
 cd worker
-MEALSTACK_WORKER_URL=http://127.0.0.1:3000 bun run test:integration:uat
+bun run test:unit
 ```
 
-The local server loads `worker/.dev.vars` automatically.
-
-If the bookmark tests fail with `Unable to connect` or `ERR_TLS_CERT_ALTNAME_INVALID` while the parse test passes, the local Bun worker cannot reach the source sites. Check the machine's HTTPS proxy and certificate configuration (`env | grep -i proxy`); the request has not reached the scraper/parser in that case.
-### One-off favourites importer
-
-`scripts/import_favourites.ts` is a disposable operational importer. It reads the `recipe` folder, processes a bounded batch, calls `/api/scrape_url?all=true`, and appends one JSONL checkpoint record per URL. It is parse-only unless `--write` is supplied.
-
-Run a parse-only batch from the repository root:
+Credentialed integration tests exercise the local Worker and Gemini/Turso path. They require `worker/.dev.vars` and must never target production:
 
 ```bash
-bun worker/scripts/import_favourites.ts \
-  --offset 0 \
-  --limit 10 \
-  --checkpoint plans/favourites_import_batch_000.jsonl
+cd worker
+bun --env-file=.dev.vars run test:integration:uat
 ```
 
-After reviewing the checkpoint, write the same successful responses to a selected InstantDB app:
+To target a local Worker on another port, set `MEALSTACK_WORKER_URL`. The test harness rejects the production Worker hostname.
 
-```bash
-bun --env-file=worker/.dev.vars worker/scripts/import_favourites.ts \
-  --offset 0 \
-  --limit 10 \
-  --checkpoint plans/favourites_import_batch_000.jsonl \
-  --app-id 4304e120-9a5c-45e4-ba7a-4aaa0b7f282a \
-  --write
-```
+## Deployment
 
-Do not put the admin token in source control or shell history; use a protected environment file instead. The importer indexes existing recipes by canonical source/slug identity before writing, reuses a matching entity, and uses a stable source-URL/slug ID when no match exists. It preserves the worker's recipe data and only reshapes ingredient/instruction arrays into the JSON object shape used by the frontend save path.
+The root `just deploy` command runs the application and Worker checks before deploying with Wrangler. Production Worker secrets are managed through Cloudflare; the required names are `TURSO_URL`, `TURSO_AUTH_TOKEN`, and `GEMINI_API_KEY`.
 
-### Duplicate report and cleanup
+## Project structure
 
-`scripts/cleanup_recipe_duplicates.ts` is read-only by default. It reports duplicate groups and writes a reviewable JSON report without deleting anything:
-
-```bash
-bun --env-file=/secure/mealstack-production.env \
-  worker/scripts/cleanup_recipe_duplicates.ts \
-  --app-id eeaf3b82-5b5d-40c4-a29a-b68988377c3c \
-  --report plans/favourites_duplicate_report.json
-```
-
-After reviewing the report, delete only source-URL duplicates with an explicit confirmation:
-
-```bash
-bun --env-file=/secure/mealstack-production.env \
-  worker/scripts/cleanup_recipe_duplicates.ts \
-  --app-id eeaf3b82-5b5d-40c4-a29a-b68988377c3c \
-  --report plans/favourites_duplicate_report.json \
-  --delete \
-  --confirm DELETE_DUPLICATES
-```
-
-Title/slug-only groups are reported but skipped by default; `--include-low-confidence` is required to delete them.
-### Existing recipe tag backfill
-
-`scripts/tag_existing_recipes.ts` suggests missing Cuisine, Style, and Label tags for existing recipes. It preserves current tags and is dry-run by default. Export the production `INSTANT_ADMIN_TOKEN` before running; no token is stored in the command or repository.
-
-Generate a reviewable report for all recipes:
-
-```bash
-bun worker/scripts/tag_existing_recipes.ts \
-  --app-id eeaf3b82-5b5d-40c4-a29a-b68988377c3c \
-  --report plans/favourites_tag_backfill.jsonl
-```
-
-After reviewing the JSONL, apply the recorded suggestions without re-running Gemini:
-
-```bash
-bun worker/scripts/tag_existing_recipes.ts \
-  --app-id eeaf3b82-5b5d-40c4-a29a-b68988377c3c \
-  --report plans/favourites_tag_backfill.jsonl \
-  --write
-```
-
-Only the `tags` field is updated. Existing tags are preserved, and suggestions are discarded if they are not exact values from the current `tag_options`.
-The prompt is intentionally conservative and leaves uncertain tags blank, especially `Label`. Requests are spaced by 13 seconds by default for the Gemini free-tier limit; 429 responses use Gemini's requested retry delay and exponential fallback retries. Use `--delay-ms` and `--max-retries` only when appropriate for the account's quota.
-
-The prompt version invalidates old planned suggestions. Use a new report path when regenerating an earlier over-eager dry run. Already-written tags are treated as existing and are not removed automatically.
-### Testing
-
-Run the Gleam test suite:
-
-```bash
-gleam test
-```
-
-## Project Structure
-
-- `src/`: Contains the source code.
-    - `mealstack_worker.gleam`: The main application entry point and router.
-    - `scrape_url.ts`: TypeScript FFI for handling URL scraping logic.
-    - `parse_recipe.ts`: TypeScript FFI for interacting with AI services for text/image parsing.
-- `gleam.toml`: Gleam project configuration.
-- `package.json`: JavaScript dependencies (including AI SDKs and utility libraries).
+- `src/mealstack_worker.gleam` — request routing and Worker application logic
+- `src/scrape_url.ts` — URL fetching and structured-data extraction
+- `src/parse_recipe.ts` — Gemini text/image parsing and Turso tag lookup
+- `test/` — unit and integration tests
+- `package.json` — Bun dependencies and test commands
+- `gleam.toml` — Gleam project configuration

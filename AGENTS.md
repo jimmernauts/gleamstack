@@ -18,7 +18,7 @@ Read the guide that matches your task before starting:
 
 ## Quick facts
 
-- Secrets live in `.dev.vars` (repo root): `TURSO_URL`, `TURSO_AUTH_TOKEN`. Never hardcode the DB URL — the region can change.
+- Local secrets live in `worker/.dev.vars` (ignored): `TURSO_URL`, `TURSO_AUTH_TOKEN`, and `GEMINI_API_KEY`. Production values are Worker secrets. Never hardcode the DB URL — the region can change.
 - Schema is owned by the cloud: `db/migrations/001_initial_schema.sql`.
-- Unit tests: `cd worker && bun test:unit`. Integration tests need `.dev.vars` plus `GEMINI_API_KEY`.
-- Build app: `cd app && npx vite build`. Dev server: `npx wrangler dev --port 8787`.
+- Unit tests: `cd worker && bun test:unit`. Integration tests need `worker/.dev.vars` plus `GEMINI_API_KEY`.
+- Build app: `cd app && bun run vite build`. Dev server: `cd worker && bunx wrangler dev --port 8787`.

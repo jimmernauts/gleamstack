@@ -6,7 +6,7 @@ TODO
     [] go from plan to linked shopping list and vice versa
 [] fix up nav icons in both small and large views
 [] add group by to recipe selector in typeahead
-[] proper offline support (may require moving away from instantdb)
+[] define and test offline sync behavior, including reconnect and remote refresh
 [] copy recipes from browser bookmarks
 [] Add bunch of recipes
 [] Add cooking notes and ratings to recipes, group by rating
@@ -34,8 +34,8 @@ DONE
 [x] BUG: noticed double plan entry when editing an existing plan entry
 [X] make planner entry edit into a popover card
 [X] replace typeahead with typeahead_2 in planner
-[X] switch to Instant DB instead of triplit
-[X] reseed all the data from triplit
+[X] migrate persistence to Turso
+[X] import the production data into Turso
 [X] BUG: tag labels repeated on recipe list page
 [X] BUG: loading recipe edit from importer only allows save, editing the fields doesn't work
 [X] BUG: + and - buttons in edit recipe view don't show pointer on hover

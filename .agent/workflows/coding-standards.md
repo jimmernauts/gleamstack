@@ -58,18 +58,19 @@ Each domain module should follow this order:
 
 ## Database & Persistence
 
-### InstantDB
-- Use InstantDB for all persistence
-- Store complex nested data as JSON strings (use `json.to_string()`)
-- Use rata_die format (Int) for dates in database
-- Always handle subscription cleanup in app.gleam's update function
-- Database functions go in `db.ts`, exposed via `@external` declarations
+### Turso and local persistence
+- Use SQL through the Turso adapter for persistence; the browser uses a local OPFS replica with `@tursodatabase/sync-wasm`, and the Worker uses `@tursodatabase/serverless`.
+- Treat `db/migrations/` as the schema source of truth.
+- Store complex nested recipe and planner data as JSON strings, using the existing codecs and persistence helpers.
+- Use rata_die format (`Int`) for dates in database rows.
+- Database functions belong in `app/src/db.ts` and are exposed through the existing Gleam FFI declarations.
+- Keep local writes usable offline: write to the local replica first, then push best-effort to Turso.
+- Pull remote changes before writes and on app startup/visibility changes so an existing replica can refresh from the cloud.
 
-### Subscriptions
-- Open subscriptions in route change handlers
-- Store subscription cleanup functions in `Model.db_subscriptions: Dict(String, fn() -> Nil)`
-- Clean up subscriptions when navigating away from a route
-- Use date strings or slugs as subscription keys
+### Local change notifications
+- Keep callback registries in `app/src/db.ts` in sync with the query functions they refresh.
+- Re-notify affected views after local saves and deletes.
+- Treat remote pulls as data changes and refresh the affected queries when new rows arrive.
 
 ## UI/UX Patterns
 
